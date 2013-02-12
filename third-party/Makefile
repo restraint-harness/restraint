@@ -5,9 +5,11 @@ GLIB = glib-2.34.3
 LIBXML2 = libxml2-2.9.0
 CURL = curl-7.29.0
 LIBARCHIVE = libarchive-3.1.2
+XZ = xz-5.0.4
 
 .PHONY: all
 all: \
+    tree/lib/pkgconfig/liblzma.pc \
     tree/lib/pkgconfig/zlib.pc \
     tree/lib/pkgconfig/libffi.pc \
     tree/lib/pkgconfig/glib-2.0.pc \
@@ -19,6 +21,13 @@ tree/lib/pkgconfig/zlib.pc: $(ZLIB)
 	( cd $(ZLIB) && ./configure --prefix=$(CURDIR)/tree --static )
 	$(MAKE) -C $(ZLIB)
 	$(MAKE) -C $(ZLIB) install
+
+tree/lib/pkgconfig/liblzma.pc: $(XZ)
+	( cd $(XZ) && ./configure --prefix=$(CURDIR)/tree \
+	    --disable-lzma-links --disable-scripts \
+	    --enable-static --disable-shared )
+	$(MAKE) -C $(XZ)
+	$(MAKE) -C $(XZ) install
 
 tree/lib/pkgconfig/libffi.pc: $(LIBFFI)
 	( cd $(LIBFFI) && ./configure --prefix=$(CURDIR)/tree --enable-portable-binary \
@@ -50,7 +59,7 @@ tree/lib/pkgconfig/libcurl.pc: $(CURL) tree/lib/pkgconfig/zlib.pc
 
 tree/lib/pkgconfig/libarchive.pc: $(LIBARCHIVE) $(LIBARCHIVE)/.patches-done tree/lib/pkgconfig/zlib.pc
 	( cd $(LIBARCHIVE) && PKG_CONFIG_PATH=../tree/lib/pkgconfig ./configure --prefix=$(CURDIR)/tree \
-	    --disable-bsdtar --disable-bsdcpio \
+	    --disable-bsdtar --disable-bsdcpio --without-lzma \
 	    --enable-static --disable-shared )
 	$(MAKE) -C $(LIBARCHIVE)
 	$(MAKE) -C $(LIBARCHIVE) install
@@ -73,6 +82,9 @@ $(CURL).tar.bz2:
 $(LIBARCHIVE).tar.gz:
 	curl -O http://libarchive.org/downloads/$@
 
+$(XZ).tar.gz:
+	curl -O http://tukaani.org/xz/$@
+
 %: %.tar.gz
 	tar -xzf $<
 
@@ -80,7 +92,7 @@ $(LIBARCHIVE).tar.gz:
 	tar -xjf $<
 
 %: %.tar.xz
-	xzcat $< | tar -xf -
+	$(CURDIR)/tree/bin/xzcat $< | tar -xf -
 
 $(GLIB)/.patches-done:
 	patch -d$(GLIB) -p1 <glib-python2.2.patch
@@ -98,4 +110,4 @@ $(LIBARCHIVE)/.patches-done:
 
 .PHONY: clean
 clean:
-	rm -rf $(ZLIB) $(LIBFFI) $(GLIB) $(LIBXML2) $(CURL) $(LIBARCHIVE) tree
+	rm -rf $(XZ) $(ZLIB) $(LIBFFI) $(GLIB) $(LIBXML2) $(CURL) $(LIBARCHIVE) tree
