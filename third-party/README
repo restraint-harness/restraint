@@ -1,0 +1,16 @@
+By default, restraint is dynamically linked against system-wide libraries. 
+However if you are targetting an older operating system which lacks the 
+necessary libraries, or if you want to reduce runtime dependencies, restraint 
+can be statically linked against bundled copies of the libraries.
+
+First, use the Makefile in this third-party directory to compile the needed 
+static libraries. They will be installed under third-party/tree.
+
+Then, you can build restraint against these static libraries:
+
+    PKG_CONFIG_PATH=third-party/tree/lib/pkgconfig make STATIC=1
+
+When running tests, you should also pass the path to the gtester binary:
+
+    PKG_CONFIG_PATH=third-party/tree/lib/pkgconfig \
+    GTESTER=third-party/tree/bin/gtester make check
