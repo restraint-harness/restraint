@@ -1,0 +1,22 @@
+RHEL3 headers are messed up, you can't include <sys/statfs.h> and <linux/fs.h>
+in the same module:
+
+    In file included from /usr/include/asm/statfs.h:4,
+                     from /usr/include/linux/vfs.h:4,
+                     from /usr/include/linux/fs.h:14,
+                     from libarchive/archive_read_disk_posix.c:56:
+    /usr/include/asm-x86_64/statfs.h:12: redefinition of `struct statfs'
+
+diff -ur libarchive-3.1.2/libarchive/archive_read_disk_posix.c libarchive-3.1.2.patched/libarchive/archive_read_disk_posix.c
+--- libarchive-3.1.2/libarchive/archive_read_disk_posix.c	2013-01-14 11:43:45.000000000 +1000
++++ libarchive-3.1.2.patched/libarchive/archive_read_disk_posix.c	2013-02-12 18:17:39.534671329 +1000
+@@ -40,9 +40,6 @@
+ #ifdef HAVE_SYS_STAT_H
+ #include <sys/stat.h>
+ #endif
+-#ifdef HAVE_SYS_STATFS_H
+-#include <sys/statfs.h>
+-#endif
+ #ifdef HAVE_SYS_STATVFS_H
+ #include <sys/statvfs.h>
+ #endif

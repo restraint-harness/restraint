@@ -1,0 +1,101 @@
+
+ZLIB = zlib-1.2.7
+LIBFFI = libffi-3.0.11
+GLIB = glib-2.34.3
+LIBXML2 = libxml2-2.9.0
+CURL = curl-7.29.0
+LIBARCHIVE = libarchive-3.1.2
+
+.PHONY: all
+all: \
+    tree/lib/pkgconfig/zlib.pc \
+    tree/lib/pkgconfig/libffi.pc \
+    tree/lib/pkgconfig/glib-2.0.pc \
+    tree/lib/pkgconfig/libxml-2.0.pc \
+    tree/lib/pkgconfig/libcurl.pc \
+    tree/lib/pkgconfig/libarchive.pc
+
+tree/lib/pkgconfig/zlib.pc: $(ZLIB)
+	( cd $(ZLIB) && ./configure --prefix=$(CURDIR)/tree --static )
+	$(MAKE) -C $(ZLIB)
+	$(MAKE) -C $(ZLIB) install
+
+tree/lib/pkgconfig/libffi.pc: $(LIBFFI)
+	( cd $(LIBFFI) && ./configure --prefix=$(CURDIR)/tree --enable-portable-binary \
+	    --enable-static --disable-shared )
+	$(MAKE) -C $(LIBFFI)
+	$(MAKE) -C $(LIBFFI) install
+
+tree/lib/pkgconfig/glib-2.0.pc: $(GLIB) $(GLIB)/.patches-done tree/lib/pkgconfig/zlib.pc tree/lib/pkgconfig/libffi.pc
+	( cd $(GLIB) && PKG_CONFIG_PATH=../tree/lib/pkgconfig ./configure --prefix=$(CURDIR)/tree \
+	    --disable-libelf --disable-fam --disable-xattr --disable-systemtap \
+	    --disable-gcov --disable-dtrace --disable-gtk-doc --disable-gtk-doc-html \
+	    --disable-man --disable-modular-tests \
+	    --enable-static --disable-shared )
+	$(MAKE) -C $(GLIB)
+	$(MAKE) -C $(GLIB) install
+
+tree/lib/pkgconfig/libxml-2.0.pc: $(LIBXML2) $(LIBXML2)/.patches-done tree/lib/pkgconfig/zlib.pc
+	( cd $(LIBXML2) && ./configure --prefix=$(CURDIR)/tree \
+	    --with-zlib=$(CURDIR)/tree --enable-static --disable-shared )
+	$(MAKE) -C $(LIBXML2)
+	$(MAKE) -C $(LIBXML2) install
+
+tree/lib/pkgconfig/libcurl.pc: $(CURL) tree/lib/pkgconfig/zlib.pc
+	( cd $(CURL) && PKG_CONFIG_PATH=../tree/lib/pkgconfig ./configure --prefix=$(CURDIR)/tree \
+	    --with-zlib=$(CURDIR)/tree --with-ssl --enable-ipv6 --disable-manual \
+	    --enable-static --disable-shared )
+	$(MAKE) -C $(CURL)
+	$(MAKE) -C $(CURL) install
+
+tree/lib/pkgconfig/libarchive.pc: $(LIBARCHIVE) $(LIBARCHIVE)/.patches-done tree/lib/pkgconfig/zlib.pc
+	( cd $(LIBARCHIVE) && PKG_CONFIG_PATH=../tree/lib/pkgconfig ./configure --prefix=$(CURDIR)/tree \
+	    --disable-bsdtar --disable-bsdcpio \
+	    --enable-static --disable-shared )
+	$(MAKE) -C $(LIBARCHIVE)
+	$(MAKE) -C $(LIBARCHIVE) install
+
+$(LIBFFI).tar.gz:
+	curl -O ftp://sourceware.org/pub/libffi/$@
+
+$(GLIB).tar.xz:
+	curl -O http://ftp.gnome.org/pub/gnome/sources/glib/2.34/$@
+
+$(ZLIB).tar.gz:
+	curl -O http://zlib.net/$@
+
+$(LIBXML2).tar.gz:
+	curl -O ftp://xmlsoft.org/libxml2/$@
+
+$(CURL).tar.bz2:
+	curl -O http://curl.haxx.se/download/$@
+
+$(LIBARCHIVE).tar.gz:
+	curl -O http://libarchive.org/downloads/$@
+
+%: %.tar.gz
+	tar -xzf $<
+
+%: %.tar.bz2
+	tar -xjf $<
+
+%: %.tar.xz
+	xzcat $< | tar -xf -
+
+$(GLIB)/.patches-done:
+	patch -d$(GLIB) -p1 <glib-python2.2.patch
+	patch -d$(GLIB) -p1 <glib-no-pkgconfig-version-check.patch
+	patch -d$(GLIB) -p1 <glib-gcc3.patch
+	touch $@
+
+$(LIBXML2)/.patches-done:
+	patch -d$(LIBXML2) -p1 <libxml2-timsort-gcc3.patch
+	touch $@
+
+$(LIBARCHIVE)/.patches-done:
+	patch -d$(LIBARCHIVE) -p1 <libarchive-rhel3-headers.patch
+	touch $@
+
+.PHONY: clean
+clean:
+	rm -rf $(ZLIB) $(LIBFFI) $(GLIB) $(LIBXML2) $(CURL) $(LIBARCHIVE) tree
