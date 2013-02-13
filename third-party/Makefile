@@ -22,7 +22,7 @@ tree/lib/pkgconfig/zlib.pc: $(ZLIB)
 	$(MAKE) -C $(ZLIB)
 	$(MAKE) -C $(ZLIB) install
 
-tree/lib/pkgconfig/liblzma.pc: $(XZ)
+tree/lib/pkgconfig/liblzma.pc: $(XZ) $(XZ)/.patches-done
 	( cd $(XZ) && ./configure --prefix=$(CURDIR)/tree \
 	    --disable-lzma-links --disable-scripts \
 	    --enable-static --disable-shared )
@@ -93,6 +93,10 @@ $(XZ).tar.gz:
 
 %: %.tar.xz
 	$(CURDIR)/tree/bin/xzcat $< | tar -xf -
+
+$(XZ)/.patches-done:
+	patch -d$(XZ) -p1 <xz-no-pkgconfig-url.patch
+	touch $@
 
 $(GLIB)/.patches-done:
 	patch -d$(GLIB) -p1 <glib-python2.2.patch
