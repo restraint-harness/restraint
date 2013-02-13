@@ -1,0 +1,46 @@
+<?xml version="1.0" ?>
+<job id="379231" owner="owner@example.com" result="New" status="Running">
+    <recipeSet id="648468">
+        <recipe arch="x86_64" distro="RHEL5-Server-U8" family="RedHatEnterpriseLinuxServer5" id="796557" job_id="379231" kernel_options="" kernel_options_post="" ks_meta="" recipe_set_id="648468" result="New" role="None" status="Running" variant="" whiteboard="example whiteboard">
+            <autopick random="false"/>
+            <watchdog panic="None"/>
+            <packages/>
+            <ks_appends/>
+            <repos/>
+            <distroRequires>
+                <and>
+                    <distro_arch op="=" value="x86_64"/>
+                    <distro_name op="=" value="RHEL5-Server-U8"/>
+                    <distro_family op="=" value="RedHatEnterpriseLinuxServer5"/>
+                    <distro_method op="=" value="nfs"/>
+                </and>
+                <distro_virt op="=" value=""/>
+            </distroRequires>
+            <hostRequires>
+                <system_type value="Machine"/>
+            </hostRequires>
+            <partitions/>
+            <task avg_time="1200" id="10722631" name="/distribution/install" result="New" role="STANDALONE" status="Running">
+                <rpm name="beaker-distribution-install" path="/mnt/tests/distribution/install"/>
+                <params/>
+            </task>
+            <task avg_time="7200" id="10722632" name="/distribution/kernelinstall" result="New" role="STANDALONE" status="Waiting">
+                <rpm name="distribution-distribution-kernelinstall" path="/mnt/tests/distribution/kernelinstall"/>
+                <params>
+                    <param name="KERNELARGNAME" value="kernel"/>
+                    <param name="KERNELARGVARIANT" value="xen"/>
+                    <param name="KERNELARGVERSION" value="2.6.18-308.el5"/>
+                </params>
+            </task>
+            <task avg_time="43200" id="10722633" name="/distribution/virt/install" result="New" role="STANDALONE" status="Waiting">
+                <rpm name="distribution-distribution-virt-install" path="/mnt/tests/distribution/virt/install"/>
+                <params/>
+            </task>
+            <task avg_time="7200" id="10722634" name="/distribution/virt/start" result="New" role="STANDALONE" status="Waiting">
+                <rpm name="distribution-distribution-virt-start" path="/mnt/tests/distribution/virt/start"/>
+                <params/>
+            </task>
+        </recipe>
+    </recipeSet>
+</job>
+

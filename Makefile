@@ -3,7 +3,7 @@ GTESTER ?= gtester
 CC = gcc
 CFLAGS ?= -O -g
 
-PACKAGES = glib-2.0 libxml-2.0
+PACKAGES = glib-2.0 gobject-2.0 gio-2.0 libxml-2.0
 CFLAGS += -Wall -std=c99 $(shell pkg-config --cflags $(PACKAGES))
 ifeq ($(STATIC),1)
     LIBS = -Wl,-Bstatic $(shell pkg-config --libs $(PACKAGES)) -Wl,-Bdynamic -pthread -lrt
@@ -11,8 +11,14 @@ else
     LIBS = $(shell pkg-config --libs $(PACKAGES))
 endif
 
-hello: hello.o
+.PHONY: all
+all: restraint
+
+restraint: main.o recipe.o
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
+
+main.o: recipe.h
+recipe.o: recipe.h
 
 TEST_PROGS =
 test_%: test_%.o
@@ -21,6 +27,10 @@ test_%: test_%.o
 TEST_PROGS += test_fetch_task
 test_fetch_task: fetch_task.o
 test_fetch_task.o: fetch_task.h
+
+TEST_PROGS += test_recipe
+test_recipe: recipe.o
+test_recipe.o: recipe.h
 
 .PHONY: check
 check: $(TEST_PROGS)
@@ -31,4 +41,4 @@ check: $(TEST_PROGS)
 
 .PHONY: clean
 clean:
-	rm -f $(TEST_PROGS) *.o
+	rm -f restraint $(TEST_PROGS) *.o
