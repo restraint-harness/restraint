@@ -20,11 +20,11 @@
                 <system_type value="Machine"/>
             </hostRequires>
             <partitions/>
-            <task avg_time="1200" id="10722631" name="/distribution/install" result="New" role="STANDALONE" status="Running">
+            <task avg_time="1200" id="10722631" name="/distribution/install" result="New" role="STANDALONE" status="Completed">
                 <rpm name="beaker-distribution-install" path="/mnt/tests/distribution/install"/>
                 <params/>
             </task>
-            <task avg_time="7200" id="10722632" name="/distribution/kernelinstall" result="New" role="STANDALONE" status="Waiting">
+            <task avg_time="7200" id="10722632" name="/distribution/kernelinstall" result="New" role="STANDALONE" status="Running">
                 <rpm name="distribution-distribution-kernelinstall" path="/mnt/tests/distribution/kernelinstall"/>
                 <params>
                     <param name="KERNELARGNAME" value="kernel"/>

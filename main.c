@@ -4,7 +4,7 @@
 
 #include "recipe.h"
 
-static void run_task(RecipeTask *task, __attribute__((unused)) void *_) {
+static void run_task(Task *task, __attribute__((unused)) void *_) {
     switch (task->fetch_method) {
         case FETCH_UNPACK:
             g_print("Pretending to fetch and unpack %s\n", task->fetch.url);
@@ -43,7 +43,7 @@ int main(int argc, char *argv[]) {
     }
 
     GFile *recipe_file = g_file_new_for_commandline_arg(run_recipe);
-    Recipe *recipe = restraint_parse_recipe(recipe_file, &error);
+    Recipe *recipe = restraint_recipe_new_from_xml(recipe_file, &error);
     g_object_unref(recipe_file);
     if (recipe == NULL)
         goto error;
@@ -51,7 +51,7 @@ int main(int argc, char *argv[]) {
     g_print("Pretending to run recipe %s\n", recipe->recipe_id);
     g_list_foreach(recipe->tasks, (GFunc) run_task, NULL);
 
-    restraint_free_recipe(recipe);
+    restraint_recipe_free(recipe);
     return 0;
 
 error:

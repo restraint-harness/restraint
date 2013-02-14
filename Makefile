@@ -17,8 +17,9 @@ all: restraint
 restraint: main.o recipe.o
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
-main.o: recipe.h
-recipe.o: recipe.h
+task.o: task.h
+recipe.o: recipe.h task.h
+main.o: recipe.h task.h
 
 TEST_PROGS =
 test_%: test_%.o
@@ -29,8 +30,8 @@ test_fetch_task: fetch_task.o
 test_fetch_task.o: fetch_task.h
 
 TEST_PROGS += test_recipe
-test_recipe: recipe.o
-test_recipe.o: recipe.h
+test_recipe: recipe.o task.o
+test_recipe.o: recipe.h task.h
 
 .PHONY: check
 check: $(TEST_PROGS)

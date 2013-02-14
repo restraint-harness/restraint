@@ -100,11 +100,11 @@ static xmlNode *first_child_with_name(xmlNode *parent, const gchar *name) {
         RESTRAINT_RECIPE_PARSE_ERROR_UNRECOGNISED, \
         message, ##__VA_ARGS__)
 
-static RecipeTask *parse_task(xmlNode *task_node, GError **error) {
+static Task *parse_task(xmlNode *task_node, GError **error) {
     g_return_val_if_fail(task_node != NULL, NULL);
     g_return_val_if_fail(error == NULL || *error == NULL, NULL);
 
-    RecipeTask *task = g_slice_new(RecipeTask);
+    Task *task = g_slice_new(Task);
 
     xmlChar *task_id = xmlGetNoNsProp(task_node, (xmlChar *)"id");
     if (task_id == NULL) {
@@ -124,11 +124,11 @@ static RecipeTask *parse_task(xmlNode *task_node, GError **error) {
 
     xmlChar *url = xmlGetNoNsProp(task_node, (xmlChar *)"url");
     if (url != NULL) {
-        task->fetch_method = FETCH_UNPACK;
+        task->fetch_method = TASK_FETCH_UNPACK;
         task->fetch.url = g_strdup((gchar *)url);
         xmlFree(url);
     } else {
-        task->fetch_method = FETCH_INSTALL_PACKAGE;
+        task->fetch_method = TASK_FETCH_INSTALL_PACKAGE;
         xmlNode *rpm = first_child_with_name(task_node, "rpm");
         if (rpm == NULL) {
             unrecognised("Task %s has neither 'url' attribute nor 'rpm' element",
@@ -145,14 +145,31 @@ static RecipeTask *parse_task(xmlNode *task_node, GError **error) {
         xmlFree(rpm_name);
     }
 
+    task->started = FALSE;
+    task->finished = FALSE;
+    xmlChar *status = xmlGetNoNsProp(task_node, (xmlChar *)"status");
+    if (status == NULL) {
+        unrecognised("Task %s missing 'status' attribute", task->task_id);
+        goto error;
+    }
+    if (g_strcmp0((gchar *)status, "Running") == 0) {
+        task->started = TRUE;
+    } else if (g_strcmp0((gchar *)status, "Completed") == 0 ||
+            g_strcmp0((gchar *)status, "Aborted") == 0 ||
+            g_strcmp0((gchar *)status, "Cancelled") == 0) {
+        task->started = TRUE;
+        task->finished = TRUE;
+    }
+    xmlFree(status);
+
     return task;
 
 error:
-    g_slice_free(RecipeTask, task);
+    g_slice_free(Task, task);
     return NULL;
 }
 
-Recipe *restraint_parse_recipe(GFile *recipe_file, GError **error) {
+Recipe *restraint_recipe_new_from_xml(GFile *recipe_file, GError **error) {
     g_return_val_if_fail(recipe_file != NULL, NULL);
     g_return_val_if_fail(error == NULL || *error == NULL, NULL);
 
@@ -187,7 +204,7 @@ Recipe *restraint_parse_recipe(GFile *recipe_file, GError **error) {
     while (child != NULL) {
         if (child->type == XML_ELEMENT_NODE &&
                 g_strcmp0((gchar *)child->name, "task") == 0) {
-            RecipeTask *task = parse_task(child, &tmp_error);
+            Task *task = parse_task(child, &tmp_error);
             if (task == NULL) {
                 g_propagate_error(error, tmp_error);
                 goto error;
@@ -212,24 +229,9 @@ error:
     return NULL;
 }
 
-static void restraint_free_recipe_task(RecipeTask *task) {
-    g_free(task->task_id);
-    g_free(task->name);
-    switch (task->fetch_method) {
-        case FETCH_INSTALL_PACKAGE:
-            g_free(task->fetch.package_name);
-            break;
-        case FETCH_UNPACK:
-            g_free(task->fetch.url);
-            break;
-        default:
-            g_return_if_reached();
-    }
-    g_slice_free(RecipeTask, task);
-}
-
-void restraint_free_recipe(Recipe *recipe) {
+void restraint_recipe_free(Recipe *recipe) {
+    g_return_if_fail(recipe != NULL);
     g_free(recipe->recipe_id);
-    g_list_free_full(recipe->tasks, (GDestroyNotify) restraint_free_recipe_task);
+    g_list_free_full(recipe->tasks, (GDestroyNotify) restraint_task_free);
     g_slice_free(Recipe, recipe);
 }
