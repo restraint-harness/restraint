@@ -3,7 +3,7 @@ GTESTER ?= gtester
 CC = gcc
 CFLAGS ?= -O -g
 
-PACKAGES = glib-2.0 gobject-2.0 gio-2.0 libxml-2.0
+PACKAGES = glib-2.0 gobject-2.0 gio-2.0 libxml-2.0 libsoup-2.4 libarchive
 CFLAGS += -Wall -std=c99 $(shell pkg-config --cflags $(PACKAGES))
 ifeq ($(STATIC),1)
     LIBS = -Wl,-Bstatic $(shell pkg-config --libs $(PACKAGES)) -Wl,-Bdynamic -pthread -lrt
@@ -14,11 +14,12 @@ endif
 .PHONY: all
 all: restraint
 
-restraint: main.o recipe.o
+restraint: main.o recipe.o fetch_git_task.o
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 main.o: recipe.h
 recipe.o: recipe.h
+fetch_git_task.o: fetch_git_task.h
 
 TEST_PROGS =
 test_%: test_%.o

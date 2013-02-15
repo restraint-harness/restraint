@@ -3,11 +3,14 @@
 #include <gio/gio.h>
 
 #include "recipe.h"
+#include "fetch_git_task.h"
 
 static void run_task(RecipeTask *task, __attribute__((unused)) void *_) {
     switch (task->fetch_method) {
         case FETCH_UNPACK:
             g_print("Pretending to fetch and unpack %s\n", task->fetch.url);
+            char *location = restraint_fetch_git_task(task->fetch.url);
+            g_print("Task Installed: %s\n", location);
             break;
         case FETCH_INSTALL_PACKAGE:
             g_print("Pretending to yum install %s\n", task->fetch.package_name);
@@ -15,7 +18,7 @@ static void run_task(RecipeTask *task, __attribute__((unused)) void *_) {
         default:
             g_return_if_reached();
     }
-    g_print("Pretending to run task %s\n", task->task_id);
+    g_print("Pretending to run task %s\n\n", task->task_id);
 }
 
 int main(int argc, char *argv[]) {
