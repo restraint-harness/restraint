@@ -15,4 +15,4 @@ typedef struct {
     GOutputStream *ostream;
 } GitArchData;
 
-char *restraint_fetch_git_task(char *uri_string);
+gchar *restraint_fetch_git_task(gchar *uri_string);

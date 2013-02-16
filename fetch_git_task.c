@@ -254,7 +254,7 @@ static gint copy_data(struct archive *ar, struct archive *aw) {
     }
 }
 
-char *restraint_fetch_git_task(gchar *uri_string) {
+gchar *restraint_fetch_git_task(gchar *uri_string) {
     struct archive *a;
     struct archive *ext;
     struct archive_entry *entry;
@@ -301,11 +301,11 @@ char *restraint_fetch_git_task(gchar *uri_string) {
             }
         }
         g_print("%s\n", archive_entry_pathname(entry));
+        free(newPath);
     }
     archive_read_close(a);
     archive_read_free(a);
     soup_uri_free(mydata->uri);
-    free(newPath);
 
     return basePath;
 }
