@@ -1,0 +1,52 @@
+diff -ur libsoup-2.38.1/configure libsoup-2.38.1.patched/configure
+--- libsoup-2.38.1/configure	2012-04-16 16:08:02.000000000 -0400
++++ libsoup-2.38.1.patched/configure	2013-02-19 09:52:32.000000000 -0500
+@@ -11853,19 +11853,6 @@
+ fi
+ 
+ fi
+-if test -n "$PKG_CONFIG"; then
+-	_pkg_min_version=0.16
+-	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking pkg-config is at least version $_pkg_min_version" >&5
+-$as_echo_n "checking pkg-config is at least version $_pkg_min_version... " >&6; }
+-	if $PKG_CONFIG --atleast-pkgconfig-version $_pkg_min_version; then
+-		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+-$as_echo "yes" >&6; }
+-	else
+-		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+-$as_echo "no" >&6; }
+-		PKG_CONFIG=""
+-	fi
+-fi
+ 
+   no_glib=""
+ 
+@@ -13254,11 +13241,7 @@
+ 
+ if test "$GCC" = "yes" -a "$set_more_warnings" != "no"; then
+ 	CFLAGS="$CFLAGS \
+-		-Wall -Wstrict-prototypes -Werror=missing-prototypes \
+-		-Werror=implicit-function-declaration \
+-		-Werror=pointer-arith -Werror=init-self -Werror=format=2 \
+-		-Werror=missing-include-dirs -Werror=aggregate-return \
+-		-Werror=declaration-after-statement"
++		-Wall -Wstrict-prototypes"
+ fi
+ 
+ 
+diff -ur libsoup-2.38.1/configure.ac libsoup-2.38.1.patched/configure.ac
+--- libsoup-2.38.1/configure.ac	2012-04-16 16:06:51.000000000 -0400
++++ libsoup-2.38.1.patched/configure.ac	2013-02-19 09:52:48.000000000 -0500
+@@ -329,11 +329,7 @@
+ 
+ if test "$GCC" = "yes" -a "$set_more_warnings" != "no"; then
+ 	CFLAGS="$CFLAGS \
+-		-Wall -Wstrict-prototypes -Werror=missing-prototypes \
+-		-Werror=implicit-function-declaration \
+-		-Werror=pointer-arith -Werror=init-self -Werror=format=2 \
+-		-Werror=missing-include-dirs -Werror=aggregate-return \
+-		-Werror=declaration-after-statement"
++		-Wall -Wstrict-prototypes"
+ fi
+ 
+ dnl *************************

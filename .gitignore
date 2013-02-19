@@ -10,6 +10,10 @@
 /third-party/libxml2-2.9.0/
 /third-party/zlib-1.2.7.tar.gz
 /third-party/zlib-1.2.7/
+/third-party/libsoup-2.38.1.tar.xz
+/third-party/libsoup-2.38/
+/third-party/xz-5.0.4.tar.gz
+/third-party/xz-5.0.4/
 /third-party/tree/
 /test_fetch_task
 /test_recipe

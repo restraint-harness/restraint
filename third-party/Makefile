@@ -6,6 +6,7 @@ LIBXML2 = libxml2-2.9.0
 CURL = curl-7.29.0
 LIBARCHIVE = libarchive-3.1.2
 XZ = xz-5.0.4
+LIBSOUP = libsoup-2.38.1
 
 .PHONY: all
 all: \
@@ -15,14 +16,15 @@ all: \
     tree/lib/pkgconfig/glib-2.0.pc \
     tree/lib/pkgconfig/libxml-2.0.pc \
     tree/lib/pkgconfig/libcurl.pc \
-    tree/lib/pkgconfig/libarchive.pc
+    tree/lib/pkgconfig/libarchive.pc \
+    tree/lib/pkgconfig/libsoup-2.38.pc
 
 tree/lib/pkgconfig/zlib.pc: $(ZLIB)
 	( cd $(ZLIB) && ./configure --prefix=$(CURDIR)/tree --static )
 	$(MAKE) -C $(ZLIB)
 	$(MAKE) -C $(ZLIB) install
 
-tree/lib/pkgconfig/liblzma.pc: $(XZ)
+tree/lib/pkgconfig/liblzma.pc: $(XZ) $(XZ)/.patches-done
 	( cd $(XZ) && ./configure --prefix=$(CURDIR)/tree \
 	    --disable-lzma-links --disable-scripts \
 	    --enable-static --disable-shared )
@@ -50,6 +52,14 @@ tree/lib/pkgconfig/libxml-2.0.pc: $(LIBXML2) $(LIBXML2)/.patches-done tree/lib/p
 	$(MAKE) -C $(LIBXML2)
 	$(MAKE) -C $(LIBXML2) install
 
+tree/lib/pkgconfig/libsoup-2.38.pc: $(LIBSOUP) $(LIBSOUP)/.patches-done tree/lib/pkgconfig/glib-2.0.pc tree/lib/pkgconfig/libxml-2.0.pc
+	( cd $(LIBSOUP) && PKG_CONFIG_PATH=../tree/lib/pkgconfig \
+              ./configure --prefix=$(CURDIR)/tree \
+	      --disable-glibtest --disable-tls-check --without-gnome --enable-static \
+              --disable-shared )
+	( PATH=$(CURDIR)/tree/bin:$(PATH) $(MAKE) -C $(LIBSOUP) )
+	$(MAKE) -C $(LIBSOUP) install
+
 tree/lib/pkgconfig/libcurl.pc: $(CURL) tree/lib/pkgconfig/zlib.pc
 	( cd $(CURL) && PKG_CONFIG_PATH=../tree/lib/pkgconfig ./configure --prefix=$(CURDIR)/tree \
 	    --with-zlib=$(CURDIR)/tree --with-ssl --enable-ipv6 --disable-manual \
@@ -59,7 +69,7 @@ tree/lib/pkgconfig/libcurl.pc: $(CURL) tree/lib/pkgconfig/zlib.pc
 
 tree/lib/pkgconfig/libarchive.pc: $(LIBARCHIVE) $(LIBARCHIVE)/.patches-done tree/lib/pkgconfig/zlib.pc
 	( cd $(LIBARCHIVE) && PKG_CONFIG_PATH=../tree/lib/pkgconfig ./configure --prefix=$(CURDIR)/tree \
-	    --disable-bsdtar --disable-bsdcpio --without-lzma \
+	    --disable-bsdtar --disable-bsdcpio \
 	    --enable-static --disable-shared )
 	$(MAKE) -C $(LIBARCHIVE)
 	$(MAKE) -C $(LIBARCHIVE) install
@@ -85,13 +95,16 @@ $(LIBARCHIVE).tar.gz:
 $(XZ).tar.gz:
 	curl -O http://tukaani.org/xz/$@
 
+$(LIBSOUP).tar.xz:
+	curl -O http://ftp.gnome.org/pub/GNOME/sources/libsoup/2.38/$@
+
 %: %.tar.gz
 	tar -xzf $<
 
 %: %.tar.bz2
 	tar -xjf $<
 
-%: %.tar.xz
+%: %.tar.xz tree/lib/pkgconfig/liblzma.pc
 	$(CURDIR)/tree/bin/xzcat $< | tar -xf -
 
 $(GLIB)/.patches-done:
@@ -108,6 +121,14 @@ $(LIBARCHIVE)/.patches-done:
 	patch -d$(LIBARCHIVE) -p1 <libarchive-rhel3-headers.patch
 	touch $@
 
+$(LIBSOUP)/.patches-done:
+	patch -d$(LIBSOUP) -p1 <libsoup-no-pkgconfig-version-check.patch
+	touch $@
+
+$(XZ)/.patches-done:
+	patch -d$(XZ) -p1 <xz-pkgconfig-no-url.patch
+	touch $@
+
 .PHONY: clean
 clean:
-	rm -rf $(XZ) $(ZLIB) $(LIBFFI) $(GLIB) $(LIBXML2) $(CURL) $(LIBARCHIVE) tree
+	rm -rf $(XZ) $(ZLIB) $(LIBFFI) $(GLIB) $(LIBXML2) $(CURL) $(LIBARCHIVE) $(LIBSOUP) tree

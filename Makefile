@@ -3,12 +3,13 @@ GTESTER ?= gtester
 CC = gcc
 CFLAGS ?= -O -g
 
-PACKAGES = glib-2.0 gobject-2.0 gio-2.0 libxml-2.0 libsoup-2.4 libarchive
-CFLAGS += -Wall -std=c99 $(shell pkg-config --cflags $(PACKAGES))
+PACKAGES = glib-2.0 gobject-2.0 gio-2.0 libxml-2.0 zlib libffi liblzma gmodule-2.0 libarchive
+XTRAPKGS = libsoup-2.4
+CFLAGS += -Wall -std=c99 $(shell pkg-config --cflags $(PACKAGES) $(XTRAPKGS))
 ifeq ($(STATIC),1)
-    LIBS = -Wl,-Bstatic $(shell pkg-config --libs $(PACKAGES)) -Wl,-Bdynamic -pthread -lrt
+    LIBS = -Wl,-Bstatic $(shell pkg-config --libs $(PACKAGES)) $(shell pkg-config --libs $(XTRAPKGS)) -Wl,-Bdynamic -lresolv -lm -ldl -lbz2 -lssl -pthread -lrt
 else
-    LIBS = $(shell pkg-config --libs $(PACKAGES))
+    LIBS = $(shell pkg-config --libs $(PACKAGES) $(XTRAPKGS))
 endif
 
 .PHONY: all

@@ -1,0 +1,11 @@
+diff -ur xz-5.0.4/src/liblzma/liblzma.pc.in xz-5.0.4.patched/src/liblzma/liblzma.pc.in
+--- xz-5.0.4/src/liblzma/liblzma.pc.in	2012-06-22 02:22:30.000000000 -0400
++++ xz-5.0.4.patched/src/liblzma/liblzma.pc.in	2013-02-19 12:04:08.000000000 -0500
+@@ -12,7 +12,6 @@
+ 
+ Name: liblzma
+ Description: General purpose data compression library
+-URL: @PACKAGE_URL@
+ Version: @PACKAGE_VERSION@
+ Cflags: -I${includedir}
+ Libs: -L${libdir} -llzma
