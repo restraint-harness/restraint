@@ -6,6 +6,7 @@ LIBXML2 = libxml2-2.9.0
 CURL = curl-7.29.0
 LIBARCHIVE = libarchive-3.1.2
 XZ = xz-5.0.4
+LIBSOUP = libsoup-2.38.1
 
 .PHONY: all
 all: \
@@ -15,7 +16,8 @@ all: \
     tree/lib/pkgconfig/glib-2.0.pc \
     tree/lib/pkgconfig/libxml-2.0.pc \
     tree/lib/pkgconfig/libcurl.pc \
-    tree/lib/pkgconfig/libarchive.pc
+    tree/lib/pkgconfig/libarchive.pc \
+    tree/lib/pkgconfig/libsoup-2.38.pc
 
 tree/lib/pkgconfig/zlib.pc: $(ZLIB)
 	( cd $(ZLIB) && ./configure --prefix=$(CURDIR)/tree --static )
@@ -49,6 +51,14 @@ tree/lib/pkgconfig/libxml-2.0.pc: $(LIBXML2) $(LIBXML2)/.patches-done tree/lib/p
 	    --with-zlib=$(CURDIR)/tree --enable-static --disable-shared )
 	$(MAKE) -C $(LIBXML2)
 	$(MAKE) -C $(LIBXML2) install
+
+tree/lib/pkgconfig/libsoup-2.38.pc: $(LIBSOUP) $(LIBSOUP)/.patches-done tree/lib/pkgconfig/glib-2.0.pc tree/lib/pkgconfig/libxml-2.0.pc
+	( cd $(LIBSOUP) && PKG_CONFIG_PATH=../tree/lib/pkgconfig \
+              ./configure --prefix=$(CURDIR)/tree \
+	      --disable-glibtest --disable-tls-check --without-gnome --enable-static \
+              --disable-shared )
+	( PATH=$(CURDIR)/tree/bin:$(PATH) $(MAKE) -C $(LIBSOUP) )
+	$(MAKE) -C $(LIBSOUP) install
 
 tree/lib/pkgconfig/libcurl.pc: $(CURL) tree/lib/pkgconfig/zlib.pc
 	( cd $(CURL) && PKG_CONFIG_PATH=../tree/lib/pkgconfig ./configure --prefix=$(CURDIR)/tree \
@@ -85,13 +95,16 @@ $(LIBARCHIVE).tar.gz:
 $(XZ).tar.gz:
 	curl -O http://tukaani.org/xz/$@
 
+$(LIBSOUP).tar.xz:
+	curl -O http://ftp.gnome.org/pub/GNOME/sources/libsoup/2.38/$@
+
 %: %.tar.gz
 	tar -xzf $<
 
 %: %.tar.bz2
 	tar -xjf $<
 
-%: %.tar.xz
+%: %.tar.xz tree/lib/pkgconfig/liblzma.pc
 	$(CURDIR)/tree/bin/xzcat $< | tar -xf -
 
 $(XZ)/.patches-done:
@@ -112,6 +125,10 @@ $(LIBARCHIVE)/.patches-done:
 	patch -d$(LIBARCHIVE) -p1 <libarchive-rhel3-headers.patch
 	touch $@
 
+$(LIBSOUP)/.patches-done:
+	patch -d$(LIBSOUP) -p1 <libsoup-no-pkgconfig-version-check.patch
+	touch $@
+
 .PHONY: clean
 clean:
-	rm -rf $(XZ) $(ZLIB) $(LIBFFI) $(GLIB) $(LIBXML2) $(CURL) $(LIBARCHIVE) tree
+	rm -rf $(XZ) $(ZLIB) $(LIBFFI) $(GLIB) $(LIBXML2) $(CURL) $(LIBARCHIVE) $(LIBSOUP) tree
