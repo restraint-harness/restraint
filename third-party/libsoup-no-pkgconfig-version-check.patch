@@ -34,19 +34,3 @@ diff -ur libsoup-2.38.1/configure libsoup-2.38.1.patched/configure
  fi
  
  
-diff -ur libsoup-2.38.1/configure.ac libsoup-2.38.1.patched/configure.ac
---- libsoup-2.38.1/configure.ac	2012-04-16 16:06:51.000000000 -0400
-+++ libsoup-2.38.1.patched/configure.ac	2013-02-19 09:52:48.000000000 -0500
-@@ -329,11 +329,7 @@
- 
- if test "$GCC" = "yes" -a "$set_more_warnings" != "no"; then
- 	CFLAGS="$CFLAGS \
--		-Wall -Wstrict-prototypes -Werror=missing-prototypes \
--		-Werror=implicit-function-declaration \
--		-Werror=pointer-arith -Werror=init-self -Werror=format=2 \
--		-Werror=missing-include-dirs -Werror=aggregate-return \
--		-Werror=declaration-after-statement"
-+		-Wall -Wstrict-prototypes"
- fi
- 
- dnl *************************
