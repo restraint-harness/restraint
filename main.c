@@ -3,20 +3,7 @@
 #include <gio/gio.h>
 
 #include "recipe.h"
-
-static void run_task(Task *task, __attribute__((unused)) void *_) {
-    switch (task->fetch_method) {
-        case FETCH_UNPACK:
-            g_print("Pretending to fetch and unpack %s\n", task->fetch.url);
-            break;
-        case FETCH_INSTALL_PACKAGE:
-            g_print("Pretending to yum install %s\n", task->fetch.package_name);
-            break;
-        default:
-            g_return_if_reached();
-    }
-    g_print("Pretending to run task %s\n", task->task_id);
-}
+#include "task.h"
 
 int main(int argc, char *argv[]) {
     g_type_init();
@@ -48,8 +35,13 @@ int main(int argc, char *argv[]) {
     if (recipe == NULL)
         goto error;
 
-    g_print("Pretending to run recipe %s\n", recipe->recipe_id);
-    g_list_foreach(recipe->tasks, (GFunc) run_task, NULL);
+    g_print("Running recipe %s\n", recipe->recipe_id);
+    GList *tasks = recipe->tasks;
+    while (tasks != NULL) {
+        Task *current_task = (Task *)tasks->data;
+        restraint_task_run(current_task);
+        tasks = g_list_next(tasks);
+    }
 
     restraint_recipe_free(recipe);
     return 0;

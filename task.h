@@ -21,6 +21,7 @@ typedef struct {
     gboolean finished;
 } Task;
 
+void restraint_task_run(Task *task);
 void restraint_task_free(Task *task);
 
 #endif

@@ -1,0 +1,16 @@
+#!/bin/bash
+
+# A dummy "implementation" of yum for tests.
+
+if [[ "$*" == -y\ install\ * ]] ; then
+    shift 2
+    if [[ "$*" == *fail* ]] ; then
+        echo "dummy yum: fail" >&2
+        exit 1
+    fi
+    echo "dummy yum: installing $*"
+    exit 0
+fi
+
+echo "dummy yum: unrecognised arguments" >&2
+exit 1

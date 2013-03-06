@@ -1,10 +1,9 @@
 
 #include <glib.h>
 
-#include "fetch_task.h"
+#include "task.h"
 
 static void test_something(void) {
-    restraint_fetch_task();
     g_assert(TRUE);
 }
 

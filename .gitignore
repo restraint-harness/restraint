@@ -18,6 +18,8 @@
 /third-party/zlib-1.2.7/
 /third-party/tree/
 /test_fetch_task
+/test_packages
 /test_recipe
+/test_task
 /restraint
 /*.o

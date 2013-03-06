@@ -14,9 +14,10 @@ endif
 .PHONY: all
 all: restraint
 
-restraint: main.o recipe.o
+restraint: main.o recipe.o task.o packages.o
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
+packages.o: packages.h
 task.o: task.h
 recipe.o: recipe.h task.h
 main.o: recipe.h task.h
@@ -25,16 +26,21 @@ TEST_PROGS =
 test_%: test_%.o
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
-TEST_PROGS += test_fetch_task
-test_fetch_task: fetch_task.o
-test_fetch_task.o: fetch_task.h
+TEST_PROGS += test_packages
+test_packages: packages.o
+test_packages.o: packages.h
+
+TEST_PROGS += test_task
+test_task: task.o packages.o
+test_task.o: task.h
 
 TEST_PROGS += test_recipe
-test_recipe: recipe.o task.o
+test_recipe: recipe.o task.o packages.o
 test_recipe.o: recipe.h task.h
 
 .PHONY: check
 check: $(TEST_PROGS)
+	PATH="$(CURDIR)/test-dummies:$$PATH" \
 	MALLOC_CHECK_=2 \
 	G_DEBUG="fatal_warnings fatal_criticals" \
 	G_SLICE="debug-blocks" \
