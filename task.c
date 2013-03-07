@@ -26,6 +26,11 @@ static gboolean restraint_task_fetch(Task *task, GError **error) {
     return TRUE;
 }
 
+Task *restraint_task_new(void) {
+    Task *task = g_slice_new0(Task);
+    return task;
+}
+
 void restraint_task_run(Task *task) {
     GError *error = NULL;
     gboolean fetch_succeeded = restraint_task_fetch(task, &error);
@@ -38,6 +43,7 @@ void restraint_task_run(Task *task) {
 void restraint_task_free(Task *task) {
     g_return_if_fail(task != NULL);
     g_free(task->task_id);
+    soup_uri_free(task->task_uri);
     g_free(task->name);
     switch (task->fetch_method) {
         case TASK_FETCH_INSTALL_PACKAGE:

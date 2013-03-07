@@ -19,6 +19,8 @@ static void test_parse_from_file(void) {
 
     Task *task = g_list_nth_data(recipe->tasks, 0);
     g_assert_cmpstr(task->task_id, ==, "10722631");
+    g_assert(g_str_has_suffix(soup_uri_get_path(task->task_uri),
+            "/tasks/10722631/"));
     g_assert_cmpstr(task->name, ==, "/distribution/install");
     g_assert_cmpuint(task->fetch_method, ==, TASK_FETCH_INSTALL_PACKAGE);
     g_assert_cmpstr(task->fetch.package_name, ==, "beaker-distribution-install");
@@ -27,6 +29,8 @@ static void test_parse_from_file(void) {
 
     task = g_list_nth_data(recipe->tasks, 1);
     g_assert_cmpstr(task->task_id, ==, "10722632");
+    g_assert(g_str_has_suffix(soup_uri_get_path(task->task_uri),
+            "/tasks/10722632/"));
     g_assert_cmpstr(task->name, ==, "/distribution/kernelinstall");
     g_assert_cmpuint(task->fetch_method, ==, TASK_FETCH_INSTALL_PACKAGE);
     g_assert_cmpstr(task->fetch.package_name, ==,
@@ -36,6 +40,8 @@ static void test_parse_from_file(void) {
 
     task = g_list_nth_data(recipe->tasks, 2);
     g_assert_cmpstr(task->task_id, ==, "10722633");
+    g_assert(g_str_has_suffix(soup_uri_get_path(task->task_uri),
+            "/tasks/10722633/"));
     g_assert_cmpstr(task->name, ==, "/distribution/virt/install");
     g_assert_cmpuint(task->fetch_method, ==, TASK_FETCH_INSTALL_PACKAGE);
     g_assert_cmpstr(task->fetch.package_name, ==,
@@ -45,6 +51,8 @@ static void test_parse_from_file(void) {
 
     task = g_list_nth_data(recipe->tasks, 3);
     g_assert_cmpstr(task->task_id, ==, "10722634");
+    g_assert(g_str_has_suffix(soup_uri_get_path(task->task_uri),
+            "/tasks/10722634/"));
     g_assert_cmpstr(task->name, ==, "/distribution/virt/start");
     g_assert_cmpuint(task->fetch_method, ==, TASK_FETCH_INSTALL_PACKAGE);
     g_assert_cmpstr(task->fetch.package_name, ==,

@@ -100,11 +100,13 @@ static xmlNode *first_child_with_name(xmlNode *parent, const gchar *name) {
         RESTRAINT_RECIPE_PARSE_ERROR_UNRECOGNISED, \
         message, ##__VA_ARGS__)
 
-static Task *parse_task(xmlNode *task_node, GError **error) {
+static Task *parse_task(xmlNode *task_node, SoupURI *recipe_uri, GError **error) {
     g_return_val_if_fail(task_node != NULL, NULL);
+    g_return_val_if_fail(recipe_uri != NULL, NULL);
     g_return_val_if_fail(error == NULL || *error == NULL, NULL);
 
-    Task *task = g_slice_new(Task);
+    Task *task = restraint_task_new();
+    g_return_val_if_fail(task != NULL, NULL);
 
     xmlChar *task_id = xmlGetNoNsProp(task_node, (xmlChar *)"id");
     if (task_id == NULL) {
@@ -113,6 +115,10 @@ static Task *parse_task(xmlNode *task_node, GError **error) {
     }
     task->task_id = g_strdup((gchar *)task_id);
     xmlFree(task_id);
+
+    gchar *suffix = g_strconcat("tasks/", task->task_id, "/", NULL);
+    task->task_uri = soup_uri_new_with_base(recipe_uri, suffix);
+    g_free(suffix);
 
     xmlChar *name = xmlGetNoNsProp(task_node, (xmlChar *)"name");
     if (name == NULL) {
@@ -175,12 +181,17 @@ Recipe *restraint_recipe_new_from_xml(GFile *recipe_file, GError **error) {
 
     GError *tmp_error = NULL;
     xmlDoc *doc = NULL;
+    SoupURI *recipe_uri = NULL;
 
     doc = parse_xml_from_gfile(recipe_file, &tmp_error);
     if (doc == NULL) {
         g_propagate_error(error, tmp_error);
         goto error;
     }
+
+    gchar *recipe_uri_string = g_file_get_uri(recipe_file);
+    recipe_uri = soup_uri_new(recipe_uri_string);
+    g_free(recipe_uri_string);
 
     xmlNode *job = xmlDocGetRootElement(doc);
     if (job == NULL || g_strcmp0((gchar *)job->name, "job") != 0) {
@@ -204,7 +215,7 @@ Recipe *restraint_recipe_new_from_xml(GFile *recipe_file, GError **error) {
     while (child != NULL) {
         if (child->type == XML_ELEMENT_NODE &&
                 g_strcmp0((gchar *)child->name, "task") == 0) {
-            Task *task = parse_task(child, &tmp_error);
+            Task *task = parse_task(child, recipe_uri, &tmp_error);
             if (task == NULL) {
                 g_propagate_error(error, tmp_error);
                 goto error;
@@ -220,10 +231,13 @@ Recipe *restraint_recipe_new_from_xml(GFile *recipe_file, GError **error) {
     result->recipe_id = g_strdup((gchar *)recipe_id);
     xmlFree(recipe_id);
     result->tasks = tasks;
+    soup_uri_free(recipe_uri);
     xmlFreeDoc(doc);
     return result;
 
 error:
+    if (recipe_uri != NULL)
+        soup_uri_free(recipe_uri);
     if (doc != NULL)
         xmlFreeDoc(doc);
     return NULL;

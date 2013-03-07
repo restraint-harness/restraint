@@ -3,8 +3,8 @@ GTESTER ?= gtester
 CC = gcc
 CFLAGS ?= -O -g
 
-PACKAGES = glib-2.0 gobject-2.0 gio-2.0 libxml-2.0
-CFLAGS += -Wall -std=c99 $(shell pkg-config --cflags $(PACKAGES))
+PACKAGES = glib-2.0 gobject-2.0 gio-2.0 libxml-2.0 libsoup-2.4
+CFLAGS += -Wall -Werror -std=c99 $(shell pkg-config --cflags $(PACKAGES))
 ifeq ($(STATIC),1)
     LIBS = -Wl,-Bstatic $(shell pkg-config --libs $(PACKAGES)) -Wl,-Bdynamic -pthread -lrt
 else
