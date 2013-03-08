@@ -75,9 +75,10 @@ tree/lib/pkgconfig/libcurl.pc: $(CURL) tree/lib/pkgconfig/zlib.pc
 
 tree/lib/pkgconfig/libarchive.pc: $(LIBARCHIVE) $(LIBARCHIVE)/.patches-done \
 				  tree/lib/pkgconfig/zlib.pc \
-				  tree/lib/libbz2.a
+				  tree/lib/libbz2.a \
+				  tree/lib/pkgconfig/liblzma.pc
 	( cd $(LIBARCHIVE) && PKG_CONFIG_PATH=../tree/lib/pkgconfig ./configure --prefix=$(CURDIR)/tree \
-	    --disable-bsdtar --disable-bsdcpio --without-lzma \
+	    --disable-bsdtar --disable-bsdcpio \
 	    --enable-static --disable-shared )
 	$(MAKE) -C $(LIBARCHIVE)
 	$(MAKE) -C $(LIBARCHIVE) install
@@ -134,6 +135,7 @@ $(LIBXML2)/.patches-done:
 
 $(LIBARCHIVE)/.patches-done:
 	patch -d$(LIBARCHIVE) -p1 <libarchive-rhel3-headers.patch
+	patch -d$(LIBARCHIVE) -p1 <libarchive-use-pkgconfig.patch
 	touch $@
 
 $(LIBSOUP)/.patches-done:
