@@ -131,7 +131,7 @@ static Task *parse_task(xmlNode *task_node, SoupURI *recipe_uri, GError **error)
     xmlChar *url = xmlGetNoNsProp(task_node, (xmlChar *)"url");
     if (url != NULL) {
         task->fetch_method = TASK_FETCH_UNPACK;
-        task->fetch.url = g_strdup((gchar *)url);
+        task->fetch.url = soup_uri_new((char *)url);
         xmlFree(url);
     } else {
         task->fetch_method = TASK_FETCH_INSTALL_PACKAGE;

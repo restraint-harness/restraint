@@ -12,8 +12,15 @@ static gboolean restraint_task_fetch(Task *task, GError **error) {
     GError *tmp_error = NULL;
     switch (task->fetch_method) {
         case TASK_FETCH_UNPACK:
-            g_critical("XXX IMPLEMENTME");
-            return FALSE;
+            if (g_strcmp0(soup_uri_get_scheme(task->fetch.url), "git") == 0) {
+                if (!restraint_task_fetch_git(task)) {
+                    // XXX error???
+                    return FALSE;
+                }
+            } else {
+                g_critical("XXX IMPLEMENTME");
+                return FALSE;
+            }
             break;
         case TASK_FETCH_INSTALL_PACKAGE:
             if (!restraint_install_package(task->fetch.package_name, &tmp_error)) {
@@ -85,7 +92,7 @@ void restraint_task_free(Task *task) {
             g_free(task->fetch.package_name);
             break;
         case TASK_FETCH_UNPACK:
-            g_free(task->fetch.url);
+            soup_uri_free(task->fetch.url);
             break;
         default:
             g_return_if_reached();

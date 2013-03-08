@@ -16,6 +16,7 @@ static void test_package_installation_failure_aborts(void) {
         "123",
         soup_uri_new("http://localhost:8000/recipes/123/tasks/456/"),
         "/distribution/install",
+        "/mnt/tests/distribution/install",
         TASK_FETCH_INSTALL_PACKAGE,
         { .package_name = "beaker-distribution-install-fail" },
         FALSE,

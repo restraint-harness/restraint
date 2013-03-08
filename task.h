@@ -17,12 +17,14 @@ typedef struct {
     SoupURI *task_uri;
     /* Task name, populated from task metadata if Beaker doesn't tell us */
     gchar *name;
+    /* Filesystem path where the task is unpacked */
+    gchar *path;
     /* How to fetch this task */
     TaskFetchMethod fetch_method;
     /* Where/what to fetch this task from */
     union {
         gchar *package_name; // when TASK_FETCH_INSTALL_PACKAGE
-        gchar *url; // when TASK_FETCH_UNPACK
+        SoupURI *url; // when TASK_FETCH_UNPACK
     } fetch;
     /* Has this task been started already? */
     gboolean started;
@@ -31,6 +33,7 @@ typedef struct {
 } Task;
 
 Task *restraint_task_new(void);
+gboolean restraint_task_fetch_git(Task *task);
 void restraint_task_run(Task *task);
 void restraint_task_free(Task *task);
 
