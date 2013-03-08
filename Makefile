@@ -6,7 +6,14 @@ CFLAGS ?= -O -g
 PACKAGES = glib-2.0 gobject-2.0 gio-2.0 libxml-2.0 libsoup-2.4
 CFLAGS += -Wall -Werror -std=c99 $(shell pkg-config --cflags $(PACKAGES))
 ifeq ($(STATIC),1)
-    LIBS = -Wl,-Bstatic $(shell pkg-config --libs $(PACKAGES)) -Wl,-Bdynamic -pthread -lrt
+    # The right thing to do here is `pkg-config --libs --static`, which would 
+    # include Libs.private in the link command.
+    # But really old pkg-config versions don't understand that so let's just 
+    # hardcode the "private" libs here.
+    # The -( -) grouping means we don't have to worry about getting all the 
+    # dependent libs in the right order (normally pkg-config would do that for 
+    # us).
+    LIBS = -Wl,-Bstatic -Wl,-\( $(shell pkg-config --libs $(PACKAGES)) -lgmodule-2.0 -llzma -lbz2 -lz -lffi -Wl,-\) -Wl,-Bdynamic -pthread -lrt -lresolv -ldl -lm
 else
     LIBS = $(shell pkg-config --libs $(PACKAGES))
 endif
