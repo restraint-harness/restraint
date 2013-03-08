@@ -47,6 +47,16 @@ check: $(TEST_PROGS)
 	G_SLICE="debug-blocks" \
 	$(GTESTER) --verbose $^
 
+.PHONY: valgrind
+valgrind: $(TEST_PROGS)
+	set -e ; for test in $^ ; do \
+	    PATH="$(CURDIR)/test-dummies:$$PATH" \
+	    G_DEBUG="gc-friendly" \
+	    G_SLICE="always-malloc" \
+	    valgrind --leak-check=full --num-callers=50 --error-exitcode=1 \
+		--suppressions=valgrind.supp ./$$test ; \
+	done
+
 .PHONY: clean
 clean:
 	rm -f restraint $(TEST_PROGS) *.o
