@@ -21,6 +21,7 @@ packages.o: packages.h
 task.o: task.h
 recipe.o: recipe.h task.h
 main.o: recipe.h task.h
+expect_http.o: expect_http.h
 
 TEST_PROGS =
 test_%: test_%.o
@@ -31,8 +32,8 @@ test_packages: packages.o
 test_packages.o: packages.h
 
 TEST_PROGS += test_task
-test_task: task.o packages.o
-test_task.o: task.h
+test_task: task.o packages.o expect_http.o
+test_task.o: task.h expect_http.h
 
 TEST_PROGS += test_recipe
 test_recipe: recipe.o task.o packages.o

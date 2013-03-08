@@ -1,4 +1,5 @@
 
+#include <string.h>
 #include <glib.h>
 
 #include "task.h"
@@ -26,6 +27,38 @@ static gboolean restraint_task_fetch(Task *task, GError **error) {
     return TRUE;
 }
 
+static void restraint_task_abort(Task *task, GError *reason) {
+    g_return_if_fail(task != NULL);
+
+    // XXX reuse SoupSession, use async version tied to main loop
+    SoupSession *soup_session = soup_session_sync_new();
+
+    SoupURI *task_status_uri = soup_uri_new_with_base(task->task_uri, "status");
+    SoupMessage *msg = soup_message_new_from_uri("POST", task_status_uri);
+    soup_uri_free(task_status_uri);
+    g_return_if_fail(msg != NULL);
+
+    gchar *data = NULL;
+    if (reason == NULL) {
+        // this is basically a bug, but to be nice let's handle it
+        g_warning("Aborting task with no reason given");
+        data = soup_form_encode("status", "Aborted", NULL);
+    } else {
+        data = soup_form_encode("status", "Aborted",
+                "message", reason->message, NULL);
+    }
+    soup_message_set_request(msg, "application/x-www-form-urlencoded",
+            SOUP_MEMORY_TAKE, data, strlen(data));
+
+    guint status = soup_session_send_message(soup_session, msg);
+    if (!SOUP_STATUS_IS_SUCCESSFUL(status)) {
+        g_warning("Failed to abort task %s: libsoup status %u", task->task_id, status);
+        // not much else we can do here...
+    }
+
+    g_object_unref(soup_session);
+}
+
 Task *restraint_task_new(void) {
     Task *task = g_slice_new0(Task);
     return task;
@@ -35,7 +68,9 @@ void restraint_task_run(Task *task) {
     GError *error = NULL;
     gboolean fetch_succeeded = restraint_task_fetch(task, &error);
     if (!fetch_succeeded) {
-        // abort it
+        restraint_task_abort(task, error);
+        g_error_free(error);
+        return;
     }
     // do more stuff here
 }
