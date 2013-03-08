@@ -1,5 +1,6 @@
 
 ZLIB = zlib-1.2.7
+BZIP2 = bzip2-1.0.6
 LIBFFI = libffi-3.0.11
 GLIB = glib-2.34.3
 LIBXML2 = libxml2-2.9.0
@@ -12,6 +13,7 @@ LIBSOUP = libsoup-2.38.1
 all: \
     tree/lib/pkgconfig/liblzma.pc \
     tree/lib/pkgconfig/zlib.pc \
+    tree/lib/libbz2.a \
     tree/lib/pkgconfig/libffi.pc \
     tree/lib/pkgconfig/glib-2.0.pc \
     tree/lib/pkgconfig/libxml-2.0.pc \
@@ -23,6 +25,10 @@ tree/lib/pkgconfig/zlib.pc: $(ZLIB)
 	( cd $(ZLIB) && ./configure --prefix=$(CURDIR)/tree --static )
 	$(MAKE) -C $(ZLIB)
 	$(MAKE) -C $(ZLIB) install
+
+tree/lib/libbz2.a: $(BZIP2)
+	$(MAKE) -C $(BZIP2)
+	$(MAKE) -C $(BZIP2) PREFIX=$(CURDIR)/tree install
 
 tree/lib/pkgconfig/liblzma.pc: $(XZ) $(XZ)/.patches-done
 	( cd $(XZ) && ./configure --prefix=$(CURDIR)/tree \
@@ -67,7 +73,9 @@ tree/lib/pkgconfig/libcurl.pc: $(CURL) tree/lib/pkgconfig/zlib.pc
 	$(MAKE) -C $(CURL)
 	$(MAKE) -C $(CURL) install
 
-tree/lib/pkgconfig/libarchive.pc: $(LIBARCHIVE) $(LIBARCHIVE)/.patches-done tree/lib/pkgconfig/zlib.pc
+tree/lib/pkgconfig/libarchive.pc: $(LIBARCHIVE) $(LIBARCHIVE)/.patches-done \
+				  tree/lib/pkgconfig/zlib.pc \
+				  tree/lib/libbz2.a
 	( cd $(LIBARCHIVE) && PKG_CONFIG_PATH=../tree/lib/pkgconfig ./configure --prefix=$(CURDIR)/tree \
 	    --disable-bsdtar --disable-bsdcpio --without-lzma \
 	    --enable-static --disable-shared )
@@ -82,6 +90,9 @@ $(GLIB).tar.xz:
 
 $(ZLIB).tar.gz:
 	curl -O http://zlib.net/$@
+
+$(BZIP2).tar.gz:
+	curl -O http://www.bzip.org/1.0.6/$@
 
 $(LIBXML2).tar.gz:
 	curl -O ftp://xmlsoft.org/libxml2/$@
@@ -131,4 +142,4 @@ $(LIBSOUP)/.patches-done:
 
 .PHONY: clean
 clean:
-	rm -rf $(XZ) $(ZLIB) $(LIBFFI) $(GLIB) $(LIBXML2) $(CURL) $(LIBARCHIVE) $(LIBSOUP) tree
+	rm -rf $(XZ) $(ZLIB) $(BZIP2) $(LIBFFI) $(GLIB) $(LIBXML2) $(CURL) $(LIBARCHIVE) $(LIBSOUP) tree
