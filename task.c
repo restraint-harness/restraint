@@ -87,6 +87,7 @@ void restraint_task_free(Task *task) {
     g_free(task->task_id);
     soup_uri_free(task->task_uri);
     g_free(task->name);
+    g_free(task->path);
     switch (task->fetch_method) {
         case TASK_FETCH_INSTALL_PACKAGE:
             g_free(task->fetch.package_name);

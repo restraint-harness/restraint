@@ -6,6 +6,9 @@
 
 #include "recipe.h"
 
+// XXX make this configurable
+#define TASK_LOCATION "/mnt/tests"
+
 GQuark restraint_recipe_parse_error_quark(void) {
     return g_quark_from_static_string("restraint-recipe-parse-error-quark");
 }
@@ -128,11 +131,22 @@ static Task *parse_task(xmlNode *task_node, SoupURI *recipe_uri, GError **error)
     task->name = g_strdup((gchar *)name);
     xmlFree(name);
 
-    xmlChar *url = xmlGetNoNsProp(task_node, (xmlChar *)"url");
-    if (url != NULL) {
+    xmlNode *fetch = first_child_with_name(task_node, "fetch");
+    if (fetch != NULL) {
         task->fetch_method = TASK_FETCH_UNPACK;
+        xmlChar *url = xmlGetNoNsProp(fetch, (xmlChar *)"url");
+        if (url == NULL) {
+            unrecognised("Task %s has 'fetch' element with 'url' attribute",
+                    task->task_id);
+            goto error;
+        }
         task->fetch.url = soup_uri_new((char *)url);
         xmlFree(url);
+        task->path = g_build_filename(TASK_LOCATION,
+                soup_uri_get_host(task->fetch.url),
+                soup_uri_get_path(task->fetch.url),
+                soup_uri_get_fragment(task->fetch.url),
+                NULL);
     } else {
         task->fetch_method = TASK_FETCH_INSTALL_PACKAGE;
         xmlNode *rpm = first_child_with_name(task_node, "rpm");
@@ -149,6 +163,14 @@ static Task *parse_task(xmlNode *task_node, SoupURI *recipe_uri, GError **error)
         }
         task->fetch.package_name = g_strdup((gchar *)rpm_name);
         xmlFree(rpm_name);
+        xmlChar *rpm_path = xmlGetNoNsProp(rpm, (xmlChar *)"path");
+        if (rpm_path == NULL) {
+            unrecognised("Task %s has 'rpm' element without 'path' attribute",
+                    task->task_id);
+            goto error;
+        }
+        task->path = g_strdup((gchar *)rpm_path);
+        xmlFree(rpm_path);
     }
 
     task->started = FALSE;

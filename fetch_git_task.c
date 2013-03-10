@@ -280,15 +280,6 @@ gboolean restraint_task_fetch_git(Task *task) {
 
     mydata->uri = task->fetch.url;
 
-/*
-#define TASK_LOCATION "./tmp"
-    basePath = g_build_filename(TASK_LOCATION, 
-                            mydata->uri->host,
-                            mydata->uri->path,
-                            mydata->uri->fragment,
-                            NULL);
-*/
-
     a = archive_read_new();
     ext = archive_write_disk_new();
     archive_read_support_filter_all(a);
