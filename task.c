@@ -5,6 +5,14 @@
 #include "task.h"
 #include "packages.h"
 
+GQuark restraint_task_fetch_error(void) {
+    return g_quark_from_static_string("restraint-task-fetch-error-quark");
+}
+
+GQuark restraint_task_fetch_libarchive_error(void) {
+    return g_quark_from_static_string("restraint-task-fetch-libarchive-error-quark");
+}
+
 static gboolean restraint_task_fetch(Task *task, GError **error) {
     g_return_val_if_fail(task != NULL, FALSE);
     g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
@@ -13,8 +21,8 @@ static gboolean restraint_task_fetch(Task *task, GError **error) {
     switch (task->fetch_method) {
         case TASK_FETCH_UNPACK:
             if (g_strcmp0(soup_uri_get_scheme(task->fetch.url), "git") == 0) {
-                if (!restraint_task_fetch_git(task)) {
-                    // XXX error???
+                if (!restraint_task_fetch_git(task, &tmp_error)) {
+                    g_propagate_error(error, tmp_error);
                     return FALSE;
                 }
             } else {
@@ -53,6 +61,7 @@ static void restraint_task_abort(Task *task, GError *reason) {
     } else {
         data = soup_form_encode("status", "Aborted",
                 "message", reason->message, NULL);
+        g_message("Aborting task %s due to error: %s", task->task_id, reason->message);
     }
     soup_message_set_request(msg, "application/x-www-form-urlencoded",
             SOUP_MEMORY_TAKE, data, strlen(data));
