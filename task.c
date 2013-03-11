@@ -107,5 +107,18 @@ void restraint_task_free(Task *task) {
         default:
             g_return_if_reached();
     }
+    g_list_free_full(task->params, (GDestroyNotify) restraint_task_param_free);
     g_slice_free(Task, task);
+}
+
+TaskParam *restraint_task_param_new(void) {
+    return g_slice_new0(TaskParam);
+}
+
+void restraint_task_param_free(TaskParam *task_param) {
+    if (task_param->name != NULL)
+        g_free(task_param->name);
+    if (task_param->value != NULL)
+        g_free(task_param->value);
+    g_slice_free(TaskParam, task_param);
 }

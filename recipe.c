@@ -103,10 +103,41 @@ static xmlNode *first_child_with_name(xmlNode *parent, const gchar *name) {
         RESTRAINT_RECIPE_PARSE_ERROR_UNRECOGNISED, \
         message, ##__VA_ARGS__)
 
+static TaskParam *parse_param(xmlNode *param_node, const gchar *task_id,
+        GError **error) {
+    g_return_val_if_fail(param_node != NULL, NULL);
+    g_return_val_if_fail(error == NULL || *error == NULL, NULL);
+
+    TaskParam *param = restraint_task_param_new();
+
+    xmlChar *param_name = xmlGetNoNsProp(param_node, (xmlChar *)"name");
+    if (param_name == NULL) {
+        unrecognised("Task %s has 'param' element without 'name' attribute", task_id);
+        goto error;
+    }
+    param->name = g_strdup((gchar *)param_name);
+    xmlFree(param_name);
+
+    xmlChar *param_value = xmlGetNoNsProp(param_node, (xmlChar *)"value");
+    if (param_value == NULL) {
+        unrecognised("Task %s has 'param' element without 'value' attribute", task_id);
+        goto error;
+    }
+    param->value = g_strdup((gchar *)param_value);
+    xmlFree(param_value);
+    return param;
+
+error:
+    restraint_task_param_free(param);
+    return NULL;
+}
+
+
 static Task *parse_task(xmlNode *task_node, SoupURI *recipe_uri, GError **error) {
     g_return_val_if_fail(task_node != NULL, NULL);
     g_return_val_if_fail(recipe_uri != NULL, NULL);
     g_return_val_if_fail(error == NULL || *error == NULL, NULL);
+    GError *tmp_error = NULL;
 
     Task *task = restraint_task_new();
     g_return_val_if_fail(task != NULL, NULL);
@@ -173,6 +204,24 @@ static Task *parse_task(xmlNode *task_node, SoupURI *recipe_uri, GError **error)
         xmlFree(rpm_path);
     }
 
+    xmlNode *params_node = first_child_with_name(task_node, "params");
+    if (params_node != NULL) {
+        xmlNode *child = params_node->children;
+        while (child != NULL) {
+            if (child->type == XML_ELEMENT_NODE &&
+                    g_strcmp0((gchar *)child->name, "param") == 0) {
+                TaskParam *param = parse_param(child, task->task_id, &tmp_error);
+                if (param == NULL) {
+                    g_propagate_error(error, tmp_error);
+                    goto error;
+                }
+                task->params = g_list_prepend(task->params, param);
+            }
+            child = child->next;
+        }
+    }
+    task->params = g_list_reverse(task->params);
+
     task->started = FALSE;
     task->finished = FALSE;
     xmlChar *status = xmlGetNoNsProp(task_node, (xmlChar *)"status");
@@ -193,7 +242,7 @@ static Task *parse_task(xmlNode *task_node, SoupURI *recipe_uri, GError **error)
     return task;
 
 error:
-    g_slice_free(Task, task);
+    restraint_task_free(task);
     return NULL;
 }
 

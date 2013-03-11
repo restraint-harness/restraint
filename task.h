@@ -38,15 +38,25 @@ typedef struct {
         gchar *package_name; // when TASK_FETCH_INSTALL_PACKAGE
         SoupURI *url; // when TASK_FETCH_UNPACK
     } fetch;
+    /* List of TaskParams */
+    GList *params;
     /* Has this task been started already? */
     gboolean started;
     /* Has this task finished already? */
     gboolean finished;
 } Task;
 
+typedef struct {
+    gchar *name;
+    gchar *value;
+} TaskParam;
+
 Task *restraint_task_new(void);
 gboolean restraint_task_fetch_git(Task *task, GError **error);
 void restraint_task_run(Task *task);
 void restraint_task_free(Task *task);
+
+TaskParam *restraint_task_param_new(void);
+void restraint_task_param_free(TaskParam *task_param);
 
 #endif

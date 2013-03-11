@@ -28,6 +28,7 @@ static void test_parse_traditional(void) {
     g_assert_cmpstr(task->fetch.package_name, ==, "beaker-distribution-install");
     g_assert_cmpuint(task->started, ==, TRUE);
     g_assert_cmpuint(task->finished, ==, TRUE);
+    g_assert_cmpuint(g_list_length(task->params), ==, 0);
 
     task = g_list_nth_data(recipe->tasks, 1);
     g_assert_cmpstr(task->task_id, ==, "10722632");
@@ -40,6 +41,16 @@ static void test_parse_traditional(void) {
             "distribution-distribution-kernelinstall");
     g_assert_cmpuint(task->started, ==, TRUE);
     g_assert_cmpuint(task->finished, ==, FALSE);
+    g_assert_cmpuint(g_list_length(task->params), ==, 3);
+    TaskParam *param = g_list_nth_data(task->params, 0);
+    g_assert_cmpstr(param->name, ==, "KERNELARGNAME");
+    g_assert_cmpstr(param->value, ==, "kernel");
+    param = g_list_nth_data(task->params, 1);
+    g_assert_cmpstr(param->name, ==, "KERNELARGVARIANT");
+    g_assert_cmpstr(param->value, ==, "xen");
+    param = g_list_nth_data(task->params, 2);
+    g_assert_cmpstr(param->name, ==, "KERNELARGVERSION");
+    g_assert_cmpstr(param->value, ==, "2.6.18-308.el5");
 
     task = g_list_nth_data(recipe->tasks, 2);
     g_assert_cmpstr(task->task_id, ==, "10722633");
@@ -52,6 +63,7 @@ static void test_parse_traditional(void) {
             "distribution-distribution-virt-install");
     g_assert_cmpuint(task->started, ==, FALSE);
     g_assert_cmpuint(task->finished, ==, FALSE);
+    g_assert_cmpuint(g_list_length(task->params), ==, 0);
 
     task = g_list_nth_data(recipe->tasks, 3);
     g_assert_cmpstr(task->task_id, ==, "10722634");
@@ -64,6 +76,7 @@ static void test_parse_traditional(void) {
             "distribution-distribution-virt-start");
     g_assert_cmpuint(task->started, ==, FALSE);
     g_assert_cmpuint(task->finished, ==, FALSE);
+    g_assert_cmpuint(g_list_length(task->params), ==, 0);
 
     restraint_recipe_free(recipe);
 }
