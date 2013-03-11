@@ -40,6 +40,29 @@
    fun:g_signal_new
    fun:g_object_do_class_init
 }
+# I suspect this is hiding real leaks but I'm not sure...
+{
+   all GObject classes
+   Memcheck:Leak
+   ...
+   fun:g_type_class_ref
+}
+
+# dbus-related shenanigans
+{
+    get_session_address_dbus_launch
+    Memcheck:Leak
+    ...
+    fun:get_session_address_dbus_launch
+}
+
+# gio (some heavy hammers here, because gio likes global junk)
+{
+    _g_io_module_get_default
+    Memcheck:Leak
+    ...
+    fun:_g_io_module_get_default
+}
 {
     gresolver thread pool
     Memcheck:Leak
@@ -49,10 +72,10 @@
     fun:g_resolver_lookup_by_name
 }
 
-# I suspect this is hiding real leaks but I'm not sure...
+# glibc
 {
-   all GObject classes
-   Memcheck:Leak
-   ...
-   fun:g_type_class_ref
+    pthread_create
+    Memcheck:Leak
+    ...
+    fun:pthread_create@@*
 }

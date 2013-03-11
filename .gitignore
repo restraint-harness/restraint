@@ -17,6 +17,7 @@
 /third-party/zlib-1.2.7.tar.gz
 /third-party/zlib-1.2.7/
 /third-party/tree/
+/test-data/git-remote/
 /test_fetch_task
 /test_packages
 /test_recipe

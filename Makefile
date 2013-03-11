@@ -1,5 +1,4 @@
 
-GTESTER ?= gtester
 CC = gcc
 CFLAGS ?= -O -g
 
@@ -43,27 +42,20 @@ TEST_PROGS += test_task
 test_task: task.o packages.o fetch_git_task.o expect_http.o
 test_task.o: task.h expect_http.h
 
+test-data/git-remote: test-data/git-remote.tgz
+	tar -C test-data -xzf $<
+
 TEST_PROGS += test_recipe
 test_recipe: recipe.o task.o packages.o fetch_git_task.o
 test_recipe.o: recipe.h task.h
 
 .PHONY: check
-check: $(TEST_PROGS)
-	PATH="$(CURDIR)/test-dummies:$$PATH" \
-	MALLOC_CHECK_=2 \
-	G_DEBUG="fatal_warnings fatal_criticals" \
-	G_SLICE="debug-blocks" \
-	$(GTESTER) --verbose $^
+check: $(TEST_PROGS) test-data/git-remote
+	./run-tests.sh $(TEST_PROGS)
 
 .PHONY: valgrind
-valgrind: $(TEST_PROGS)
-	set -e ; for test in $^ ; do \
-	    PATH="$(CURDIR)/test-dummies:$$PATH" \
-	    G_DEBUG="gc-friendly" \
-	    G_SLICE="always-malloc" \
-	    valgrind --leak-check=full --num-callers=50 --error-exitcode=1 \
-		--suppressions=valgrind.supp ./$$test ; \
-	done
+valgrind: $(TEST_PROGS) test-data/git-remote
+	./run-tests.sh --valgrind $(TEST_PROGS)
 
 .PHONY: clean
 clean:
