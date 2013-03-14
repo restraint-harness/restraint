@@ -3,6 +3,8 @@
 #include <gio/gio.h>
 
 #include "task.h"
+#include "param.h"
+#include "role.h"
 #include "recipe.h"
 
 static void test_parse_traditional(void) {
@@ -15,8 +17,22 @@ static void test_parse_traditional(void) {
     g_assert_no_error(error);
     g_assert(recipe != NULL);
 
+    g_assert_cmpstr(recipe->job_id, ==, "379231");
+    g_assert_cmpstr(recipe->recipe_set_id, ==, "648468");
     g_assert_cmpstr(recipe->recipe_id, ==, "796557");
     g_assert_cmpuint(g_list_length(recipe->tasks), ==, 4);
+    g_assert_cmpstr(recipe->osarch, ==, "x86_64");
+    g_assert_cmpstr(recipe->osdistro, ==, "RHEL5-Server-U8");
+    g_assert_cmpstr(recipe->osmajor, ==, "RedHatEnterpriseLinuxServer5");
+    g_assert_cmpstr(recipe->osvariant, ==, "");
+    g_assert_cmpuint(g_list_length(recipe->roles), ==, 1);
+    Role *role = g_list_nth_data(recipe->roles, 0);
+    g_assert_cmpstr(role->value, ==, "SERVERS");
+    g_assert_cmpstr(role->systems, ==, "hostname1.example.com hostname2.example.com");
+    g_assert_cmpuint(g_list_length(recipe->params), ==, 1);
+    Param *param = g_list_nth_data(recipe->params, 0);
+    g_assert_cmpstr(param->name, ==, "GLOBAL");
+    g_assert_cmpstr(param->value, ==, "foo");
 
     Task *task = g_list_nth_data(recipe->tasks, 0);
     g_assert_cmpstr(task->task_id, ==, "10722631");
@@ -42,7 +58,7 @@ static void test_parse_traditional(void) {
     g_assert_cmpuint(task->started, ==, TRUE);
     g_assert_cmpuint(task->finished, ==, FALSE);
     g_assert_cmpuint(g_list_length(task->params), ==, 3);
-    TaskParam *param = g_list_nth_data(task->params, 0);
+    param = g_list_nth_data(task->params, 0);
     g_assert_cmpstr(param->name, ==, "KERNELARGNAME");
     g_assert_cmpstr(param->value, ==, "kernel");
     param = g_list_nth_data(task->params, 1);
@@ -111,10 +127,58 @@ static void test_parse_git(void) {
     restraint_recipe_free(recipe);
 }
 
+static void test_parse_bad_recipe_params(void) {
+    // Recipe with a bad recipe param value
+    GFile *file = g_file_new_for_path("test-data/recipe-git-bad-recipe-params.xml");
+    g_assert(file != NULL);
+    GError *error = NULL;
+    Recipe *recipe = restraint_recipe_new_from_xml(file, &error);
+    g_object_unref(file);
+    g_assert_cmpstr(error->message, ==, "Recipe 796557 has 'param' element without 'name' attribute");
+    g_assert(recipe == NULL);
+}
+
+static void test_parse_bad_task_params(void) {
+    // Recipe with a bad task param value
+    GFile *file = g_file_new_for_path("test-data/recipe-git-bad-task-params.xml");
+    g_assert(file != NULL);
+    GError *error = NULL;
+    Recipe *recipe = restraint_recipe_new_from_xml(file, &error);
+    g_object_unref(file);
+    g_assert_cmpstr(error->message, ==, "Task 10722631 has 'param' element without 'value' attribute");
+    g_assert(recipe == NULL);
+}
+
+static void test_parse_bad_recipe_roles(void) {
+    // Recipe with a bad recipe role->system value
+    GFile *file = g_file_new_for_path("test-data/recipe-git-bad-recipe-roles.xml");
+    g_assert(file != NULL);
+    GError *error = NULL;
+    Recipe *recipe = restraint_recipe_new_from_xml(file, &error);
+    g_object_unref(file);
+    g_assert_cmpstr(error->message, ==, "Recipe 796557 has 'system' element without 'value' attribute");
+    g_assert(recipe == NULL);
+}
+
+static void test_parse_bad_task_roles(void) {
+    // Recipe with a bad task role value
+    GFile *file = g_file_new_for_path("test-data/recipe-git-bad-task-roles.xml");
+    g_assert(file != NULL);
+    GError *error = NULL;
+    Recipe *recipe = restraint_recipe_new_from_xml(file, &error);
+    g_object_unref(file);
+    g_assert_cmpstr(error->message, ==, "Task 10722631 has 'role' element without 'value' attribute");
+    g_assert(recipe == NULL);
+}
+
 int main(int argc, char *argv[]) {
     g_type_init();
     g_test_init(&argc, &argv, NULL);
     g_test_add_func("/recipe/parse/traditional", test_parse_traditional);
     g_test_add_func("/recipe/parse/git", test_parse_git);
+    g_test_add_func("/recipe/parse/bad/recipe/params", test_parse_bad_recipe_params);
+    g_test_add_func("/recipe/parse/bad/task/params", test_parse_bad_task_params);
+    g_test_add_func("/recipe/parse/bad/recipe/roles", test_parse_bad_recipe_roles);
+    g_test_add_func("/recipe/parse/bad/task/roles", test_parse_bad_task_roles);
     return g_test_run();
 }

@@ -3,6 +3,8 @@
 #include <glib.h>
 
 #include "task.h"
+#include "param.h"
+#include "role.h"
 #include "packages.h"
 
 GQuark restraint_task_fetch_error(void) {
@@ -107,18 +109,7 @@ void restraint_task_free(Task *task) {
         default:
             g_return_if_reached();
     }
-    g_list_free_full(task->params, (GDestroyNotify) restraint_task_param_free);
+    g_list_free_full(task->params, (GDestroyNotify) restraint_param_free);
+    g_list_free_full(task->roles, (GDestroyNotify) restraint_role_free);
     g_slice_free(Task, task);
-}
-
-TaskParam *restraint_task_param_new(void) {
-    return g_slice_new0(TaskParam);
-}
-
-void restraint_task_param_free(TaskParam *task_param) {
-    if (task_param->name != NULL)
-        g_free(task_param->name);
-    if (task_param->value != NULL)
-        g_free(task_param->value);
-    g_slice_free(TaskParam, task_param);
 }

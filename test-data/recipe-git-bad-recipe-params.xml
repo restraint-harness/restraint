@@ -8,7 +8,7 @@
             <ks_appends/>
             <repos/>
             <params>
-                <param name="GLOBAL" value="foo"/>
+                <param value="foo"/>
             </params>
             <roles>
                 <role value="SERVERS">
@@ -31,7 +31,9 @@
             <partitions/>
             <task avg_time="1200" id="10722631" name="/distribution/install" result="New" role="STANDALONE" status="Completed">
                 <fetch url="git://git.beaker-project.org/beaker#Tasks/distribution/install" />
-                <params/>
+                <params>
+                    <param name="foo"/>
+                </params>
                 <roles>
                     <role value="STANDALONE">
                         <system value="hostname1.example.com"/>

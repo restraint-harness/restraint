@@ -4,11 +4,17 @@
 
 #include <glib.h>
 
-#include "task.h"
-
 typedef struct {
     gchar *recipe_id;
+    gchar *job_id;
+    gchar *recipe_set_id;
+    gchar *osdistro;
+    gchar *osmajor;
+    gchar *osvariant;
+    gchar *osarch;
     GList *tasks; // list of Task *
+    GList *params; // list of Params
+    GList *roles; // list of Roles
 } Recipe;
 
 #define RESTRAINT_RECIPE_PARSE_ERROR restraint_recipe_parse_error_quark()
@@ -20,5 +26,4 @@ typedef enum {
 
 Recipe *restraint_recipe_new_from_xml(GFile *recipe_file, GError **error);
 void restraint_recipe_free(Recipe *recipe);
-
 #endif

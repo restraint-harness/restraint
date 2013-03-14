@@ -7,15 +7,8 @@
             <packages/>
             <ks_appends/>
             <repos/>
-            <params>
-                <param name="GLOBAL" value="foo"/>
-            </params>
-            <roles>
-                <role value="SERVERS">
-                    <system value="hostname1.example.com"/>
-                    <system value="hostname2.example.com"/>
-                </role>
-            </roles>
+            <params/>
+            <roles/>
             <distroRequires>
                 <and>
                     <distro_arch op="=" value="x86_64"/>
@@ -33,7 +26,7 @@
                 <fetch url="git://git.beaker-project.org/beaker#Tasks/distribution/install" />
                 <params/>
                 <roles>
-                    <role value="STANDALONE">
+                    <role>
                         <system value="hostname1.example.com"/>
                     </role>
                 </roles>

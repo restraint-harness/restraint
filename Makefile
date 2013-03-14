@@ -20,13 +20,15 @@ endif
 .PHONY: all
 all: restraint
 
-restraint: main.o recipe.o task.o packages.o fetch_git_task.o
+restraint: main.o recipe.o task.o packages.o fetch_git_task.o param.o role.o
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 fetch_git_task.o: task.h
 packages.o: packages.h
 task.o: task.h
 recipe.o: recipe.h task.h
+param.o: param.h
+role.o: role.h
 main.o: recipe.h task.h
 expect_http.o: expect_http.h
 
@@ -39,15 +41,15 @@ test_packages: packages.o
 test_packages.o: packages.h
 
 TEST_PROGS += test_task
-test_task: task.o packages.o fetch_git_task.o expect_http.o
+test_task: task.o packages.o fetch_git_task.o expect_http.o param.o role.o
 test_task.o: task.h expect_http.h
 
 test-data/git-remote: test-data/git-remote.tgz
 	tar -C test-data -xzf $<
 
 TEST_PROGS += test_recipe
-test_recipe: recipe.o task.o packages.o fetch_git_task.o
-test_recipe.o: recipe.h task.h
+test_recipe: recipe.o task.o packages.o fetch_git_task.o param.o role.o
+test_recipe.o: recipe.h task.h param.h
 
 .PHONY: check
 check: $(TEST_PROGS) test-data/git-remote

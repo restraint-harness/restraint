@@ -4,6 +4,7 @@
 
 #include <glib.h>
 #include <libsoup/soup.h>
+#include "recipe.h"
 
 typedef enum {
     TASK_FETCH_INSTALL_PACKAGE,
@@ -25,6 +26,8 @@ GQuark restraint_task_fetch_libarchive_error(void);
 typedef struct {
     /* Beaker ID for this task */
     gchar *task_id;
+    /* Recipe attributes for this job */
+    Recipe *recipe;
     /* Base URI for this task in the Beaker harness API */
     SoupURI *task_uri;
     /* Task name, populated from task metadata if Beaker doesn't tell us */
@@ -38,25 +41,19 @@ typedef struct {
         gchar *package_name; // when TASK_FETCH_INSTALL_PACKAGE
         SoupURI *url; // when TASK_FETCH_UNPACK
     } fetch;
-    /* List of TaskParams */
+    /* List of Params */
     GList *params;
+    /* List of Roles */
+    GList *roles;
     /* Has this task been started already? */
     gboolean started;
     /* Has this task finished already? */
     gboolean finished;
 } Task;
 
-typedef struct {
-    gchar *name;
-    gchar *value;
-} TaskParam;
-
 Task *restraint_task_new(void);
 gboolean restraint_task_fetch_git(Task *task, GError **error);
 void restraint_task_run(Task *task);
 void restraint_task_free(Task *task);
-
-TaskParam *restraint_task_param_new(void);
-void restraint_task_param_free(TaskParam *task_param);
 
 #endif

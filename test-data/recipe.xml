@@ -7,6 +7,15 @@
             <packages/>
             <ks_appends/>
             <repos/>
+            <params>
+                <param name="GLOBAL" value="foo"/>
+            </params>
+            <roles>
+                <role value="SERVERS">
+                    <system value="hostname1.example.com"/>
+                    <system value="hostname2.example.com"/>
+                </role>
+            </roles>
             <distroRequires>
                 <and>
                     <distro_arch op="=" value="x86_64"/>
@@ -23,9 +32,16 @@
             <task avg_time="1200" id="10722631" name="/distribution/install" result="New" role="STANDALONE" status="Completed">
                 <rpm name="beaker-distribution-install" path="/mnt/tests/distribution/install"/>
                 <params/>
+                <roles>
+                    <role value="STANDALONE">
+                        <system value="hostname1.example.com"/>
+                        <system value="hostname2.example.com"/>
+                    </role>
+                </roles>
             </task>
             <task avg_time="7200" id="10722632" name="/distribution/kernelinstall" result="New" role="STANDALONE" status="Running">
                 <rpm name="distribution-distribution-kernelinstall" path="/mnt/tests/distribution/kernelinstall"/>
+                <roles/>
                 <params>
                     <param name="KERNELARGNAME" value="kernel"/>
                     <param name="KERNELARGVARIANT" value="xen"/>

@@ -2,6 +2,7 @@
 #include <glib.h>
 
 #include "task.h"
+#include "recipe.h"
 #include "expect_http.h"
 
 static void test_package_installation_failure_aborts(void) {
@@ -14,11 +15,14 @@ static void test_package_installation_failure_aborts(void) {
     expect_http_add_request(expect_http, &request);
     Task task = {
         "456",
+        NULL,
         soup_uri_new("http://localhost:8000/recipes/123/tasks/456/"),
         "/distribution/install",
         "/mnt/tests/distribution/install",
         TASK_FETCH_INSTALL_PACKAGE,
         { .package_name = "beaker-distribution-install-fail" },
+        NULL,
+        NULL,
         FALSE,
         FALSE,
     };
@@ -30,11 +34,14 @@ static void test_package_installation_failure_aborts(void) {
 static void test_fetch_git(void) {
     Task task = {
         "456",
+        NULL,
         soup_uri_new("http://localhost:8000/recipes/123/tasks/456/"),
         "/distribution/install",
         g_dir_make_tmp("restraint_test_task_XXXXXX", NULL),
         TASK_FETCH_UNPACK,
         { .url = soup_uri_new("git://localhost/repo1?master#restraint/sanity/fetch_git") },
+        NULL,
+        NULL,
         FALSE,
         FALSE,
     };
@@ -69,11 +76,14 @@ static void test_fetch_git_negative(void) {
 
     Task task = {
         "456",
+        NULL,
         soup_uri_new("http://localhost:8000/recipes/123/tasks/456/"),
         "/distribution/install",
         g_dir_make_tmp("restraint_test_task_XXXXXX", NULL),
         TASK_FETCH_UNPACK,
         { .url = soup_uri_new("git://localhost/repo2?master#restraint/sanity/fetch_git") },
+        NULL,
+        NULL,
         FALSE,
         FALSE,
     };
