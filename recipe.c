@@ -170,7 +170,7 @@ error:
 
 static GPtrArray *parse_role_system(xmlNode *system_node, GError **error) {
     GPtrArray *systems;
-    systems = g_ptr_array_new();
+    systems = g_ptr_array_new_with_free_func((GDestroyNotify) g_free);
 
     xmlNode *child = system_node->children;
     while (child != NULL) {
@@ -189,6 +189,7 @@ static GPtrArray *parse_role_system(xmlNode *system_node, GError **error) {
     g_ptr_array_add(systems, NULL);
     return systems;
 error:
+    g_ptr_array_free(systems, TRUE);
     return NULL;
 }
 

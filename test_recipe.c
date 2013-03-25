@@ -135,6 +135,7 @@ static void test_parse_bad_recipe_params(void) {
     Recipe *recipe = restraint_recipe_new_from_xml(file, &error);
     g_object_unref(file);
     g_assert_cmpstr(error->message, ==, "Recipe 796557 has 'param' element without 'name' attribute");
+    g_error_free(error);
     g_assert(recipe == NULL);
 }
 
@@ -146,6 +147,7 @@ static void test_parse_bad_task_params(void) {
     Recipe *recipe = restraint_recipe_new_from_xml(file, &error);
     g_object_unref(file);
     g_assert_cmpstr(error->message, ==, "Task 10722631 has 'param' element without 'value' attribute");
+    g_error_free(error);
     g_assert(recipe == NULL);
 }
 
@@ -157,6 +159,7 @@ static void test_parse_bad_recipe_roles(void) {
     Recipe *recipe = restraint_recipe_new_from_xml(file, &error);
     g_object_unref(file);
     g_assert_cmpstr(error->message, ==, "Recipe 796557 has 'system' element without 'value' attribute");
+    g_error_free(error);
     g_assert(recipe == NULL);
 }
 
@@ -168,6 +171,7 @@ static void test_parse_bad_task_roles(void) {
     Recipe *recipe = restraint_recipe_new_from_xml(file, &error);
     g_object_unref(file);
     g_assert_cmpstr(error->message, ==, "Task 10722631 has 'role' element without 'value' attribute");
+    g_error_free(error);
     g_assert(recipe == NULL);
 }
 
