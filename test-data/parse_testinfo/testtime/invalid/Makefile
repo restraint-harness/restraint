@@ -1,0 +1,27 @@
+METADATA=testinfo.desc
+
+$(METADATA):
+	@touch $(METADATA)
+	@echo "Owner:        Bill Peck <bpeck@redhat.com>" > $(METADATA)
+	@echo "Name:         /TOPLEVEL/filesystems/nfs/testsuite$(TEST)"           >> $(METADATA)
+	@echo "Path:         /mnt/tests/we/ignore/this"       >> $(METADATA)
+	@echo "TestVersion:  1.2"    >> $(METADATA)
+	@echo "Description:  Connectathon Testsuite\
+ 	to test NFS versions 2,3 and 4." >> $(METADATA)
+	@echo "TestTime:     320g"              >> $(METADATA)
+	@echo "RunFor:       kernel"            >> $(METADATA)
+	@echo "RunFor:       nfs-utils"         >> $(METADATA)
+	@echo "Requires:     nfs-utils"         >> $(METADATA)
+	@echo "Requires:     net-tools"         >> $(METADATA)
+	@echo "Requires:     net-snmp"          >> $(METADATA)
+	@echo "Requires:     ethereal"          >> $(METADATA)
+	@echo "Requires:     wireshark"         >> $(METADATA)
+	@echo "Requires:     tcpdump"           >> $(METADATA)
+	@echo "Requires:     rusers"            >> $(METADATA)
+	@echo "Requires:     bzip2"             >> $(METADATA)
+	@echo "Requires:     gcc"               >> $(METADATA)
+	@echo "Priority:     Medium"            >> $(METADATA)
+	@echo "Type:         Regression"        >> $(METADATA)
+	@echo "Type:         Tier1"             >> $(METADATA)
+	@echo "Type:         KernelTier1"       >> $(METADATA)
+	@echo "License:      GPL v2"            >> $(METADATA)

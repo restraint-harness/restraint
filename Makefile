@@ -12,7 +12,7 @@ ifeq ($(STATIC),1)
     # The -( -) grouping means we don't have to worry about getting all the 
     # dependent libs in the right order (normally pkg-config would do that for 
     # us).
-    LIBS = -Wl,-Bstatic -Wl,-\( $(shell pkg-config --libs $(PACKAGES)) -lgmodule-2.0 -llzma -lbz2 -lz -lffi -Wl,-\) -Wl,-Bdynamic -pthread -lrt -lresolv -ldl -lm -lssl
+    LIBS = -Wl,-Bstatic -Wl,-\( $(shell pkg-config --libs $(PACKAGES)) -lgmodule-2.0 -llzma -lbz2 -lz -lffi -Wl,-\) -Wl,-Bdynamic -pthread -lrt -lresolv -ldl -lm -lssl $(LFLAGS)
 else
     LIBS = $(shell pkg-config --libs $(PACKAGES) $(XTRAPKGS))
 endif
@@ -20,7 +20,7 @@ endif
 .PHONY: all
 all: restraint
 
-restraint: main.o recipe.o task.o packages.o fetch_git_task.o param.o role.o
+restraint: main.o recipe.o task.o packages.o fetch_git_task.o param.o role.o metadata.o
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 fetch_git_task.o: task.h
@@ -31,6 +31,7 @@ param.o: param.h
 role.o: role.h
 main.o: recipe.h task.h
 expect_http.o: expect_http.h
+role.o: role.h
 
 TEST_PROGS =
 test_%: test_%.o
@@ -41,15 +42,19 @@ test_packages: packages.o
 test_packages.o: packages.h
 
 TEST_PROGS += test_task
-test_task: task.o packages.o fetch_git_task.o expect_http.o param.o role.o
+test_task: task.o packages.o fetch_git_task.o expect_http.o param.o role.o metadata.o
 test_task.o: task.h expect_http.h
 
 test-data/git-remote: test-data/git-remote.tgz
 	tar -C test-data -xzf $<
 
 TEST_PROGS += test_recipe
-test_recipe: recipe.o task.o packages.o fetch_git_task.o param.o role.o
+test_recipe: recipe.o task.o packages.o fetch_git_task.o param.o role.o metadata.o
 test_recipe.o: recipe.h task.h param.h
+
+TEST_PROGS += test_metadata
+test_metadata: metadata.o task.o fetch_git_task.o param.o role.o packages.o
+test_metadata.o: task.h
 
 .PHONY: check
 check: $(TEST_PROGS) test-data/git-remote

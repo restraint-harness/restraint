@@ -6,6 +6,9 @@
 #include <libsoup/soup.h>
 #include "recipe.h"
 
+#define DEFAULT_MAX_TIME 10 * 60
+#define DEFAULT_ENTRY_POINT "make run"
+
 typedef enum {
     TASK_FETCH_INSTALL_PACKAGE,
     TASK_FETCH_UNPACK,
@@ -49,6 +52,14 @@ typedef struct {
     gboolean started;
     /* Has this task finished already? */
     gboolean finished;
+    /* List of dependencies */
+    GList *dependencies;
+    /* Are we running in rhts_compat mode? */
+    gboolean rhts_compat;
+    /* entry_point, defaults to make run */
+    gchar *entry_point;
+    /* maximum time task is allowed to run before being killed */
+    guint64 max_time;
 } Task;
 
 Task *restraint_task_new(void);

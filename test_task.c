@@ -25,6 +25,10 @@ static void test_package_installation_failure_aborts(void) {
         NULL,
         FALSE,
         FALSE,
+        NULL,
+        TRUE,
+        "make run",
+        0,
     };
     restraint_task_run(&task);
     expect_http_finish(expect_http);
@@ -32,9 +36,10 @@ static void test_package_installation_failure_aborts(void) {
 }
 
 static void test_fetch_git(void) {
+    Recipe recipe = {"1","1","1","RHEL-6.0","RedHatEnterpriseLinux6","Server","x86_64",NULL,NULL,NULL};
     Task task = {
         "456",
-        NULL,
+        &recipe,
         soup_uri_new("http://localhost:8000/recipes/123/tasks/456/"),
         "/distribution/install",
         g_dir_make_tmp("restraint_test_task_XXXXXX", NULL),
@@ -44,6 +49,57 @@ static void test_fetch_git(void) {
         NULL,
         FALSE,
         FALSE,
+        NULL,
+        FALSE,
+        NULL,
+        0,
+    };
+    restraint_task_run(&task);
+
+    // assert it's on disk
+    GFile *base = g_file_new_for_path(task.path);
+    GFile *file = g_file_get_child(base, "Makefile");
+    g_assert(g_file_query_exists (file, NULL) != FALSE);
+    g_object_unref(file);
+    file = g_file_get_child(base, "PURPOSE");
+    g_assert(g_file_query_exists (file, NULL) != FALSE);
+    g_object_unref(file);
+    file = g_file_get_child(base, "metadata");
+    g_assert(g_file_query_exists (file, NULL) != FALSE);
+    g_object_unref(file);
+    file = g_file_get_child(base, "runtest.sh");
+    g_assert(g_file_query_exists (file, NULL) != FALSE);
+    g_object_unref(file);
+    g_object_unref(base);
+
+    // assert this is not rhts_compat task
+    g_assert(task.rhts_compat == FALSE);
+
+    soup_uri_free(task.task_uri);
+    g_free(task.path);
+    g_free(task.entry_point);
+    g_list_free_full(task.dependencies, (GDestroyNotify) g_free);
+    soup_uri_free(task.fetch.url);
+}
+
+static void test_testinfo_generate(void) {
+    Recipe recipe = {"1","1","1","RHEL-6.0","RedHatEnterpriseLinux6","Server","x86_64",NULL,NULL,NULL};
+    Task task = {
+        "456",
+        &recipe,
+        soup_uri_new("http://localhost:8000/recipes/123/tasks/456/"),
+        "/distribution/install",
+        g_dir_make_tmp("restraint_test_task_XXXXXX", NULL),
+        TASK_FETCH_UNPACK,
+        { .url = soup_uri_new("git://localhost/repo1?master#restraint/sanity/testinfo_generate") },
+        NULL,
+        NULL,
+        FALSE,
+        FALSE,
+        NULL,
+        FALSE,
+        NULL,
+        0,
     };
     restraint_task_run(&task);
 
@@ -60,8 +116,13 @@ static void test_fetch_git(void) {
     g_object_unref(file);
     g_object_unref(base);
 
+    // assert this is an rhts_compat task
+    g_assert(task.rhts_compat == TRUE);
+
     soup_uri_free(task.task_uri);
     g_free(task.path);
+    g_free(task.entry_point);
+    g_list_free_full(task.dependencies, (GDestroyNotify) g_free);
     soup_uri_free(task.fetch.url);
 }
 
@@ -74,9 +135,10 @@ static void test_fetch_git_negative(void) {
             204 };
     expect_http_add_request(expect_http, &request);
 
+    Recipe recipe = {"1","1","1","RHEL-6.0","RedHatEnterpriseLinux6","Server","x86_64",NULL,NULL,NULL};
     Task task = {
         "456",
-        NULL,
+        &recipe,
         soup_uri_new("http://localhost:8000/recipes/123/tasks/456/"),
         "/distribution/install",
         g_dir_make_tmp("restraint_test_task_XXXXXX", NULL),
@@ -86,6 +148,10 @@ static void test_fetch_git_negative(void) {
         NULL,
         FALSE,
         FALSE,
+        NULL,
+        FALSE,
+        NULL,
+        0,
     };
     restraint_task_run(&task);
 
@@ -108,5 +174,6 @@ int main(int argc, char *argv[]) {
             test_package_installation_failure_aborts);
     g_test_add_func("/task/fetch_git", test_fetch_git);
     g_test_add_func("/task/fetch_git/negative", test_fetch_git_negative);
+    g_test_add_func("/task/testinfo/generate", test_testinfo_generate);
     return g_test_run();
 }

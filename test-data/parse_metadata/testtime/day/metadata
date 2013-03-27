@@ -1,0 +1,16 @@
+[General]
+name=/restraint/sanity/fetch_git
+owner=Bill Peck <bpeck@redhat.com>
+description=Verifies restraint harness can fetch tasks over git://
+license=GPLv2
+confidential=no
+destructive=no
+
+[restraint]
+entry_point=make run
+#entry_point=./runtest.sh
+#entry_point=autotest-local control-file
+dependencies=httpd;mysql-server
+dependencies[RedHatEnterpriseLinuxServer5]=apache;mysql
+max_time=2d
+repoRequires=restraint/sanity/common

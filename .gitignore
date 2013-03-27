@@ -18,6 +18,8 @@
 /third-party/zlib-1.2.7/
 /third-party/tree/
 /test-data/git-remote/
+/test-data/parse_testinfo/dependencies/*/testinfo.desc
+/test-data/parse_testinfo/testtime/*/testinfo.desc
 /test_fetch_task
 /test_packages
 /test_recipe

@@ -5,6 +5,7 @@
 #include "task.h"
 #include "param.h"
 #include "role.h"
+#include "metadata.h"
 #include "packages.h"
 
 GQuark restraint_task_fetch_error(void) {
@@ -79,6 +80,8 @@ static void restraint_task_abort(Task *task, GError *reason) {
 
 Task *restraint_task_new(void) {
     Task *task = g_slice_new0(Task);
+    task->max_time = DEFAULT_MAX_TIME;
+    task->entry_point = g_strdup(DEFAULT_ENTRY_POINT);
     return task;
 }
 
@@ -86,6 +89,11 @@ void restraint_task_run(Task *task) {
     GError *error = NULL;
     gboolean fetch_succeeded = restraint_task_fetch(task, &error);
     if (!fetch_succeeded) {
+        restraint_task_abort(task, error);
+        g_error_free(error);
+        return;
+    }
+    if (!restraint_metadata_update(task, &error)) {
         restraint_task_abort(task, error);
         g_error_free(error);
         return;
@@ -111,5 +119,7 @@ void restraint_task_free(Task *task) {
     }
     g_list_free_full(task->params, (GDestroyNotify) restraint_param_free);
     g_list_free_full(task->roles, (GDestroyNotify) restraint_role_free);
+    g_free(task->entry_point);
+    g_list_free_full(task->dependencies, (GDestroyNotify) g_free);
     g_slice_free(Task, task);
 }
