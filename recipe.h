@@ -3,6 +3,18 @@
 #define _RESTRAINT_RECIPE_H
 
 #include <glib.h>
+#define LIBSOUP_USE_UNSTABLE_REQUEST_API
+#include <libsoup/soup.h>
+#include <libsoup/soup-requester.h>
+#include <libsoup/soup-request-http.h>
+
+typedef enum {
+    RECIPE_FETCH,
+    RECIPE_FETCHING,
+    RECIPE_PARSE,
+    RECIPE_RUNNING,
+    RECIPE_FAIL,
+} RecipeSetupState;
 
 typedef struct {
     gchar *recipe_id;
@@ -24,6 +36,10 @@ typedef enum {
     RESTRAINT_RECIPE_PARSE_ERROR_UNRECOGNISED, /* xml structure not as we expected */
 } RestraintRecipeParseError;
 
-Recipe *restraint_recipe_new_from_xml(GFile *recipe_file, GError **error);
+gboolean recipe_handler (gpointer user_data);
+void recipe_finish (gpointer user_data);
+void restraint_recipe_parse_xml (GObject *source, GAsyncResult *res, gpointer user_data);
 void restraint_recipe_free(Recipe *recipe);
+
+extern SoupRequester *soup_requester;
 #endif

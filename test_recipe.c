@@ -7,6 +7,8 @@
 #include "role.h"
 #include "recipe.h"
 
+SoupSession *soup_session;
+
 static void test_parse_traditional(void) {
     // This is a "traditional" recipe, where all tasks come from the task library.
     GFile *file = g_file_new_for_path("test-data/recipe.xml");

@@ -8,87 +8,18 @@
 #include "param.h"
 #include "role.h"
 #include "task.h"
+#include "server.h"
 
 // XXX make this configurable
 #define TASK_LOCATION "/mnt/tests"
 
+xmlParserCtxt *ctxt = NULL;
+
+const size_t buf_size = 4096;
+gchar buf[4096];
+
 GQuark restraint_recipe_parse_error_quark(void) {
     return g_quark_from_static_string("restraint-recipe-parse-error-quark");
-}
-
-static xmlDoc *parse_xml_from_gfile(GFile *recipe_file, GError **error) {
-    g_return_val_if_fail(recipe_file != NULL, NULL);
-    g_return_val_if_fail(error == NULL || *error == NULL, NULL);
-
-    GError *tmp_error = NULL;
-    GInputStream *in = G_INPUT_STREAM(g_file_read(recipe_file,
-            /* cancellable */ NULL, &tmp_error));
-    if (in == NULL) {
-        g_propagate_error(error, tmp_error);
-        return NULL;
-    }
-
-    const size_t buf_size = 4096;
-    char buf[buf_size];
-
-    gssize read = g_input_stream_read(in, buf, buf_size, /* cancellable */ NULL,
-            &tmp_error);
-    if (read < 0) {
-        g_propagate_error(error, tmp_error);
-        g_object_unref(in);
-        return NULL;
-    }
-
-    char *recipe_filename = g_file_get_path(recipe_file);
-    xmlParserCtxt *ctxt = xmlCreatePushParserCtxt(NULL, NULL, buf, read,
-            recipe_filename);
-    g_free(recipe_filename);
-    if (ctxt == NULL) {
-        g_critical("xmlCreatePushParserCtxt failed");
-        g_object_unref(in);
-        return NULL;
-    }
-
-    while (read > 0) {
-        read = g_input_stream_read(in, buf, buf_size, /* cancellable */ NULL,
-                &tmp_error);
-        if (read < 0) {
-            g_propagate_error(error, tmp_error);
-            xmlFreeParserCtxt(ctxt);
-            g_object_unref(in);
-            return NULL;
-        }
-
-        xmlParserErrors result = xmlParseChunk(ctxt, buf, read,
-                /* terminator */ 0);
-        if (result != XML_ERR_OK) {
-            xmlError *xmlerr = xmlCtxtGetLastError(ctxt);
-            g_set_error_literal(error, RESTRAINT_RECIPE_PARSE_ERROR,
-                    RESTRAINT_RECIPE_PARSE_ERROR_BAD_SYNTAX,
-                    xmlerr != NULL ? xmlerr->message : "Unknown libxml error");
-            g_object_unref(in);
-            xmlFreeDoc(ctxt->myDoc);
-            xmlFreeParserCtxt(ctxt);
-            g_object_unref(in);
-            return NULL;
-        }
-    }
-
-    g_object_unref(in);
-    xmlParserErrors result = xmlParseChunk(ctxt, buf, 0, /* terminator */ 1);
-    if (result != XML_ERR_OK) {
-        xmlError *xmlerr = xmlCtxtGetLastError(ctxt);
-        g_set_error_literal(error, RESTRAINT_RECIPE_PARSE_ERROR,
-                RESTRAINT_RECIPE_PARSE_ERROR_BAD_SYNTAX,
-                xmlerr != NULL ? xmlerr->message : "Unknown libxml error");
-        xmlFreeDoc(ctxt->myDoc);
-        xmlFreeParserCtxt(ctxt);
-        return NULL;
-    }
-
-    xmlDoc *doc = ctxt->myDoc;
-    xmlFreeParserCtxt(ctxt);
-    return doc;
 }
 
 static xmlNode *first_child_with_name(xmlNode *parent, const gchar *name) {
@@ -363,24 +294,31 @@ error:
     return NULL;
 }
 
-Recipe *restraint_recipe_new_from_xml(GFile *recipe_file, GError **error) {
-    g_return_val_if_fail(recipe_file != NULL, NULL);
+void restraint_recipe_free(Recipe *recipe) {
+    g_return_if_fail(recipe != NULL);
+    g_free(recipe->recipe_id);
+    g_free(recipe->job_id);
+    g_free(recipe->recipe_set_id);
+    g_free(recipe->osdistro);
+    g_free(recipe->osmajor);
+    g_free(recipe->osvariant);
+    g_free(recipe->osarch);
+    g_list_free_full(recipe->tasks, (GDestroyNotify) restraint_task_free);
+    g_list_free_full(recipe->params, (GDestroyNotify) restraint_param_free);
+    g_list_free_full(recipe->roles, (GDestroyNotify) restraint_role_free);
+    g_slice_free(Recipe, recipe);
+}
+
+static Recipe *
+recipe_parse (xmlDoc *doc, SoupURI *recipe_uri, GError **error)
+{
+    g_return_val_if_fail(doc != NULL, NULL);
+    g_return_val_if_fail(recipe_uri != NULL, NULL);
     g_return_val_if_fail(error == NULL || *error == NULL, NULL);
 
     GError *tmp_error = NULL;
-    xmlDoc *doc = NULL;
-    SoupURI *recipe_uri = NULL;
+    gint i = 0;
     Recipe *result = g_slice_new0(Recipe);
-
-    doc = parse_xml_from_gfile(recipe_file, &tmp_error);
-    if (doc == NULL) {
-        g_propagate_error(error, tmp_error);
-        goto error;
-    }
-
-    gchar *recipe_uri_string = g_file_get_uri(recipe_file);
-    recipe_uri = soup_uri_new(recipe_uri_string);
-    g_free(recipe_uri_string);
 
     xmlNode *job = xmlDocGetRootElement(doc);
     if (job == NULL || g_strcmp0((gchar *)job->name, "job") != 0) {
@@ -419,6 +357,7 @@ Recipe *restraint_recipe_new_from_xml(GFile *recipe_file, GError **error) {
             }
             /* link task to recipe for additional attributes */
             task->recipe = result;
+            task->order = i++;
             tasks = g_list_prepend(tasks, task);
         } else
         if (child->type == XML_ELEMENT_NODE &&
@@ -446,30 +385,176 @@ Recipe *restraint_recipe_new_from_xml(GFile *recipe_file, GError **error) {
     tasks = g_list_reverse(tasks);
 
     result->tasks = tasks;
-    soup_uri_free(recipe_uri);
-    xmlFreeDoc(doc);
     return result;
 
 error:
     restraint_recipe_free(result);
-    if (recipe_uri != NULL)
-        soup_uri_free(recipe_uri);
-    if (doc != NULL)
-        xmlFreeDoc(doc);
     return NULL;
 }
 
-void restraint_recipe_free(Recipe *recipe) {
-    g_return_if_fail(recipe != NULL);
-    g_free(recipe->recipe_id);
-    g_free(recipe->job_id);
-    g_free(recipe->recipe_set_id);
-    g_free(recipe->osdistro);
-    g_free(recipe->osmajor);
-    g_free(recipe->osvariant);
-    g_free(recipe->osarch);
-    g_list_free_full(recipe->tasks, (GDestroyNotify) restraint_task_free);
-    g_list_free_full(recipe->params, (GDestroyNotify) restraint_param_free);
-    g_list_free_full(recipe->roles, (GDestroyNotify) restraint_role_free);
-    g_slice_free(Recipe, recipe);
+static void
+read_finish (GObject *stream, GAsyncResult *result, gpointer user_data)
+{
+    AppData *app_data = (AppData *) user_data;
+    gssize size;
+
+    size = g_input_stream_read_finish (G_INPUT_STREAM (stream),
+                                         result, &app_data->error);
+
+    if (app_data->error || size < 0) {
+        g_object_unref(stream);
+        app_data->state = RECIPE_FAIL;
+        return;
+    } else if (size == 0) {
+        // Finished Reading
+        xmlParserErrors result = xmlParseChunk(ctxt, buf, 0, /* terminator */ 1);
+        if (result != XML_ERR_OK) {
+            xmlError *xmlerr = xmlCtxtGetLastError(ctxt);
+            g_set_error_literal(&app_data->error, RESTRAINT_RECIPE_PARSE_ERROR,
+                    RESTRAINT_RECIPE_PARSE_ERROR_BAD_SYNTAX,
+                    xmlerr != NULL ? xmlerr->message : "Unknown libxml error");
+            xmlFreeDoc(ctxt->myDoc);
+            xmlFreeParserCtxt(ctxt);
+            ctxt = NULL;
+            g_object_unref(stream);
+            /* Set us back to idle so we can accept a valid recipe */
+            app_data->state = RECIPE_FAIL;
+            return;
+        }
+        g_object_unref(stream);
+        app_data->state = RECIPE_PARSE;
+        return;
+    } else {
+        // Read
+        if (!ctxt) {
+            ctxt = xmlCreatePushParserCtxt(NULL, NULL, buf, size, app_data->recipe_url);
+            if (ctxt == NULL) {
+                g_critical("xmlCreatePushParserCtxt failed");
+                /* Set us back to idle so we can accept a valid recipe */
+                app_data->state = RECIPE_FAIL;
+                return;
+            }
+        } else {
+            xmlParserErrors result = xmlParseChunk(ctxt, buf, size,
+                    /* terminator */ 0);
+            if (result != XML_ERR_OK) {
+                xmlError *xmlerr = xmlCtxtGetLastError(ctxt);
+                g_set_error_literal(&app_data->error, RESTRAINT_RECIPE_PARSE_ERROR,
+                        RESTRAINT_RECIPE_PARSE_ERROR_BAD_SYNTAX,
+                        xmlerr != NULL ? xmlerr->message : "Unknown libxml error");
+                xmlFreeDoc(ctxt->myDoc);
+                xmlFreeParserCtxt(ctxt);
+                ctxt = NULL;
+                g_object_unref(stream);
+                /* Set us back to idle so we can accept a valid recipe */
+                app_data->state = RECIPE_FAIL;
+                return;
+            }
+        }
+        g_input_stream_read_async (G_INPUT_STREAM (stream),
+                                   buf,
+                                   buf_size,
+                                   G_PRIORITY_DEFAULT,
+                                   /* cancellable */ NULL,
+                                   read_finish, user_data);
+    }
+
+}
+
+void
+restraint_recipe_parse_xml (GObject *source, GAsyncResult *res, gpointer user_data)
+{
+    AppData *app_data = (AppData *) user_data;
+    GInputStream *stream;
+
+    stream = soup_request_send_finish (SOUP_REQUEST (source), res, &app_data->error);
+    if (!stream) {
+        app_data->state = RECIPE_FAIL;
+        return;
+    }
+
+    g_input_stream_read_async (stream,
+                               buf,
+                               buf_size,
+                               G_PRIORITY_DEFAULT,
+                               /* cancellable */ NULL,
+                               read_finish, user_data);
+
+
+    return;
+}
+
+void recipe_finish (gpointer user_data)
+{
+    AppData *app_data = (AppData *) user_data;
+
+    if (app_data->error)
+        g_print ("recipe_finish %s\n", app_data->error->message);
+    if (app_data->recipe) {
+        restraint_recipe_free(app_data->recipe);
+        app_data->recipe = NULL;
+    }
+    app_data->state = RECIPE_FETCH;
+    app_data->recipe_handler_id = 0;
+    return;
+}
+
+gboolean
+recipe_handler (gpointer user_data)
+{
+    AppData *app_data = (AppData *) user_data;
+    SoupURI *recipe_uri;
+    SoupRequest *request;
+    GString *msg = g_string_new(NULL);
+    gboolean result = TRUE;
+
+    switch (app_data->state) {
+        case RECIPE_FETCH:
+            g_string_printf(msg, "Fetching recipe: %s\n", app_data->recipe_url);
+            app_data->state = RECIPE_FETCHING;
+            request = soup_requester_request(soup_requester, app_data->recipe_url, NULL);
+            soup_request_send_async(request, /* cancellable */ NULL, restraint_recipe_parse_xml, app_data);
+            g_object_unref (request);
+            break;
+        case RECIPE_PARSE:
+            g_string_printf(msg, "Parsing recipe\n");
+            recipe_uri = soup_uri_new(app_data->recipe_url);
+            app_data->recipe = recipe_parse(ctxt->myDoc, recipe_uri, &app_data->error);
+            soup_uri_free(recipe_uri);
+            xmlFreeParserCtxt(ctxt);
+            xmlFreeDoc(ctxt->myDoc);
+            ctxt = NULL;
+            if (app_data->recipe && ! app_data->error) {
+                app_data->tasks = app_data->recipe->tasks;
+                app_data->task_handler_id = g_idle_add_full(G_PRIORITY_DEFAULT_IDLE,
+                                                            task_handler,
+                                                            app_data,
+                                                            task_finish);
+                app_data->state = RECIPE_RUNNING;
+            } else {
+                app_data->state = RECIPE_FAIL;
+            }
+            break;
+        case RECIPE_RUNNING:
+            // Did we finish?
+            if (app_data->task_handler_id == 0) {
+                result = FALSE;
+            }
+            break;
+        case RECIPE_FAIL:
+            g_warning("error: %s\n", app_data->error->message);
+            g_string_printf(msg, "Recipe error: %s\n", app_data->error->message);
+            g_error_free(app_data->error);
+            app_data->error = NULL;
+            // We are done. remove ourselves so we can run another recipe.
+            result = FALSE;
+            break;
+        default:
+            break;
+    }
+    connections_write(app_data->connections, msg);
+    g_string_free(msg, TRUE);
+    if (! result)
+        connections_close(app_data);
+    return result;
 }

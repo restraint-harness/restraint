@@ -25,4 +25,5 @@
 /test_recipe
 /test_task
 /restraint
+/restraintd
 /*.o

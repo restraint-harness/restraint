@@ -5,6 +5,8 @@
 #include "task.h"
 #include "metadata.h"
 
+SoupSession *soup_session;
+
 static void test_testinfo_dependencies(void) {
     GError *error = NULL;
     Recipe recipe = {"1","1","1","RHEL-6.0","RedHatEnterpriseLinux6","Server","x86_64",NULL,NULL,NULL};

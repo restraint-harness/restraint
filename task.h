@@ -8,6 +8,18 @@
 
 #define DEFAULT_MAX_TIME 10 * 60
 #define DEFAULT_ENTRY_POINT "make run"
+#define ENV_PREFIX "RSTRNT_"
+
+typedef enum {
+    TASK_FETCH,
+    TASK_METADATA,
+    TASK_ENV,
+    TASK_WATCHDOG,
+    TASK_DEPENDENCIES,
+    TASK_RUN,
+    TASK_RUNNING,
+    TASK_FAIL,
+} TaskSetupState;
 
 typedef enum {
     TASK_FETCH_INSTALL_PACKAGE,
@@ -60,11 +72,24 @@ typedef struct {
     gchar *entry_point;
     /* maximum time task is allowed to run before being killed */
     guint64 max_time;
+    gint order;
+    gchar **env;
+    TaskSetupState state;
+    guint pty_handler_id;
+    guint pid_hanlder_id;
+    GError *error;
 } Task;
 
 Task *restraint_task_new(void);
+gboolean task_handler (gpointer user_data);
+void task_finish (gpointer user_data);
 gboolean restraint_task_fetch_git(Task *task, GError **error);
+gboolean restraint_task_fetch(Task *task, GError **error);
+gboolean restraint_build_env(Task *task, GError **error);
+void restraint_task_abort(Task *task, GError *reason);
 void restraint_task_run(Task *task);
 void restraint_task_free(Task *task);
+gboolean idle_task_setup (gpointer user_data);
+extern SoupSession *soup_session;
 
 #endif

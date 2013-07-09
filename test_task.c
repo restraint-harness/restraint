@@ -5,7 +5,10 @@
 #include "recipe.h"
 #include "expect_http.h"
 
+SoupSession *soup_session;
+
 static void test_package_installation_failure_aborts(void) {
+    soup_session = soup_session_async_new();
     ExpectHttpServer *expect_http = expect_http_start();
     ExpectHttpRequest request = { "POST", "/recipes/123/tasks/456/status",
             "status=Aborted&message=While+installing+package+"

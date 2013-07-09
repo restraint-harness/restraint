@@ -1,8 +1,9 @@
 
 CC = gcc
-CFLAGS ?= -O -g
+#CFLAGS ?= -O -g
+CFLAGS ?= -g
 
-PACKAGES = glib-2.0 gobject-2.0 gio-2.0 libxml-2.0 libsoup-2.4 libarchive
+PACKAGES = glib-2.0 gobject-2.0 gio-2.0 gio-unix-2.0 libxml-2.0 libsoup-2.4 libarchive
 CFLAGS += -Wall -Werror -std=c99 $(shell pkg-config --cflags $(PACKAGES))
 ifeq ($(STATIC),1)
     # The right thing to do here is `pkg-config --libs --static`, which would 
@@ -18,9 +19,12 @@ else
 endif
 
 .PHONY: all
-all: restraint
+all: restraint restraintd
 
-restraint: main.o recipe.o task.o packages.o fetch_git_task.o param.o role.o metadata.o
+restraint: client.o
+	$(CC) $(LDFLAFS) -o $@ $^ $(LIBS)
+
+restraintd: server.o recipe.o task.o packages.o fetch_git_task.o param.o role.o metadata.o
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 fetch_git_task.o: task.h
@@ -29,7 +33,7 @@ task.o: task.h
 recipe.o: recipe.h task.h
 param.o: param.h
 role.o: role.h
-main.o: recipe.h task.h
+server.o: recipe.h task.h
 expect_http.o: expect_http.h
 role.o: role.h
 

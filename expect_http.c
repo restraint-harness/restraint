@@ -29,7 +29,11 @@ ExpectHttpServer *expect_http_start(void) {
 
     g_mutex_init(&expect_http->mutex);
 
-    expect_http->server = soup_server_new(SOUP_SERVER_PORT, 8000, NULL);
+    GMainContext *async_context = g_main_context_new();
+
+    expect_http->server = soup_server_new(SOUP_SERVER_PORT, 8000,
+                                          SOUP_SERVER_ASYNC_CONTEXT, async_context,
+                                          NULL);
     g_assert(expect_http->server != NULL);
     soup_server_add_handler(expect_http->server, NULL,
             expect_http_handler, expect_http, NULL);
