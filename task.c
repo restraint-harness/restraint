@@ -1,6 +1,13 @@
 
 #include <string.h>
+#include <stdlib.h>
 #include <glib.h>
+#include <gio/gio.h>
+#include <time.h>
+#include <sys/types.h>
+#include <signal.h>
+#include <errno.h>
+#include <unistd.h>
 
 #include "task.h"
 #include "param.h"
@@ -8,6 +15,10 @@
 #include "metadata.h"
 #include "packages.h"
 #include "server.h"
+
+GQuark restraint_task_runner_error(void) {
+    return g_quark_from_static_string("restraint-task-runner-error-quark");
+}
 
 GQuark restraint_task_fetch_error(void) {
     return g_quark_from_static_string("restraint-task-fetch-error-quark");
@@ -50,6 +61,235 @@ static void build_param_var(Param *param, GPtrArray *env) {
     g_ptr_array_add(env, g_strdup_printf("%s=%s", param->name, param->value));
 }
 
+static gboolean
+task_io_callback (GIOChannel *io, GIOCondition condition, gpointer user_data) {
+    AppData *app_data = (AppData *) user_data;
+    Task *task = (Task *) app_data->tasks->data;
+
+    GString *s = g_string_new(NULL);
+
+    if (condition & G_IO_IN) {
+        switch (g_io_channel_read_line_string(io, s, NULL, &task->error)) {
+          case G_IO_STATUS_NORMAL:
+            /* Push data to our connections.. */
+            connections_write(app_data->connections, s);
+            return TRUE;
+
+          case G_IO_STATUS_ERROR:
+             g_printerr("IO error: %s\n", task->error->message);
+             return FALSE;
+
+          case G_IO_STATUS_EOF:
+             g_print("finished!\n");
+             return FALSE;
+
+          case G_IO_STATUS_AGAIN:
+             g_warning("Not ready.. try again.");
+             return TRUE;
+
+          default:
+             g_return_val_if_reached(FALSE);
+             break;
+        }
+    }
+    if (condition & G_IO_HUP){
+        return FALSE;
+    }
+
+    return FALSE;
+}
+
+static void
+task_pid_callback (GPid pid, gint status, gpointer user_data)
+{
+    AppData *app_data = (AppData *) user_data;
+    Task *task = (Task *) app_data->tasks->data;
+
+    task->result = status;
+    if (task->result != 0) {
+        if (task->state == TASK_ABORTED) {
+            g_set_error(&task->error, RESTRAINT_TASK_RUNNER_ERROR,
+                        RESTRAINT_TASK_RUNNER_WATCHDOG_ERROR,
+                        "Local watchdog expired! Killed %i with %i", task->pid, SIGKILL);
+        } else if (task->state == TASK_CANCELLED) {
+            g_set_error(&task->error, RESTRAINT_TASK_RUNNER_ERROR,
+                        RESTRAINT_TASK_RUNNER_WATCHDOG_ERROR,
+                        "Cancelled by user! Killed %i with %i", task->pid, SIGKILL);
+        } else {
+            g_set_error(&task->error, RESTRAINT_TASK_RUNNER_ERROR,
+                        RESTRAINT_TASK_RUNNER_RC_ERROR,
+                        "%s returned non-zero %i", *task->entry_point, task->result);
+        }
+    }
+}
+
+static void
+task_pid_finish (gpointer user_data)
+{
+    AppData *app_data = (AppData *) user_data;
+    Task *task = (Task *) app_data->tasks->data;
+
+    // Remove heartbeat handler
+    if (task->heartbeat_handler_id) {
+        g_source_remove(task->heartbeat_handler_id);
+        task->heartbeat_handler_id = 0;
+    }
+    // Remove local watchdog handler
+    if (task->timeout_handler_id) {
+        g_source_remove(task->timeout_handler_id);
+        task->timeout_handler_id = 0;
+    }
+
+    if (task->state != TASK_CANCELLED) {
+        if (task->error)
+            task->state = TASK_FAIL;
+        else
+            task->state = TASK_COMPLETE;
+    }
+
+    // Add the task_handler back to finish.
+    app_data->task_handler_id = g_idle_add_full(G_PRIORITY_DEFAULT_IDLE,
+                                                task_handler, 
+                                                app_data,
+                                                NULL);
+}
+
+static gboolean
+task_timeout_callback (gpointer user_data)
+{
+    AppData *app_data = (AppData *) user_data;
+    Task *task = (Task *) app_data->tasks->data;
+
+    // Kill process pid
+    if (kill (task->pid, SIGKILL) == 0) {
+        task->state = TASK_ABORTED;
+    } else {
+        g_set_error(&task->error, RESTRAINT_TASK_RUNNER_ERROR,
+                    RESTRAINT_TASK_RUNNER_WATCHDOG_ERROR,
+                    "Local watchdog expired! But we failed to kill %i with %i", task->pid, SIGKILL);
+        g_warning("%s\n", task->error->message);
+        // Remove pid handler
+        if (task->pid_handler_id) {
+            g_source_remove(task->pid_handler_id);
+            task->pid_handler_id = 0;
+        }
+    }
+
+    // Remove heartbeat handler
+    if (task->heartbeat_handler_id) {
+        g_source_remove(task->heartbeat_handler_id);
+        task->heartbeat_handler_id = 0;
+    }
+    return FALSE;
+}
+
+static gboolean
+task_heartbeat_callback (gpointer user_data)
+{
+    time_t rawtime;
+    struct tm * timeinfo;
+    GString *msg = g_string_new(NULL);
+    gchar currtime[80];
+    AppData *app_data = (AppData *) user_data;
+    Task *task = (Task *) app_data->tasks->data;
+
+    time (&rawtime);
+    timeinfo = localtime (&rawtime);
+    strftime(currtime,80,"%c", timeinfo);
+    g_string_printf(msg, "[%s] Current Time: %s Localwatchdog at: %s\n", ENV_PREFIX, currtime, task->expire_time);
+    connections_write(app_data->connections, msg);
+    // Log to console.log as well?
+    g_string_free(msg, TRUE);
+    return TRUE;
+}
+
+static gboolean
+task_run (AppData *app_data, GError **error)
+{
+    Task *task = (Task *) app_data->tasks->data;
+    time_t rawtime = time (NULL);
+    gint ret_fd = -1;
+    struct termios term;
+    struct winsize win = {
+        .ws_col = 80, .ws_row = 24,
+        .ws_xpixel = 480, .ws_ypixel = 192,
+    };
+//    gint saved_stderr = dup (STDERR_FILENO);
+
+//    if (saved_stderr < 0) {
+//        g_set_error(&task->error, RESTRAINT_TASK_RUNNER_ERROR,
+//                    RESTRAINT_TASK_RUNNER_STDERR_ERROR,
+//                    "Failed to save stderr");
+//        return FALSE;
+//    }
+
+    task->pid = forkpty (&ret_fd, NULL, &term, &win);
+    if (task->pid < 0) {
+        /* Failed to fork */
+        g_set_error(&task->error, RESTRAINT_TASK_RUNNER_ERROR,
+                    RESTRAINT_TASK_RUNNER_FORK_ERROR,
+                    "Failed to fork!");
+        return FALSE;
+    } else if (task->pid == 0) {
+        /* Child process. */
+        /* Restore stderr.  we may not want to do this.*/
+//        if (dup2 (saved_stderr, STDERR_FILENO) < 0) {
+//            g_set_error(&task->error, RESTRAINT_TASK_RUNNER_ERROR,
+//                        RESTRAINT_TASK_RUNNER_STDERR_ERROR,
+//                        "Failed to restore stderr");
+//            return FALSE;
+//        }
+        /* chdir */
+        if (chdir (task->path) == -1) {
+            g_set_error(&task->error, RESTRAINT_TASK_RUNNER_ERROR,
+                        RESTRAINT_TASK_RUNNER_CHDIR_ERROR,
+                        "Failed to chdir() to %s", task->path);
+            return FALSE;
+        }
+        /* Spawn the intended program. */
+        environ = task->env;
+        if (execvp (*task->entry_point, task->entry_point) == -1) {
+            g_warning("Failed to exec() %s, %s error:%s", *task->entry_point, task->path, strerror(errno));
+            exit(1);
+        }
+    }
+    /* Parent process. */
+//    close (saved_stderr);
+    // Monitor pty pipe
+    GIOChannel *io = g_io_channel_unix_new(ret_fd);
+    task->pty_handler_id = g_io_add_watch_full (io,
+                                                G_PRIORITY_DEFAULT,
+                                                G_IO_IN | G_IO_HUP,
+                                                task_io_callback,
+                                                app_data,
+                                                NULL);
+    // Monitor return pid
+    task->pid_handler_id = g_child_watch_add_full (G_PRIORITY_DEFAULT,
+                                                   task->pid,
+                                                   task_pid_callback,
+                                                   app_data,
+                                                   task_pid_finish);
+
+    struct tm timeinfo = *localtime( &rawtime);
+    timeinfo.tm_sec += task->max_time;
+    mktime(&timeinfo);
+    strftime(task->expire_time,sizeof(task->expire_time),"%c", &timeinfo);
+
+    // Local watchdog event.
+    task->timeout_handler_id = g_timeout_add_seconds_full (G_PRIORITY_DEFAULT,
+                                                           task->max_time,
+                                                           task_timeout_callback,
+                                                           app_data,
+                                                           NULL);
+    // Local heartbeat, log to console and testout.log every 5 minutes
+    task->heartbeat_handler_id = g_timeout_add_seconds_full (G_PRIORITY_DEFAULT,
+                                                           300 /* heartbeat every 5 minutes */,
+                                                           task_heartbeat_callback,
+                                                           app_data,
+                                                           NULL);
+    return TRUE;
+}
+
 static gboolean build_env(Task *task, GError **error) {
     GPtrArray *env = g_ptr_array_new();
     gchar *prefix = "";
@@ -73,9 +313,11 @@ static gboolean build_env(Task *task, GError **error) {
     // HOME and LANG can be overriden by user by passing it as recipe or task params.
     g_ptr_array_add(env, g_strdup_printf("HOME=/root"));
     g_ptr_array_add(env, g_strdup_printf("LANG=en_US.UTF-8"));
+    g_ptr_array_add(env, g_strdup_printf("PATH=/usr/local/bin:usr/bin:/bin:/usr/local/sbin:/usr/sbin"));
 //    g_ptr_array_add(env, g_strdup_printf ("%sGUESTS=%s", prefix, task->recipe->guests));
     g_list_foreach(task->recipe->params, (GFunc) build_param_var, env);
     g_list_foreach(task->params, (GFunc) build_param_var, env);
+    g_ptr_array_add(env, NULL);
     task->env = (gchar **) env->pdata;
     g_ptr_array_free (env, FALSE);
     return TRUE;
@@ -91,7 +333,7 @@ abort_message_complete (SoupSession *session, SoupMessage *msg, void *dummy)
     }
 }
 
-void restraint_task_abort(Task *task, GError *reason) {
+void restraint_task_status(Task *task, gchar *status, GError *reason) {
     g_return_if_fail(task != NULL);
 
     SoupURI *task_status_uri;
@@ -106,12 +348,12 @@ void restraint_task_abort(Task *task, GError *reason) {
     gchar *data = NULL;
     if (reason == NULL) {
         // this is basically a bug, but to be nice let's handle it
-        g_warning("Aborting task with no reason given");
-        data = soup_form_encode("status", "Aborted", NULL);
+        g_warning("%s task with no reason given", status);
+        data = soup_form_encode("status", status, NULL);
     } else {
-        data = soup_form_encode("status", "Aborted",
+        data = soup_form_encode("status", status,
                 "message", reason->message, NULL);
-        g_message("Aborting task %s due to error: %s", task->task_id, reason->message);
+        g_message("%s task %s due to error: %s", status, task->task_id, reason->message);
     }
     soup_message_set_request(msg, "application/x-www-form-urlencoded",
             SOUP_MEMORY_TAKE, data, strlen(data));
@@ -119,10 +361,20 @@ void restraint_task_abort(Task *task, GError *reason) {
     soup_session_queue_message(soup_session, msg, abort_message_complete, NULL);
 }
 
+void
+restraint_task_abort(Task *task, GError *reason) {
+    restraint_task_status (task, "Aborted", reason);
+}
+
+void
+restraint_task_cancel(Task *task, GError *reason) {
+    restraint_task_status (task, "Cancelled", reason);
+}
+
 Task *restraint_task_new(void) {
     Task *task = g_slice_new0(Task);
     task->max_time = DEFAULT_MAX_TIME;
-    task->entry_point = g_strdup(DEFAULT_ENTRY_POINT);
+    task->entry_point = g_strsplit(DEFAULT_ENTRY_POINT, " ", 0);
     return task;
 }
 
@@ -144,32 +396,35 @@ void restraint_task_free(Task *task) {
     }
     g_list_free_full(task->params, (GDestroyNotify) restraint_param_free);
     g_list_free_full(task->roles, (GDestroyNotify) restraint_role_free);
-    g_free(task->entry_point);
+    g_strfreev (task->entry_point);
+    g_strfreev (task->env);
     g_list_free_full(task->dependencies, (GDestroyNotify) g_free);
     g_slice_free(Task, task);
 }
 
-void
-task_finish (gpointer user_data)
-{
-  AppData *app_data = (AppData *) user_data;
-  Task *task = NULL;
-
-  // Iterate to the next task
-  app_data->tasks = g_list_next (app_data->tasks);
-  if (app_data->tasks) {
-    task = (Task *) app_data->tasks->data;
-    // Yes, there is a task. add another task_handler.
-    task->state = TASK_FETCH;
-    g_idle_add_full(G_PRIORITY_DEFAULT_IDLE,
-                    task_handler, 
-                    app_data,
-                    task_finish);
-  } else {
-    // No more tasks, let the recipe_handler know we are done.
-    app_data->task_handler_id = 0;
-  }
-  return;
+static gboolean
+next_task (AppData *app_data, TaskSetupState task_state) {
+    Task *task = app_data->tasks->data;
+    gboolean result = TRUE;
+    app_data->tasks = g_list_next (app_data->tasks);
+    if (app_data->tasks) {
+       task = (Task *) app_data->tasks->data;
+        // Yes, there is a task.
+        task->state = task_state;
+    } else {
+        // No more tasks, let the recipe_handler know we are done.
+        if (app_data->recipe) {
+            restraint_recipe_free(app_data->recipe);
+            app_data->recipe = NULL;
+        }
+        app_data->state = RECIPE_IDLE;
+        app_data->recipe_handler_id = g_idle_add_full(G_PRIORITY_DEFAULT_IDLE,
+                                                      recipe_handler,
+                                                      app_data,
+                                                      NULL);
+        result = FALSE;
+    }
+    return result;
 }
 
 gboolean
@@ -219,7 +474,7 @@ task_handler (gpointer user_data)
       // If not running in rhts_compat mode it will prepend
       // the variables with ENV_PREFIX.
       g_string_printf(msg, "Updating env vars for task: %s\n", task->task_id);
-      if (build_env(task, &task->error)) // FIXME update env arg.
+      if (build_env(task, &task->error))
         task->state = TASK_WATCHDOG;
       else
         task->state = TASK_FAIL;
@@ -244,11 +499,17 @@ task_handler (gpointer user_data)
       //       timeout_handler
       //       heartbeat_handler
       g_string_printf(msg, "Running task: %s\n", task->task_id);
-      result = FALSE;
+      if (task_run (app_data, &task->error))
+        task->state = TASK_RUNNING;
+      else
+        task->state = TASK_FAIL;
       break;
     case TASK_RUNNING:
-      // Check if task->pid_handler_id is still active
-      //          task->pyt_handler_id
+        // TASK is running.
+        // Remove this idle handler
+        // The task_pid_complete will re-add this handler with the 
+        //  state being either TASK_FAIL or TASK_COMPLETE
+        return FALSE;
     case TASK_FAIL:
       // Some step along the way failed.
       if (task->error) {
@@ -257,10 +518,20 @@ task_handler (gpointer user_data)
         restraint_task_abort(task, task->error);
         g_error_free(task->error);
       }
-      result = FALSE;
+      task->state = TASK_COMPLETE;
+      break;
+    case TASK_CANCELLED:
+      g_string_printf(msg, "Cancelling Task : %s\n", task->task_id);
+      restraint_task_cancel(task, NULL);
+      result = next_task (app_data, TASK_CANCELLED);
+      break;
+    case TASK_COMPLETE:
+      // Task completed so iterate to the next task
+      g_string_printf(msg, "Completed Task : %s\n", task->task_id);
+      result = next_task (app_data, TASK_FETCH);
       break;
     default:
-      // We should never get here!
+      return TRUE;
       break;
   }
   connections_write(app_data->connections, msg);

@@ -178,7 +178,6 @@ static void test_parse_bad_task_roles(void) {
 }
 
 int main(int argc, char *argv[]) {
-    g_type_init();
     g_test_init(&argc, &argv, NULL);
     g_test_add_func("/recipe/parse/traditional", test_parse_traditional);
     g_test_add_func("/recipe/parse/git", test_parse_git);

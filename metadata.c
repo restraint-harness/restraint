@@ -68,7 +68,8 @@ gboolean parse_metadata(Task *task, gchar *task_metadata, GError **error) {
         goto error;
     }
     if (entry_point != NULL)
-        task->entry_point = entry_point;
+        task->entry_point = g_strsplit(entry_point, " ", 0);
+    g_free(entry_point);
 
     gchar *max_time = g_key_file_get_locale_string (keyfile,
                                                     "restraint",

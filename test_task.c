@@ -8,7 +8,7 @@
 SoupSession *soup_session;
 
 static void test_package_installation_failure_aborts(void) {
-    soup_session = soup_session_async_new();
+    soup_session = soup_session_new();
     ExpectHttpServer *expect_http = expect_http_start();
     ExpectHttpRequest request = { "POST", "/recipes/123/tasks/456/status",
             "status=Aborted&message=While+installing+package+"
@@ -80,7 +80,7 @@ static void test_fetch_git(void) {
 
     soup_uri_free(task.task_uri);
     g_free(task.path);
-    g_free(task.entry_point);
+    g_strfreev(task.entry_point);
     g_list_free_full(task.dependencies, (GDestroyNotify) g_free);
     soup_uri_free(task.fetch.url);
 }
@@ -124,7 +124,7 @@ static void test_testinfo_generate(void) {
 
     soup_uri_free(task.task_uri);
     g_free(task.path);
-    g_free(task.entry_point);
+    g_strfreev(task.entry_point);
     g_list_free_full(task.dependencies, (GDestroyNotify) g_free);
     soup_uri_free(task.fetch.url);
 }
@@ -171,7 +171,6 @@ static void test_fetch_git_negative(void) {
 }
 
 int main(int argc, char *argv[]) {
-    g_type_init();
     g_test_init(&argc, &argv, NULL);
     g_test_add_func("/task/package_installation_failure_aborts",
             test_package_installation_failure_aborts);

@@ -484,21 +484,6 @@ restraint_recipe_parse_xml (GObject *source, GAsyncResult *res, gpointer user_da
     return;
 }
 
-void recipe_finish (gpointer user_data)
-{
-    AppData *app_data = (AppData *) user_data;
-
-    if (app_data->error)
-        g_print ("recipe_finish %s\n", app_data->error->message);
-    if (app_data->recipe) {
-        restraint_recipe_free(app_data->recipe);
-        app_data->recipe = NULL;
-    }
-    app_data->state = RECIPE_FETCH;
-    app_data->recipe_handler_id = 0;
-    return;
-}
-
 gboolean
 recipe_handler (gpointer user_data)
 {
@@ -512,7 +497,7 @@ recipe_handler (gpointer user_data)
         case RECIPE_FETCH:
             g_string_printf(msg, "Fetching recipe: %s\n", app_data->recipe_url);
             app_data->state = RECIPE_FETCHING;
-            request = soup_requester_request(soup_requester, app_data->recipe_url, NULL);
+            request = soup_session_request(soup_session, app_data->recipe_url, NULL);
             soup_request_send_async(request, /* cancellable */ NULL, restraint_recipe_parse_xml, app_data);
             g_object_unref (request);
             break;
@@ -529,17 +514,14 @@ recipe_handler (gpointer user_data)
                 app_data->task_handler_id = g_idle_add_full(G_PRIORITY_DEFAULT_IDLE,
                                                             task_handler,
                                                             app_data,
-                                                            task_finish);
+                                                            NULL);
                 app_data->state = RECIPE_RUNNING;
             } else {
                 app_data->state = RECIPE_FAIL;
             }
             break;
         case RECIPE_RUNNING:
-            // Did we finish?
-            if (app_data->task_handler_id == 0) {
-                result = FALSE;
-            }
+            return FALSE;
             break;
         case RECIPE_FAIL:
             g_warning("error: %s\n", app_data->error->message);
@@ -547,14 +529,18 @@ recipe_handler (gpointer user_data)
             g_error_free(app_data->error);
             app_data->error = NULL;
             // We are done. remove ourselves so we can run another recipe.
-            result = FALSE;
+            app_data->state = RECIPE_COMPLETE;
             break;
+        case RECIPE_COMPLETE:
+            app_data->state = RECIPE_IDLE;
+            g_string_printf(msg, "Completed recipe\n");
+            result = FALSE;
         default:
             break;
     }
     connections_write(app_data->connections, msg);
     g_string_free(msg, TRUE);
-    if (! result)
+    if (app_data->state == RECIPE_IDLE)
         connections_close(app_data);
     return result;
 }

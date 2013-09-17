@@ -4,6 +4,7 @@
 
 #include <glib.h>
 #include <libsoup/soup.h>
+#include <pty.h>
 #include "recipe.h"
 
 #define DEFAULT_MAX_TIME 10 * 60
@@ -18,7 +19,10 @@ typedef enum {
     TASK_DEPENDENCIES,
     TASK_RUN,
     TASK_RUNNING,
+    TASK_ABORTED,
+    TASK_CANCELLED,
     TASK_FAIL,
+    TASK_COMPLETE,
 } TaskSetupState;
 
 typedef enum {
@@ -37,6 +41,19 @@ typedef enum {
 // error domain for libarchive's errnos
 #define RESTRAINT_TASK_FETCH_LIBARCHIVE_ERROR restraint_task_fetch_libarchive_error()
 GQuark restraint_task_fetch_libarchive_error(void);
+
+#define RESTRAINT_TASK_RUNNER_ERROR restraint_task_runner_error()
+GQuark restraint_task_runner_error(void);
+
+typedef enum {
+  RESTRAINT_TASK_RUNNER_ALREADY_RUNNING_ERROR,
+  RESTRAINT_TASK_RUNNER_WATCHDOG_ERROR,
+  RESTRAINT_TASK_RUNNER_STDERR_ERROR,
+  RESTRAINT_TASK_RUNNER_FORK_ERROR,
+  RESTRAINT_TASK_RUNNER_CHDIR_ERROR,
+  RESTRAINT_TASK_RUNNER_EXEC_ERROR,
+  RESTRAINT_TASK_RUNNER_RC_ERROR,
+} RestraintTaskRunnerError;
 
 typedef struct {
     /* Beaker ID for this task */
@@ -69,14 +86,19 @@ typedef struct {
     /* Are we running in rhts_compat mode? */
     gboolean rhts_compat;
     /* entry_point, defaults to make run */
-    gchar *entry_point;
+    gchar **entry_point;
     /* maximum time task is allowed to run before being killed */
     guint64 max_time;
+    gchar expire_time[80];
     gint order;
     gchar **env;
     TaskSetupState state;
     guint pty_handler_id;
-    guint pid_hanlder_id;
+    guint pid_handler_id;
+    guint timeout_handler_id;
+    guint heartbeat_handler_id;
+    gint result;
+    pid_t pid;
     GError *error;
 } Task;
 
@@ -86,10 +108,12 @@ void task_finish (gpointer user_data);
 gboolean restraint_task_fetch_git(Task *task, GError **error);
 gboolean restraint_task_fetch(Task *task, GError **error);
 gboolean restraint_build_env(Task *task, GError **error);
+void restraint_task_cancel(Task *task, GError *reason);
 void restraint_task_abort(Task *task, GError *reason);
 void restraint_task_run(Task *task);
 void restraint_task_free(Task *task);
 gboolean idle_task_setup (gpointer user_data);
 extern SoupSession *soup_session;
-
+extern char **environ;
+int    kill(pid_t, int);
 #endif

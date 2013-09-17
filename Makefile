@@ -13,9 +13,9 @@ ifeq ($(STATIC),1)
     # The -( -) grouping means we don't have to worry about getting all the 
     # dependent libs in the right order (normally pkg-config would do that for 
     # us).
-    LIBS = -Wl,-Bstatic -Wl,-\( $(shell pkg-config --libs $(PACKAGES)) -lgmodule-2.0 -llzma -lbz2 -lz -lffi -Wl,-\) -Wl,-Bdynamic -pthread -lrt -lresolv -ldl -lm -lssl $(LFLAGS)
+    LIBS = -Wl,-Bstatic -Wl,-\( $(shell pkg-config --libs $(PACKAGES)) -lgmodule-2.0 -llzma -lbz2 -lz -lffi -Wl,-\) -Wl,-Bdynamic -pthread -lrt -lresolv -ldl -lm -lssl -lutil $(LFLAGS)
 else
-    LIBS = $(shell pkg-config --libs $(PACKAGES) $(XTRAPKGS))
+    LIBS = $(shell pkg-config --libs $(PACKAGES) $(XTRAPKGS)) -lutil
 endif
 
 .PHONY: all

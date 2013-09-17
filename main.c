@@ -6,7 +6,6 @@
 #include "task.h"
 
 int main(int argc, char *argv[]) {
-    g_type_init();
 
     GError *error = NULL;
     gchar *run_recipe = NULL;

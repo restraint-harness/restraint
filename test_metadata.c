@@ -38,7 +38,7 @@ static void test_testinfo_dependencies(void) {
     dependency = g_list_nth_data(task.dependencies, 2);
     g_assert_cmpstr(dependency, ==, "postgresql");
     g_list_free_full(task.dependencies, (GDestroyNotify) g_free);
-    g_free(task.entry_point);
+    g_strfreev(task.entry_point);
     soup_uri_free(task.task_uri);
     soup_uri_free(task.fetch.url);
 }
@@ -76,7 +76,7 @@ static void test_testinfo_dependencies_rhtsrequires(void) {
     dependency = g_list_nth_data(task.dependencies, 12);
     g_assert_cmpstr(dependency, ==, "foo");
     g_list_free_full(task.dependencies, (GDestroyNotify) g_free);
-    g_free(task.entry_point);
+    g_strfreev(task.entry_point);
     soup_uri_free(task.task_uri);
     soup_uri_free(task.fetch.url);
 }
@@ -105,7 +105,7 @@ static void test_testinfo_testtime_day(void) {
     restraint_metadata_update(&task, &error);
     g_assert_cmpuint(task.max_time, ==, 60 * 60 * 24 * 2);
     g_list_free_full(task.dependencies, (GDestroyNotify) g_free);
-    g_free(task.entry_point);
+    g_strfreev(task.entry_point);
     soup_uri_free(task.task_uri);
     soup_uri_free(task.fetch.url);
 }
@@ -134,7 +134,7 @@ static void test_testinfo_testtime_hour(void) {
     restraint_metadata_update(&task, &error);
     g_assert_cmpuint(task.max_time, ==, 60 * 60 * 10);
     g_list_free_full(task.dependencies, (GDestroyNotify) g_free);
-    g_free(task.entry_point);
+    g_strfreev(task.entry_point);
     soup_uri_free(task.task_uri);
     soup_uri_free(task.fetch.url);
 }
@@ -165,7 +165,7 @@ static void test_testinfo_testtime_invalid(void) {
     g_assert_cmpstr(error->message, ==, "Task 456: Unrecognised time unit 'G'");
     g_error_free(error);
     g_list_free_full(task.dependencies, (GDestroyNotify) g_free);
-    g_free(task.entry_point);
+    g_strfreev(task.entry_point);
     soup_uri_free(task.task_uri);
     soup_uri_free(task.fetch.url);
 }
@@ -194,7 +194,7 @@ static void test_testinfo_testtime_minute(void) {
     restraint_metadata_update(&task, &error);
     g_assert_cmpuint(task.max_time, ==, 60 * 20);
     g_list_free_full(task.dependencies, (GDestroyNotify) g_free);
-    g_free(task.entry_point);
+    g_strfreev(task.entry_point);
     soup_uri_free(task.task_uri);
     soup_uri_free(task.fetch.url);
 }
@@ -223,7 +223,7 @@ static void test_testinfo_testtime_second(void) {
     restraint_metadata_update(&task, &error);
     g_assert_cmpuint(task.max_time, ==, 200);
     g_list_free_full(task.dependencies, (GDestroyNotify) g_free);
-    g_free(task.entry_point);
+    g_strfreev(task.entry_point);
     soup_uri_free(task.task_uri);
     soup_uri_free(task.fetch.url);
 }
@@ -252,7 +252,7 @@ static void test_testinfo_testtime_default(void) {
     restraint_metadata_update(&task, &error);
     g_assert_cmpuint(task.max_time, ==, DEFAULT_MAX_TIME);
     g_list_free_full(task.dependencies, (GDestroyNotify) g_free);
-    g_free(task.entry_point);
+    g_strfreev(task.entry_point);
     soup_uri_free(task.task_uri);
     soup_uri_free(task.fetch.url);
 }
@@ -288,7 +288,7 @@ static void test_metadata_dependencies(void) {
     dependency = g_list_nth_data(task.dependencies, 2);
     g_assert_cmpstr(dependency, ==, "postgresql");
     g_list_free_full(task.dependencies, (GDestroyNotify) g_free);
-    g_free(task.entry_point);
+    g_strfreev(task.entry_point);
     soup_uri_free(task.task_uri);
     soup_uri_free(task.fetch.url);
 }
@@ -317,7 +317,7 @@ static void test_metadata_testtime_day(void) {
     restraint_metadata_update(&task, &error);
     g_assert_cmpuint(task.max_time, ==, 60 * 60 * 24 * 2);
     g_list_free_full(task.dependencies, (GDestroyNotify) g_free);
-    g_free(task.entry_point);
+    g_strfreev(task.entry_point);
     soup_uri_free(task.task_uri);
     soup_uri_free(task.fetch.url);
 }
@@ -346,7 +346,7 @@ static void test_metadata_testtime_hour(void) {
     restraint_metadata_update(&task, &error);
     g_assert_cmpuint(task.max_time, ==, 60 * 60 * 10);
     g_list_free_full(task.dependencies, (GDestroyNotify) g_free);
-    g_free(task.entry_point);
+    g_strfreev(task.entry_point);
     soup_uri_free(task.task_uri);
     soup_uri_free(task.fetch.url);
 }
@@ -376,7 +376,7 @@ static void test_metadata_testtime_invalid(void) {
     g_assert_cmpstr(error->message, ==, "Task 456: Unrecognised time unit 'G'");
     g_error_free(error);
     g_list_free_full(task.dependencies, (GDestroyNotify) g_free);
-    g_free(task.entry_point);
+    g_strfreev(task.entry_point);
     soup_uri_free(task.task_uri);
     soup_uri_free(task.fetch.url);
 }
@@ -405,7 +405,7 @@ static void test_metadata_testtime_minute(void) {
     restraint_metadata_update(&task, &error);
     g_assert_cmpuint(task.max_time, ==, 60 * 20);
     g_list_free_full(task.dependencies, (GDestroyNotify) g_free);
-    g_free(task.entry_point);
+    g_strfreev(task.entry_point);
     soup_uri_free(task.task_uri);
     soup_uri_free(task.fetch.url);
 }
@@ -434,7 +434,7 @@ static void test_metadata_testtime_second(void) {
     restraint_metadata_update(&task, &error);
     g_assert_cmpuint(task.max_time, ==, 200);
     g_list_free_full(task.dependencies, (GDestroyNotify) g_free);
-    g_free(task.entry_point);
+    g_strfreev(task.entry_point);
     soup_uri_free(task.task_uri);
     soup_uri_free(task.fetch.url);
 }
@@ -465,13 +465,12 @@ static void test_metadata_testtime_default(void) {
     g_error_free(error);
     g_assert_cmpuint(task.max_time, ==, DEFAULT_MAX_TIME);
     g_list_free_full(task.dependencies, (GDestroyNotify) g_free);
-    g_free(task.entry_point);
+    g_strfreev(task.entry_point);
     soup_uri_free(task.task_uri);
     soup_uri_free(task.fetch.url);
 }
 
 int main(int argc, char *argv[]) {
-    g_type_init();
     g_test_init(&argc, &argv, NULL);
     g_test_add_func("/testindo.desc/testtime/day", test_testinfo_testtime_day);
     g_test_add_func("/testindo.desc/testtime/default", test_testinfo_testtime_default);
