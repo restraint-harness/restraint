@@ -2,12 +2,12 @@
 ZLIB = zlib-1.2.8
 BZIP2 = bzip2-1.0.6
 LIBFFI = libffi-3.0.11
-GLIB = glib-2.34.3
+GLIB = glib-2.36.3
 LIBXML2 = libxml2-2.9.0
 CURL = curl-7.29.0
 LIBARCHIVE = libarchive-3.1.2
 XZ = xz-5.0.4
-LIBSOUP = libsoup-2.38.1
+LIBSOUP = libsoup-2.42.2
 
 .PHONY: all
 all: \
@@ -19,7 +19,7 @@ all: \
     tree/lib/pkgconfig/libxml-2.0.pc \
     tree/lib/pkgconfig/libcurl.pc \
     tree/lib/pkgconfig/libarchive.pc \
-    tree/lib/pkgconfig/libsoup-2.38.pc
+    tree/lib/pkgconfig/libsoup-2.4.pc
 
 tree/lib/pkgconfig/zlib.pc: $(ZLIB)
 	( cd $(ZLIB) && ./configure --prefix=$(CURDIR)/tree --static )
@@ -58,7 +58,7 @@ tree/lib/pkgconfig/libxml-2.0.pc: $(LIBXML2) $(LIBXML2)/.patches-done tree/lib/p
 	$(MAKE) -C $(LIBXML2)
 	$(MAKE) -C $(LIBXML2) install
 
-tree/lib/pkgconfig/libsoup-2.38.pc: $(LIBSOUP) $(LIBSOUP)/.patches-done tree/lib/pkgconfig/glib-2.0.pc tree/lib/pkgconfig/libxml-2.0.pc
+tree/lib/pkgconfig/libsoup-2.4.pc: $(LIBSOUP) $(LIBSOUP)/.patches-done tree/lib/pkgconfig/glib-2.0.pc tree/lib/pkgconfig/libxml-2.0.pc
 	( cd $(LIBSOUP) && PKG_CONFIG_PATH=../tree/lib/pkgconfig \
               ./configure --prefix=$(CURDIR)/tree \
 	      --disable-glibtest --disable-tls-check --without-gnome --enable-static \
@@ -87,7 +87,7 @@ $(LIBFFI).tar.gz:
 	curl -O ftp://sourceware.org/pub/libffi/$@
 
 $(GLIB).tar.xz:
-	curl -O http://ftp.gnome.org/pub/gnome/sources/glib/2.34/$@
+	curl -O http://ftp.gnome.org/pub/gnome/sources/glib/2.36/$@
 
 $(ZLIB).tar.gz:
 	curl -O http://zlib.net/$@
@@ -108,7 +108,7 @@ $(XZ).tar.gz:
 	curl -O http://tukaani.org/xz/$@
 
 $(LIBSOUP).tar.xz:
-	curl -O http://ftp.gnome.org/pub/GNOME/sources/libsoup/2.38/$@
+	curl -O http://ftp.gnome.org/pub/GNOME/sources/libsoup/2.42/$@
 
 %: %.tar.gz
 	tar -xzf $<
