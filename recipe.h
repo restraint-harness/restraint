@@ -10,6 +10,7 @@ typedef enum {
     RECIPE_FETCH,
     RECIPE_FETCHING,
     RECIPE_PARSE,
+    RECIPE_RUN,
     RECIPE_RUNNING,
     RECIPE_FAIL,
     RECIPE_COMPLETE,
@@ -26,6 +27,7 @@ typedef struct {
     GList *tasks; // list of Task *
     GList *params; // list of Params
     GList *roles; // list of Roles
+    SoupURI *recipe_uri;
 } Recipe;
 
 #define RESTRAINT_RECIPE_PARSE_ERROR restraint_recipe_parse_error_quark()

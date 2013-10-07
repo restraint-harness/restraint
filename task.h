@@ -7,11 +7,13 @@
 #include <pty.h>
 #include "recipe.h"
 
-#define DEFAULT_MAX_TIME 10 * 60
+#define DEFAULT_MAX_TIME 10 * 60 // default amount of time before local watchdog kills process
 #define DEFAULT_ENTRY_POINT "make run"
 #define ENV_PREFIX "RSTRNT_"
+#define EWD_TIME 5 * 60 // amount of time to add to local watchdog for externl watchdog
 
 typedef enum {
+    TASK_IDLE,
     TASK_FETCH,
     TASK_METADATA,
     TASK_ENV,
@@ -53,6 +55,7 @@ typedef enum {
   RESTRAINT_TASK_RUNNER_CHDIR_ERROR,
   RESTRAINT_TASK_RUNNER_EXEC_ERROR,
   RESTRAINT_TASK_RUNNER_RC_ERROR,
+  RESTRAINT_TASK_RUNNER_RESULT_ERROR,
 } RestraintTaskRunnerError;
 
 typedef struct {
@@ -98,6 +101,7 @@ typedef struct {
     guint timeout_handler_id;
     guint heartbeat_handler_id;
     gint result;
+    gint pid_result;
     pid_t pid;
     GError *error;
 } Task;

@@ -19,6 +19,7 @@ typedef struct {
   GIOChannel *channel;
 } ClientConnection;
 
-void connections_close (AppData *app_data);
-void connections_write (GList *connections, GString *s);
+void connections_close (AppData *app_data, gboolean monitor);
+void connections_write (GList *connections, GString *s, gint stream_type, gint status);
+void connections_error (GList *connections, GError *error);
 #endif
