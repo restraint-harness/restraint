@@ -70,4 +70,4 @@ valgrind: $(TEST_PROGS) test-data/git-remote
 
 .PHONY: clean
 clean:
-	rm -f restraint $(TEST_PROGS) *.o
+	rm -f restraint restraintd $(TEST_PROGS) *.o

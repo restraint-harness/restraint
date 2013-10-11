@@ -58,6 +58,21 @@ gboolean parse_metadata(Task *task, gchar *task_metadata, GError **error) {
         g_propagate_error(error, tmp_error);
         goto error;
     }
+
+    gchar *task_name = g_key_file_get_locale_string(keyfile,
+                                                      "General",
+                                                      "name",
+                                                      task->recipe->osmajor,
+                                                      &tmp_error);
+    if (tmp_error != NULL) {
+        g_propagate_error(error, tmp_error);
+        goto error;
+    }
+    if (task_name == NULL)
+        unrecognised(RESTRAINT_METADATA_PARSE_ERROR_BAD_SYNTAX, "Missing name");
+    task->name = g_strdup(g_strstrip(task_name));
+    g_free(task_name);
+
     gchar *entry_point = g_key_file_get_locale_string(keyfile,
                                                       "restraint",
                                                       "entry_point",
@@ -183,6 +198,8 @@ static void parse_line(Task *task,
             return;
         }
         task->max_time = time;
+    } else if(g_strcmp0("NAME", key) == 0) {
+        task->name = g_strdup(g_strstrip(value));
     } else if(g_strcmp0("REQUIRES", key) == 0 ||
                g_strcmp0("RHTSREQUIRES", key) == 0) {
         gchar **dependencies = g_strsplit(value,",",0);

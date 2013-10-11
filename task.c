@@ -308,7 +308,7 @@ static gboolean build_env(Task *task, GError **error) {
     g_ptr_array_add(env, g_strdup_printf("%sOSVARIANT=%s", prefix, task->recipe->osvariant ));
     g_ptr_array_add(env, g_strdup_printf("%sOSARCH=%s", prefix, task->recipe->osarch));
     g_ptr_array_add(env, g_strdup_printf("%sTASKPATH=%s", prefix, task->path));
-    g_ptr_array_add(env, g_strdup_printf("%sTASKNAME=/", prefix));
+    g_ptr_array_add(env, g_strdup_printf("%sTASKNAME=%s", prefix, task->name));
     g_ptr_array_add(env, g_strdup_printf("%sMAXTIME=%lu", prefix, task->max_time));
     g_ptr_array_add(env, g_strdup_printf("%sLAB_CONTROLLER=", prefix));
     g_ptr_array_add(env, g_strdup_printf("%sTASKORDER=%d", prefix, task->order));
@@ -469,6 +469,7 @@ void restraint_task_free(Task *task) {
     g_return_if_fail(task != NULL);
     g_free(task->task_id);
     soup_uri_free(task->task_uri);
+    g_free(task->name);
     g_free(task->path);
     switch (task->fetch_method) {
         case TASK_FETCH_INSTALL_PACKAGE:
