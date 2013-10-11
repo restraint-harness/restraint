@@ -2,12 +2,14 @@
 ZLIB = zlib-1.2.8
 BZIP2 = bzip2-1.0.6
 LIBFFI = libffi-3.0.11
-GLIB = glib-2.36.3
+GLIB = glib-2.38.0
 LIBXML2 = libxml2-2.9.0
 CURL = curl-7.29.0
 LIBARCHIVE = libarchive-3.1.2
 XZ = xz-5.0.4
 LIBSOUP = libsoup-2.42.2
+SQLITE = sqlite-autoconf-3080002
+INTLTOOL = intltool-0.35.5
 
 .PHONY: all
 all: \
@@ -19,6 +21,8 @@ all: \
     tree/lib/pkgconfig/libxml-2.0.pc \
     tree/lib/pkgconfig/libcurl.pc \
     tree/lib/pkgconfig/libarchive.pc \
+    tree/lib/pkgconfig/sqlite3.pc \
+    tree/bin/intltool-update \
     tree/lib/pkgconfig/libsoup-2.4.pc
 
 tree/lib/pkgconfig/zlib.pc: $(ZLIB)
@@ -58,8 +62,21 @@ tree/lib/pkgconfig/libxml-2.0.pc: $(LIBXML2) $(LIBXML2)/.patches-done tree/lib/p
 	$(MAKE) -C $(LIBXML2)
 	$(MAKE) -C $(LIBXML2) install
 
+tree/lib/pkgconfig/sqlite3.pc: $(SQLITE)
+	( cd $(SQLITE) && ./configure --prefix=$(CURDIR)/tree \
+	    --enable-static --disable-shared )
+	$(MAKE) -C $(SQLITE)
+	$(MAKE) -C $(SQLITE) install
+
+tree/bin/intltool-update: $(INTLTOOL)
+	( cd $(INTLTOOL) && ./configure --prefix=$(CURDIR)/tree \
+	    --enable-static --disable-shared )
+	$(MAKE) -C $(INTLTOOL)
+	$(MAKE) -C $(INTLTOOL) install
+
 tree/lib/pkgconfig/libsoup-2.4.pc: $(LIBSOUP) $(LIBSOUP)/.patches-done tree/lib/pkgconfig/glib-2.0.pc tree/lib/pkgconfig/libxml-2.0.pc
-	( cd $(LIBSOUP) && PKG_CONFIG_PATH=../tree/lib/pkgconfig \
+tree/lib/pkgconfig/libsoup-2.4.pc: $(LIBSOUP) $(LIBSOUP)/.patches-done tree/lib/pkgconfig/glib-2.0.pc tree/lib/pkgconfig/libxml-2.0.pc
+	( cd $(LIBSOUP) && PATH=$(CURDIR)/tree/bin:$(PATH) PKG_CONFIG_PATH=../tree/lib/pkgconfig \
               ./configure --prefix=$(CURDIR)/tree \
 	      --disable-glibtest --disable-tls-check --without-gnome --enable-static \
               --disable-shared )
@@ -87,7 +104,7 @@ $(LIBFFI).tar.gz:
 	curl -O ftp://sourceware.org/pub/libffi/$@
 
 $(GLIB).tar.xz:
-	curl -O http://ftp.gnome.org/pub/gnome/sources/glib/2.36/$@
+	curl -O http://ftp.gnome.org/pub/gnome/sources/glib/2.38/$@
 
 $(ZLIB).tar.gz:
 	curl -O http://zlib.net/$@
@@ -107,6 +124,12 @@ $(LIBARCHIVE).tar.gz:
 $(XZ).tar.gz:
 	curl -O http://tukaani.org/xz/$@
 
+$(SQLITE).tar.gz:
+	curl -O http://sqlite.org/2013/$@
+
+$(INTLTOOL).tar.gz:
+	curl -O http://ftp.gnome.org/pub/gnome/sources/intltool/0.35/$@
+
 $(LIBSOUP).tar.xz:
 	curl -O http://ftp.gnome.org/pub/GNOME/sources/libsoup/2.42/$@
 
@@ -124,9 +147,9 @@ $(XZ)/.patches-done:
 	touch $@
 
 $(GLIB)/.patches-done:
-	patch -d$(GLIB) -p1 <glib-python2.2.patch
+#	patch -d$(GLIB) -p1 <glib-python2.2.patch
 	patch -d$(GLIB) -p1 <glib-no-pkgconfig-version-check.patch
-	patch -d$(GLIB) -p1 <glib-gcc3.patch
+#	patch -d$(GLIB) -p1 <glib-gcc3.patch
 	touch $@
 
 $(LIBXML2)/.patches-done:

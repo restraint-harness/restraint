@@ -40,7 +40,6 @@ static void test_parse_traditional(void) {
     g_assert_cmpstr(task->task_id, ==, "10722631");
     g_assert(g_str_has_suffix(soup_uri_get_path(task->task_uri),
             "/tasks/10722631/"));
-    g_assert_cmpstr(task->name, ==, "/distribution/install");
     g_assert_cmpstr(task->path, ==, "/mnt/tests/distribution/install");
     g_assert_cmpuint(task->fetch_method, ==, TASK_FETCH_INSTALL_PACKAGE);
     g_assert_cmpstr(task->fetch.package_name, ==, "beaker-distribution-install");
@@ -52,7 +51,6 @@ static void test_parse_traditional(void) {
     g_assert_cmpstr(task->task_id, ==, "10722632");
     g_assert(g_str_has_suffix(soup_uri_get_path(task->task_uri),
             "/tasks/10722632/"));
-    g_assert_cmpstr(task->name, ==, "/distribution/kernelinstall");
     g_assert_cmpstr(task->path, ==, "/mnt/tests/distribution/kernelinstall");
     g_assert_cmpuint(task->fetch_method, ==, TASK_FETCH_INSTALL_PACKAGE);
     g_assert_cmpstr(task->fetch.package_name, ==,
@@ -74,7 +72,6 @@ static void test_parse_traditional(void) {
     g_assert_cmpstr(task->task_id, ==, "10722633");
     g_assert(g_str_has_suffix(soup_uri_get_path(task->task_uri),
             "/tasks/10722633/"));
-    g_assert_cmpstr(task->name, ==, "/distribution/virt/install");
     g_assert_cmpstr(task->path, ==, "/mnt/tests/distribution/virt/install");
     g_assert_cmpuint(task->fetch_method, ==, TASK_FETCH_INSTALL_PACKAGE);
     g_assert_cmpstr(task->fetch.package_name, ==,
@@ -87,7 +84,6 @@ static void test_parse_traditional(void) {
     g_assert_cmpstr(task->task_id, ==, "10722634");
     g_assert(g_str_has_suffix(soup_uri_get_path(task->task_uri),
             "/tasks/10722634/"));
-    g_assert_cmpstr(task->name, ==, "/distribution/virt/start");
     g_assert_cmpstr(task->path, ==, "/mnt/tests/distribution/virt/start");
     g_assert_cmpuint(task->fetch_method, ==, TASK_FETCH_INSTALL_PACKAGE);
     g_assert_cmpstr(task->fetch.package_name, ==,
@@ -115,7 +111,6 @@ static void test_parse_git(void) {
     g_assert_cmpstr(task->task_id, ==, "10722631");
     g_assert(g_str_has_suffix(soup_uri_get_path(task->task_uri),
             "/tasks/10722631/"));
-    g_assert_cmpstr(task->name, ==, "/distribution/install");
     g_assert_cmpstr(task->path, ==,
             "/mnt/tests/git.beaker-project.org/beaker/Tasks/distribution/install");
     g_assert_cmpuint(task->fetch_method, ==, TASK_FETCH_UNPACK);

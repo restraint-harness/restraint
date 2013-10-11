@@ -197,7 +197,7 @@ task_heartbeat_callback (gpointer user_data)
 
     time (&rawtime);
     timeinfo = localtime (&rawtime);
-    strftime(currtime,80,"%c", timeinfo);
+    strftime(currtime,80,"%a %b %d %H:%M:%S %Y", timeinfo);
     g_string_printf(message, "*** Current Time: %s Localwatchdog at: %s\n", currtime, task->expire_time);
     connections_write(app_data->connections, message, STREAM_STDERR, 0);
     // Log to console.log as well?
@@ -275,7 +275,7 @@ task_run (AppData *app_data, GError **error)
     struct tm timeinfo = *localtime( &rawtime);
     timeinfo.tm_sec += task->max_time;
     mktime(&timeinfo);
-    strftime(task->expire_time,sizeof(task->expire_time),"%c", &timeinfo);
+    strftime(task->expire_time,sizeof(task->expire_time),"%a %b %d %H:%M:%S %Y", &timeinfo);
 
     // Local watchdog event.
     task->timeout_handler_id = g_timeout_add_seconds_full (G_PRIORITY_DEFAULT,
@@ -308,7 +308,7 @@ static gboolean build_env(Task *task, GError **error) {
     g_ptr_array_add(env, g_strdup_printf("%sOSVARIANT=%s", prefix, task->recipe->osvariant ));
     g_ptr_array_add(env, g_strdup_printf("%sOSARCH=%s", prefix, task->recipe->osarch));
     g_ptr_array_add(env, g_strdup_printf("%sTASKPATH=%s", prefix, task->path));
-    g_ptr_array_add(env, g_strdup_printf("%sTASKNAME=%s", prefix, task->name));
+    g_ptr_array_add(env, g_strdup_printf("%sTASKNAME=/", prefix));
     g_ptr_array_add(env, g_strdup_printf("%sMAXTIME=%lu", prefix, task->max_time));
     g_ptr_array_add(env, g_strdup_printf("%sLAB_CONTROLLER=", prefix));
     g_ptr_array_add(env, g_strdup_printf("%sTASKORDER=%d", prefix, task->order));
@@ -469,7 +469,6 @@ void restraint_task_free(Task *task) {
     g_return_if_fail(task != NULL);
     g_free(task->task_id);
     soup_uri_free(task->task_uri);
-    g_free(task->name);
     g_free(task->path);
     switch (task->fetch_method) {
         case TASK_FETCH_INSTALL_PACKAGE:
@@ -531,7 +530,7 @@ task_handler (gpointer user_data)
    */
   switch (task->state) {
     case TASK_IDLE:
-      g_string_printf(message, "** Fetching task: %s [%s]\n", task->task_id, task->name);
+      g_string_printf(message, "** Fetching task: %s [%s]\n", task->task_id, task->path);
       task->state = TASK_FETCH;
       break;
     case TASK_FETCH:
@@ -608,13 +607,13 @@ task_handler (gpointer user_data)
       task->state = TASK_COMPLETE;
       break;
     case TASK_CANCELLED:
-      g_string_printf(message, "** Cancelling Task : %s [%s]\n", task->task_id, task->name);
+      g_string_printf(message, "** Cancelling Task : %s [%s]\n", task->task_id, task->path);
       restraint_task_cancel(task, NULL);
       result = next_task (app_data, TASK_CANCELLED);
       break;
     case TASK_COMPLETE:
       // Task completed so iterate to the next task
-      g_string_printf(message, "** Completed Task : %s [%s]\n", task->task_id, task->name);
+      g_string_printf(message, "** Completed Task : %s [%s]\n", task->task_id, task->path);
       result = next_task (app_data, TASK_IDLE);
       break;
     default:

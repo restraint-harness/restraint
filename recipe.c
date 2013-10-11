@@ -199,14 +199,6 @@ static Task *parse_task(xmlNode *task_node, SoupURI *recipe_uri, GError **error)
     task->task_uri = soup_uri_new_with_base(recipe_uri, suffix);
     g_free(suffix);
 
-    xmlChar *name = xmlGetNoNsProp(task_node, (xmlChar *)"name");
-    if (name == NULL) {
-        unrecognised("Task %s missing 'name' attribute", task->task_id);
-        goto error;
-    }
-    task->name = g_strdup((gchar *)name);
-    xmlFree(name);
-
     xmlNode *fetch = first_child_with_name(task_node, "fetch");
     if (fetch != NULL) {
         task->fetch_method = TASK_FETCH_UNPACK;
@@ -492,7 +484,7 @@ task_summary (Task *task, GString *s)
 {
     gchar *message = NULL;
     message = g_strdup_printf ("*  Task: %12s [%-50s] Result: %d Status: %d\n", task->task_id,
-                                                                      task->name,
+                                                                      task->path,
                                                                       task->result,
                                                                       task->pid_result);
     s = g_string_append(s, message);
