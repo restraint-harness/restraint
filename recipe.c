@@ -484,7 +484,7 @@ task_summary (Task *task, GString *s)
 {
     gchar *message = NULL;
     message = g_strdup_printf ("*  Task: %12s [%-50s] Result: %d Status: %d\n", task->task_id,
-                                                                      task->path,
+                                                                      task->name,
                                                                       task->result,
                                                                       task->pid_result);
     s = g_string_append(s, message);
