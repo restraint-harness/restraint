@@ -24,10 +24,11 @@ all: restraint restraintd
 restraint: client.o
 	$(CC) $(LDFLAFS) -o $@ $^ $(LIBS)
 
-restraintd: server.o recipe.o task.o packages.o fetch_git_task.o param.o role.o metadata.o
+restraintd: server.o recipe.o task.o packages.o fetch_git_task.o fetch_http_task.o param.o role.o metadata.o
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 fetch_git_task.o: task.h
+fetch_http_task.o: task.h
 packages.o: packages.h
 task.o: task.h
 recipe.o: recipe.h task.h

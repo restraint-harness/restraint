@@ -11,6 +11,7 @@
 #include <libsoup/soup-uri.h>
 
 #include "task.h"
+#include "common.h"
 
 #define GIT_PORT 9418
 #define GIT_BRANCH "master"
@@ -24,9 +25,14 @@ typedef struct {
     GSocketClient *client;
     GInputStream *istream;
     GOutputStream *ostream;
+    AppData *app_data;
+    struct archive *a;
+    struct archive *ext;
 } GitArchData;
 
-static gint packet_length(const gchar *linelen) {
+static gint
+packet_length(const gchar *linelen)
+{
     gint n;
     gint len = 0;
 
@@ -40,8 +46,10 @@ static gint packet_length(const gchar *linelen) {
     return len;
 }
 
-static gboolean packet_read_line(GInputStream *istream, gchar *buffer, gsize size,
-        gsize *size_out, GError **error) {
+static gboolean
+packet_read_line(GInputStream *istream, gchar *buffer, gsize size,
+        gsize *size_out, GError **error)
+{
     g_return_val_if_fail(istream != NULL, FALSE);
     g_return_val_if_fail(buffer != NULL, FALSE);
     g_return_val_if_fail(size_out != NULL, FALSE);
@@ -101,8 +109,10 @@ static gboolean packet_read_line(GInputStream *istream, gchar *buffer, gsize siz
     return TRUE;
 }
 
-static gboolean packet_write(GOutputStream *ostream, GError **error,
-        const gchar *fmt, ...) {
+static gboolean
+packet_write(GOutputStream *ostream, GError **error,
+        const gchar *fmt, ...)
+{
     g_return_val_if_fail(ostream != NULL, FALSE);
     g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
 
@@ -146,7 +156,9 @@ error:
     return FALSE;
 }
 
-static ssize_t myread(struct archive *a, void *client_data, const void **abuf) {
+static ssize_t
+myread(struct archive *a, void *client_data, const void **abuf)
+{
     GitArchData *mydata = client_data;
     gint band;
     gsize len = 0;
@@ -156,7 +168,7 @@ static ssize_t myread(struct archive *a, void *client_data, const void **abuf) {
     gboolean read_succeeded = packet_read_line(mydata->istream, mydata->buf,
             LARGE_PACKET_MAX, &len, &error);
     if (!read_succeeded) {
-        archive_set_error(a, error->code, "%s", error->message);
+        archive_set_error(mydata->a, error->code, "%s", error->message);
         return -1;
     }
     if (len == 0)
@@ -164,20 +176,23 @@ static ssize_t myread(struct archive *a, void *client_data, const void **abuf) {
     band = mydata->buf[0] & 0xff;
     len--;
     if (band == 2) {
-        archive_set_error(a, 1, "Error from remote service: %s", mydata->buf + 1);
+        archive_set_error(mydata->a, 1, "Error from remote service: %s", mydata->buf + 1);
         return -1;
     } else if (band != 1) {
-        archive_set_error(a, 1, "Received data over unrecognized side-band %d", band);
+        archive_set_error(mydata->a, 1, "Received data over unrecognized side-band %d", band);
         return -1;
     }
     return len;
 }
 
-static gboolean myopen(GitArchData *mydata, GError **error) {
+static gboolean
+myopen(GitArchData *mydata, GError **error)
+{
     g_return_val_if_fail(mydata != NULL, FALSE);
     g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
 
     gsize len;
+    gint offset = 0;
     GError *tmp_error = NULL;
 
     mydata->client = g_socket_client_new();
@@ -196,9 +211,15 @@ static gboolean myopen(GitArchData *mydata, GError **error) {
     mydata->istream = g_io_stream_get_input_stream (G_IO_STREAM (mydata->connection));
     mydata->ostream = g_io_stream_get_output_stream (G_IO_STREAM (mydata->connection));
 
+    // git-upload-pack
+    // git ls-remote git://git2.engineering.redhat.com/users/bpeck/tests.git
+    // git-upload-pack /users/bpeck/tests.git.host=git2.engineering.redhat.com.
+    if (g_str_has_prefix (mydata->uri->path + 1, "~"))
+        offset = 1;
+
     gboolean write_succeeded = packet_write(mydata->ostream, &tmp_error,
                  "git-upload-archive %s\0host=%s side-band side-band-64k\0",
-                 mydata->uri->path, mydata->uri->host);
+                 mydata->uri->path + offset, mydata->uri->host);
     if (!write_succeeded) {
         g_propagate_prefixed_error(error, tmp_error,
                 "While writing to %s: ", mydata->uri->host);
@@ -274,7 +295,9 @@ error:
     return FALSE;
 }
 
-static int myclose(struct archive *a, void *client_data) {
+static int
+myclose(struct archive *a, void *client_data)
+{
     GitArchData *mydata = client_data;
     GError * error = NULL;
 
@@ -284,107 +307,124 @@ static int myclose(struct archive *a, void *client_data) {
     g_object_unref(mydata->client);
     g_object_unref(mydata->connection);
     if (error != NULL) {
-        archive_set_error(a, error->code, "%s", error->message);
+        archive_set_error(mydata->a, error->code, "%s", error->message);
         return ARCHIVE_FATAL;
     }
     return ARCHIVE_OK;
 }
 
-gboolean restraint_task_fetch_git(Task *task, GError **error) {
-    g_return_val_if_fail(task != NULL, FALSE);
-    g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
+static gboolean
+git_archive_read_callback (gpointer user_data)
+{
+    GitArchData *mydata = (GitArchData *) user_data;
+    Task *task = (Task *) mydata->app_data->tasks->data;
 
-    GError *tmp_error = NULL;
-    struct archive *a = NULL;
-    struct archive *ext = NULL;
-    struct archive_entry *entry;
     gint r;
+    struct archive_entry *entry;
+    GString *message = g_string_new (NULL);
     const gchar *basePath = task->path;
     gchar *newPath = NULL;
-    GitArchData *mydata = g_slice_new0(GitArchData);
-    g_return_val_if_fail(mydata != NULL, FALSE);
 
-    mydata->uri = task->fetch.url;
+    r = archive_read_next_header(mydata->a, &entry);
+    if (r == ARCHIVE_EOF) {
+        task->state = TASK_METADATA;
+        return FALSE;
+    }
 
-    a = archive_read_new();
-    if (a == NULL) {
-        g_set_error(error, RESTRAINT_TASK_FETCH_LIBARCHIVE_ERROR, 0,
-                "archive_read_new failed");
-        goto error;
-    }
-    ext = archive_write_disk_new();
-    if (ext == NULL) {
-        g_set_error(error, RESTRAINT_TASK_FETCH_LIBARCHIVE_ERROR, 0,
-                "archive_write_disk_new failed");
-        goto error;
-    }
-    archive_read_support_filter_all(a);
-    archive_read_support_format_all(a);
-    gboolean open_succeeded = myopen(mydata, &tmp_error);
-    if (!open_succeeded) {
-        g_propagate_error(error, tmp_error);
-        goto error;
-    }
-    r = archive_read_open(a, mydata, NULL, myread, myclose);
     if (r != ARCHIVE_OK) {
-        g_set_error(error, RESTRAINT_TASK_FETCH_LIBARCHIVE_ERROR, r,
-                "archive_read_open failed: %s", archive_error_string(a));
-        goto error;
-    }
-    for (;;) {
-        r = archive_read_next_header(a, &entry);
-        if (r == ARCHIVE_EOF)
-            break;
-        if (r != ARCHIVE_OK) {
-            g_set_error(error, RESTRAINT_TASK_FETCH_LIBARCHIVE_ERROR, r,
-                    "archive_read_next_header failed: %s", archive_error_string(a));
-            goto error;
-        }
-        g_message("Extracting %s", archive_entry_pathname(entry));
-
-        // Update pathname
-        newPath = g_build_filename (basePath, archive_entry_pathname( entry ), NULL);
-        archive_entry_set_pathname( entry, newPath );
-        g_free(newPath);
-
-        r = archive_read_extract2(a, entry, ext);
-        if (r != ARCHIVE_OK) {
-            g_set_error(error, RESTRAINT_TASK_FETCH_LIBARCHIVE_ERROR, r,
-                    "archive_read_extract2 failed: %s", archive_error_string(ext));
-            goto error;
-        }
+        g_set_error(&task->error, RESTRAINT_TASK_FETCH_LIBARCHIVE_ERROR, r,
+                "archive_read_next_header failed: %s", archive_error_string(mydata->a));
+        task->state = TASK_FAIL;
+        return FALSE;
     }
 
-    r = archive_write_free(ext);
-    ext = NULL;
+    // Update pathname
+    newPath = g_build_filename (basePath, archive_entry_pathname( entry ), NULL);
+    archive_entry_set_pathname( entry, newPath );
+    g_free(newPath);
+
+    g_string_printf (message, "** Extracting %s\n", archive_entry_pathname(entry));
+    connections_write (mydata->app_data->connections, message, STREAM_STDERR, 0);
+    g_string_free (message, TRUE);
+
+    r = archive_read_extract2(mydata->a, entry, mydata->ext);
     if (r != ARCHIVE_OK) {
-        g_set_error(error, RESTRAINT_TASK_FETCH_LIBARCHIVE_ERROR, r,
-                "archive_write_free failed");
-        goto error;
+        g_set_error(&task->error, RESTRAINT_TASK_FETCH_LIBARCHIVE_ERROR, r,
+                "archive_read_extract2 failed: %s", archive_error_string(mydata->ext));
+        task->state = TASK_FAIL;
+        return FALSE;
     }
-    r = archive_read_free(a);
-    a = NULL;
-    if (r != ARCHIVE_OK) {
-        g_set_error(error, RESTRAINT_TASK_FETCH_LIBARCHIVE_ERROR, r,
-                "archive_read_free failed");
-        goto error;
-    }
-    g_slice_free(GitArchData, mydata);
-
     return TRUE;
+}
 
-error:
-    if (ext != NULL) {
-        int free_result = archive_write_free(ext);
+static void
+archive_finish_callback (gpointer user_data)
+{
+    GitArchData *mydata = (GitArchData *) user_data;
+    gint free_result;
+    if (mydata->ext != NULL) {
+        free_result = archive_write_free(mydata->ext);
         if (free_result != ARCHIVE_OK)
             g_warning("Failed to free archive_write_disk");
     }
-    if (a != NULL) {
-        int free_result = archive_read_free(a);
+    if (mydata->a != NULL) {
+        free_result = archive_read_free(mydata->a);
         if (free_result != ARCHIVE_OK)
             g_warning("Failed to free archive_read");
     }
     if (mydata != NULL)
         g_slice_free(GitArchData, mydata);
-    return FALSE;
+}
+
+gboolean
+restraint_task_fetch_git (AppData *app_data, GError **error)
+{
+    g_return_val_if_fail(app_data != NULL, FALSE);
+    g_return_val_if_fail(app_data->tasks != NULL, FALSE);
+
+    Task *task = (Task *) app_data->tasks->data;
+
+    GitArchData *mydata = g_slice_new0(GitArchData);
+    mydata->app_data = app_data;
+
+    GError *tmp_error = NULL;
+    gint r;
+
+    mydata->uri = task->fetch.url;
+
+    mydata->a = archive_read_new();
+    if (mydata->a == NULL) {
+        g_set_error(error, RESTRAINT_TASK_FETCH_LIBARCHIVE_ERROR, 0,
+                "archive_read_new failed");
+        archive_finish_callback (mydata);
+        return FALSE;
+    }
+
+    mydata->ext = archive_write_disk_new();
+    if (mydata->ext == NULL) {
+        g_set_error(error, RESTRAINT_TASK_FETCH_LIBARCHIVE_ERROR, 0,
+                "archive_write_disk_new failed");
+        archive_finish_callback (mydata);
+        return FALSE;
+    }
+    archive_read_support_filter_all(mydata->a);
+    archive_read_support_format_all(mydata->a);
+    gboolean open_succeeded = myopen(mydata, &tmp_error);
+    if (!open_succeeded) {
+        g_propagate_error(error, tmp_error);
+        archive_finish_callback (mydata);
+        return FALSE;
+    }
+    r = archive_read_open(mydata->a, mydata, NULL, myread, myclose);
+    if (r != ARCHIVE_OK) {
+        g_set_error(error, RESTRAINT_TASK_FETCH_LIBARCHIVE_ERROR, r,
+                "archive_read_open failed: %s", archive_error_string(mydata->a));
+        archive_finish_callback (mydata);
+        return FALSE;
+    }
+    g_idle_add_full(G_PRIORITY_DEFAULT_IDLE,
+                    git_archive_read_callback,
+                    mydata,
+                    archive_finish_callback);
+    return TRUE;
 }

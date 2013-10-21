@@ -6,6 +6,7 @@
 #include <libsoup/soup.h>
 #include <pty.h>
 #include "recipe.h"
+#include "server.h"
 
 #define DEFAULT_MAX_TIME 10 * 60 // default amount of time before local watchdog kills process
 #define DEFAULT_ENTRY_POINT "make run"
@@ -15,6 +16,7 @@
 typedef enum {
     TASK_IDLE,
     TASK_FETCH,
+    TASK_FETCHING,
     TASK_METADATA,
     TASK_ENV,
     TASK_WATCHDOG,
@@ -109,8 +111,9 @@ typedef struct {
 Task *restraint_task_new(void);
 gboolean task_handler (gpointer user_data);
 void task_finish (gpointer user_data);
-gboolean restraint_task_fetch_git(Task *task, GError **error);
-gboolean restraint_task_fetch(Task *task, GError **error);
+gboolean restraint_task_fetch_git(AppData *app_data, GError **error);
+gboolean restraint_task_fetch_http(AppData *app_data, GError **error);
+gboolean restraint_task_fetch(AppData *app_data, GError **error);
 gboolean restraint_build_env(Task *task, GError **error);
 void restraint_task_cancel(Task *task, GError *reason);
 void restraint_task_abort(Task *task, GError *reason);

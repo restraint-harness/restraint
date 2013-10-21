@@ -15,7 +15,6 @@
 #include "metadata.h"
 #include "packages.h"
 #include "common.h"
-#include "server.h"
 
 GQuark restraint_task_runner_error(void) {
     return g_quark_from_static_string("restraint-task-runner-error-quark");
@@ -29,15 +28,22 @@ GQuark restraint_task_fetch_libarchive_error(void) {
     return g_quark_from_static_string("restraint-task-fetch-libarchive-error-quark");
 }
 
-gboolean restraint_task_fetch(Task *task, GError **error) {
-    g_return_val_if_fail(task != NULL, FALSE);
+gboolean restraint_task_fetch(AppData *app_data, GError **error) {
+    g_return_val_if_fail(app_data != NULL, FALSE);
     g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
+
+    Task *task = (Task *) app_data->tasks->data;
 
     GError *tmp_error = NULL;
     switch (task->fetch_method) {
         case TASK_FETCH_UNPACK:
             if (g_strcmp0(soup_uri_get_scheme(task->fetch.url), "git") == 0) {
-                if (!restraint_task_fetch_git(task, &tmp_error)) {
+                if (!restraint_task_fetch_git(app_data, &tmp_error)) {
+                    g_propagate_error(error, tmp_error);
+                    return FALSE;
+                }
+            } else if (g_strcmp0(soup_uri_get_scheme(task->fetch.url), "http") == 0) {
+                if (!restraint_task_fetch_http(app_data, &tmp_error)) {
                     g_propagate_error(error, tmp_error);
                     return FALSE;
                 }
@@ -537,10 +543,10 @@ task_handler (gpointer user_data)
     case TASK_FETCH:
       // Fetch Task from rpm or url
       // Only git:// is supported currently.
-      if (restraint_task_fetch(task, &task->error))
-        task->state = TASK_METADATA;
+      if (restraint_task_fetch (app_data, &task->error))
+          task->state = TASK_FETCHING;
       else
-        task->state = TASK_FAIL;
+          task->state = TASK_FAIL;
       break;
     case TASK_METADATA:
       // Update Task metadata
@@ -584,7 +590,7 @@ task_handler (gpointer user_data)
       //       pty_handler
       //       timeout_handler
       //       heartbeat_handler
-      g_string_printf(message, "** Running task\n");
+      g_string_printf(message, "** Running task: %s [%s]\n", task->task_id, task->name);
       if (task_run (app_data, &task->error))
         task->state = TASK_RUNNING;
       else
@@ -608,13 +614,13 @@ task_handler (gpointer user_data)
       task->state = TASK_COMPLETE;
       break;
     case TASK_CANCELLED:
-      g_string_printf(message, "** Cancelling Task : %s [%s]\n", task->task_id, task->path);
+      g_string_printf(message, "** Cancelling Task : %s\n", task->task_id);
       restraint_task_cancel(task, NULL);
       result = next_task (app_data, TASK_CANCELLED);
       break;
     case TASK_COMPLETE:
       // Task completed so iterate to the next task
-      g_string_printf(message, "** Completed Task : %s [%s]\n", task->task_id, task->path);
+      g_string_printf(message, "** Completed Task : %s\n", task->task_id);
       result = next_task (app_data, TASK_IDLE);
       break;
     default:
