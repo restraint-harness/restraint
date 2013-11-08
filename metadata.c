@@ -38,7 +38,6 @@ static guint64 parse_time_string(gchar *time_string, GError **error) {
         max_time = max_time;
     else {
         unrecognised(RESTRAINT_METADATA_PARSE_ERROR_BAD_SYNTAX, "Unrecognised time unit '%c'", time_unit);
-        return 0;
     }
     return max_time;
 }
@@ -102,7 +101,8 @@ gboolean parse_metadata(Task *task, gchar *task_metadata, GError **error) {
             g_propagate_error(error, tmp_error);
             goto error;
         }
-        task->max_time = time;
+        // If max_time is set it's because we read it from our run data
+        task->max_time = task->max_time ? task->max_time : time;
     }
 
     gsize length;
@@ -197,7 +197,8 @@ static void parse_line(Task *task,
             g_propagate_error(error, tmp_error);
             return;
         }
-        task->max_time = time;
+        // If max_time is set it's because we read it from our run data
+        task->max_time = task->max_time ? task->max_time : time;
     } else if(g_strcmp0("NAME", key) == 0) {
         task->name = g_strdup(g_strstrip(value));
     } else if(g_strcmp0("REQUIRES", key) == 0 ||
@@ -374,6 +375,166 @@ static gboolean parse_testinfo_from_file(Task *task,
     return TRUE;
 }
 
+void
+restraint_parse_run_metadata (Task *task, GError **error)
+{
+   /*
+    * Metadata about the running task
+    * rebootcount : how many times this task has rebooted
+    * offset      : number of bytes uploaded to lab controller
+    * started     : True if the task has started
+    * finished    : True if the task has finished
+    * max_time    : If we reboot this will be used instead of max_time.
+    */
+
+    gchar *run_metadata = g_build_filename(task->run_path, "metadata", NULL);
+
+    GKeyFile *keyfile;
+    GKeyFileFlags flags;
+    GError *tmp_error = NULL;
+
+    keyfile = g_key_file_new ();
+    flags = G_KEY_FILE_KEEP_COMMENTS | G_KEY_FILE_KEEP_TRANSLATIONS;
+
+    if (!g_key_file_load_from_file (keyfile, run_metadata, flags, NULL)) {
+        goto error;
+    }
+
+    task->max_time = g_key_file_get_uint64 (keyfile,
+                                           "restraint",
+                                           "max_time",
+                                           &tmp_error);
+    if (tmp_error && tmp_error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND) {
+        g_propagate_prefixed_error(error, tmp_error,
+                    "Task %s:  parse_run_metadata,", task->task_id);
+        goto error;
+    }
+    g_clear_error (&tmp_error);
+
+    task->reboots = g_key_file_get_uint64 (keyfile,
+                                           "restraint",
+                                           "reboots",
+                                           &tmp_error);
+    if (tmp_error && tmp_error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND) {
+        g_propagate_prefixed_error(error, tmp_error,
+                    "Task %s:  parse_run_metadata,", task->task_id);
+        goto error;
+    }
+    g_clear_error (&tmp_error);
+
+    task->offset = g_key_file_get_uint64 (keyfile,
+                                          "restraint",
+                                          "offset",
+                                          &tmp_error);
+    if (tmp_error && tmp_error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND) {
+        g_propagate_prefixed_error(error, tmp_error,
+                    "Task %s:  parse_run_metadata,", task->task_id);
+        goto error;
+    }
+    g_clear_error (&tmp_error);
+
+    task->started = g_key_file_get_boolean (keyfile,
+                                          "restraint",
+                                          "started",
+                                          &tmp_error);
+    if (tmp_error && tmp_error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND) {
+        g_propagate_prefixed_error(error, tmp_error,
+                    "Task %s:  parse_run_metadata,", task->task_id);
+        goto error;
+    }
+    g_clear_error (&tmp_error);
+
+    task->finished = g_key_file_get_boolean (keyfile,
+                                          "restraint",
+                                          "finished",
+                                          &tmp_error);
+    if (tmp_error && tmp_error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND) {
+        g_propagate_prefixed_error(error, tmp_error,
+                    "Task %s:  parse_run_metadata,", task->task_id);
+        goto error;
+    }
+    g_clear_error (&tmp_error);
+
+    task->name = g_key_file_get_string (keyfile,
+                                          "restraint",
+                                          "name",
+                                          &tmp_error);
+    if (tmp_error && tmp_error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND) {
+        g_propagate_prefixed_error(error, tmp_error,
+                    "Task %s:  parse_run_metadata,", task->task_id);
+        goto error;
+    }
+    g_clear_error (&tmp_error);
+
+error:
+    g_key_file_free (keyfile);   
+    g_free(run_metadata);
+    task->parsed = TRUE;
+}
+
+void
+restraint_set_run_metadata (Task *task, gchar *key, GError **error, GType type, ...)
+{
+    va_list args;
+    GValue value;
+
+    va_start (args, type);
+    SOUP_VALUE_SETV (&value, type, args);
+    va_end (args);
+
+    gchar *run_metadata = g_build_filename(task->run_path, "metadata", NULL);
+    gchar *s_data = NULL;
+    gsize length;
+    GKeyFile *keyfile;
+    GKeyFileFlags flags;
+    GError *tmp_error = NULL;
+
+    flags = G_KEY_FILE_KEEP_COMMENTS | G_KEY_FILE_KEEP_TRANSLATIONS;
+
+    g_mkdir_with_parents (task->run_path, 0755 /* drwxr-xr-x */);
+    keyfile = g_key_file_new ();
+    g_key_file_load_from_file (keyfile, run_metadata, flags, NULL);
+
+    switch (type) {
+        case G_TYPE_UINT64:
+            g_key_file_set_uint64 (keyfile,
+                                   "restraint",
+                                   key,
+                                   g_value_get_uint64 (&value));
+            break;
+        case G_TYPE_BOOLEAN:
+            g_key_file_set_boolean (keyfile,
+                                   "restraint",
+                                   key,
+                                   g_value_get_boolean (&value));
+            break;
+        case G_TYPE_STRING:
+            g_key_file_set_string (keyfile,
+                                   "restraint",
+                                   key,
+                                   g_value_get_string (&value));
+            break;
+        default:
+            g_warning ("invalid GType\n");
+    }
+
+    s_data = g_key_file_to_data (keyfile, &length, &tmp_error);
+    if (!s_data) {
+        g_propagate_error (error, tmp_error);
+        goto error;
+    }
+
+    if (!g_file_set_contents (run_metadata, s_data, length,  &tmp_error)) {
+        g_propagate_error (error, tmp_error);
+        goto error;
+    }
+    
+error:
+    g_free (s_data);
+    g_key_file_free (keyfile);   
+    g_free (run_metadata);
+}
+
 gboolean restraint_metadata_update(Task *task, GError **error) {
     GError *tmp_error = NULL;
     GStatBuf stat_buf;
@@ -414,6 +575,10 @@ gboolean restraint_metadata_update(Task *task, GError **error) {
             return FALSE;
         }
     }
+
+    // Set to default max time if max_time is 0
+    task->max_time = task->max_time ? task->max_time : DEFAULT_MAX_TIME;
+
     g_free(task_metadata);
     g_free(task_testinfo);
     return TRUE;

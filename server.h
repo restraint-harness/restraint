@@ -20,6 +20,6 @@ typedef struct {
 } ClientConnection;
 
 void connections_close (AppData *app_data, gboolean monitor);
-void connections_write (GList *connections, GString *s, gint stream_type, gint status);
-void connections_error (GList *connections, GError *error);
+void connections_write (AppData *app_data, GString *s, gint stream_type, gint status);
+void connections_error (AppData *app_data, GError *error);
 #endif

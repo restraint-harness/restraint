@@ -9,6 +9,7 @@
 #include "server.h"
 
 #define DEFAULT_MAX_TIME 10 * 60 // default amount of time before local watchdog kills process
+#define HEARTBEAT 5 * 60 // heartbeat every 5 minutes
 #define DEFAULT_ENTRY_POINT "make run"
 #define ENV_PREFIX "RSTRNT_"
 #define EWD_TIME 5 * 60 // amount of time to add to local watchdog for externl watchdog
@@ -24,9 +25,11 @@ typedef enum {
     TASK_RUN,
     TASK_RUNNING,
     TASK_ABORTED,
+    TASK_CANCEL,
     TASK_CANCELLED,
     TASK_FAIL,
     TASK_COMPLETE,
+    TASK_COMPLETED,
 } TaskSetupState;
 
 typedef enum {
@@ -94,18 +97,34 @@ typedef struct {
     gchar **entry_point;
     /* maximum time task is allowed to run before being killed */
     guint64 max_time;
+    /* maximum time in nicely formatted text */
     gchar expire_time[80];
+    /* task order needed for multi-host tasks */
     gint order;
+    /* environment variables that will be passed on to task */
     gchar **env;
+    /* State engine holding current state of task */
     TaskSetupState state;
     guint pty_handler_id;
     guint pid_handler_id;
     guint timeout_handler_id;
     guint heartbeat_handler_id;
+    /* reported result from task */
     gint result;
+    /* return code result from exiting task */
     gint pid_result;
+    /* pid of running task */
     pid_t pid;
+    /* Error at the task level */
     GError *error;
+    /* offset of TASKOUT.log */
+    gssize offset;
+    /* reboot count */
+    guint64 reboots;
+    /* Filesystem path where the task run data is stored */
+    gchar *run_path;
+    /* Only true after we have attempted to parse run_metadata on disk. */
+    gboolean parsed;
 } Task;
 
 Task *restraint_task_new(void);
@@ -115,8 +134,8 @@ gboolean restraint_task_fetch_git(AppData *app_data, GError **error);
 gboolean restraint_task_fetch_http(AppData *app_data, GError **error);
 gboolean restraint_task_fetch(AppData *app_data, GError **error);
 gboolean restraint_build_env(Task *task, GError **error);
-void restraint_task_cancel(Task *task, GError *reason);
-void restraint_task_abort(Task *task, GError *reason);
+void restraint_task_status (Task *task, gchar *, GError *reason);
+void restraint_task_result (Task *task, gchar *result, guint score, gchar *path, gchar *message);
 void restraint_task_run(Task *task);
 void restraint_task_free(Task *task);
 gboolean idle_task_setup (gpointer user_data);

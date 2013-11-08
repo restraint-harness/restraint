@@ -344,7 +344,7 @@ git_archive_read_callback (gpointer user_data)
     g_free(newPath);
 
     g_string_printf (message, "** Extracting %s\n", archive_entry_pathname(entry));
-    connections_write (mydata->app_data->connections, message, STREAM_STDERR, 0);
+    connections_write (mydata->app_data, message, STREAM_STDERR, 0);
     g_string_free (message, TRUE);
 
     r = archive_read_extract2(mydata->a, entry, mydata->ext);
@@ -426,5 +426,6 @@ restraint_task_fetch_git (AppData *app_data, GError **error)
                     git_archive_read_callback,
                     mydata,
                     archive_finish_callback);
+    task->state = TASK_FETCHING;
     return TRUE;
 }

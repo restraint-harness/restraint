@@ -147,7 +147,7 @@ $(XZ)/.patches-done:
 	touch $@
 
 $(GLIB)/.patches-done:
-#	patch -d$(GLIB) -p1 <glib-python2.2.patch
+	patch -d$(GLIB) -p1 <glib-python2.2.patch
 	patch -d$(GLIB) -p1 <glib-no-pkgconfig-version-check.patch
 #	patch -d$(GLIB) -p1 <glib-gcc3.patch
 	touch $@
@@ -157,7 +157,7 @@ $(LIBXML2)/.patches-done:
 	touch $@
 
 $(LIBARCHIVE)/.patches-done:
-	patch -d$(LIBARCHIVE) -p1 <libarchive-rhel3-headers.patch
+#	patch -d$(LIBARCHIVE) -p1 <libarchive-rhel3-headers.patch
 	patch -d$(LIBARCHIVE) -p1 <libarchive-use-pkgconfig.patch
 	touch $@
 
@@ -167,4 +167,4 @@ $(LIBSOUP)/.patches-done:
 
 .PHONY: clean
 clean:
-	rm -rf $(XZ) $(ZLIB) $(BZIP2) $(LIBFFI) $(GLIB) $(LIBXML2) $(CURL) $(LIBARCHIVE) $(LIBSOUP) tree
+	rm -rf $(XZ) $(ZLIB) $(BZIP2) $(LIBFFI) $(GLIB) $(LIBXML2) $(CURL) $(LIBARCHIVE) $(LIBSOUP) $(SQLITE) $(INTLTOOL) tree

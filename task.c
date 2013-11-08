@@ -55,8 +55,10 @@ gboolean restraint_task_fetch(AppData *app_data, GError **error) {
         case TASK_FETCH_INSTALL_PACKAGE:
             if (!restraint_install_package(task->fetch.package_name, &tmp_error)) {
                 g_propagate_error(error, tmp_error);
+                task->state = TASK_COMPLETE;
                 return FALSE;
             }
+            task->state = TASK_METADATA;
             break;
         default:
             g_return_val_if_reached(FALSE);
@@ -71,20 +73,21 @@ static void build_param_var(Param *param, GPtrArray *env) {
 static gboolean
 task_io_callback (GIOChannel *io, GIOCondition condition, gpointer user_data) {
     AppData *app_data = (AppData *) user_data;
-    Task *task = (Task *) app_data->tasks->data;
+    GError *tmp_error = NULL;
 
     GString *s = g_string_new(NULL);
 
     if (condition & G_IO_IN) {
-        switch (g_io_channel_read_line_string(io, s, NULL, &task->error)) {
+        switch (g_io_channel_read_line_string(io, s, NULL, &tmp_error)) {
           case G_IO_STATUS_NORMAL:
             /* Push data to our connections.. */
-            connections_write(app_data->connections, s, STREAM_STDOUT, 0);
+            connections_write(app_data, s, STREAM_STDOUT, 0);
             g_string_free (s, TRUE);
             return TRUE;
 
           case G_IO_STATUS_ERROR:
-             g_printerr("IO error: %s\n", task->error->message);
+             g_printerr("IO error: %s\n", tmp_error->message);
+             g_clear_error (&tmp_error);
              return FALSE;
 
           case G_IO_STATUS_EOF:
@@ -119,10 +122,6 @@ task_pid_callback (GPid pid, gint status, gpointer user_data)
             g_set_error(&task->error, RESTRAINT_TASK_RUNNER_ERROR,
                         RESTRAINT_TASK_RUNNER_WATCHDOG_ERROR,
                         "Local watchdog expired! Killed %i with %i", task->pid, SIGKILL);
-        } else if (task->state == TASK_CANCELLED) {
-            g_set_error(&task->error, RESTRAINT_TASK_RUNNER_ERROR,
-                        RESTRAINT_TASK_RUNNER_WATCHDOG_ERROR,
-                        "Cancelled by user! Killed %i with %i", task->pid, SIGKILL);
         } else {
             g_set_error(&task->error, RESTRAINT_TASK_RUNNER_ERROR,
                         RESTRAINT_TASK_RUNNER_RC_ERROR,
@@ -148,12 +147,7 @@ task_pid_finish (gpointer user_data)
         task->timeout_handler_id = 0;
     }
 
-    if (task->state != TASK_CANCELLED) {
-        if (task->error)
-            task->state = TASK_FAIL;
-        else
-            task->state = TASK_COMPLETE;
-    }
+    task->state = TASK_COMPLETE;
 
     // Add the task_handler back to finish.
     app_data->task_handler_id = g_idle_add_full(G_PRIORITY_DEFAULT_IDLE,
@@ -201,11 +195,14 @@ task_heartbeat_callback (gpointer user_data)
     AppData *app_data = (AppData *) user_data;
     Task *task = (Task *) app_data->tasks->data;
 
+    task->max_time -= HEARTBEAT;
+    restraint_set_run_metadata (task, "max_time", NULL, G_TYPE_UINT64, task->max_time);
+
     time (&rawtime);
     timeinfo = localtime (&rawtime);
     strftime(currtime,80,"%a %b %d %H:%M:%S %Y", timeinfo);
     g_string_printf(message, "*** Current Time: %s Localwatchdog at: %s\n", currtime, task->expire_time);
-    connections_write(app_data->connections, message, STREAM_STDERR, 0);
+    connections_write(app_data, message, STREAM_STDERR, 0);
     // Log to console.log as well?
     g_string_free(message, TRUE);
     return TRUE;
@@ -291,7 +288,7 @@ task_run (AppData *app_data, GError **error)
                                                            NULL);
     // Local heartbeat, log to console and testout.log every 5 minutes
     task->heartbeat_handler_id = g_timeout_add_seconds_full (G_PRIORITY_DEFAULT,
-                                                           300 /* heartbeat every 5 minutes */,
+                                                           HEARTBEAT,
                                                            task_heartbeat_callback,
                                                            app_data,
                                                            NULL);
@@ -316,13 +313,14 @@ static gboolean build_env(Task *task, GError **error) {
     g_ptr_array_add(env, g_strdup_printf("%sTASKPATH=%s", prefix, task->path));
     g_ptr_array_add(env, g_strdup_printf("%sTASKNAME=%s", prefix, task->name));
     g_ptr_array_add(env, g_strdup_printf("%sMAXTIME=%lu", prefix, task->max_time));
+    g_ptr_array_add(env, g_strdup_printf("%sREBOOTCOUNT=%lu", prefix, task->reboots));
     g_ptr_array_add(env, g_strdup_printf("%sLAB_CONTROLLER=", prefix));
     g_ptr_array_add(env, g_strdup_printf("%sTASKORDER=%d", prefix, task->order));
     // HOME, LANG and TERM can be overriden by user by passing it as recipe or task params.
     g_ptr_array_add(env, g_strdup_printf("HOME=/root"));
     g_ptr_array_add(env, g_strdup_printf("TERM=vt100"));
     g_ptr_array_add(env, g_strdup_printf("LANG=en_US.UTF-8"));
-    g_ptr_array_add(env, g_strdup_printf("PATH=/usr/local/bin:usr/bin:/bin:/usr/local/sbin:/usr/sbin"));
+    g_ptr_array_add(env, g_strdup_printf("PATH=/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin"));
 //    g_ptr_array_add(env, g_strdup_printf ("%sGUESTS=%s", prefix, task->recipe->guests));
     g_list_foreach(task->recipe->params, (GFunc) build_param_var, env);
     g_list_foreach(task->params, (GFunc) build_param_var, env);
@@ -347,7 +345,9 @@ static void
 watchdog_message_complete (SoupSession *session, SoupMessage *server_msg, gpointer user_data)
 {
     if (!SOUP_STATUS_IS_SUCCESSFUL(server_msg->status_code)) {
-        g_warning("Updating watchdog Failed for task, libsoup status %u", server_msg->status_code);
+        g_warning("Updating watchdog failed for task, libsoup status %u msg: %s %s", server_msg->status_code,
+                                                                                  server_msg->reason_phrase,
+                                                          soup_uri_to_string(soup_message_get_uri(server_msg), FALSE));
         // depending on the status code we should retry?
         // We should also keep track and report back if we really fail.
     }
@@ -357,14 +357,14 @@ static void
 results_message_complete (SoupSession *session, SoupMessage *server_msg, gpointer user_data)
 {
     if (!SOUP_STATUS_IS_SUCCESSFUL(server_msg->status_code)) {
-        g_warning("Updating watchdog Failed for task, libsoup status %u", server_msg->status_code);
+        g_warning("Reporting result failed for task, libsoup status %u", server_msg->status_code);
         // depending on the status code we should retry?
         // We should also keep track and report back if we really fail.
     }
 }
 
-static void
-task_status (Task *task, gchar *status, GError *reason)
+void
+restraint_task_status (Task *task, gchar *status, GError *reason)
 {
     g_return_if_fail(task != NULL);
 
@@ -379,8 +379,6 @@ task_status (Task *task, gchar *status, GError *reason)
 
     gchar *data = NULL;
     if (reason == NULL) {
-        // this is basically a bug, but to be nice let's handle it
-        g_warning("%s task with no reason given", status);
         data = soup_form_encode("status", status, NULL);
     } else {
         data = soup_form_encode("status", status,
@@ -394,23 +392,12 @@ task_status (Task *task, gchar *status, GError *reason)
 }
 
 void
-restraint_task_abort (Task *task, GError *reason)
-{
-    task_status (task, "Aborted", reason);
-}
-
-void
-restraint_task_cancel (Task *task, GError *reason)
-{
-    task_status (task, "Cancelled", reason);
-}
-
-void
 restraint_task_watchdog (Task *task, guint seconds)
 {
     g_return_if_fail(task != NULL);
     g_return_if_fail(seconds != 0);
 
+    gchar *seconds_char = NULL;
     SoupURI *recipe_watchdog_uri;
     SoupMessage *server_msg;
     gchar *data = NULL;
@@ -420,7 +407,10 @@ restraint_task_watchdog (Task *task, guint seconds)
 
     soup_uri_free(recipe_watchdog_uri);
     g_return_if_fail(server_msg != NULL);
-    data = soup_form_encode("seconds", seconds, NULL);
+
+    // Add EWD_TIME to seconds and use that for the external watchdog.
+    seconds_char = g_strdup_printf("%d", seconds + EWD_TIME);
+    data = soup_form_encode("seconds", seconds_char, NULL);
 
     soup_message_set_request(server_msg, "application/x-www-form-urlencoded",
             SOUP_MEMORY_TAKE, data, strlen(data));
@@ -440,7 +430,7 @@ restraint_task_result (Task *task, gchar *result, guint score, gchar *path, gcha
     SoupURI *task_results_uri;
     SoupMessage *server_msg;
 
-    task_results_uri = soup_uri_new_with_base(task->task_uri, "results");
+    task_results_uri = soup_uri_new_with_base(task->task_uri, "results/");
     server_msg = soup_message_new_from_uri("POST", task_results_uri);
 
     soup_uri_free(task_results_uri);
@@ -466,7 +456,7 @@ restraint_task_result (Task *task, gchar *result, guint score, gchar *path, gcha
 
 Task *restraint_task_new(void) {
     Task *task = g_slice_new0(Task);
-    task->max_time = DEFAULT_MAX_TIME;
+    task->max_time = 0;
     task->entry_point = g_strsplit(DEFAULT_ENTRY_POINT, " ", 0);
     return task;
 }
@@ -495,31 +485,34 @@ void restraint_task_free(Task *task) {
     g_slice_free(Task, task);
 }
 
-static gboolean
-next_task (AppData *app_data, TaskSetupState task_state) {
+gboolean
+restraint_next_task (AppData *app_data, TaskSetupState task_state) {
     Task *task = app_data->tasks->data;
-    gboolean result = TRUE;
-    app_data->tasks = g_list_next (app_data->tasks);
-    if (app_data->tasks) {
-       task = (Task *) app_data->tasks->data;
-        // Yes, there is a task.
+
+    while ((app_data->tasks = g_list_next (app_data->tasks)) != NULL) {
+        task = (Task *) app_data->tasks->data;
         task->state = task_state;
-    } else {
-        // No more tasks, let the recipe_handler know we are done.
-        app_data->state = RECIPE_COMPLETE;
-        app_data->recipe_handler_id = g_idle_add_full(G_PRIORITY_DEFAULT_IDLE,
-                                                      recipe_handler,
-                                                      app_data,
-                                                      recipe_finish);
-        result = FALSE;
+        return TRUE;
     }
-    return result;
+
+    // No more tasks, let the recipe_handler know we are done.
+    app_data->state = RECIPE_COMPLETE;
+    app_data->recipe_handler_id = g_idle_add_full(G_PRIORITY_DEFAULT_IDLE,
+                                                  recipe_handler,
+                                                  app_data,
+                                                  recipe_finish);
+    return FALSE;
 }
 
 gboolean
 task_handler (gpointer user_data)
 {
   AppData *app_data = (AppData *) user_data;
+
+  // No More tasks, return false so this handler gets removed.
+  if (app_data->tasks == NULL)
+      return FALSE;
+
   Task *task = app_data->tasks->data;
   GString *message = g_string_new(NULL);
   gboolean result = TRUE;
@@ -537,16 +530,27 @@ task_handler (gpointer user_data)
    */
   switch (task->state) {
     case TASK_IDLE:
-      g_string_printf(message, "** Fetching task: %s [%s]\n", task->task_id, task->path);
-      task->state = TASK_FETCH;
+      // Read in previous state..
+      restraint_parse_run_metadata (task, NULL);
+
+      if (task->finished) {
+          // If the task is finished skip to the next task.
+          g_string_printf(message, "** Skipping Finished task: %s [%s]\n", task->task_id, task->path);
+          task->state = TASK_COMPLETED;
+      } else if (task->started) {
+          // If the task is not finished but started then skip fetching the task again.
+          g_string_printf(message, "** Continuing task: %s [%s]\n", task->task_id, task->path);
+          task->state = TASK_METADATA;
+      } else {
+          // If neither started nor finished then fetch the task
+          g_string_printf(message, "** Fetching task: %s [%s]\n", task->task_id, task->path);
+          task->state = TASK_FETCH;
+      }
       break;
     case TASK_FETCH:
       // Fetch Task from rpm or url
-      // Only git:// is supported currently.
-      if (restraint_task_fetch (app_data, &task->error))
-          task->state = TASK_FETCHING;
-      else
-          task->state = TASK_FAIL;
+      if (! restraint_task_fetch (app_data, &task->error))
+          task->state = TASK_COMPLETE;
       break;
     case TASK_METADATA:
       // Update Task metadata
@@ -555,10 +559,12 @@ task_handler (gpointer user_data)
       // dependencies required for task execution
       // rhts_compat is set to false if new "metadata" file exists.
       g_string_printf(message, "** Updating metadata\n");
-      if (restraint_metadata_update(task, &task->error))
+      if (restraint_metadata_update(task, &task->error)) {
         task->state = TASK_ENV;
-      else
-        task->state = TASK_FAIL;
+        restraint_set_run_metadata (task, "name", NULL, G_TYPE_STRING, task->name);
+      } else {
+        task->state = TASK_COMPLETE;
+      }
       break;
     case TASK_ENV:
       // Build environment to execute task
@@ -569,19 +575,24 @@ task_handler (gpointer user_data)
       if (build_env(task, &task->error))
         task->state = TASK_WATCHDOG;
       else
-        task->state = TASK_FAIL;
+        task->state = TASK_COMPLETE;
       break;
     case TASK_WATCHDOG:
       // Setup external watchdog
-      // Add EWD_TIME to task->max_time and use that for the external watchdog.
-      g_string_printf(message, "** Updating watchdog\n");
+      if (!task->started) {
+          g_string_printf(message, "** Updating watchdog\n");
+          // FIXME If KILLTIMEOVERRIDE is defined use that instead of max_time.
+          restraint_task_watchdog (task, task->max_time);
+      }
       task->state = TASK_DEPENDENCIES;
       break;
     case TASK_DEPENDENCIES:
       // Install Task Dependencies
       // All dependencies are installed with system package command
       // All repodependencies are installed via fetch_git
-      g_string_printf(message, "** Installing dependencies\n");
+      if (!task->started) {
+          g_string_printf(message, "** Installing dependencies\n");
+      }
       task->state = TASK_RUN;
       break;
     case TASK_RUN:
@@ -591,44 +602,50 @@ task_handler (gpointer user_data)
       //       timeout_handler
       //       heartbeat_handler
       g_string_printf(message, "** Running task: %s [%s]\n", task->task_id, task->name);
-      if (task_run (app_data, &task->error))
+      if (task_run (app_data, &task->error)) {
+        restraint_task_status (task, "Running", NULL);
         task->state = TASK_RUNNING;
-      else
-        task->state = TASK_FAIL;
+        task->started = TRUE;
+        restraint_set_run_metadata (task, "started", NULL, G_TYPE_BOOLEAN, task->started);
+        // Update reboots count
+        restraint_set_run_metadata (task, "reboots", NULL, G_TYPE_UINT64, task->reboots + 1);
+      } else {
+        task->state = TASK_COMPLETE;
+      }
       break;
     case TASK_RUNNING:
         // TASK is running.
         // Remove this idle handler
         // The task_pid_complete will re-add this handler with the 
-        //  state being either TASK_FAIL or TASK_COMPLETE
+        //  state TASK_COMPLETE
         return FALSE;
-    case TASK_FAIL:
+    case TASK_COMPLETE:
       // Some step along the way failed.
       if (task->error) {
         g_warning("%s\n", task->error->message);
         g_string_printf(message, "** ERROR: %s\n", task->error->message);
-        restraint_task_abort(task, task->error);
-        // Leave the error for now.  We will process these at the recipe level
-        // g_error_free(task->error);
+        restraint_task_status(task, "Aborted", task->error);
+      } else {
+        restraint_task_result (task, "PASS", 0, "./", "");
+        restraint_task_status(task, "Completed", NULL);
       }
-      task->state = TASK_COMPLETE;
-      break;
-    case TASK_CANCELLED:
-      g_string_printf(message, "** Cancelling Task : %s\n", task->task_id);
-      restraint_task_cancel(task, NULL);
-      result = next_task (app_data, TASK_CANCELLED);
-      break;
-    case TASK_COMPLETE:
-      // Task completed so iterate to the next task
+      // Set task finished
+      task->finished = TRUE;
+      restraint_set_run_metadata (task, "finished", NULL, G_TYPE_BOOLEAN, task->finished);
+
       g_string_printf(message, "** Completed Task : %s\n", task->task_id);
-      result = next_task (app_data, TASK_IDLE);
+      task->state = TASK_COMPLETED;
+      break;
+    case TASK_COMPLETED:
+      // Get the next task and run it.
+      result = restraint_next_task (app_data, TASK_IDLE);
       break;
     default:
-      return TRUE;
+      result = TRUE;
       break;
   }
   if (message->len) {
-    connections_write(app_data->connections, message, STREAM_STDERR, 0);
+    connections_write(app_data, message, STREAM_STDERR, 0);
     g_string_free(message, TRUE);
   }
   return result;

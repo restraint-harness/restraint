@@ -9,8 +9,28 @@
 #include "common.h"
 #include "server.h"
 
+#define MAX_RETRIES 5
 SoupSession *soup_session;
 SoupServer *soup_server;
+
+static void
+copy_header (const char *name, const char *value, gpointer dest_headers)
+{
+        soup_message_headers_append (dest_headers, name, value);
+}
+
+static void
+retry_message (SoupSession *session, SoupMessage *failed_msg, SoupSessionCallback callback, gint *retries)
+{
+    SoupMessage *retry_msg;
+    retry_msg = soup_message_new_from_uri (failed_msg->method, soup_message_get_uri (failed_msg));
+    soup_message_headers_foreach (failed_msg->request_headers, copy_header,
+                                  retry_msg->request_headers);
+    SoupBuffer *request = soup_message_body_flatten (failed_msg->request_body);
+    soup_message_body_append_buffer (retry_msg->request_body, request);
+    soup_buffer_free (request);
+    soup_session_queue_message (soup_session, retry_msg, callback, retries);
+}
 
 static void
 connection_close (SoupMessage *client_msg)
@@ -61,7 +81,7 @@ void connections_close (AppData *app_data, gboolean monitor)
 static void 
 connection_write (SoupMessage *client_msg, GString *s)
 {
-    g_print ("[%p] Writing chunk of %lu bytes\n", client_msg, (unsigned long)s->len);
+    //g_printerr ("[%p] Writing chunk of %lu bytes\n", client_msg, (unsigned long)s->len);
 
     soup_message_body_append (client_msg->response_body,
                               SOUP_MEMORY_COPY,
@@ -70,31 +90,81 @@ connection_write (SoupMessage *client_msg, GString *s)
     soup_server_unpause_message (soup_server, client_msg);
 }
 
-void connections_write (GList *connections, GString *message, gint stream_type, gint status)
+static void
+task_output_complete (SoupSession *session, SoupMessage *server_msg, gpointer user_data)
 {
-    gchar *meta = NULL;
-    switch (stream_type) {
-      case STREAM_STDOUT:
-        write (STDOUT_FILENO, message->str, (size_t)message->len);
-        break;
-      case STREAM_STDERR:
-        write (STDERR_FILENO, message->str, (size_t)message->len);
-        break;
-      case STREAM_ERROR:
-        write (STDERR_FILENO, message->str, (size_t)message->len);
-        break;
-    }
-    // Prepend the stream type and length onto the begining.
-    meta = g_strdup_printf ("Content-Type: text/plain\n"
-                            "Content-ID: %d\n"
-                            "Status: %d\n"
-                            "Content-Length: %d\r\n\r\n",
-                            stream_type, status, (guint)message->len);
-    message = g_string_prepend(message, meta);
-    message = g_string_append(message, "\r\n--cut-here");
-    g_free (meta);
+    gint *retries = (gint *) user_data;
 
-    g_list_foreach (connections, (GFunc) connection_write, message);
+    if (SOUP_STATUS_IS_SUCCESSFUL(server_msg->status_code)) {
+        // Update run_metadata file with new taskout.log offset.
+        restraint_set_run_metadata (task, "offset", NULL, G_TYPE_UINT64, task->offset);
+        goto finish;
+    }
+
+    if (server_msg->status_code >= 500) {
+        if (*retries < MAX_RETRIES) {
+            *retries = *retries + 1;
+            g_warning("Retrying %d of %d, taskoutput.log code:%u Reason:%s\n",
+                      *retries, MAX_RETRIES, server_msg->status_code, server_msg->reason_phrase);
+            retry_message (soup_session, server_msg, task_output_complete, retries);
+            return;
+        } else {
+            g_warning("Max retries %d, Failed to send taskoutput.log\n", MAX_RETRIES);
+        }
+    } else {
+        g_warning("Failed to send taskoutput.log code:%u Reason:%s\n",
+                  server_msg->status_code, server_msg->reason_phrase);
+    }
+finish:
+    g_free (retries);
+}
+
+static void
+task_output (Task *task, GString *message)
+{
+    g_return_if_fail (task != NULL);
+    g_return_if_fail (message != NULL);
+
+    // Initalize our retry variable.
+    gint *retries = malloc( sizeof(*retries) );
+    *retries = 0;
+
+    SoupURI *task_output_uri;
+    SoupMessage *server_msg;
+
+    task_output_uri = soup_uri_new_with_base (task->task_uri, "logs/taskoutput.log");
+    server_msg = soup_message_new_from_uri ("PUT", task_output_uri);
+    soup_uri_free (task_output_uri);
+    g_return_if_fail (server_msg != NULL);
+
+    gchar *range = g_strdup_printf ("bytes %zu-%zu/*", task->offset, task->offset + message->len - 1);
+    task->offset = task->offset + message->len;
+    soup_message_headers_append (server_msg->request_headers, "Content-Range", range);
+    soup_message_set_request (server_msg, "text/plain", SOUP_MEMORY_COPY, message->str, message->len);
+    soup_session_queue_message (soup_session, server_msg, task_output_complete, retries);
+}
+
+void connections_write (AppData *app_data, GString *message, gint stream_type, gint status)
+{
+    GString *meta = g_string_new(NULL);
+
+    write (STDOUT_FILENO, message->str, (size_t)message->len);
+
+    // Setup mixed content header
+    g_string_printf (meta,
+                     "Content-Type: text/plain\n"
+                     "Content-ID: %d\n"
+                     "Status: %d\n"
+                     "Content-Length: %d\r\n\r\n",
+                     stream_type, status, (guint)message->len);
+    meta = g_string_append (meta, message->str);
+    meta = g_string_append(meta, "\r\n--cut-here");
+    g_list_foreach (app_data->connections, (GFunc) connection_write, meta);
+    g_string_free (meta, TRUE);
+
+    // Active parsed task?  Send the output to taskout.log via REST
+    if (app_data->tasks && ((Task *) app_data->tasks->data)->parsed)
+        task_output ((Task *) app_data->tasks->data, message);
 }
 
 /**
@@ -102,13 +172,13 @@ void connections_write (GList *connections, GString *message, gint stream_type, 
  * means you should close the connection after this.
  **/
 void
-connections_error (GList *connections, GError *error)
+connections_error (AppData *app_data, GError *error)
 {
-    g_return_if_fail (connections != NULL);
+    g_return_if_fail (app_data != NULL);
     g_return_if_fail (error != NULL);
 
     GString *s = g_string_new(error->message);
-    connections_write (connections, s, STREAM_ERROR, error->code);
+    connections_write (app_data, s, STREAM_ERROR, error->code);
     g_string_free(s, TRUE);
 }
 
@@ -240,12 +310,6 @@ task_abort_callback (SoupServer *server, SoupMessage *client_msg,
                      const char *path, GHashTable *query,
                      SoupClientContext *context, gpointer data)
 {
-}
-
-static void
-copy_header (const char *name, const char *value, gpointer dest_headers)
-{
-        soup_message_headers_append (dest_headers, name, value);
 }
 
 /**

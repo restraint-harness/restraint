@@ -8,3 +8,5 @@ typedef enum {
 } RestraintMetadataParseError;
 
 gboolean restraint_metadata_update(Task *task, GError **error);
+void restraint_parse_run_metadata (Task *task, GError **error);
+void restraint_set_run_metadata (Task *task, gchar *key, GError **error, GType type, ...);

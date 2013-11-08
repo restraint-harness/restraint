@@ -263,15 +263,24 @@ static Task *parse_task(xmlNode *task_node, SoupURI *recipe_uri, GError **error)
         }
     }
 
-    task->started = FALSE;
-    task->finished = FALSE;
+    /*
+     * override the run_metadata values for started and finished
+     * with the value of status from the xml.
+     * When running against the RESTAPI the status value will 
+     * update as the recipe executes.
+     * When running against a static xml file it won't.
+     */
     xmlChar *status = xmlGetNoNsProp(task_node, (xmlChar *)"status");
     if (status == NULL) {
         unrecognised("Task %s missing 'status' attribute", task->task_id);
         goto error;
     }
     if (g_strcmp0((gchar *)status, "Running") == 0) {
-        task->started = TRUE;
+        // We can't rely on the server because it "starts" the first task 
+        // If we pay attention to that then we won't install the task
+        // Update watchdog or install dependencies.
+        g_warning ("Ignoring Server Running state\n");
+        //task->started = TRUE;
     } else if (g_strcmp0((gchar *)status, "Completed") == 0 ||
             g_strcmp0((gchar *)status, "Aborted") == 0 ||
             g_strcmp0((gchar *)status, "Cancelled") == 0) {
@@ -352,6 +361,14 @@ recipe_parse (xmlDoc *doc, SoupURI *recipe_uri, GError **error)
             }
             /* link task to recipe for additional attributes */
             task->recipe = result;
+
+            /*
+             * run_path is where we will store the following:
+             * taskout.log : STDOUT/STDERR from the task run
+             * metadata    : variables like rebootcount and time left on the watchdog
+             */
+            task->run_path = g_build_filename(TASK_LOCATION, task->recipe->recipe_id, task->task_id, NULL);
+
             task->order = i++;
             tasks = g_list_prepend(tasks, task);
         } else
@@ -504,7 +521,7 @@ recipe_finish (gpointer user_data)
     // Report any recipe errors, It is not valid to report any more data
     // to clients once an error has been reported.
     if (app_data->error) {
-        connections_error (app_data->connections, app_data->error);
+        connections_error (app_data, app_data->error);
         g_error_free(app_data->error);
         app_data->error = NULL;
     } 
@@ -594,7 +611,7 @@ recipe_handler (gpointer user_data)
 
     // write message out to all clients
     if (message->len) {
-      connections_write(app_data->connections, message, STREAM_STDERR, 0);
+      connections_write(app_data, message, STREAM_STDERR, 0);
       g_string_free(message, TRUE);
     }
 
