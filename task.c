@@ -76,11 +76,15 @@ task_io_callback (GIOChannel *io, GIOCondition condition, gpointer user_data) {
     GError *tmp_error = NULL;
 
     GString *s = g_string_new(NULL);
+    gchar buf[8192];
+    gsize bytes_read;
 
     if (condition & G_IO_IN) {
-        switch (g_io_channel_read_line_string(io, s, NULL, &tmp_error)) {
+        //switch (g_io_channel_read_line_string(io, s, NULL, &tmp_error)) {
+        switch (g_io_channel_read_chars(io, buf, 8192, &bytes_read, &tmp_error)) {
           case G_IO_STATUS_NORMAL:
             /* Push data to our connections.. */
+            g_string_append_len (s, buf, bytes_read);
             connections_write(app_data, s, STREAM_STDOUT, 0);
             g_string_free (s, TRUE);
             return TRUE;
@@ -125,7 +129,7 @@ task_pid_callback (GPid pid, gint status, gpointer user_data)
         } else {
             g_set_error(&task->error, RESTRAINT_TASK_RUNNER_ERROR,
                         RESTRAINT_TASK_RUNNER_RC_ERROR,
-                        "%s returned non-zero %i", *task->entry_point, task->pid_result);
+                        "%s returned non-zero %i", task->entry_point, task->pid_result);
         }
     }
 }
@@ -253,8 +257,9 @@ task_run (AppData *app_data, GError **error)
         }
         /* Spawn the intended program. */
         environ = task->env;
-        if (execvp (*task->entry_point, task->entry_point) == -1) {
-            g_warning("Failed to exec() %s, %s error:%s", *task->entry_point, task->path, strerror(errno));
+        gchar *args[] = {"sh", "-l", "-c", task->entry_point, NULL};
+        if (execvp ("sh", args) == -1) {
+            g_warning("Failed to exec() %s, %s error:%s", task->entry_point, task->path, strerror(errno));
             exit(1);
         }
     }
@@ -262,6 +267,8 @@ task_run (AppData *app_data, GError **error)
 //    close (saved_stderr);
     // Monitor pty pipe
     GIOChannel *io = g_io_channel_unix_new(ret_fd);
+    g_io_channel_set_encoding (io, NULL, NULL);
+    g_io_channel_set_buffered (io, FALSE);
     task->pty_handler_id = g_io_add_watch_full (io,
                                                 G_PRIORITY_DEFAULT,
                                                 G_IO_IN | G_IO_HUP,
@@ -298,8 +305,10 @@ task_run (AppData *app_data, GError **error)
 static gboolean build_env(Task *task, GError **error) {
     GPtrArray *env = g_ptr_array_new();
     gchar *prefix = "";
-    if (task->rhts_compat == FALSE)
+    if (task->rhts_compat == FALSE) {
         prefix = ENV_PREFIX;
+        g_ptr_array_add(env, g_strdup_printf("HARNESS_PREFIX=%s", ENV_PREFIX));
+    }
     g_list_foreach(task->recipe->roles, (GFunc) build_param_var, env);
     g_list_foreach(task->roles, (GFunc) build_param_var, env);
     g_ptr_array_add(env, g_strdup_printf("%sJOBID=%s", prefix, task->recipe->job_id));
@@ -457,7 +466,7 @@ restraint_task_result (Task *task, gchar *result, guint score, gchar *path, gcha
 Task *restraint_task_new(void) {
     Task *task = g_slice_new0(Task);
     task->max_time = 0;
-    task->entry_point = g_strsplit(DEFAULT_ENTRY_POINT, " ", 0);
+    task->entry_point = g_strdup_printf ("%s", DEFAULT_ENTRY_POINT);
     return task;
 }
 
@@ -479,7 +488,7 @@ void restraint_task_free(Task *task) {
     }
     g_list_free_full(task->params, (GDestroyNotify) restraint_param_free);
     g_list_free_full(task->roles, (GDestroyNotify) restraint_role_free);
-    g_strfreev (task->entry_point);
+    g_free (task->entry_point);
     g_strfreev (task->env);
     g_list_free_full(task->dependencies, (GDestroyNotify) g_free);
     g_slice_free(Task, task);
@@ -535,7 +544,6 @@ task_handler (gpointer user_data)
 
       if (task->finished) {
           // If the task is finished skip to the next task.
-          g_string_printf(message, "** Skipping Finished task: %s [%s]\n", task->task_id, task->path);
           task->state = TASK_COMPLETED;
       } else if (task->started) {
           // If the task is not finished but started then skip fetching the task again.
@@ -626,7 +634,6 @@ task_handler (gpointer user_data)
         g_string_printf(message, "** ERROR: %s\n", task->error->message);
         restraint_task_status(task, "Aborted", task->error);
       } else {
-        restraint_task_result (task, "PASS", 0, "./", "");
         restraint_task_status(task, "Completed", NULL);
       }
       // Set task finished

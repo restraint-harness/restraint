@@ -19,17 +19,23 @@ copy_header (const char *name, const char *value, gpointer dest_headers)
         soup_message_headers_append (dest_headers, name, value);
 }
 
-static void
-retry_message (SoupSession *session, SoupMessage *failed_msg, SoupSessionCallback callback, gint *retries)
+/**
+ * Take orig and split on split_string and put new_base on beginning.
+ **/
+static gchar *
+swap_base (const gchar *orig, const gchar *new_base, gchar *split_string)
 {
-    SoupMessage *retry_msg;
-    retry_msg = soup_message_new_from_uri (failed_msg->method, soup_message_get_uri (failed_msg));
-    soup_message_headers_foreach (failed_msg->request_headers, copy_header,
-                                  retry_msg->request_headers);
-    SoupBuffer *request = soup_message_body_flatten (failed_msg->request_body);
-    soup_message_body_append_buffer (retry_msg->request_body, request);
-    soup_buffer_free (request);
-    soup_session_queue_message (soup_session, retry_msg, callback, retries);
+  gchar *new;
+  gchar **orig_pieces;
+  gchar **new_pieces;
+
+  orig_pieces = g_strsplit (orig, split_string, 2);
+  new_pieces = g_strsplit (new_base, split_string, 2);
+  new = g_strconcat(new_pieces[0], split_string, orig_pieces[1], NULL);
+  g_strfreev(orig_pieces);
+  g_strfreev(new_pieces);
+
+  return new;
 }
 
 static void
@@ -96,17 +102,15 @@ task_output_complete (SoupSession *session, SoupMessage *server_msg, gpointer us
     gint *retries = (gint *) user_data;
 
     if (SOUP_STATUS_IS_SUCCESSFUL(server_msg->status_code)) {
-        // Update run_metadata file with new taskout.log offset.
-        restraint_set_run_metadata (task, "offset", NULL, G_TYPE_UINT64, task->offset);
         goto finish;
     }
 
-    if (server_msg->status_code >= 500) {
+    if (server_msg->status_code <= 100 || server_msg->status_code >= 500) {
         if (*retries < MAX_RETRIES) {
             *retries = *retries + 1;
             g_warning("Retrying %d of %d, taskoutput.log code:%u Reason:%s\n",
                       *retries, MAX_RETRIES, server_msg->status_code, server_msg->reason_phrase);
-            retry_message (soup_session, server_msg, task_output_complete, retries);
+            soup_session_requeue_message (soup_session, server_msg);
             return;
         } else {
             g_warning("Max retries %d, Failed to send taskoutput.log\n", MAX_RETRIES);
@@ -142,6 +146,9 @@ task_output (Task *task, GString *message)
     soup_message_headers_append (server_msg->request_headers, "Content-Range", range);
     soup_message_set_request (server_msg, "text/plain", SOUP_MEMORY_COPY, message->str, message->len);
     soup_session_queue_message (soup_session, server_msg, task_output_complete, retries);
+
+    // Update run_metadata file with new taskout.log offset.
+    restraint_set_run_metadata (task, "offset", NULL, G_TYPE_UINT64, task->offset);
 }
 
 void connections_write (AppData *app_data, GString *message, gint stream_type, gint status)
@@ -210,6 +217,77 @@ client_disconnected (SoupMessage *client_msg, gpointer data)
 }
 
 static void
+server_msg_complete (SoupSession *session, SoupMessage *server_msg, gpointer data)
+{
+    SoupMessage *client_msg = (SoupMessage *) data;
+
+    soup_message_headers_foreach (server_msg->response_headers, copy_header,
+                                  client_msg->response_headers);
+    if (server_msg->response_body->length) {
+      SoupBuffer *request = soup_message_body_flatten (server_msg->response_body);
+      soup_message_body_append_buffer (client_msg->response_body, request);
+      soup_buffer_free (request);
+    }
+    soup_message_set_status (client_msg, server_msg->status_code);
+    soup_server_unpause_message (soup_server, client_msg);
+}
+
+static void
+server_recipe_callback (SoupServer *server, SoupMessage *client_msg,
+                     const char *path, GHashTable *query,
+                     SoupClientContext *context, gpointer data)
+{
+  AppData *app_data = (AppData *) data;
+  SoupMessage *server_msg;
+
+  GHashTable *table;
+
+  if (app_data->state == RECIPE_IDLE) {
+      soup_message_set_status_full (client_msg, SOUP_STATUS_BAD_REQUEST, "No Recipe Running");
+      return;
+  }
+  Task *task = (Task *) app_data->tasks->data;
+
+  table = soup_form_decode (client_msg->request_body->data);
+  if (g_str_has_suffix (path, "/results/")) {
+    SoupURI *task_results_uri = soup_uri_new_with_base (task->task_uri, "results/");
+    server_msg = soup_message_new_from_uri ("POST", task_results_uri);
+    soup_message_headers_foreach (client_msg->request_headers, copy_header,
+                                  server_msg->request_headers);
+    if (client_msg->request_body->length) {
+      SoupBuffer *request = soup_message_body_flatten (client_msg->request_body);
+      soup_message_body_append_buffer (server_msg->request_body, request);
+      soup_buffer_free (request);
+    }
+
+    // We want to keep track of PASS/FAIL and Score for the summary
+    gchar *result = g_hash_table_lookup (table, "result");
+    gchar *score = g_hash_table_lookup (table, "score");
+    g_printf ("do something with this %s %s\n", result, score);
+
+    soup_session_queue_message (soup_session, server_msg, server_msg_complete, client_msg);
+    soup_server_pause_message (soup_server, client_msg);
+    return;
+  } else if (g_strrstr (path, "/logs/") != NULL) {
+    gchar *log_url = swap_base(path, soup_uri_to_string(task->task_uri, FALSE), "/recipes/");
+    SoupURI *log_uri = soup_uri_new (log_url);
+    server_msg = soup_message_new_from_uri ("PUT", log_uri);
+    soup_message_headers_foreach (client_msg->request_headers, copy_header,
+                                  server_msg->request_headers);
+    if (client_msg->request_body->length) {
+      SoupBuffer *request = soup_message_body_flatten (client_msg->request_body);
+      soup_message_body_append_buffer (server_msg->request_body, request);
+      soup_buffer_free (request);
+    }
+    soup_session_queue_message (soup_session, server_msg, server_msg_complete, client_msg);
+    soup_server_pause_message (soup_server, client_msg);
+    return;
+  }
+
+  soup_message_set_status_full (client_msg, SOUP_STATUS_BAD_REQUEST, "No Match, Invalid request");
+}
+
+static void
 server_control_callback (SoupServer *server, SoupMessage *client_msg,
                      const char *path, GHashTable *query,
                      SoupClientContext *context, gpointer data)
@@ -272,144 +350,6 @@ server_control_callback (SoupServer *server, SoupMessage *client_msg,
   }
 }
 
-/**
- * Abort the remaining tasks
- **/
-static void
-recipe_abort_callback (SoupServer *server, SoupMessage *client_msg,
-                     const char *path, GHashTable *query,
-                     SoupClientContext *context, gpointer data)
-{
-}
-
-/**
- * Report task result
- **/
-static void
-task_result_callback (SoupServer *server, SoupMessage *client_msg,
-                     const char *path, GHashTable *query,
-                     SoupClientContext *context, gpointer data)
-{
-}
-
-/**
- * Update local watchdog and push external watchdog out as well.
- **/
-static void
-task_watchdog_callback (SoupServer *server, SoupMessage *client_msg,
-                     const char *path, GHashTable *query,
-                     SoupClientContext *context, gpointer data)
-{
-}
-
-/**
- * Abort current task
- **/
-static void
-task_abort_callback (SoupServer *server, SoupMessage *client_msg,
-                     const char *path, GHashTable *query,
-                     SoupClientContext *context, gpointer data)
-{
-}
-
-/**
- * Split on /tasks/(task_id)
- * /recipes/(recipe_id)/tasks/(task_id)/results/(result_id)/logs/(path: path)
- **/
-static SoupURI*
-parse_url (SoupMessage *client_msg, Task *task)
-{
-  gchar *uristr;
-  gchar *tasks_id;
-  gchar **server_path;
-  SoupURI *soup_uri;
-
-  uristr = soup_uri_to_string (soup_message_get_uri (client_msg), FALSE);
-  tasks_id = g_strconcat("/tasks/", task->task_id, "/", NULL);
-  server_path = g_strsplit (uristr, tasks_id, 2);
-  g_free (uristr);
-  soup_uri = soup_uri_new_with_base (task->task_uri, server_path[1]);
-  g_strfreev(server_path);
-
-  return soup_uri;
-}
-
-/**
- * Proxy the uploading log files to the lab controller.
- *
- * We could also transfer these to any restraint client that happens to be 
- * monitoring the recipe.
- **/
-static void
-log_callback (SoupServer *server, SoupMessage *client_msg,
-                     const char *path, GHashTable *query,
-                     SoupClientContext *context, gpointer data)
-{
-  SoupMessage *server_msg;
-  SoupURI *result_log_uri;
-  AppData *app_data = (AppData *) data;
-
-  if (app_data->state != RECIPE_IDLE && app_data->tasks) {
-    Task *task = (Task *) app_data->tasks->data;
-    result_log_uri = parse_url(client_msg, task);
-    server_msg = soup_message_new_from_uri ("POST", result_log_uri);
-    soup_message_headers_foreach (client_msg->request_headers, copy_header,
-                                  server_msg->request_headers);
-    if (client_msg->request_body->length) {
-      SoupBuffer *request = soup_message_body_flatten (client_msg->request_body);
-      soup_message_body_append_buffer (server_msg->request_body, request);
-      soup_buffer_free (request);
-    }
-    soup_session_send_message (soup_session, server_msg);
-    soup_message_set_status (client_msg, server_msg->status_code);
-  }
-}
-
-void
-server_register_recipe_callbacks (AppData *app_data)
-{
-  // POST /recipes/(recipe_id)/watchdog
-  // POST /recipes/(recipe_id)/status
-  // PUT /recipes/(recipe_id)/logs/(path: path)
-  //Task *task = (Task *) app_data->tasks->data;
-
-  //task_status = g_strdup_printf ("/recipes/%s/tasks/%s/status");
-  // Recipe handlers
-  soup_server_add_handler (soup_server, "/recipe/abort",
-                           recipe_abort_callback, app_data, NULL);
-}
-
-void
-server_register_task_callbacks (AppData *app_data)
-{
-  // POST /recipes/(recipe_id)/tasks/(task_id)/status
-  // POST /recipes/(recipe_id)/tasks/(task_id)/results/
-  // PUT /recipes/(recipe_id)/logs/(path: path)
-  // PUT /recipes/(recipe_id)/tasks/(task_id)/logs/(path: path)
-  // PUT /recipes/(recipe_id)/tasks/(task_id)/results/(result_id)/logs/(path: path)
-  //
-  //Task *task = (Task *) app_data->tasks->data;
-
-  //task_status = g_strdup_printf ("/recipes/%s/tasks/%s/status",
-  //                               task->recipe_id, task->task_id);
-  //task_result = g_strdup_printf ("/recipes/%s/tasks/%s/results/",
-  //                               task->recipe_id, task->task_id);
-  //task_log = g_strdup_printf ("/recipes/%s/tasks/%s/logs",
-  //                            task->recipe_id, task->task_id);
-  //result_log = g_strdup_printf ("/recipes/%s/tasks/%s/results/%s/logs",
-  //                              task->recipe_id, task->task_id, ##);
-
-  // Task handlers
-  soup_server_add_handler (soup_server, "/task/results",
-                           task_result_callback, app_data, NULL);
-  soup_server_add_handler (soup_server, "/task/watchdog",
-                           task_watchdog_callback, app_data, NULL);
-  soup_server_add_handler (soup_server, "/task/abort",
-                           task_abort_callback, app_data, NULL);
-  soup_server_add_handler (soup_server, "/logs/task/",
-                           log_callback, app_data, NULL);
-}
-
 int main(int argc, char *argv[]) {
   AppData *data = g_slice_new0(AppData);
   GMainLoop *loop;
@@ -427,6 +367,8 @@ int main(int argc, char *argv[]) {
   // Handler for controlling the harness
   soup_server_add_handler (soup_server, "/control",
                            server_control_callback, data, NULL);
+  soup_server_add_handler (soup_server, "/recipes",
+                           server_recipe_callback, data, NULL);
 // Fallback handler.. 
 //  soup_server_add_handler (soup_server, NULL,
 //                           server_idle, data, NULL);

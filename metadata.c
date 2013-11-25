@@ -34,7 +34,7 @@ static guint64 parse_time_string(gchar *time_string, GError **error) {
         max_time = 3600 * max_time;
     else if (time_unit == 'M')
         max_time = 60 * max_time;
-    else if (time_unit == 'S')
+    else if (time_unit == 'S' || time_unit == '\0')
         max_time = max_time;
     else {
         unrecognised(RESTRAINT_METADATA_PARSE_ERROR_BAD_SYNTAX, "Unrecognised time unit '%c'", time_unit);
@@ -82,8 +82,7 @@ gboolean parse_metadata(Task *task, gchar *task_metadata, GError **error) {
         goto error;
     }
     if (entry_point != NULL)
-        task->entry_point = g_strsplit(entry_point, " ", 0);
-    g_free(entry_point);
+        task->entry_point = entry_point;
 
     gchar *max_time = g_key_file_get_locale_string (keyfile,
                                                     "restraint",

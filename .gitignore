@@ -26,4 +26,6 @@
 /test_task
 /restraint
 /restraintd
+/report_result
+/rhts-submit-log
 /*.o

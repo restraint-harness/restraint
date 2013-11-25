@@ -19,7 +19,13 @@ else
 endif
 
 .PHONY: all
-all: restraint restraintd
+all: restraint restraintd report_result rhts-submit-log
+
+report_result: result.o upload.o
+	$(CC) $(LDFLAFS) -o $@ $^ $(LIBS)
+
+rhts-submit-log: result_log.o upload.o
+	$(CC) $(LDFLAFS) -o $@ $^ $(LIBS)
 
 restraint: client.o
 	$(CC) $(LDFLAFS) -o $@ $^ $(LIBS)
@@ -71,4 +77,4 @@ valgrind: $(TEST_PROGS) test-data/git-remote
 
 .PHONY: clean
 clean:
-	rm -f restraint restraintd $(TEST_PROGS) *.o
+	rm -f restraint restraintd report_result $(TEST_PROGS) *.o
