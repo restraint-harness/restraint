@@ -172,7 +172,7 @@ installed from::
 
  <recipe ks_meta="harness=restraint">
   <repos>
-   <repo name="mylittleharness"
+   <repo name="restraint"
          url="http://example.com/restraintd/el6/" />
   </repos>
   .
