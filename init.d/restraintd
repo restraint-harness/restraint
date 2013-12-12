@@ -1,0 +1,89 @@
+#!/bin/bash
+#
+# restraintd:	Start the restraint Harness server
+#
+# chkconfig:	- 98 10
+# description:	The restraint Harness server.
+
+# Source function library.
+. /etc/rc.d/init.d/functions
+
+prog=restraintd
+# FIXME: may need to change this(?)
+RUN_AS=root
+
+if [ -f /etc/sysconfig/$prog ]; then
+    . /etc/sysconfig/$prog
+fi
+
+# Source harness environment so we know what recipe to run.
+. /etc/profile.d/beaker-harness-env.sh
+
+PIDFILE=/var/run/${prog}.pid
+LOCKFILE=/var/lock/subsys/$prog
+
+start() {
+    echo -n $"Starting $prog: "
+    daemon --user $RUN_AS $prog "$OPTIONS >> /mnt/testarea/$prog.out 2>&1 &" 'echo $!' ">$PIDFILE"
+    RETVAL=$?
+    echo
+    echo "$prog running as process `cat $PIDFILE`"
+    if test $RETVAL = 0; then
+        touch $LOCKFILE
+    fi
+    sleep 5
+    restraint --run $BEAKER_LAB_CONTROLLER_URL/recipes/$BEAKER_RECIPE_ID/
+    return $RETVAL
+}
+
+stop() {
+    echo -n $"Stopping $prog: "
+    if ! killproc /usr/bin/restraintd; then
+        kill `cat $PIDFILE`
+    else
+        true
+    fi
+    RETVAL=$?
+    echo
+    rm -f $LOCKFILE
+    return $RETVAL
+}
+
+restart() {
+    stop
+    start
+}
+
+condrestart(){
+	[ -e $LOCKFILE ] && restart
+	return 0
+}
+
+# See how we were called.
+case "$1" in
+    start)
+	start
+	;;
+    stop)
+	stop
+	;;
+    status)
+	status $prog
+	RETVAL=$?
+        ;;
+    restart)
+	restart
+	;;
+    condrestart|try-restart)
+	condrestart
+	;;
+    reload)
+        ;;
+    force-reload)
+        restart
+        ;;
+    usage|*)
+	echo $"Usage: $0 {start|stop|status|restart|condrestart|reload|force-reload|usage}"
+	;;
+esac
+exit $RETVAL

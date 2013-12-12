@@ -1,0 +1,18 @@
+#!/bin/sh
+PATH=/sbin:/usr/sbin:$PATH
+
+if [ -e "/usr/sbin/efibootmgr" ]; then
+    EFI=$(efibootmgr -v | grep BootCurrent | awk '{ print $2}')
+    if [ -n "$EFI" ]; then
+        logger -s "efibootmgr -n $(efibootmgr -v | grep BootCurrent | awk '{ print $2}')"
+        efibootmgr -n $(efibootmgr -v | grep BootCurrent | awk '{ print $2}')
+    fi
+fi
+
+/sbin/shutdown -r now
+
+# Wait for the shutdown to kill us..  we don't want control to go back
+#  to the test harness.
+while (true); do
+    sleep 666
+done
