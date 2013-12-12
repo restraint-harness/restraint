@@ -75,6 +75,13 @@ check: $(TEST_PROGS) test-data/git-remote
 valgrind: $(TEST_PROGS) test-data/git-remote
 	./run-tests.sh --valgrind $(TEST_PROGS)
 
+.PHONY: install
+install: all
+	install -m0755 restraint $(DESTDIR)/usr/bin
+	install -m0755 restraintd $(DESTDIR)/usr/bin
+	install -m0755 report_result $(DESTDIR)/usr/bin
+	install -m0755 rhts-submit-log $(DESTDIR)/usr/bin
+
 .PHONY: clean
 clean:
 	rm -f restraint restraintd report_result rhts-submit-log $(TEST_PROGS) *.o
