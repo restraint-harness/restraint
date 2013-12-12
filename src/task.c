@@ -15,6 +15,7 @@
 #include "metadata.h"
 #include "packages.h"
 #include "common.h"
+#include "process.h"
 
 GQuark restraint_task_runner_error(void) {
     return g_quark_from_static_string("restraint-task-runner-error-quark");
@@ -53,12 +54,10 @@ gboolean restraint_task_fetch(AppData *app_data, GError **error) {
             }
             break;
         case TASK_FETCH_INSTALL_PACKAGE:
-            if (!restraint_install_package(task->fetch.package_name, &tmp_error)) {
+            if (!restraint_install_package(app_data, task->fetch.package_name, &tmp_error)) {
                 g_propagate_error(error, tmp_error);
-                task->state = TASK_COMPLETE;
                 return FALSE;
             }
-            task->state = TASK_METADATA;
             break;
         default:
             g_return_val_if_reached(FALSE);
@@ -70,9 +69,10 @@ static void build_param_var(Param *param, GPtrArray *env) {
     g_ptr_array_add(env, g_strdup_printf("%s=%s", param->name, param->value));
 }
 
-static gboolean
+gboolean
 task_io_callback (GIOChannel *io, GIOCondition condition, gpointer user_data) {
-    AppData *app_data = (AppData *) user_data;
+    TaskRunData *task_run_data = (TaskRunData *) user_data;
+    AppData *app_data = task_run_data->app_data;
     GError *tmp_error = NULL;
 
     GString *s = g_string_new(NULL);
@@ -114,90 +114,51 @@ task_io_callback (GIOChannel *io, GIOCondition condition, gpointer user_data) {
     return FALSE;
 }
 
-static void
-task_pid_callback (GPid pid, gint status, gpointer user_data)
+void
+task_finish_callback (gint pid_result, gboolean localwatchdog, gpointer user_data)
 {
-    AppData *app_data = (AppData *) user_data;
-    Task *task = (Task *) app_data->tasks->data;
+    TaskRunData *task_run_data = (TaskRunData *) user_data;
+    AppData *app_data = task_run_data->app_data;
+    Task *task = app_data->tasks->data;
 
-    task->pid_result = status;
-    if (task->pid_result != 0) {
-        if (task->state == TASK_ABORTED) {
+    // Remove Heartbeat Handler
+    if (task_run_data->heartbeat_handler_id) {
+        g_source_remove (task_run_data->heartbeat_handler_id);
+        task_run_data->heartbeat_handler_id = 0;
+    }
+
+    // Did the command Succeed?
+    if (pid_result == 0) {
+        task->state = task_run_data->pass_state;
+    } else {
+        task->state = task_run_data->fail_state;
+        if (localwatchdog) {
             g_set_error(&task->error, RESTRAINT_TASK_RUNNER_ERROR,
-                        RESTRAINT_TASK_RUNNER_WATCHDOG_ERROR,
-                        "Local watchdog expired! Killed %i with %i", task->pid, SIGKILL);
+                            RESTRAINT_TASK_RUNNER_WATCHDOG_ERROR,
+                            "Local watchdog expired!");
         } else {
             g_set_error(&task->error, RESTRAINT_TASK_RUNNER_ERROR,
                         RESTRAINT_TASK_RUNNER_RC_ERROR,
-                        "%s returned non-zero %i", task->entry_point, task->pid_result);
+                            "Command returned non-zero %i", pid_result);
         }
     }
-}
-
-static void
-task_pid_finish (gpointer user_data)
-{
-    AppData *app_data = (AppData *) user_data;
-    Task *task = (Task *) app_data->tasks->data;
-
-    // Remove heartbeat handler
-    if (task->heartbeat_handler_id) {
-        g_source_remove(task->heartbeat_handler_id);
-        task->heartbeat_handler_id = 0;
-    }
-    // Remove local watchdog handler
-    if (task->timeout_handler_id) {
-        g_source_remove(task->timeout_handler_id);
-        task->timeout_handler_id = 0;
-    }
-
-    task->state = TASK_COMPLETE;
-
-    // Add the task_handler back to finish.
     app_data->task_handler_id = g_idle_add_full(G_PRIORITY_DEFAULT_IDLE,
-                                                task_handler, 
+                                                task_handler,
                                                 app_data,
                                                 NULL);
 }
 
-static gboolean
-task_timeout_callback (gpointer user_data)
-{
-    AppData *app_data = (AppData *) user_data;
-    Task *task = (Task *) app_data->tasks->data;
-
-    // Kill process pid
-    if (kill (task->pid, SIGKILL) == 0) {
-        task->state = TASK_ABORTED;
-    } else {
-        g_set_error(&task->error, RESTRAINT_TASK_RUNNER_ERROR,
-                    RESTRAINT_TASK_RUNNER_WATCHDOG_ERROR,
-                    "Local watchdog expired! But we failed to kill %i with %i", task->pid, SIGKILL);
-        g_warning("%s\n", task->error->message);
-        // Remove pid handler
-        if (task->pid_handler_id) {
-            g_source_remove(task->pid_handler_id);
-            task->pid_handler_id = 0;
-        }
-    }
-
-    // Remove heartbeat handler
-    if (task->heartbeat_handler_id) {
-        g_source_remove(task->heartbeat_handler_id);
-        task->heartbeat_handler_id = 0;
-    }
-    return FALSE;
-}
-
-static gboolean
+gboolean
 task_heartbeat_callback (gpointer user_data)
 {
+    TaskRunData *task_run_data = (TaskRunData *) user_data;
+    AppData *app_data = task_run_data->app_data;
+    Task *task = (Task *) app_data->tasks->data;
+
     time_t rawtime;
     struct tm * timeinfo;
     GString *message = g_string_new(NULL);
     gchar currtime[80];
-    AppData *app_data = (AppData *) user_data;
-    Task *task = (Task *) app_data->tasks->data;
 
     task->max_time -= HEARTBEAT;
     restraint_set_run_metadata (task, "max_time", NULL, G_TYPE_UINT64, task->max_time);
@@ -205,9 +166,8 @@ task_heartbeat_callback (gpointer user_data)
     time (&rawtime);
     timeinfo = localtime (&rawtime);
     strftime(currtime,80,"%a %b %d %H:%M:%S %Y", timeinfo);
-    g_string_printf(message, "*** Current Time: %s Localwatchdog at: %s\n", currtime, task->expire_time);
+    g_string_printf(message, "*** Current Time: %s Localwatchdog at: %s\n", currtime, task_run_data->expire_time);
     connections_write(app_data, message, STREAM_STDERR, 0);
-    // Log to console.log as well?
     g_string_free(message, TRUE);
     return TRUE;
 }
@@ -217,97 +177,55 @@ task_run (AppData *app_data, GError **error)
 {
     Task *task = (Task *) app_data->tasks->data;
     time_t rawtime = time (NULL);
-    gint ret_fd = -1;
-    struct termios term;
-    struct winsize win = {
-        .ws_col = 80, .ws_row = 24,
-        .ws_xpixel = 480, .ws_ypixel = 192,
-    };
-//    gint saved_stderr = dup (STDERR_FILENO);
+    TaskRunData *task_run_data = g_slice_new0 (TaskRunData);
+    task_run_data->app_data = app_data;
+    task_run_data->pass_state = TASK_COMPLETE;
+    task_run_data->fail_state = TASK_COMPLETE;
 
-//    if (saved_stderr < 0) {
-//        g_set_error(&task->error, RESTRAINT_TASK_RUNNER_ERROR,
-//                    RESTRAINT_TASK_RUNNER_STDERR_ERROR,
-//                    "Failed to save stderr");
-//        return FALSE;
-//    }
+    CommandData *command_data = g_slice_new0 (CommandData);
+    const gchar *args[] = {"sh", "-l", "-c", task->entry_point, NULL};
+    command_data->command = args;
+    command_data->environ = (const gchar **)task->env->pdata;
+    command_data->path = task->path;
+    command_data->max_time = task->max_time;
 
-    task->pid = forkpty (&ret_fd, NULL, &term, &win);
-    if (task->pid < 0) {
-        /* Failed to fork */
-        g_set_error(&task->error, RESTRAINT_TASK_RUNNER_ERROR,
-                    RESTRAINT_TASK_RUNNER_FORK_ERROR,
-                    "Failed to fork!");
+    GError *tmp_error = NULL;
+
+    if (!process_run (command_data,
+                      task_io_callback,
+                      task_finish_callback,
+                      task_run_data,
+                      &tmp_error)) {
+        g_propagate_prefixed_error (error, tmp_error,
+                                    "Task %s failed to run", task->task_id);
         return FALSE;
-    } else if (task->pid == 0) {
-        /* Child process. */
-        /* Restore stderr.  we may not want to do this.*/
-//        if (dup2 (saved_stderr, STDERR_FILENO) < 0) {
-//            g_set_error(&task->error, RESTRAINT_TASK_RUNNER_ERROR,
-//                        RESTRAINT_TASK_RUNNER_STDERR_ERROR,
-//                        "Failed to restore stderr");
-//            return FALSE;
-//        }
-        /* chdir */
-        if (chdir (task->path) == -1) {
-            g_set_error(&task->error, RESTRAINT_TASK_RUNNER_ERROR,
-                        RESTRAINT_TASK_RUNNER_CHDIR_ERROR,
-                        "Failed to chdir() to %s", task->path);
-            return FALSE;
-        }
-        /* Spawn the intended program. */
-        environ = task->env;
-        gchar *args[] = {"sh", "-l", "-c", task->entry_point, NULL};
-        if (execvp ("sh", args) == -1) {
-            g_warning("Failed to exec() %s, %s error:%s", task->entry_point, task->path, strerror(errno));
-            exit(1);
-        }
     }
-    /* Parent process. */
-//    close (saved_stderr);
-    // Monitor pty pipe
-    GIOChannel *io = g_io_channel_unix_new(ret_fd);
-    g_io_channel_set_encoding (io, NULL, NULL);
-    g_io_channel_set_buffered (io, FALSE);
-    task->pty_handler_id = g_io_add_watch_full (io,
-                                                G_PRIORITY_DEFAULT,
-                                                G_IO_IN | G_IO_HUP,
-                                                task_io_callback,
-                                                app_data,
-                                                NULL);
-    // Monitor return pid
-    task->pid_handler_id = g_child_watch_add_full (G_PRIORITY_DEFAULT,
-                                                   task->pid,
-                                                   task_pid_callback,
-                                                   app_data,
-                                                   task_pid_finish);
 
+    // Local heartbeat, log to console and testout.log
     struct tm timeinfo = *localtime( &rawtime);
     timeinfo.tm_sec += task->max_time;
     mktime(&timeinfo);
-    strftime(task->expire_time,sizeof(task->expire_time),"%a %b %d %H:%M:%S %Y", &timeinfo);
-
-    // Local watchdog event.
-    task->timeout_handler_id = g_timeout_add_seconds_full (G_PRIORITY_DEFAULT,
-                                                           task->max_time,
-                                                           task_timeout_callback,
-                                                           app_data,
-                                                           NULL);
-    // Local heartbeat, log to console and testout.log every 5 minutes
-    task->heartbeat_handler_id = g_timeout_add_seconds_full (G_PRIORITY_DEFAULT,
-                                                           HEARTBEAT,
+    strftime(task_run_data->expire_time,sizeof(task_run_data->expire_time),"%a %b %d %H:%M:%S %Y", &timeinfo);
+    task_run_data->heartbeat_handler_id = g_timeout_add_seconds_full (G_PRIORITY_DEFAULT,
+                                                           HEARTBEAT, //every 5 minutes
                                                            task_heartbeat_callback,
-                                                           app_data,
+                                                           task_run_data,
                                                            NULL);
     return TRUE;
 }
 
 static gboolean build_env(Task *task, GError **error) {
-    GPtrArray *env = g_ptr_array_new();
+    //GPtrArray *env = g_ptr_array_new();
+    GPtrArray *env = g_ptr_array_new_with_free_func (g_free);
     gchar *prefix = "";
     if (task->rhts_compat == FALSE) {
         prefix = ENV_PREFIX;
         g_ptr_array_add(env, g_strdup_printf("HARNESS_PREFIX=%s", ENV_PREFIX));
+    } else {
+        g_ptr_array_add(env, g_strdup_printf("DISTRO=%s", task->recipe->osdistro));
+        g_ptr_array_add(env, g_strdup_printf("VARIANT=%s", task->recipe->osvariant ));
+        g_ptr_array_add(env, g_strdup_printf("FAMILY=%s", task->recipe->osmajor));
+        g_ptr_array_add(env, g_strdup_printf("ARCH=%s", task->recipe->osarch));
     }
     g_list_foreach(task->recipe->roles, (GFunc) build_param_var, env);
     g_list_foreach(task->roles, (GFunc) build_param_var, env);
@@ -333,9 +251,15 @@ static gboolean build_env(Task *task, GError **error) {
 //    g_ptr_array_add(env, g_strdup_printf ("%sGUESTS=%s", prefix, task->recipe->guests));
     g_list_foreach(task->recipe->params, (GFunc) build_param_var, env);
     g_list_foreach(task->params, (GFunc) build_param_var, env);
+    // Leave three NULL slots for PLUGIN varaibles.
     g_ptr_array_add(env, NULL);
-    task->env = (gchar **) env->pdata;
-    g_ptr_array_free (env, FALSE);
+    g_ptr_array_add(env, NULL);
+    g_ptr_array_add(env, NULL);
+    // This terminates the array
+    g_ptr_array_add(env, NULL);
+    //task->env = (gchar **) env->pdata;
+    task->env = env;
+    //g_ptr_array_free (env, FALSE);
     return TRUE;
 }
 
@@ -376,6 +300,9 @@ void
 restraint_task_status (Task *task, gchar *status, GError *reason)
 {
     g_return_if_fail(task != NULL);
+
+    task->status = status;
+    restraint_set_run_metadata (task, "status", NULL, G_TYPE_STRING, task->status);
 
     SoupURI *task_status_uri;
     SoupMessage *server_msg;
@@ -466,6 +393,7 @@ restraint_task_result (Task *task, gchar *result, guint score, gchar *path, gcha
 Task *restraint_task_new(void) {
     Task *task = g_slice_new0(Task);
     task->max_time = 0;
+    task->result_id = 0;
     task->entry_point = g_strdup_printf ("%s", DEFAULT_ENTRY_POINT);
     return task;
 }
@@ -489,7 +417,8 @@ void restraint_task_free(Task *task) {
     g_list_free_full(task->params, (GDestroyNotify) restraint_param_free);
     g_list_free_full(task->roles, (GDestroyNotify) restraint_role_free);
     g_free (task->entry_point);
-    g_strfreev (task->env);
+    //g_strfreev (task->env);
+    g_ptr_array_free (task->env, TRUE);
     g_list_free_full(task->dependencies, (GDestroyNotify) g_free);
     g_slice_free(Task, task);
 }
@@ -557,17 +486,44 @@ task_handler (gpointer user_data)
       break;
     case TASK_FETCH:
       // Fetch Task from rpm or url
-      if (! restraint_task_fetch (app_data, &task->error))
+      if (restraint_task_fetch (app_data, &task->error))
+          task->state = TASK_FETCHING;
+      else
           task->state = TASK_COMPLETE;
       break;
+    case TASK_FETCHING:
+        return FALSE;
     case TASK_METADATA:
+      // If running in rhts_compat mode and testinfo.desc doesn't exist
+      // then we need to generate it.
+      if (restraint_is_rhts_compat (task)) {
+          task->rhts_compat = TRUE;
+          if (restraint_no_testinfo (task)) {
+              if (restraint_generate_testinfo (app_data, &task->error)) {
+                  task->state = TASK_METADATA_GEN;
+                  g_string_printf(message, "** Generating testinfo.desc\n");
+              } else {
+                  task->state = TASK_COMPLETE;
+              }
+          } else {
+              task->state = TASK_METADATA_PARSE;
+          }
+      } else {
+          // not running in rhts_compat mode, skip to next step where we parse the config.
+          task->rhts_compat = FALSE;
+          task->state = TASK_METADATA_PARSE;
+      }
+      break;
+    case TASK_METADATA_GEN:
+        return FALSE;
+    case TASK_METADATA_PARSE:
       // Update Task metadata
       // entry_point, defaults to "make run"
       // max_time which is used by both localwatchdog and externalwatchdog
       // dependencies required for task execution
       // rhts_compat is set to false if new "metadata" file exists.
-      g_string_printf(message, "** Updating metadata\n");
-      if (restraint_metadata_update(task, &task->error)) {
+      g_string_printf(message, "** Parsing metadata\n");
+      if (restraint_metadata_parse(task, &task->error)) {
         task->state = TASK_ENV;
         restraint_set_run_metadata (task, "name", NULL, G_TYPE_STRING, task->name);
       } else {
@@ -606,7 +562,7 @@ task_handler (gpointer user_data)
     case TASK_RUN:
       // Run TASK
       // Setup pid_handler
-      //       pty_handler
+      //       io_handler
       //       timeout_handler
       //       heartbeat_handler
       g_string_printf(message, "** Running task: %s [%s]\n", task->task_id, task->name);
@@ -656,4 +612,28 @@ task_handler (gpointer user_data)
     g_string_free(message, TRUE);
   }
   return result;
+}
+
+void
+restraint_init_result_hash (AppData *app_data)
+{
+    static gint none = 0;
+    static gint pass = 1;
+    static gint warn = 2;
+    static gint fail = 3;
+
+    GHashTable *hash_to = g_hash_table_new(g_str_hash, g_str_equal);
+    g_hash_table_insert(hash_to, "NONE", &none);
+    g_hash_table_insert(hash_to, "PASS", &pass);
+    g_hash_table_insert(hash_to, "WARN", &warn);
+    g_hash_table_insert(hash_to, "FAIL", &fail);
+
+    GHashTable *hash_from = g_hash_table_new(g_int_hash, g_int_equal);
+    g_hash_table_insert(hash_from, &none, "NONE");
+    g_hash_table_insert(hash_from, &pass, "PASS");
+    g_hash_table_insert(hash_from, &warn, "WARN");
+    g_hash_table_insert(hash_from, &fail, "FAIL");
+
+    app_data->result_states_to = hash_to;
+    app_data->result_states_from = hash_from;
 }

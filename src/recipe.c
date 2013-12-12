@@ -497,13 +497,14 @@ restraint_recipe_parse_xml (GObject *source, GAsyncResult *res, gpointer user_da
 }
 
 static gboolean
-task_summary (Task *task, GString *s)
+task_summary (GHashTable *result_states_from, Task *task, GString *s)
 {
     gchar *message = NULL;
-    message = g_strdup_printf ("*  Task: %12s [%-50s] Result: %d Status: %d\n", task->task_id,
+    gchar *result = g_hash_table_lookup (result_states_from, &task->result_id);
+    message = g_strdup_printf ("*  Task: %12s [%-50s] Result: %s Status: %s\n", task->task_id,
                                                                       task->name,
-                                                                      task->result,
-                                                                      task->pid_result);
+                                                                      result,
+                                                                      task->status);
     s = g_string_append(s, message);
     g_free (message);
     if (task->error) {
@@ -587,7 +588,7 @@ recipe_handler (gpointer user_data)
               tasks = app_data->recipe->tasks;
               message = g_string_append(message, "\n* Results Summary\n");
               do {
-                  task_failed |= task_summary (tasks->data, message);
+                  task_failed |= task_summary (app_data->result_states_from, tasks->data, message);
               } while ((tasks = g_list_next (tasks)) != NULL);
               restraint_recipe_free(app_data->recipe);
               app_data->recipe = NULL;

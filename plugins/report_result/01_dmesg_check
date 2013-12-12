@@ -1,0 +1,33 @@
+#!/bin/sh
+
+PLUGIN=$(basename $0)
+
+if [ -z "$RSTRNT_RESULT_URL" ]; then
+    echo "RSTRNT_RESULT_URL is not defined!"
+    exit 1
+fi
+
+TMPDIR=$(mktemp -d)
+DMESG_FILE=$TMPDIR/dmesg.log
+OUTPUTFILE=$TMPDIR/outputfile.log
+
+FAILURESTRINGS=${FAILURESTRINGS:="Oops|BUG|NMI appears to be stuck|cut here|Badness at"}
+FALSESTRINGS=${FALSESTRINGS:="BIOS BUG|DEBUG"}
+
+# Dump dmesg output into $DMESG_FILE and clear it.
+dmesg -c >$DMESG_FILE
+
+# Submit dmesg log if any output
+if [ -s "$DMESG_FILE" ]; then
+    rhts-submit-log --server $RSTRNT_RESULT_URL -l $DMESG_FILE
+fi
+
+# Check for errors
+cat $DMESG_FILE | grep -E "$FAILURESTRINGS" | grep -v -E "$FALSESTRINGS" > $OUTPUTFILE
+if [ -s "$OUTPUTFILE" ]; then
+    report_result --no-plugins $TEST/$PLUGIN FAIL 0
+fi
+
+rm -f $DMESG_FILE
+rm -f $OUTPUTFILE
+rmdir $TMPDIR

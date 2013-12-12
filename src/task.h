@@ -19,6 +19,8 @@ typedef enum {
     TASK_FETCH,
     TASK_FETCHING,
     TASK_METADATA,
+    TASK_METADATA_GEN,
+    TASK_METADATA_PARSE,
     TASK_ENV,
     TASK_WATCHDOG,
     TASK_DEPENDENCIES,
@@ -97,24 +99,16 @@ typedef struct {
     gchar *entry_point;
     /* maximum time task is allowed to run before being killed */
     guint64 max_time;
-    /* maximum time in nicely formatted text */
-    gchar expire_time[80];
     /* task order needed for multi-host tasks */
     gint order;
     /* environment variables that will be passed on to task */
-    gchar **env;
+    GPtrArray *env;
     /* State engine holding current state of task */
     TaskSetupState state;
-    guint pty_handler_id;
-    guint pid_handler_id;
-    guint timeout_handler_id;
-    guint heartbeat_handler_id;
     /* reported result from task */
-    gint result;
-    /* return code result from exiting task */
-    gint pid_result;
-    /* pid of running task */
-    pid_t pid;
+    gint result_id;
+    /* reported status from task */
+    gchar *status;
     /* Error at the task level */
     GError *error;
     /* offset of TASKOUT.log */
@@ -127,6 +121,14 @@ typedef struct {
     gboolean parsed;
 } Task;
 
+typedef struct {
+    AppData *app_data;
+    TaskSetupState pass_state;
+    TaskSetupState fail_state;
+    gint heartbeat_handler_id;
+    gchar expire_time[80];
+} TaskRunData;
+
 Task *restraint_task_new(void);
 gboolean task_handler (gpointer user_data);
 void task_finish (gpointer user_data);
@@ -138,8 +140,9 @@ void restraint_task_status (Task *task, gchar *, GError *reason);
 void restraint_task_result (Task *task, gchar *result, guint score, gchar *path, gchar *message);
 void restraint_task_run(Task *task);
 void restraint_task_free(Task *task);
+void restraint_init_result_hash (AppData *app_data);
+gboolean task_io_callback (GIOChannel *io, GIOCondition condition, gpointer user_data);
+void task_finish_callback (gint pid_result, gboolean localwatchdog, gpointer user_data);
 gboolean idle_task_setup (gpointer user_data);
 extern SoupSession *soup_session;
-extern char **environ;
-int    kill(pid_t, int);
 #endif

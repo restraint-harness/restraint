@@ -236,7 +236,7 @@ int main(int argc, char *argv[]) {
 
     app_data->loop = g_main_loop_new(NULL, FALSE);
     server_uri = soup_uri_new (server);
-    session = soup_session_new_with_options("timeout", 0, NULL);
+    session = soup_session_new_with_options("timeout", 310, NULL);
 
     data_table = g_hash_table_new (NULL, NULL);
     if (recipe_run)
@@ -244,7 +244,7 @@ int main(int argc, char *argv[]) {
     if (recipe_monitor || recipe_cancel)
       g_hash_table_insert (data_table, "monitor", &true);
     if (recipe_cancel)
-      g_hash_table_insert (data_table, "cancel", &true);
+      g_hash_table_insert (data_table, "cancel", &recipe_cancel);
 
     control_uri = soup_uri_new_with_base (server_uri, "control");
     request = (SoupRequest *)soup_session_request_http_uri (session, "POST", control_uri, &app_data->error);

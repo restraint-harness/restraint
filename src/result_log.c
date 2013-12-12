@@ -23,11 +23,18 @@ int main(int argc, char *argv[]) {
     gchar *task_id = NULL;
     gchar *task_id_key = NULL;
 
+    gchar *deprecated1 = NULL;
+    gchar *deprecated2 = NULL;
+
     GOptionEntry entries[] = {
         {"server", 's', 0, G_OPTION_ARG_STRING, &server,
             "Server to connect to", "URL" },
         { "filename", 'l', 0, G_OPTION_ARG_STRING, &filename,
             "Log to upload", "FILE" },
+        {"deprecated1", 'S', G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_STRING, &deprecated1,
+            "deprecated option", NULL},
+        {"deprecated2", 'T', G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_STRING, &deprecated2,
+            "deprecated option", NULL},
         { NULL }
     };
     GOptionContext *context = g_option_context_new(NULL);
@@ -59,6 +66,13 @@ int main(int argc, char *argv[]) {
         goto cleanup;
     }
 
+    if (deprecated1 != NULL) {
+        g_warning ("Option -S deprecated! Update your code.\n");
+    }
+    if (deprecated2 != NULL) {
+        g_warning ("Option -T deprecated! Update your code.\n");
+    }
+
     result_uri = soup_uri_new (server);
     session = soup_session_new_with_options("timeout", 0, NULL);
 
@@ -68,7 +82,7 @@ int main(int argc, char *argv[]) {
     g_free (location);
     if (g_file_test (filename, G_FILE_TEST_EXISTS)) 
     {
-        g_print ("Uploading %s", basename);
+        g_print ("Uploading %s ", basename);
         if (upload_file (session, filename, basename, result_uri, &error)) {
             g_print ("done\n");
         } else {

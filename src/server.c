@@ -8,6 +8,7 @@
 #include "metadata.h"
 #include "common.h"
 #include "server.h"
+#include "process.h"
 
 #define MAX_RETRIES 5
 SoupSession *soup_session;
@@ -110,7 +111,9 @@ task_output_complete (SoupSession *session, SoupMessage *server_msg, gpointer us
             *retries = *retries + 1;
             g_warning("Retrying %d of %d, taskoutput.log code:%u Reason:%s\n",
                       *retries, MAX_RETRIES, server_msg->status_code, server_msg->reason_phrase);
-            soup_session_requeue_message (soup_session, server_msg);
+            //soup_session_requeue_message (session, server_msg);
+            //soup_message_cleanup_response (server_msg);
+            soup_session_queue_message (session, server_msg, task_output_complete, retries);
             return;
         } else {
             g_warning("Max retries %d, Failed to send taskoutput.log\n", MAX_RETRIES);
@@ -189,6 +192,51 @@ connections_error (AppData *app_data, GError *error)
     g_string_free(s, TRUE);
 }
 
+gboolean
+server_io_callback (GIOChannel *io, GIOCondition condition, gpointer user_data) {
+    ServerData *server_data = (ServerData *) user_data;
+    AppData *app_data = server_data->app_data;
+    GError *tmp_error = NULL;
+
+    GString *s = g_string_new(NULL);
+    gchar buf[8192];
+    gsize bytes_read;
+
+    if (condition & G_IO_IN) {
+        //switch (g_io_channel_read_line_string(io, s, NULL, &tmp_error)) {
+        switch (g_io_channel_read_chars(io, buf, 8192, &bytes_read, &tmp_error)) {
+          case G_IO_STATUS_NORMAL:
+            /* Push data to our connections.. */
+            g_string_append_len (s, buf, bytes_read);
+            connections_write(app_data, s, STREAM_STDOUT, 0);
+            g_string_free (s, TRUE);
+            return TRUE;
+
+          case G_IO_STATUS_ERROR:
+             g_printerr("IO error: %s\n", tmp_error->message);
+             g_clear_error (&tmp_error);
+             return FALSE;
+
+          case G_IO_STATUS_EOF:
+             g_print("finished!\n");
+             return FALSE;
+
+          case G_IO_STATUS_AGAIN:
+             g_warning("Not ready.. try again.");
+             return TRUE;
+
+          default:
+             g_return_val_if_reached(FALSE);
+             break;
+        }
+    }
+    if (condition & G_IO_HUP){
+        return FALSE;
+    }
+
+    return FALSE;
+}
+
 static gboolean
 handle_recipe_request (AppData *app_data, GError **error)
 {
@@ -216,10 +264,24 @@ client_disconnected (SoupMessage *client_msg, gpointer data)
   app_data->connections = g_list_remove(app_data->connections, client_msg);
 }
 
-static void
-server_msg_complete (SoupSession *session, SoupMessage *server_msg, gpointer data)
+void
+plugin_finish_callback (gint pid_result, gboolean localwatchdog, gpointer user_data)
 {
-    SoupMessage *client_msg = (SoupMessage *) data;
+    ServerData *server_data = (ServerData *) user_data;
+    soup_server_unpause_message (soup_server, server_data->client_msg);
+}
+
+static void
+server_msg_complete (SoupSession *session, SoupMessage *server_msg, gpointer user_data)
+{
+    ServerData *server_data = (ServerData *) user_data;
+    AppData *app_data = server_data->app_data;
+    SoupMessage *client_msg = server_data->client_msg;
+    Task *task = app_data->tasks->data;
+    GHashTable *table;
+    gboolean no_plugins = FALSE;
+
+    //SOUP_STATUS_IS_SUCCESSFUL(server_msg->status_code
 
     soup_message_headers_foreach (server_msg->response_headers, copy_header,
                                   client_msg->response_headers);
@@ -229,7 +291,75 @@ server_msg_complete (SoupSession *session, SoupMessage *server_msg, gpointer dat
       soup_buffer_free (request);
     }
     soup_message_set_status (client_msg, server_msg->status_code);
-    soup_server_unpause_message (soup_server, client_msg);
+
+    if (g_str_has_suffix (server_data->path, "/results/")) {
+        table = soup_form_decode (client_msg->request_body->data);
+
+        // Very important that we don't run plugins from results
+        // reported from the plugins themselves.
+        no_plugins = g_hash_table_lookup_extended (table, "no_plugins", NULL, NULL);
+        // We want to keep track of PASS/WARN/FAIL for the summary
+        gchar *result = g_hash_table_lookup (table, "result");
+        gchar *uresult = g_ascii_strup (result, -1);
+        gpointer val = g_hash_table_lookup (app_data->result_states_to, uresult);
+        g_free (uresult);
+        if (val != NULL) {
+            gint result_id = *((gint*)val);
+            if (result_id > task->result_id) {
+                task->result_id = result_id;
+                restraint_set_run_metadata (task, "result_id", NULL, G_TYPE_INT, task->result_id);
+            }
+        }
+        g_hash_table_destroy (table);
+
+        // Execute report plugins
+        if (!no_plugins) {
+            // Create a new ProcessCommand
+            CommandData *command_data = g_slice_new0 (CommandData);
+            const gchar *command[] = {"sh", "-l", "-c", PLUGIN_SCRIPT, NULL};
+            command_data->command = command;
+
+            // Last four entries are NULL.  Replace first three with plugin vars
+            gchar *result_server = g_strdup_printf("RSTRNT_RESULT_URL=%s", soup_message_headers_get_one (client_msg->response_headers, "Location"));
+            if (task->env->pdata[task->env->len - 4] != NULL) {
+                g_free (task->env->pdata[task->env->len - 4]);
+            }
+            task->env->pdata[task->env->len - 4] = result_server;
+
+            gchar *plugin_dir = g_strdup_printf("RSTRNT_PLUGIN_DIR=%s/report_result", PLUGIN_DIR);
+            if (task->env->pdata[task->env->len - 3] != NULL) {
+                g_free (task->env->pdata[task->env->len - 3]);
+            }
+            task->env->pdata[task->env->len - 3] = plugin_dir;
+
+            gchar *no_plugins = g_strdup_printf("RSTRNT_NOPLUGINS=1");
+            if (task->env->pdata[task->env->len - 2] != NULL) {
+                g_free (task->env->pdata[task->env->len - 2]);
+            }
+            task->env->pdata[task->env->len - 2] = no_plugins;
+
+            command_data->environ = (const gchar **) task->env->pdata;
+            command_data->path = "/usr/share/restraint/plugins";
+
+            GError *tmp_error = NULL;
+            if (!process_run (command_data,
+                              server_io_callback,
+                              plugin_finish_callback,
+                              server_data,
+                              &tmp_error)) {
+                g_warning ("run_plugins failed to run: %s\n", tmp_error->message);
+                g_clear_error (&tmp_error);
+                soup_server_unpause_message (soup_server, client_msg);
+            }
+        }
+    } else {
+        soup_server_unpause_message (soup_server, client_msg);
+    }
+
+    // If no plugins are running we should return to the client right away.
+    if (no_plugins) {
+        soup_server_unpause_message (soup_server, client_msg);
+    }
 }
 
 static void
@@ -237,21 +367,35 @@ server_recipe_callback (SoupServer *server, SoupMessage *client_msg,
                      const char *path, GHashTable *query,
                      SoupClientContext *context, gpointer data)
 {
-  AppData *app_data = (AppData *) data;
-  SoupMessage *server_msg;
+    AppData *app_data = (AppData *) data;
+    SoupMessage *server_msg;
+    SoupURI *server_uri;
 
-  GHashTable *table;
+    ServerData *server_data = g_slice_new0 (ServerData);
+    server_data->path = path;
+    server_data->app_data = app_data;
+    server_data->client_msg = client_msg;
 
-  if (app_data->state == RECIPE_IDLE) {
-      soup_message_set_status_full (client_msg, SOUP_STATUS_BAD_REQUEST, "No Recipe Running");
-      return;
-  }
-  Task *task = (Task *) app_data->tasks->data;
+    if (app_data->state == RECIPE_IDLE) {
+        soup_message_set_status_full (client_msg, SOUP_STATUS_BAD_REQUEST, "No Recipe Running");
+        return;
+    }
+    Task *task = (Task *) app_data->tasks->data;
 
-  table = soup_form_decode (client_msg->request_body->data);
-  if (g_str_has_suffix (path, "/results/")) {
-    SoupURI *task_results_uri = soup_uri_new_with_base (task->task_uri, "results/");
-    server_msg = soup_message_new_from_uri ("POST", task_results_uri);
+    if (g_str_has_suffix (path, "/results/")) {
+        server_uri = soup_uri_new_with_base (task->task_uri, "results/");
+        server_msg = soup_message_new_from_uri ("POST", server_uri);
+    } else if (g_strrstr (path, "/logs/") != NULL) {
+        gchar *log_url = swap_base(path, soup_uri_to_string(task->task_uri, FALSE), "/recipes/");
+        server_uri = soup_uri_new (log_url);
+        g_free (log_url);
+        server_msg = soup_message_new_from_uri ("PUT", server_uri);
+    } else {
+        soup_message_set_status_full (client_msg, SOUP_STATUS_BAD_REQUEST, "No Match, Invalid request");
+        return;
+    }
+
+    soup_uri_free (server_uri);
     soup_message_headers_foreach (client_msg->request_headers, copy_header,
                                   server_msg->request_headers);
     if (client_msg->request_body->length) {
@@ -259,32 +403,8 @@ server_recipe_callback (SoupServer *server, SoupMessage *client_msg,
       soup_message_body_append_buffer (server_msg->request_body, request);
       soup_buffer_free (request);
     }
-
-    // We want to keep track of PASS/FAIL and Score for the summary
-    gchar *result = g_hash_table_lookup (table, "result");
-    gchar *score = g_hash_table_lookup (table, "score");
-    g_printf ("do something with this %s %s\n", result, score);
-
-    soup_session_queue_message (soup_session, server_msg, server_msg_complete, client_msg);
+    soup_session_queue_message (soup_session, server_msg, server_msg_complete, server_data);
     soup_server_pause_message (soup_server, client_msg);
-    return;
-  } else if (g_strrstr (path, "/logs/") != NULL) {
-    gchar *log_url = swap_base(path, soup_uri_to_string(task->task_uri, FALSE), "/recipes/");
-    SoupURI *log_uri = soup_uri_new (log_url);
-    server_msg = soup_message_new_from_uri ("PUT", log_uri);
-    soup_message_headers_foreach (client_msg->request_headers, copy_header,
-                                  server_msg->request_headers);
-    if (client_msg->request_body->length) {
-      SoupBuffer *request = soup_message_body_flatten (client_msg->request_body);
-      soup_message_body_append_buffer (server_msg->request_body, request);
-      soup_buffer_free (request);
-    }
-    soup_session_queue_message (soup_session, server_msg, server_msg_complete, client_msg);
-    soup_server_pause_message (soup_server, client_msg);
-    return;
-  }
-
-  soup_message_set_status_full (client_msg, SOUP_STATUS_BAD_REQUEST, "No Match, Invalid request");
 }
 
 static void
@@ -344,9 +464,9 @@ server_control_callback (SoupServer *server, SoupMessage *client_msg,
     Task *task = (Task *) app_data->tasks->data;
     task->state = TASK_CANCELLED;
     // Kill the running task #FIXME check that we actually killed it
-    if (task->pid) {
-      kill (task->pid, SIGKILL);
-    }
+    //if (task->pid) {
+    //  kill (task->pid, SIGKILL);
+    //}
   }
 }
 
@@ -354,6 +474,8 @@ int main(int argc, char *argv[]) {
   AppData *data = g_slice_new0(AppData);
   GMainLoop *loop;
   gint port = 8081;
+
+  restraint_init_result_hash (data);
 
   soup_session = soup_session_new_with_options("idle-timeout", 0, NULL);
   soup_session_add_feature_by_type (soup_session, SOUP_TYPE_CONTENT_SNIFFER);

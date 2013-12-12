@@ -1,0 +1,15 @@
+#!/bin/sh
+
+# The following restraint variables are defined just for plugins
+# RSTRNT_RESULT_URL, This is the url to the parent which kicked off this plugin.
+# RSTRNT_PLUGIN_DIR, Will either be localwatchdog or report_result. These are the only 
+#                    spots where we support plugins currently.
+# RSTRNT_NOPLUGINS=1, This is defined for report_result.  Otherwise reporting results
+#                     From plugins would cause additional plugins to be called.
+
+pushd $RSTRNT_PLUGIN_DIR >/dev/null || exit 1
+for PLUGIN in *; do
+    echo "*** Running Plugin: $PLUGIN"
+    ./$PLUGIN
+done
+popd >/dev/null

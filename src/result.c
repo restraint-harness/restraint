@@ -28,6 +28,7 @@ int main(int argc, char *argv[]) {
     gchar *recipe_id = NULL;
     gchar *task_id = NULL;
     gchar *task_id_key = NULL;
+    gboolean no_plugins = FALSE;
 
     gchar *form_data;
     GHashTable *data_table = NULL;
@@ -39,6 +40,8 @@ int main(int argc, char *argv[]) {
             "Short 100 characters or less message", "TEXT" },
         { "outputfile", 'o', 0, G_OPTION_ARG_STRING, &outputfile,
             "Log to upload with result, $OUTPUTFILE is used by default", "FILE" },
+        { "no-plugins", 'p', 0, G_OPTION_ARG_NONE, &no_plugins,
+            "don't run plugins on server side", NULL },
         { NULL }
     };
     GOptionContext *context = g_option_context_new("TASK_PATH RESULT SCORE");
@@ -76,6 +79,8 @@ int main(int argc, char *argv[]) {
     data_table = g_hash_table_new (NULL, NULL);
     g_hash_table_insert (data_table, "path", argv[1]);
     g_hash_table_insert (data_table, "result", argv[2]);
+    if (no_plugins)
+      g_hash_table_insert (data_table, "no_plugins", &no_plugins);
     if (argc > 3)
       g_hash_table_insert (data_table, "score", argv[3]);
     if (result_msg)
@@ -96,7 +101,7 @@ int main(int argc, char *argv[]) {
         g_free (location);
         if (g_file_test (outputfile, G_FILE_TEST_EXISTS)) 
         {
-            g_print ("Uploading %s", filename);
+            g_print ("Uploading %s ", filename);
             if (upload_file (session, outputfile, filename, result_uri, &error)) {
                 g_print ("done\n");
             } else {

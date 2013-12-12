@@ -8,6 +8,6 @@
 
 #include <glib.h>
 
-gboolean restraint_install_package(const gchar *package_name, GError **error);
+gboolean restraint_install_package(AppData *app_data, const gchar *package_name, GError **error);
 
 #endif

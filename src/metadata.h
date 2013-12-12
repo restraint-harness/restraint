@@ -7,6 +7,9 @@ typedef enum {
     RESTRAINT_METADATA_OPEN, /* Unable to open file*/
 } RestraintMetadataParseError;
 
-gboolean restraint_metadata_update(Task *task, GError **error);
+gboolean restraint_metadata_parse(Task *task, GError **error);
+gboolean restraint_generate_testinfo(AppData *app_data, GError **error);
+gboolean restraint_is_rhts_compat (Task *task);
+gboolean restraint_no_testinfo (Task *task);
 void restraint_parse_run_metadata (Task *task, GError **error);
 void restraint_set_run_metadata (Task *task, gchar *key, GError **error, GType type, ...);

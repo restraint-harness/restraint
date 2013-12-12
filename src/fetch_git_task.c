@@ -374,6 +374,12 @@ archive_finish_callback (gpointer user_data)
     }
     if (mydata != NULL)
         g_slice_free(GitArchData, mydata);
+
+    // Re-Add the task_handler
+    mydata->app_data->task_handler_id = g_idle_add_full(G_PRIORITY_DEFAULT_IDLE,
+                                                task_handler,
+                                                mydata->app_data,
+                                                NULL);
 }
 
 gboolean
@@ -426,6 +432,5 @@ restraint_task_fetch_git (AppData *app_data, GError **error)
                     git_archive_read_callback,
                     mydata,
                     archive_finish_callback);
-    task->state = TASK_FETCHING;
     return TRUE;
 }
