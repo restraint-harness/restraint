@@ -157,12 +157,13 @@ $(LIBXML2)/.patches-done:
 	touch $@
 
 $(LIBARCHIVE)/.patches-done:
-#	patch -d$(LIBARCHIVE) -p1 <libarchive-rhel3-headers.patch
+	patch -d$(LIBARCHIVE) -p1 <libarchive-rhel3-headers.patch
 	patch -d$(LIBARCHIVE) -p1 <libarchive-use-pkgconfig.patch
 	touch $@
 
 $(LIBSOUP)/.patches-done:
 	patch -d$(LIBSOUP) -p1 <libsoup-no-pkgconfig-version-check.patch
+	patch -d$(LIBSOUP) -p1 <libsoup-perl580.patch
 	touch $@
 
 .PHONY: clean

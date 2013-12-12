@@ -1,0 +1,19 @@
+diff -ur libsoup-2.42.2/configure libsoup-2.42.2.patched/configure
+--- libsoup-2.42.2/configure	2013-04-24 11:40:04.000000000 -0400
++++ libsoup-2.42.2.patched/configure	2013-12-12 12:11:43.000000000 -0500
+@@ -12874,11 +12874,11 @@
+ if test -z "$INTLTOOL_PERL"; then
+    as_fn_error $? "perl not found" "$LINENO" 5
+ fi
+-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for perl >= 5.8.1" >&5
+-$as_echo_n "checking for perl >= 5.8.1... " >&6; }
+-$INTLTOOL_PERL -e "use 5.8.1;" > /dev/null 2>&1
++{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for perl >= 5.8.0" >&5
++$as_echo_n "checking for perl >= 5.8.0... " >&6; }
++$INTLTOOL_PERL -e "use 5.8.0;" > /dev/null 2>&1
+ if test $? -ne 0; then
+-   as_fn_error $? "perl 5.8.1 is required for intltool" "$LINENO" 5
++   as_fn_error $? "perl 5.8.0 is required for intltool" "$LINENO" 5
+ else
+    IT_PERL_VERSION=`$INTLTOOL_PERL -e "printf '%vd', $^V"`
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $IT_PERL_VERSION" >&5
