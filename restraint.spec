@@ -21,8 +21,8 @@ each task listed in the recipe until done.
 
 
 %build
-%configure
-make %{?_smp_mflags}
+pushd third-party && make && popd
+pushd src && PKG_CONFIG_PATH=../third-party/tree/lib/pkgconfig make STATIC=1
 
 
 %install
@@ -30,8 +30,20 @@ make install DESTDIR=%{buildroot}
 
 
 %files
-%doc
+%defattr(-,root,root,-)
+/etc/rc.d/init.d/restraintd
+/usr/bin/report_result
+/usr/bin/%{name}
+/usr/bin/%{name}d
+/usr/bin/rhts-environment.sh
+/usr/bin/rhts-reboot
+/usr/bin/rhts-submit-log
+/usr/share/restraint
+/usr/share/restraint/plugins/run_plugins
+/usr/share/restraint/plugins/localwatchdog
+/usr/share/restraint/plugins/report_result/01_dmesg_check
 
+%doc
 
 
 %changelog

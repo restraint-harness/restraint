@@ -30,7 +30,7 @@ rhts-submit-log: result_log.o upload.o
 restraint: client.o
 	$(CC) $(LDFLAFS) -o $@ $^ $(LIBS)
 
-restraintd: server.o recipe.o task.o packages.o fetch_git_task.o fetch_http_task.o param.o role.o metadata.o
+restraintd: server.o recipe.o task.o packages.o fetch_git_task.o fetch_http_task.o param.o role.o metadata.o process.o
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 fetch_git_task.o: task.h
@@ -77,6 +77,7 @@ valgrind: $(TEST_PROGS) test-data/git-remote
 
 .PHONY: install
 install: all
+	install -m0755 -d $(DESTDIR)/usr/bin
 	install -m0755 restraint $(DESTDIR)/usr/bin
 	install -m0755 restraintd $(DESTDIR)/usr/bin
 	install -m0755 report_result $(DESTDIR)/usr/bin
