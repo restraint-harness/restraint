@@ -8,9 +8,20 @@ License:	GPLv3+
 URL:		https://github.com/p3ck/%{name}
 Source0:	https://github.com/p3ck/%{name}/%{name}-%{version}.tar.gz
 
+BuildRequires:	pkgconfig
+BuildRequires:	gettext
+BuildRequires:	perl-XML-Parser
+BuildRequires:	openssl-devel
+BuildRequires:	libselinux-devel
+BuildRequires:	glibc-devel
+#if not static build
+BuildRequires:	zlib-devel
+# If static build...
+%if 0%{?rhel} >= 6
 BuildRequires:	libselinux-static
 BuildRequires:	openssl-static
 BuildRequires:	glibc-static
+%endif
 
 %description
 restraint harness which can run standalone or with beaker.  when provided a recipe xml it will execute
@@ -21,13 +32,20 @@ each task listed in the recipe until done.
 
 
 %build
-pushd third-party && make && popd
+%ifarch i386
+export CFLAGS="-march=i486"
+%endif
+
+pushd third-party && make
+popd
 pushd src && PKG_CONFIG_PATH=../third-party/tree/lib/pkgconfig make STATIC=1
+popd
 
 
 %install
-make install DESTDIR=%{buildroot}
-
+pushd third-party && make clean
+popd
+DESTDIR=$RPM_BUILD_ROOT make install
 
 %files
 %defattr(-,root,root,-)
