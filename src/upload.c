@@ -9,7 +9,7 @@ static gssize offset = 0;
 static gint
 upload_chunk (SoupSession *session,
               GInputStream *in,
-              guint64 filesize,
+              gulong filesize,
               SoupURI *result_log_uri,
               GError **error)
 {
