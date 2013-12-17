@@ -100,38 +100,51 @@ tree/lib/pkgconfig/libarchive.pc: $(LIBARCHIVE) $(LIBARCHIVE)/.patches-done \
 	$(MAKE) -C $(LIBARCHIVE)
 	$(MAKE) -C $(LIBARCHIVE) install
 
+TAR_BALLS = $(LIBFFI).tar.gz
 $(LIBFFI).tar.gz:
 	curl -O ftp://sourceware.org/pub/libffi/$@
 
+TAR_BALLS += $(GLIB).tar.xz
 $(GLIB).tar.xz:
 	curl -O http://ftp.gnome.org/pub/gnome/sources/glib/2.38/$@
 
+TAR_BALLS += $(ZLIB).tar.gz
 $(ZLIB).tar.gz:
 	curl -O http://zlib.net/$@
 
+TAR_BALLS += $(BZIP2).tar.gz
 $(BZIP2).tar.gz:
 	curl -O http://www.bzip.org/1.0.6/$@
 
+TAR_BALLS += $(LIBXML2).tar.gz
 $(LIBXML2).tar.gz:
 	curl -O ftp://xmlsoft.org/libxml2/$@
 
+TAR_BALLS += $(CURL).tar.bz2
 $(CURL).tar.bz2:
 	curl -O http://curl.haxx.se/download/$@
 
+TAR_BALLS += $(LIBARCHIVE).tar.gz
 $(LIBARCHIVE).tar.gz:
 	curl -O http://libarchive.org/downloads/$@
 
+TAR_BALLS += $(XZ).tar.gz
 $(XZ).tar.gz:
 	curl -O http://tukaani.org/xz/$@
 
+TAR_BALLS += $(SQLITE).tar.gz
 $(SQLITE).tar.gz:
 	curl -O http://sqlite.org/2013/$@
 
+TAR_BALLS += $(INTLTOOL).tar.gz
 $(INTLTOOL).tar.gz:
 	curl -O http://ftp.gnome.org/pub/gnome/sources/intltool/0.35/$@
 
+TAR_BALLS += $(LIBSOUP).tar.xz
 $(LIBSOUP).tar.xz:
 	curl -O http://ftp.gnome.org/pub/GNOME/sources/libsoup/2.42/$@
+
+tarballs: $(TAR_BALLS)
 
 %: %.tar.gz
 	tar -xzf $<
