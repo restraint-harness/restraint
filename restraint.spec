@@ -1,5 +1,5 @@
 Name:		restraint
-Version:	0.1.1
+Version:	0.1.2
 Release:	1%{?dist}
 Summary:	Simple test harness which can be used with beaker
 
@@ -35,4 +35,7 @@ make install DESTDIR=%{buildroot}
 
 
 %changelog
+* Tue Dec 17 2013 Bill Peck <bpeck@redhat.com> 0.1.2-1
+- new package built with tito
+
 
