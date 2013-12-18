@@ -8,6 +8,7 @@ License:	GPLv3+
 URL:		https://github.com/p3ck/%{name}
 Source0:	https://github.com/p3ck/%{name}/%{name}-%{version}.tar.gz
 
+BuildRoot:	%(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)}
 BuildRequires:	pkgconfig
 BuildRequires:	gettext
 BuildRequires:	perl-XML-Parser
@@ -35,17 +36,27 @@ each task listed in the recipe until done.
 %ifarch i386
 export CFLAGS="-march=i486"
 %endif
+%if 0%{?rhel} == 4
+%ifarch ppc64
+export CFLAGS="-mminimal-toc"
+%endif
+%endif
 
-pushd third-party && make
+pushd third-party
+make
 popd
-pushd src && PKG_CONFIG_PATH=../third-party/tree/lib/pkgconfig make STATIC=1
+pushd src
+PKG_CONFIG_PATH=../third-party/tree/lib/pkgconfig make STATIC=1
 popd
 
 
 %install
-pushd third-party && make clean
+%{__rm} -rf %{buildroot}
+
+pushd third-party
+make clean
 popd
-DESTDIR=$RPM_BUILD_ROOT make install
+make DESTDIR=%{buildroot} install
 
 %files
 %defattr(-,root,root,-)
@@ -61,8 +72,8 @@ DESTDIR=$RPM_BUILD_ROOT make install
 /usr/share/restraint/plugins/localwatchdog
 /usr/share/restraint/plugins/report_result/01_dmesg_check
 
-%doc
-
+%clean
+%{__rm} -rf %{buildroot}
 
 %changelog
 * Tue Dec 17 2013 Bill Peck <bpeck@redhat.com> 0.1.2-1

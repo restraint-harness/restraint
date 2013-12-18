@@ -13,7 +13,7 @@ ifeq ($(STATIC),1)
     # The -( -) grouping means we don't have to worry about getting all the 
     # dependent libs in the right order (normally pkg-config would do that for 
     # us).
-    LIBS = -Wl,-Bstatic -Wl,-\( $(shell pkg-config --libs $(PACKAGES)) -lgmodule-2.0 -llzma -lbz2 -lz -lffi -lssl -lm -lcrypto -lselinux -Wl,-\) -Wl,-Bdynamic -pthread -lrt -lresolv -ldl -lutil $(LFLAGS)
+    LIBS = -Wl,-Bstatic -Wl,-\( $(shell pkg-config --libs $(PACKAGES)) -lgmodule-2.0 -llzma -lbz2 -lz -lffi -lssl -lcrypto -lselinux -Wl,-\) -Wl,-Bdynamic -lm -pthread -lrt -lresolv -ldl -lutil $(LFLAGS)
 else
     LIBS = $(shell pkg-config --libs $(PACKAGES) $(XTRAPKGS)) -lutil
 endif

@@ -41,7 +41,7 @@ tree/lib/pkgconfig/liblzma.pc: $(XZ) $(XZ)/.patches-done
 	$(MAKE) -C $(XZ)
 	$(MAKE) -C $(XZ) install
 
-tree/lib/pkgconfig/libffi.pc: $(LIBFFI)
+tree/lib/pkgconfig/libffi.pc: $(LIBFFI) $(LIBFFI)/.patches-done
 	( cd $(LIBFFI) && ./configure --prefix=$(CURDIR)/tree --enable-portable-binary \
 	    --enable-static --disable-shared )
 	$(MAKE) -C $(LIBFFI)
@@ -170,9 +170,12 @@ $(LIBXML2)/.patches-done:
 	touch $@
 
 $(LIBARCHIVE)/.patches-done:
-	patch -d$(LIBARCHIVE) -p1 <libarchive-rhel3-headers.patch
+#	patch -d$(LIBARCHIVE) -p1 <libarchive-rhel3-headers.patch
 	patch -d$(LIBARCHIVE) -p1 <libarchive-use-pkgconfig.patch
 	touch $@
+
+$(LIBFFI)/.patches-done:
+	patch -d$(LIBFFI) -p1 <libffi-powerpc.patch
 
 $(LIBSOUP)/.patches-done:
 	patch -d$(LIBSOUP) -p1 <libsoup-no-pkgconfig-version-check.patch
