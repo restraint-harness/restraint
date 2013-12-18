@@ -29,3 +29,4 @@
 /src/report_result
 /src/rhts-submit-log
 /src/*.o
+rel-eng/lib/*.pyc
