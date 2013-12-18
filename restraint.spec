@@ -8,7 +8,7 @@ License:	GPLv3+
 URL:		https://github.com/p3ck/%{name}
 Source0:	https://github.com/p3ck/%{name}/%{name}-%{version}.tar.gz
 
-BuildRoot:	%(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)}
+BuildRoot:	%(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 BuildRequires:	pkgconfig
 BuildRequires:	gettext
 BuildRequires:	perl-XML-Parser
