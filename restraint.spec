@@ -1,5 +1,5 @@
 Name:		restraint
-Version:	0.1.2
+Version:	0.1.3
 Release:	1%{?dist}
 Summary:	Simple test harness which can be used with beaker
 
@@ -76,6 +76,21 @@ make DESTDIR=%{buildroot} install
 %{__rm} -rf %{buildroot}
 
 %changelog
+* Wed Dec 18 2013 Bill Peck <bpeck@redhat.com> 0.1.3-1
+- Added localwatchdog plugins (bpeck@redhat.com)
+- ignore pyc file from tito (bpeck@redhat.com)
+- hack to tito build to add the third-party tarballs into the release.
+  (bpeck@redhat.com)
+- Updates to allow restraint to build from rhel4-rhel7 on all arches we care
+  about. (bpeck@redhat.com)
+- few more places to switch from guint64 to gulong. (bpeck@redhat.com)
+- Use unsigned long. (bpeck@redhat.com)
+- Add missing BuildRequies to spec (bpeck@redhat.com)
+- link process.o into restraintd fix install to create dirs really simple spec
+  file (bpeck@redhat.com)
+- Make it easy to grab all the tarballs needed for static linking.
+  (bpeck@redhat.com)
+
 * Tue Dec 17 2013 Bill Peck <bpeck@redhat.com> 0.1.2-1
 - new package built with tito
 
