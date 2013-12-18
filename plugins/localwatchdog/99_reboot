@@ -1,0 +1,9 @@
+#!/bin/sh
+
+# If local watchdog triggers we reboot to attempt to get things
+# in a sane state again.
+
+PLUGIN=$(basename $0)
+
+report_result --no-plugins $TEST/$PLUGIN WARN 0
+rhts-reboot

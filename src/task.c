@@ -136,6 +136,42 @@ task_finish_callback (gint pid_result, gboolean localwatchdog, gpointer user_dat
             g_set_error(&task->error, RESTRAINT_TASK_RUNNER_ERROR,
                             RESTRAINT_TASK_RUNNER_WATCHDOG_ERROR,
                             "Local watchdog expired!");
+            CommandData *command_data = g_slice_new0 (CommandData);
+            const gchar *command[] = {"sh", "-l", "-c", PLUGIN_SCRIPT, NULL};
+            command_data->command = command;
+            // Last four entries are NULL.  Replace first three with plugin vars
+            gchar *plugin_dir = g_strdup_printf("RSTRNT_PLUGIN_DIR=%s/localwatchdog", PLUGIN_DIR);
+            if (task->env->pdata[task->env->len - 4] != NULL) {
+                g_free (task->env->pdata[task->env->len - 4]);
+            }
+            task->env->pdata[task->env->len - 4] = plugin_dir;
+
+            gchar *no_plugins = g_strdup_printf("RSTRNT_NOPLUGINS=1");
+            if (task->env->pdata[task->env->len - 3] != NULL) {
+                g_free (task->env->pdata[task->env->len - 3]);
+            }
+            task->env->pdata[task->env->len - 3] = no_plugins;
+
+            // Not currently used for localwatchdog.
+            if (task->env->pdata[task->env->len - 2] != NULL) {
+                g_free (task->env->pdata[task->env->len - 2]);
+            }
+            task->env->pdata[task->env->len - 2] = NULL;
+
+            command_data->environ = (const gchar **) task->env->pdata;
+            command_data->path = "/usr/share/restraint/plugins";
+
+            GError *tmp_error = NULL;
+            if (process_run (command_data,
+                             task_io_callback,
+                             task_finish_callback,
+                             task_run_data,
+                             &tmp_error)) {
+                return;
+            } else {
+                g_warning ("run_plugins failed to run: %s\n", tmp_error->message);
+                g_clear_error (&tmp_error);
+            }
         } else {
             g_set_error(&task->error, RESTRAINT_TASK_RUNNER_ERROR,
                         RESTRAINT_TASK_RUNNER_RC_ERROR,
