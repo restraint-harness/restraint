@@ -56,7 +56,7 @@ upload_file (SoupSession *session,
     GFile *f = g_file_new_for_path (filepath);
     GFileInputStream *fis = NULL;
     GFileInfo *fileinfo = NULL;
-    guint64 filesize;
+    gulong filesize;
     GError *tmp_error = NULL;
     SoupURI *result_log_uri;
     gint ret;
