@@ -1,5 +1,5 @@
 
-SUBDIRS := src init.d scripts plugins
+SUBDIRS := src init.d plugins legacy
 
 .PHONY: all
 all:

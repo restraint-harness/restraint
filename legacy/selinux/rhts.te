@@ -1,0 +1,42 @@
+policy_module(rhts,2.0.1)
+
+########################################
+#
+# Declarations
+#
+
+type testapp_t;
+type testapp_exec_t;
+domain_type(testapp_t)
+domain_entry_file(testapp_t, testapp_exec_t)
+
+type testapp_tmp_t;
+files_tmp_file(testapp_tmp_t)
+
+manage_dirs_pattern(domain, mnt_t, mnt_t)
+manage_files_pattern(domain, mnt_t, mnt_t)
+
+gen_require(`
+        type tmp_t, mnt_t;
+        type initrc_t;
+        type initrc_tmp_t;
+        type unconfined_t;
+')
+
+########################################
+#
+# testapp local policy
+#
+
+allow initrc_t mnt_t:dir rw_dir_perms;
+type_transition initrc_t mnt_t:file tmp_t;
+
+allow unconfined_t mnt_t:dir rw_dir_perms;
+type_transition unconfined_t mnt_t:file tmp_t;
+
+allow domain initrc_tmp_t:file rw_file_perms;
+allow domain tmp_t:dir search_dir_perms;
+allow domain tmp_t:file rw_file_perms;
+allow domain mnt_t:dir search_dir_perms;
+allow domain mnt_t:file read_file_perms;
+allow domain mnt_t:lnk_file read_lnk_file_perms;

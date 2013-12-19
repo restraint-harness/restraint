@@ -18,6 +18,10 @@ if [ -z "$OUTPUTFILE" ]; then
         export OUTPUTFILE=`mktemp /mnt/testarea/tmp.XXXXXX`
 fi
 
+function report_result {
+        rstrnt-report-result $@
+}
+
 function runuser_ {
         $(which runuser 2>/dev/null || which /sbin/runuser 2>/dev/null || echo /bin/su) "$@"
 }

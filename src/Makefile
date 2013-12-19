@@ -19,12 +19,12 @@ else
 endif
 
 .PHONY: all
-all: restraint restraintd report_result rhts-submit-log
+all: restraint restraintd rstrnt-report-result rstrnt-report-log
 
-report_result: result.o upload.o
+rstrnt-report-result: result.o upload.o
 	$(CC) $(LDFLAFS) -o $@ $^ $(LIBS)
 
-rhts-submit-log: result_log.o upload.o
+rstrnt-report-log: result_log.o upload.o
 	$(CC) $(LDFLAFS) -o $@ $^ $(LIBS)
 
 restraint: client.o
@@ -80,9 +80,9 @@ install: all
 	install -m0755 -d $(DESTDIR)/usr/bin
 	install -m0755 restraint $(DESTDIR)/usr/bin
 	install -m0755 restraintd $(DESTDIR)/usr/bin
-	install -m0755 report_result $(DESTDIR)/usr/bin
-	install -m0755 rhts-submit-log $(DESTDIR)/usr/bin
+	install -m0755 rstrnt-report-result $(DESTDIR)/usr/bin
+	install -m0755 rstrnt-report-log $(DESTDIR)/usr/bin
 
 .PHONY: clean
 clean:
-	rm -f restraint restraintd report_result rhts-submit-log $(TEST_PROGS) *.o
+	rm -f restraint restraintd rstrnt-report-result rstrnt-report-log $(TEST_PROGS) *.o

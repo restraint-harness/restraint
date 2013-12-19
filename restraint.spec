@@ -15,6 +15,10 @@ BuildRequires:	perl-XML-Parser
 BuildRequires:	openssl-devel
 BuildRequires:	libselinux-devel
 BuildRequires:	glibc-devel
+%if 0%{?rhel}%{?fedora} > 4
+BuildRequires: selinux-policy-devel
+%endif
+
 #if not static build
 BuildRequires:	zlib-devel
 # If static build...
@@ -27,6 +31,16 @@ BuildRequires:	glibc-static
 %description
 restraint harness which can run standalone or with beaker.  when provided a recipe xml it will execute
 each task listed in the recipe until done.
+
+%package rhts
+Summary:	Allow unmodified rhts tests to run under restraint
+Group:		Applications/Internet
+Requires:	restraint = %{version}
+Provides:	rhts-test-env
+Obsoletes:	rhts-test-env
+
+%description rhts
+Legacy package to allow older rhts tests to run under restraint
 
 %prep
 %setup -q
@@ -58,29 +72,83 @@ make clean
 popd
 make DESTDIR=%{buildroot} install
 
-%post
+# Legacy support.
+ln -s rhts-environment.sh $RPM_BUILD_ROOT/usr/bin/rhts_environment.sh
+ln -s rstrnt-report-log $RPM_BUILD_ROOT/usr/bin/rhts-submit-log
+ln -s rstrnt-report-log $RPM_BUILD_ROOT/usr/bin/rhts_submit_log
+ln -s rstrnt-report-result $RPM_BUILD_ROOT/usr/bin/rhts-report-result
+mkdir -p $RPM_BUILD_ROOT/mnt/scratchspace
+mkdir -p $RPM_BUILD_ROOT/mnt/testarea
+
+%if 0%{?rhel}%{?fedora} > 4
+# Build RHTS Selinux Testing Policy 
+pushd legacy/selinux
+# If dist specific selinux module is present use that.
+# Why:
+#  newer releases may introduce new selinux macros which are not present in
+#  older releases.  This means that a module built under the newer release
+#  will no longer load on an older release.  
+# How:
+#  Simply issue the else statement on the older release and commit the 
+#  policy to git with the appropriate dist tag.
+if [ -e "rhts%{?dist}.pp" ]; then
+    install -p -m 644 -D rhts%{?dist}.pp $RPM_BUILD_ROOT%{_datadir}/selinux/packages/%{name}/rhts.pp
+else
+    make -f %{_datadir}/selinux/devel/Makefile
+    install -p -m 644 -D rhts.pp $RPM_BUILD_ROOT%{_datadir}/selinux/packages/%{name}/rhts.pp
+fi
+popd
+%endif
+
+%post rhts
 if [ "$1" -le "1" ] ; then # First install
 chkconfig --level 345 restraintd on
+%if 0%{?rhel}%{?fedora} > 4
+semodule -i %{_datadir}/selinux/packages/%{name}/rhts.pp || :
+%endif
 fi
 
-%preun
+%preun rhts
 if [ "$1" -lt "1" ] ; then # Final removal
 chkconfig --del restraintd || :
+%if 0%{?rhel}%{?fedora} > 4
+semodule -r rhts || :
+%endif
+fi
+
+%postun rhts
+if [ "$1" -ge "1" ] ; then # Upgrade
+%if 0%{?rhel}%{?fedora} > 4
+semodule -i %{_datadir}/selinux/packages/%{name}/rhts.pp || :
+%endif
 fi
 
 %files
 %defattr(-,root,root,-)
 /etc/rc.d/init.d/restraintd
-/usr/bin/report_result
-/usr/bin/%{name}
-/usr/bin/%{name}d
-/usr/bin/rhts-environment.sh
-/usr/bin/rhts-reboot
-/usr/bin/rhts-submit-log
-/usr/share/restraint
-/usr/share/restraint/plugins/run_plugins
-/usr/share/restraint/plugins/localwatchdog
-/usr/share/restraint/plugins/report_result/01_dmesg_check
+%attr(0755, root, root)%{_bindir}/%{name}
+%attr(0755, root, root)%{_bindir}/%{name}d
+%attr(0755, root, root)%{_bindir}/rstrnt-report-result
+%attr(0755, root, root)%{_bindir}/rstrnt-report-log
+/usr/share/%{name}
+/usr/share/%{name}/plugins/run_plugins
+/usr/share/%{name}/plugins/localwatchdog
+/usr/share/%{name}/plugins/report_result
+
+%files rhts
+%defattr(-,root,root,-)
+%attr(0755, root, root)%{_bindir}/rhts-environment.sh
+%attr(0755, root, root)%{_bindir}/rhts_environment.sh
+%attr(0755, root, root)%{_bindir}/rhts-reboot
+%attr(0755, root, root)%{_bindir}/rhts-report-result
+%attr(0755, root, root)%{_bindir}/rhts-submit-log
+%attr(0755, root, root)%{_bindir}/rhts_submit_log
+%{_datadir}/rhts/lib/rhts-make.include
+/mnt/scratchspace
+%attr(1777,root,root)/mnt/testarea
+%if 0%{?rhel}%{?fedora} > 4
+%{_datadir}/selinux/packages/%{name}/rhts.pp
+%endif
 
 %clean
 %{__rm} -rf %{buildroot}
