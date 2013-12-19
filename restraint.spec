@@ -58,6 +58,16 @@ make clean
 popd
 make DESTDIR=%{buildroot} install
 
+%post
+if [ "$1" -le "1" ] ; then # First install
+chkconfig --level 345 restraintd on
+fi
+
+%preun
+if [ "$1" -lt "1" ] ; then # Final removal
+chkconfig --del restraintd || :
+fi
+
 %files
 %defattr(-,root,root,-)
 /etc/rc.d/init.d/restraintd
