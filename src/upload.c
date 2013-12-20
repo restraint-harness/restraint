@@ -1,6 +1,8 @@
 #include <glib.h>
 #include <gio/gio.h>
 #include <libsoup/soup.h>
+#define __STDC_FORMAT_MACROS
+#include <inttypes.h>
 
 #define READ_BUFFER_SIZE 8192
 static gchar input_buf[READ_BUFFER_SIZE];
@@ -9,7 +11,7 @@ static gssize offset = 0;
 static gint
 upload_chunk (SoupSession *session,
               GInputStream *in,
-              gulong filesize,
+              guint64 filesize,
               SoupURI *result_log_uri,
               GError **error)
 {
@@ -25,7 +27,7 @@ upload_chunk (SoupSession *session,
     }
     if (bytes_read > 0) {
         server_msg = soup_message_new_from_uri ("PUT", result_log_uri);
-        range = g_strdup_printf ("bytes %zu-%zu/%lu",
+        range = g_strdup_printf ("bytes %zu-%zu/%" PRIu64,
                                  offset,
                                  offset + bytes_read - 1,
                                  filesize);
@@ -56,7 +58,7 @@ upload_file (SoupSession *session,
     GFile *f = g_file_new_for_path (filepath);
     GFileInputStream *fis = NULL;
     GFileInfo *fileinfo = NULL;
-    gulong filesize;
+    guint64 filesize;
     GError *tmp_error = NULL;
     SoupURI *result_log_uri;
     gint ret;

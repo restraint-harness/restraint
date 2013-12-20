@@ -8,6 +8,8 @@
 #include <signal.h>
 #include <errno.h>
 #include <unistd.h>
+#define __STDC_FORMAT_MACROS
+#include <inttypes.h>
 
 #include "task.h"
 #include "param.h"
@@ -275,8 +277,8 @@ static gboolean build_env(Task *task, GError **error) {
     g_ptr_array_add(env, g_strdup_printf("%sOSARCH=%s", prefix, task->recipe->osarch));
     g_ptr_array_add(env, g_strdup_printf("%sTASKPATH=%s", prefix, task->path));
     g_ptr_array_add(env, g_strdup_printf("%sTASKNAME=%s", prefix, task->name));
-    g_ptr_array_add(env, g_strdup_printf("%sMAXTIME=%lu", prefix, task->max_time));
-    g_ptr_array_add(env, g_strdup_printf("%sREBOOTCOUNT=%lu", prefix, task->reboots));
+    g_ptr_array_add(env, g_strdup_printf("%sMAXTIME=%" PRIu64, prefix, task->max_time));
+    g_ptr_array_add(env, g_strdup_printf("%sREBOOTCOUNT=%" PRIu64, prefix, task->reboots));
     g_ptr_array_add(env, g_strdup_printf("%sLAB_CONTROLLER=", prefix));
     g_ptr_array_add(env, g_strdup_printf("%sTASKORDER=%d", prefix, task->order));
     // HOME, LANG and TERM can be overriden by user by passing it as recipe or task params.

@@ -16,7 +16,7 @@ typedef struct {
     const gchar **environ;
     // The path to chdir before executing
     const gchar *path;
-    gulong max_time;
+    guint64 max_time;
 } CommandData;
 
 typedef struct {

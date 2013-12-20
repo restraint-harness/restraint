@@ -5,6 +5,8 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <string.h>
+#define __STDC_FORMAT_MACROS
+#include <inttypes.h>
 
 #include "task.h"
 #include "metadata.h"
@@ -18,7 +20,7 @@ GQuark restraint_metadata_parse_error_quark(void) {
         error_code, \
         message, ##__VA_ARGS__)
 
-static gulong parse_time_string(gchar *time_string, GError **error) {
+static guint64 parse_time_string(gchar *time_string, GError **error) {
     /* Convert time string to number of seconds.
      *     5d -> 432000
      *     3m -> 180
@@ -26,8 +28,8 @@ static gulong parse_time_string(gchar *time_string, GError **error) {
      *     600s -> 600
      */
     gchar time_unit;
-    gulong max_time = 0;
-    sscanf(time_string, "%lu%c", &max_time, &time_unit);
+    guint64 max_time = 0;
+    sscanf(time_string, "%" PRIu64 "%c", &max_time, &time_unit);
     time_unit = g_ascii_toupper(time_unit);
     if (time_unit == 'D')
         max_time = 24 * 3600 * max_time;
@@ -99,7 +101,7 @@ gboolean parse_metadata(Task *task, GError **error) {
         goto error;
     }
     if (max_time != NULL) {
-        gulong time = parse_time_string(max_time, &tmp_error);
+        guint64 time = parse_time_string(max_time, &tmp_error);
         g_free(max_time);
         if (tmp_error) {
             g_propagate_error(error, tmp_error);
@@ -189,7 +191,7 @@ static void parse_line(Task *task,
     g_strfreev(key_value);
 
     if (g_strcmp0("TESTTIME",key) == 0) {
-        gulong time = parse_time_string(value, &tmp_error);
+        guint64 time = parse_time_string(value, &tmp_error);
         if (tmp_error) {
             g_free(key);
             g_free(value);

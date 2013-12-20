@@ -98,7 +98,7 @@ typedef struct {
     /* entry_point, defaults to make run */
     gchar *entry_point;
     /* maximum time task is allowed to run before being killed */
-    gulong max_time;
+    guint64 max_time;
     /* task order needed for multi-host tasks */
     gint order;
     /* environment variables that will be passed on to task */
@@ -114,7 +114,7 @@ typedef struct {
     /* offset of TASKOUT.log */
     gssize offset;
     /* reboot count */
-    gulong reboots;
+    guint64 reboots;
     /* Filesystem path where the task run data is stored */
     gchar *run_path;
     /* Only true after we have attempted to parse run_metadata on disk. */
