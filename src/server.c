@@ -107,7 +107,10 @@ task_output_complete (SoupSession *session, SoupMessage *server_msg, gpointer us
     }
 
     if (server_msg->status_code <= 100 || server_msg->status_code >= 500) {
-        if (*retries < MAX_RETRIES) {
+        // Disable requeue logic.  Soup's requeue message only works for redirects where the
+        // message is still in the priv_queue.  What we really need here is a retry_message
+        //if (*retries < MAX_RETRIES) {
+        if (FALSE) {
             *retries = *retries + 1;
             g_warning("Retrying %d of %d, taskoutput.log code:%u Reason:%s\n",
                       *retries, MAX_RETRIES, server_msg->status_code, server_msg->reason_phrase);
