@@ -26,7 +26,7 @@
 /src/test_task
 /src/restraint
 /src/restraintd
-/src/report_result
-/src/rhts-submit-log
+/src/rstrnt-report-result
+/src/rstrnt-report-log
 /src/*.o
 rel-eng/lib/*.pyc
