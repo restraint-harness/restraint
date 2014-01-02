@@ -135,9 +135,13 @@ task_finish_callback (gint pid_result, gboolean localwatchdog, gpointer user_dat
     } else {
         task->state = task_run_data->fail_state;
         if (localwatchdog) {
+            task->localwatchdog = localwatchdog;
+            restraint_set_run_metadata (task, "localwatchdog", NULL, G_TYPE_BOOLEAN, task->localwatchdog);
+
             g_set_error(&task->error, RESTRAINT_TASK_RUNNER_ERROR,
                             RESTRAINT_TASK_RUNNER_WATCHDOG_ERROR,
                             "Local watchdog expired!");
+
             CommandData *command_data = g_slice_new0 (CommandData);
             const gchar *command[] = {"sh", "-l", "-c", PLUGIN_SCRIPT, NULL};
             command_data->command = command;
@@ -512,6 +516,10 @@ task_handler (gpointer user_data)
       if (task->finished) {
           // If the task is finished skip to the next task.
           task->state = TASK_COMPLETED;
+      } else if (task->localwatchdog) {
+          // If the task is not finished but localwatchdog expired.
+          g_string_printf(message, "** Localwatchdog task: %s [%s]\n", task->task_id, task->path);
+          task->state = TASK_COMPLETE;
       } else if (task->started) {
           // If the task is not finished but started then skip fetching the task again.
           g_string_printf(message, "** Continuing task: %s [%s]\n", task->task_id, task->path);

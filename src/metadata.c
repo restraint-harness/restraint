@@ -464,6 +464,22 @@ restraint_parse_run_metadata (Task *task, GError **error)
     }
     g_clear_error (&tmp_error);
 
+    task->localwatchdog = g_key_file_get_boolean (keyfile,
+                                          "restraint",
+                                          "localwatchdog",
+                                          &tmp_error);
+    if (tmp_error && tmp_error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND) {
+        g_propagate_prefixed_error(error, tmp_error,
+                    "Task %s:  parse_run_metadata,", task->task_id);
+        goto error;
+    }
+    g_clear_error (&tmp_error);
+    if (task->localwatchdog) {
+        g_set_error(&task->error, RESTRAINT_TASK_RUNNER_ERROR,
+                            RESTRAINT_TASK_RUNNER_WATCHDOG_ERROR,
+                            "Local watchdog expired!");
+    }
+
     task->name = g_key_file_get_string (keyfile,
                                           "restraint",
                                           "name",
