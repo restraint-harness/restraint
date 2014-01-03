@@ -143,6 +143,7 @@ fi
 %attr(0755, root, root)%{_bindir}/rhts-report-result
 %attr(0755, root, root)%{_bindir}/rhts-submit-log
 %attr(0755, root, root)%{_bindir}/rhts_submit_log
+%attr(0755, root, root)%{_bindir}/rhts-run-simple-test
 %{_datadir}/rhts/lib/rhts-make.include
 /mnt/scratchspace
 %attr(1777,root,root)/mnt/testarea

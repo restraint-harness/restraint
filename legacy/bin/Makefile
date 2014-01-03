@@ -1,4 +1,4 @@
-FILES := rhts-environment.sh rhts-reboot
+FILES := rhts-environment.sh rhts-reboot rhts-run-simple-test
 
 .PHONY: install
 install:
