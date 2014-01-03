@@ -29,18 +29,20 @@ static guint64 parse_time_string(gchar *time_string, GError **error) {
      */
     gchar time_unit;
     guint64 max_time = 0;
-    sscanf(time_string, "%" PRIu64 "%c", &max_time, &time_unit);
-    time_unit = g_ascii_toupper(time_unit);
-    if (time_unit == 'D')
-        max_time = 24 * 3600 * max_time;
-    else if (time_unit == 'H')
-        max_time = 3600 * max_time;
-    else if (time_unit == 'M')
-        max_time = 60 * max_time;
-    else if (time_unit == 'S' || time_unit == '\0')
-        max_time = max_time;
-    else {
-        unrecognised(RESTRAINT_METADATA_PARSE_ERROR_BAD_SYNTAX, "Unrecognised time unit '%c'", time_unit);
+    gint read = sscanf(time_string, "%" SCNu64 " %c", &max_time, &time_unit);
+    if (read == 2) {
+        time_unit = g_ascii_toupper(time_unit);
+        if (time_unit == 'D')
+            max_time = 24 * 3600 * max_time;
+        else if (time_unit == 'H')
+            max_time = 3600 * max_time;
+        else if (time_unit == 'M')
+            max_time = 60 * max_time;
+        else if (time_unit == 'S')
+            max_time = max_time;
+        else {
+            unrecognised(RESTRAINT_METADATA_PARSE_ERROR_BAD_SYNTAX, "Unrecognised time unit '%c'", time_unit);
+        }
     }
     return max_time;
 }
