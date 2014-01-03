@@ -43,6 +43,26 @@ static gchar *get_attribute(xmlNode *node, void *attribute) {
     return result;
 }
 
+static xmlNode *find_recipe(xmlNode *recipe_set) {
+    xmlNode *recipe = first_child_with_name(recipe_set, "recipe");
+    if (recipe) {
+        xmlChar *id = xmlGetNoNsProp(recipe, (xmlChar *)"id");
+        if (id) {
+            xmlFree (id);
+            return recipe;
+        }
+        xmlNode *guest_recipe = first_child_with_name(recipe, "guestrecipe");
+        if (guest_recipe) {
+            xmlChar *id = xmlGetNoNsProp(guest_recipe, (xmlChar *)"id");
+            if (id) {
+                xmlFree (id);
+                return guest_recipe;
+            }
+        }
+    }
+    return NULL;
+}
+
 #define unrecognised(message, ...) g_set_error(error, RESTRAINT_RECIPE_PARSE_ERROR, \
         RESTRAINT_RECIPE_PARSE_ERROR_UNRECOGNISED, \
         message, ##__VA_ARGS__)
@@ -333,7 +353,7 @@ recipe_parse (xmlDoc *doc, SoupURI *recipe_uri, GError **error)
         unrecognised("<recipeSet/> element not found");
         goto error;
     }
-    xmlNode *recipe = first_child_with_name(recipeset, "recipe");
+    xmlNode *recipe = find_recipe(recipeset);
     if (recipe == NULL) {
         unrecognised("<recipe/> element not found");
         goto error;
