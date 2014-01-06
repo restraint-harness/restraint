@@ -44,7 +44,13 @@ To build it statically first enter the third-party directory and build the suppo
 
 Then build restraint with the following command::
 
+ % pushd src
  % PKG_CONFIG_PATH=third-party/tree/lib/pkgconfig make STATIC=1
+ % popd
+
+Installing restraint::
+
+ % make install
 
 Running Standalone
 ==================
