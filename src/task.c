@@ -268,6 +268,8 @@ static gboolean build_env(Task *task, GError **error) {
         g_ptr_array_add(env, g_strdup_printf("VARIANT=%s", task->recipe->osvariant ));
         g_ptr_array_add(env, g_strdup_printf("FAMILY=%s", task->recipe->osmajor));
         g_ptr_array_add(env, g_strdup_printf("ARCH=%s", task->recipe->osarch));
+        g_ptr_array_add(env, g_strdup_printf("TESTNAME=%s", task->name));
+        g_ptr_array_add(env, g_strdup_printf("TESTPATH=%s", task->path));
     }
     g_list_foreach(task->recipe->roles, (GFunc) build_param_var, env);
     g_list_foreach(task->roles, (GFunc) build_param_var, env);
