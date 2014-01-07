@@ -5,5 +5,5 @@
 
 PLUGIN=$(basename $0)
 
-report_result --no-plugins $TEST/$PLUGIN WARN 0
-rhts-reboot
+rstrnt-report-result --no-plugins $TEST/$PLUGIN WARN 0
+rstrnt-reboot

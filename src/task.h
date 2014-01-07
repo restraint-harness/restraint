@@ -144,7 +144,7 @@ void restraint_task_run(Task *task);
 void restraint_task_free(Task *task);
 void restraint_init_result_hash (AppData *app_data);
 gboolean task_io_callback (GIOChannel *io, GIOCondition condition, gpointer user_data);
-void task_finish_callback (gint pid_result, gboolean localwatchdog, gpointer user_data);
+void task_handler_callback (gint pid_result, gboolean localwatchdog, gpointer user_data);
 gboolean idle_task_setup (gpointer user_data);
 extern SoupSession *soup_session;
 #endif

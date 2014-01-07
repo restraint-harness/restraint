@@ -1,4 +1,7 @@
-FILES := rhts-environment.sh rhts-run-simple-test
+FILES := rstrnt-backup rstrnt-restore rstrnt-reboot
+
+.PHONY: all
+all:
 
 .PHONY: install
 install:

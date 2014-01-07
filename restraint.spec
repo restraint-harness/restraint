@@ -77,6 +77,9 @@ ln -s rhts-environment.sh $RPM_BUILD_ROOT/usr/bin/rhts_environment.sh
 ln -s rstrnt-report-log $RPM_BUILD_ROOT/usr/bin/rhts-submit-log
 ln -s rstrnt-report-log $RPM_BUILD_ROOT/usr/bin/rhts_submit_log
 ln -s rstrnt-report-result $RPM_BUILD_ROOT/usr/bin/rhts-report-result
+ln -s rstrnt-backup $RPM_BUILD_ROOT/usr/bin/rhts-backup
+ln -s rstrnt-restore $RPM_BUILD_ROOT/usr/bin/rhts-restore
+ln -s rstrnt-reboot $RPM_BUILD_ROOT/usr/bin/rhts-reboot
 mkdir -p $RPM_BUILD_ROOT/mnt/scratchspace
 mkdir -p $RPM_BUILD_ROOT/mnt/testarea
 
@@ -130,9 +133,13 @@ fi
 %attr(0755, root, root)%{_bindir}/%{name}d
 %attr(0755, root, root)%{_bindir}/rstrnt-report-result
 %attr(0755, root, root)%{_bindir}/rstrnt-report-log
+%attr(0755, root, root)%{_bindir}/rstrnt-backup
+%attr(0755, root, root)%{_bindir}/rstrnt-restore
+%attr(0755, root, root)%{_bindir}/rstrnt-reboot
 /usr/share/%{name}
 /usr/share/%{name}/plugins/run_plugins
 /usr/share/%{name}/plugins/localwatchdog
+/usr/share/%{name}/plugins/completed
 /usr/share/%{name}/plugins/report_result
 
 %files rhts
@@ -144,6 +151,8 @@ fi
 %attr(0755, root, root)%{_bindir}/rhts-submit-log
 %attr(0755, root, root)%{_bindir}/rhts_submit_log
 %attr(0755, root, root)%{_bindir}/rhts-run-simple-test
+%attr(0755, root, root)%{_bindir}/rhts-backup
+%attr(0755, root, root)%{_bindir}/rhts-restore
 %{_datadir}/rhts/lib/rhts-make.include
 /mnt/scratchspace
 %attr(1777,root,root)/mnt/testarea

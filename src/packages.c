@@ -24,7 +24,7 @@ gboolean restraint_install_package(AppData *app_data, const gchar *package_name,
 
     if (!process_run (command_data,
                       task_io_callback,
-                      task_finish_callback,
+                      task_handler_callback,
                       task_run_data,
                       &tmp_error)) {
         g_propagate_prefixed_error (error, tmp_error,

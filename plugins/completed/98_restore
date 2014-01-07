@@ -1,0 +1,8 @@
+#!/bin/sh
+#
+# Restore any backed up files
+#
+PLUGIN=$(basename $0)
+
+# Should we report a warn if this doesn't succeed?
+rstrnt-restore

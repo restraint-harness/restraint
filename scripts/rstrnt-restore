@@ -1,0 +1,64 @@
+#!/bin/sh
+#
+# Copyright (c) 2010,2012,2013 Red Hat, Inc.
+#
+# This program is free software: you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation, either version 2 of
+# the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be
+# useful, but WITHOUT ANY WARRANTY; without even the implied
+# warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+# PURPOSE. See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see http://www.gnu.org/licenses/.
+
+PATH=/sbin:/usr/sbin:$PATH
+selinuxenabled >/dev/null 2>/dev/null && SELINUX=true || SELINUX=false
+#[ -d "/selinux" ] && SELINUX=true || SELINUX=false
+
+usage="Usage: $0 [OPTION]
+Restore all files and directories backed up with rhts-backup.
+Must be run as root to preserve all permissions and attributes.
+
+    -h, -?, --help    display this help and exit
+
+This tool is automatically run by restraint when test completes.
+If RSTRNT_BACKUP_DIR is set, data will be restored from that directory.
+
+The tool does not remove new files appearing after backup has been made.
+If you don't want to leave anything behind just remove the whole original
+tree before running rhts-restore.
+"
+
+if [[ "$1" == "--help" || "$1" == "-h"  || "$1" == "-?" ]]; then
+    echo "$usage"
+    exit 1
+fi
+
+# set backup source directory, make sure it exists
+if [ -n "$RSTRNT_BACKUP_DIR" ]; then
+    SRC=$(echo "$RSTRNT_BACKUP_DIR" | sed 's|/$||')
+    [ -d "${SRC}" ] || { echo "Failed to restore files, there is no ${SRC} directory."; exit 1; }
+    echo "Backup directory set. Restoring files from ${SRC}."
+else  
+    SRC="/mnt/tests/$(eval echo \$$(echo ${HARNESS_PREFIX}RUNPATH))/backup"
+    [ -d "${SRC}" ] || { echo "Nothing to restore."; exit 0; }
+fi
+
+# restore files
+if $SELINUX; then
+    # when selinux enabled we need -c here (cp bug #470207)
+    cp -fac "${SRC}"/* /
+else
+    cp -fa "${SRC}"/* /
+fi
+
+if [ "$?" != "0" ]; then
+    echo "Failed to restore files from ${SRC}."
+    exit 1
+fi
+
+exit 0

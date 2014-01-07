@@ -1,0 +1,101 @@
+#!/bin/bash
+#
+# Copyright (c) 2010,2012,2013 Red Hat, Inc.
+#
+# This program is free software: you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation, either version 2 of
+# the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be
+# useful, but WITHOUT ANY WARRANTY; without even the implied
+# warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+# PURPOSE. See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see http://www.gnu.org/licenses/.
+
+PATH=/sbin:/usr/sbin:$PATH
+selinuxenabled >/dev/null 2>/dev/null && SELINUX=true || SELINUX=false
+#[ -d "/selinux" ] && SELINUX=true || SELINUX=false
+
+usage="Usage: $0 [OPTION] [FILE]...
+Create a backup of each listed FILE, recursively for directories that will
+be restored automatically with rhts-restore when the test completes.
+Must be run as root to preserve all permissions and attributes.
+
+    -h, -?, --help    display this help and exit
+
+After running rstrnt-backup, restraint will automatically call rstrnt-restore.
+If RSTRNT_BACKUP_DIR is set, backup will be saved into that directory.
+"
+
+if [[ "$#" -lt 1 || "$1" == "--help" || "$1" == "-h"  || "$1" == "-?" ]]; then
+    echo "$usage"
+    exit 1
+fi
+
+# set (and maybe create) destination directory
+if [ -n "$RSTRNT_BACKUP_DIR" ]; then
+    DEST=$(echo $RSTRNT_BACKUP_DIR | sed 's|/$||')
+    echo "Backup directory set. Backing up files to ${DEST}."
+else
+    DEST="/mnt/tests/$(eval echo \$$(echo ${HARNESS_PREFIX}RUNPATH))/backup"
+fi
+if [ ! -e "${DEST}" ]; then
+    mkdir -p ${DEST} || { echo "Cannot create ${DEST} directory."; exit 1; }
+fi
+
+# check whether destination has enough space for the backup
+size=0
+for FILE in "$@"; do
+    if [ -e "$FILE" ]; then
+        size=$(expr ${size} + $(du -s "$FILE" | awk '{ print $1 }'))
+    else
+        echo "$FILE not found."
+        exit 1
+    fi
+done
+destsize=$(df -P ${DEST} | tail -n 1 | awk '{ print $3 }')
+if [ "$size" -gt "$destsize" ]; then
+    echo "not enough disk space on ${DEST} for $*"
+    exit 1
+fi
+
+# back up files
+for file in "$@"; do
+    # convert relative path to absolute, remove trailing slash
+    file=$(echo "$file" | sed "s|^\([^/]\)|$PWD/\1|" | sed "s|/$||")
+    path=$(dirname "$file")
+
+    # create path and copy files
+    mkdir -p "${DEST}${path}" || { echo "Cannot create ${DEST}${path} directory."; exit 1; }
+    if $SELINUX; then
+        # when selinux enabled we need -c here (cp bug #470207)
+        cp -fac "$file" "${DEST}${path}"
+    else
+        cp -fa "$file" "${DEST}${path}"
+    fi
+    if [ "$?" != "0" ]; then
+        echo "Failed to back up files to ${DEST}${path}."
+        exit 1
+    fi
+
+    # preserve path attributes (bug #469331)
+    dir="$path"
+    failed=false
+    while true; do
+        $SELINUX && { chcon --reference $dir ${DEST}${dir} || failed=true; }
+        chown --reference $dir ${DEST}${dir} || failed=true
+        chmod --reference $dir ${DEST}${dir} || failed=true
+        touch --reference $dir ${DEST}${dir} || failed=true
+        [ "$dir" == "/" ] && break
+        dir=$(dirname "$dir")
+    done
+    if $failed; then
+        echo "Failed to preserve all attributes for backup path ${DEST}${path}."
+        exit 1
+    fi
+done
+
+exit 0

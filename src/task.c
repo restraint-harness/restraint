@@ -117,6 +117,18 @@ task_io_callback (GIOChannel *io, GIOCondition condition, gpointer user_data) {
 }
 
 void
+task_finish_plugins_callback (gint pid_result, gboolean localwatchdog, gpointer user_data)
+{
+    TaskRunData *task_run_data = (TaskRunData *) user_data;
+    AppData *app_data = task_run_data->app_data;
+
+    app_data->task_handler_id = g_idle_add_full(G_PRIORITY_DEFAULT_IDLE,
+                                                task_handler,
+                                                app_data,
+                                                NULL);
+}
+
+void
 task_finish_callback (gint pid_result, gboolean localwatchdog, gpointer user_data)
 {
     TaskRunData *task_run_data = (TaskRunData *) user_data;
@@ -134,6 +146,7 @@ task_finish_callback (gint pid_result, gboolean localwatchdog, gpointer user_dat
         task->state = task_run_data->pass_state;
     } else {
         task->state = task_run_data->fail_state;
+
         if (localwatchdog) {
             task->localwatchdog = localwatchdog;
             restraint_set_run_metadata (task, "localwatchdog", NULL, G_TYPE_BOOLEAN, task->localwatchdog);
@@ -141,49 +154,73 @@ task_finish_callback (gint pid_result, gboolean localwatchdog, gpointer user_dat
             g_set_error(&task->error, RESTRAINT_TASK_RUNNER_ERROR,
                             RESTRAINT_TASK_RUNNER_WATCHDOG_ERROR,
                             "Local watchdog expired!");
-
-            CommandData *command_data = g_slice_new0 (CommandData);
-            const gchar *command[] = {"sh", "-l", "-c", PLUGIN_SCRIPT, NULL};
-            command_data->command = command;
-            // Last four entries are NULL.  Replace first three with plugin vars
-            gchar *plugin_dir = g_strdup_printf("RSTRNT_PLUGIN_DIR=%s/localwatchdog", PLUGIN_DIR);
-            if (task->env->pdata[task->env->len - 4] != NULL) {
-                g_free (task->env->pdata[task->env->len - 4]);
-            }
-            task->env->pdata[task->env->len - 4] = plugin_dir;
-
-            gchar *no_plugins = g_strdup_printf("RSTRNT_NOPLUGINS=1");
-            if (task->env->pdata[task->env->len - 3] != NULL) {
-                g_free (task->env->pdata[task->env->len - 3]);
-            }
-            task->env->pdata[task->env->len - 3] = no_plugins;
-
-            // Not currently used for localwatchdog.
-            if (task->env->pdata[task->env->len - 2] != NULL) {
-                g_free (task->env->pdata[task->env->len - 2]);
-            }
-            task->env->pdata[task->env->len - 2] = NULL;
-
-            command_data->environ = (const gchar **) task->env->pdata;
-            command_data->path = "/usr/share/restraint/plugins";
-
-            GError *tmp_error = NULL;
-            if (process_run (command_data,
-                             task_io_callback,
-                             task_finish_callback,
-                             task_run_data,
-                             &tmp_error)) {
-                return;
-            } else {
-                g_warning ("run_plugins failed to run: %s\n", tmp_error->message);
-                g_clear_error (&tmp_error);
-            }
         } else {
             g_set_error(&task->error, RESTRAINT_TASK_RUNNER_ERROR,
                         RESTRAINT_TASK_RUNNER_RC_ERROR,
                             "Command returned non-zero %i", pid_result);
         }
     }
+
+    // Run Finish/Completed plugins
+    // Always run completed plugins and if localwatchdog triggered run those as well.
+    CommandData *command_data = g_slice_new0 (CommandData);
+    const gchar *command[] = {"sh", "-l", "-c", PLUGIN_SCRIPT, NULL};
+    command_data->command = command;
+    // Last four entries are NULL.  Replace first three with plugin vars
+    gchar *localwatchdog_plugin = g_strdup_printf(" %s/localwatchdog", PLUGIN_DIR);
+    gchar *plugin_dir = g_strdup_printf("RSTRNT_PLUGINS_DIR=%s/completed%s", PLUGIN_DIR, localwatchdog ? localwatchdog_plugin : "");
+    g_free (localwatchdog_plugin);
+    if (task->env->pdata[task->env->len - 4] != NULL) {
+        g_free (task->env->pdata[task->env->len - 4]);
+    }
+    task->env->pdata[task->env->len - 4] = plugin_dir;
+
+    gchar *no_plugins = g_strdup_printf("RSTRNT_NOPLUGINS=1");
+    if (task->env->pdata[task->env->len - 3] != NULL) {
+        g_free (task->env->pdata[task->env->len - 3]);
+    }
+    task->env->pdata[task->env->len - 3] = no_plugins;
+
+    gchar *rstrnt_localwatchdog = g_strdup_printf("RSTRNT_LOCALWATCHDOG=%s", localwatchdog ? "TRUE" : "FALSE");
+    if (task->env->pdata[task->env->len - 2] != NULL) {
+        g_free (task->env->pdata[task->env->len - 2]);
+    }
+    task->env->pdata[task->env->len - 2] = rstrnt_localwatchdog;
+
+    command_data->environ = (const gchar **) task->env->pdata;
+    command_data->path = "/usr/share/restraint/plugins";
+
+    GError *tmp_error = NULL;
+    if (process_run (command_data,
+                     task_io_callback,
+                     task_finish_plugins_callback,
+                     task_run_data,
+                     &tmp_error)) {
+    } else {
+        g_warning ("run_plugins failed to run: %s\n", tmp_error->message);
+        g_clear_error (&tmp_error);
+    }
+}
+
+void
+task_handler_callback (gint pid_result, gboolean localwatchdog, gpointer user_data)
+{
+    /*
+     * Generic task handler routine.
+     * After running command set task state based on pass/fail of command
+     * then re-add the task_handler
+     */
+    TaskRunData *task_run_data = (TaskRunData *) user_data;
+    AppData *app_data = task_run_data->app_data;
+    Task *task = app_data->tasks->data;
+
+    // Did the command Succeed?
+    if (pid_result == 0) {
+        task->state = task_run_data->pass_state;
+    } else {
+        task->state = task_run_data->fail_state;
+    }
+
     app_data->task_handler_id = g_idle_add_full(G_PRIORITY_DEFAULT_IDLE,
                                                 task_handler,
                                                 app_data,
@@ -281,6 +318,7 @@ static gboolean build_env(Task *task, GError **error) {
     g_ptr_array_add(env, g_strdup_printf("%sOSMAJOR=%s", prefix, task->recipe->osmajor));
     g_ptr_array_add(env, g_strdup_printf("%sOSVARIANT=%s", prefix, task->recipe->osvariant ));
     g_ptr_array_add(env, g_strdup_printf("%sOSARCH=%s", prefix, task->recipe->osarch));
+    g_ptr_array_add(env, g_strdup_printf("%sRUNPATH=%s", prefix, task->run_path));
     g_ptr_array_add(env, g_strdup_printf("%sTASKPATH=%s", prefix, task->path));
     g_ptr_array_add(env, g_strdup_printf("%sTASKNAME=%s", prefix, task->name));
     g_ptr_array_add(env, g_strdup_printf("%sMAXTIME=%" PRIu64, prefix, task->max_time));
