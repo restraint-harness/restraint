@@ -1,5 +1,5 @@
 Name:		restraint
-Version:	0.1.3
+Version:	0.1.4
 Release:	1%{?dist}
 Summary:	Simple test harness which can be used with beaker
 
@@ -164,6 +164,25 @@ fi
 %{__rm} -rf %{buildroot}
 
 %changelog
+* Thu Jan 09 2014 Bill Peck <bpeck@redhat.com> 0.1.4-1
+- Move localwatchdog plugins to a more generic plugins model.
+  (bpeck@redhat.com)
+- Provide TESTNAME and TESTPATH for legacy rhts (bpeck@redhat.com)
+- Update build instructions (bpeck@redhat.com)
+- ignore whitespace in scan. (bpeck@redhat.com)
+- Look for a guestrecipe if we fail to find a regular recipe.
+  (bpeck@redhat.com)
+- Include rhts-run-simple-test from rhts. (bpeck@redhat.com)
+- Update ignore to restrnt names (bpeck@redhat.com)
+- Remember localwatchdog state, the plugins may reboot the system.
+  (bpeck@redhat.com)
+- disable requeueing messages for now. (bpeck@redhat.com)
+- use guint64 (bpeck@redhat.com)
+- Move rhts legacy into a sub-package (bpeck@redhat.com)
+- Activate service after install (bpeck@redhat.com)
+- fix buildroot (bpeck@redhat.com)
+- Install localwatchdog plugins (bpeck@redhat.com)
+
 * Wed Dec 18 2013 Bill Peck <bpeck@redhat.com> 0.1.3-1
 - Added localwatchdog plugins (bpeck@redhat.com)
 - ignore pyc file from tito (bpeck@redhat.com)
