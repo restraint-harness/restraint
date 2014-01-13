@@ -329,7 +329,7 @@ server_msg_complete (SoupSession *session, SoupMessage *server_msg, gpointer use
             }
             task->env->pdata[task->env->len - 4] = result_server;
 
-            gchar *plugin_dir = g_strdup_printf("RSTRNT_PLUGIN_DIR=%s/report_result", PLUGIN_DIR);
+            gchar *plugin_dir = g_strdup_printf("RSTRNT_PLUGINS_DIR=%s/report_result", PLUGIN_DIR);
             if (task->env->pdata[task->env->len - 3] != NULL) {
                 g_free (task->env->pdata[task->env->len - 3]);
             }
