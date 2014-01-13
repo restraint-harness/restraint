@@ -26,7 +26,7 @@ process_run (CommandData *command_data,
              GError **error)
 {
     ProcessData *data;
-    struct termios term;
+    //struct termios term;
     struct winsize win = {
         .ws_col = 80, .ws_row = 24,
         .ws_xpixel = 480, .ws_ypixel = 192,
@@ -38,7 +38,7 @@ process_run (CommandData *command_data,
     data->finish_callback = finish_callback;
     data->user_data = user_data;
 
-    data->pid = forkpty (&data->fd, NULL, &term, &win);
+    data->pid = forkpty (&data->fd, NULL, NULL, &win);
     if (data->pid < 0) {
         /* Failed to fork */
         g_set_error (error, RESTRAINT_PROCESS_ERROR,
