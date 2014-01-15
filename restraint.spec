@@ -138,9 +138,11 @@ fi
 %attr(0755, root, root)%{_bindir}/rstrnt-reboot
 /usr/share/%{name}
 /usr/share/%{name}/plugins/run_plugins
-/usr/share/%{name}/plugins/localwatchdog
-/usr/share/%{name}/plugins/completed
-/usr/share/%{name}/plugins/report_result
+/usr/share/%{name}/plugins/run_task_plugins
+/usr/share/%{name}/plugins/localwatchdog.d
+/usr/share/%{name}/plugins/completed.d
+/usr/share/%{name}/plugins/report_result.d
+/usr/share/%{name}/plugins/task_run.d
 
 %files rhts
 %defattr(-,root,root,-)

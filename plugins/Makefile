@@ -4,14 +4,18 @@ all:
 
 .PHONY: install
 install:
-	install -m0755 -d $(DESTDIR)/usr/share/restraint/plugins/report_result
-	install -m0755 -d $(DESTDIR)/usr/share/restraint/plugins/completed
-	install -m0755 -d $(DESTDIR)/usr/share/restraint/plugins/localwatchdog
+	install -m0755 -d $(DESTDIR)/usr/share/restraint/plugins/report_result.d
+	install -m0755 -d $(DESTDIR)/usr/share/restraint/plugins/completed.d
+	install -m0755 -d $(DESTDIR)/usr/share/restraint/plugins/localwatchdog.d
+	install -m0755 -d $(DESTDIR)/usr/share/restraint/plugins/task_run.d
 	install -m0755 run_plugins $(DESTDIR)/usr/share/restraint/plugins
-	install -m0755 report_result/01_dmesg_check $(DESTDIR)/usr/share/restraint/plugins/report_result
-	install -m0755 localwatchdog/01_sysinfo $(DESTDIR)/usr/share/restraint/plugins/localwatchdog
-	install -m0755 completed/98_restore $(DESTDIR)/usr/share/restraint/plugins/completed
-	install -m0755 localwatchdog/99_reboot $(DESTDIR)/usr/share/restraint/plugins/localwatchdog
+	install -m0755 run_task_plugins $(DESTDIR)/usr/share/restraint/plugins
+	install -m0755 report_result.d/01_dmesg_check $(DESTDIR)/usr/share/restraint/plugins/report_result.d
+	install -m0755 localwatchdog.d/01_sysinfo $(DESTDIR)/usr/share/restraint/plugins/localwatchdog.d
+	install -m0755 completed.d/98_restore $(DESTDIR)/usr/share/restraint/plugins/completed.d
+	install -m0755 localwatchdog.d/99_reboot $(DESTDIR)/usr/share/restraint/plugins/localwatchdog.d
+	install -m0755 task_run.d/10_bash_login $(DESTDIR)/usr/share/restraint/plugins/task_run.d
+	install -m0755 task_run.d/20_unconfined $(DESTDIR)/usr/share/restraint/plugins/task_run.d
 
 .PHONY: clean
 clean:

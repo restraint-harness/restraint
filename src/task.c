@@ -164,11 +164,11 @@ task_finish_callback (gint pid_result, gboolean localwatchdog, gpointer user_dat
     // Run Finish/Completed plugins
     // Always run completed plugins and if localwatchdog triggered run those as well.
     CommandData *command_data = g_slice_new0 (CommandData);
-    const gchar *command[] = {"sh", "-l", "-c", PLUGIN_SCRIPT, NULL};
+    const gchar *command[] = {TASK_PLUGIN_SCRIPT, PLUGIN_SCRIPT, NULL};
     command_data->command = command;
     // Last four entries are NULL.  Replace first three with plugin vars
-    gchar *localwatchdog_plugin = g_strdup_printf(" %s/localwatchdog", PLUGIN_DIR);
-    gchar *plugin_dir = g_strdup_printf("RSTRNT_PLUGINS_DIR=%s/completed%s", PLUGIN_DIR, localwatchdog ? localwatchdog_plugin : "");
+    gchar *localwatchdog_plugin = g_strdup_printf(" %s/localwatchdog.d", PLUGIN_DIR);
+    gchar *plugin_dir = g_strdup_printf("RSTRNT_PLUGINS_DIR=%s/completed.d%s", PLUGIN_DIR, localwatchdog ? localwatchdog_plugin : "");
     g_free (localwatchdog_plugin);
     if (task->env->pdata[task->env->len - 4] != NULL) {
         g_free (task->env->pdata[task->env->len - 4]);
@@ -262,8 +262,9 @@ task_run (AppData *app_data, GError **error)
     task_run_data->fail_state = TASK_COMPLETE;
 
     CommandData *command_data = g_slice_new0 (CommandData);
-    const gchar *args[] = {"sh", "-l", "-c", task->entry_point, NULL};
-    command_data->command = args;
+    const gchar *command[] = {TASK_PLUGIN_SCRIPT, task->entry_point, NULL};
+    command_data->command = command;
+
     command_data->environ = (const gchar **)task->env->pdata;
     command_data->path = task->path;
     command_data->max_time = task->max_time;
