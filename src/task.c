@@ -262,8 +262,7 @@ task_run (AppData *app_data, GError **error)
     task_run_data->fail_state = TASK_COMPLETE;
 
     CommandData *command_data = g_slice_new0 (CommandData);
-    const gchar *command[] = {TASK_PLUGIN_SCRIPT, task->entry_point, NULL};
-    command_data->command = command;
+    command_data->command = (const gchar **) task->entry_point;
 
     command_data->environ = (const gchar **)task->env->pdata;
     command_data->path = task->path;
@@ -477,7 +476,9 @@ Task *restraint_task_new(void) {
     Task *task = g_slice_new0(Task);
     task->max_time = 0;
     task->result_id = 0;
-    task->entry_point = g_strdup_printf ("%s", DEFAULT_ENTRY_POINT);
+    gchar *entry_point = g_strdup_printf ("%s %s", TASK_PLUGIN_SCRIPT, DEFAULT_ENTRY_POINT);
+    task->entry_point = g_strsplit (entry_point, " ", 0);
+    g_free (entry_point);
     return task;
 }
 
@@ -499,7 +500,7 @@ void restraint_task_free(Task *task) {
     }
     g_list_free_full(task->params, (GDestroyNotify) restraint_param_free);
     g_list_free_full(task->roles, (GDestroyNotify) restraint_role_free);
-    g_free (task->entry_point);
+    g_strfreev (task->entry_point);
     //g_strfreev (task->env);
     g_ptr_array_free (task->env, TRUE);
     g_list_free_full(task->dependencies, (GDestroyNotify) g_free);

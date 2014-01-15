@@ -81,7 +81,7 @@ gboolean parse_metadata(Task *task, GError **error) {
     task->name = g_strdup(g_strstrip(task_name));
     g_free(task_name);
 
-    gchar *entry_point = g_key_file_get_locale_string(keyfile,
+    gchar *key_entry_point = g_key_file_get_locale_string(keyfile,
                                                       "restraint",
                                                       "entry_point",
                                                       task->recipe->osmajor,
@@ -90,8 +90,13 @@ gboolean parse_metadata(Task *task, GError **error) {
         g_propagate_error(error, tmp_error);
         goto error;
     }
-    if (entry_point != NULL)
-        task->entry_point = entry_point;
+    if (key_entry_point != NULL) {
+        g_strfreev (task->entry_point);
+        gchar *entry_point = g_strdup_printf ("%s %s", TASK_PLUGIN_SCRIPT, key_entry_point);
+        task->entry_point = g_strsplit (entry_point, " ", 0);
+        g_free (key_entry_point);
+        g_free (entry_point);
+    }
 
     gchar *max_time = g_key_file_get_locale_string (keyfile,
                                                     "restraint",

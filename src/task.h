@@ -98,7 +98,7 @@ typedef struct {
     /* Are we running in rhts_compat mode? */
     gboolean rhts_compat;
     /* entry_point, defaults to make run */
-    gchar *entry_point;
+    gchar **entry_point;
     /* maximum time task is allowed to run before being killed */
     guint64 max_time;
     /* task order needed for multi-host tasks */
