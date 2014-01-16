@@ -1,0 +1,14 @@
+#!/bin/sh
+
+# Get a list of plugins from task_run.d and exec the first one
+# Eaach plugin can do additional work but must not change the args
+# the final step of the plugin must be to exec "$@".  This will run
+# the next plugin.  Plugins can use environment variables to make
+# decisions.
+
+export RSTRNT_TASK_PLUGINS_DIR=$(dirname $0)/task_run.d
+TASK_RUNNER_PLUGINS=$RSTRNT_TASK_PLUGINS_DIR/*
+
+echo -n "TASK_RUNNER_PLUGINS: "
+echo $TASK_RUNNER_PLUGINS "$@"
+exec $TASK_RUNNER_PLUGINS "$@"

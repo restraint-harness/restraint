@@ -319,7 +319,7 @@ server_msg_complete (SoupSession *session, SoupMessage *server_msg, gpointer use
         if (!no_plugins) {
             // Create a new ProcessCommand
             CommandData *command_data = g_slice_new0 (CommandData);
-            const gchar *command[] = {"sh", "-l", "-c", PLUGIN_SCRIPT, NULL};
+            const gchar *command[] = {TASK_PLUGIN_SCRIPT, PLUGIN_SCRIPT, NULL};
             command_data->command = command;
 
             // Last four entries are NULL.  Replace first three with plugin vars
@@ -329,7 +329,7 @@ server_msg_complete (SoupSession *session, SoupMessage *server_msg, gpointer use
             }
             task->env->pdata[task->env->len - 4] = result_server;
 
-            gchar *plugin_dir = g_strdup_printf("RSTRNT_PLUGINS_DIR=%s/report_result", PLUGIN_DIR);
+            gchar *plugin_dir = g_strdup_printf("RSTRNT_PLUGINS_DIR=%s/report_result.d", PLUGIN_DIR);
             if (task->env->pdata[task->env->len - 3] != NULL) {
                 g_free (task->env->pdata[task->env->len - 3]);
             }

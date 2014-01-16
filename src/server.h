@@ -2,6 +2,7 @@
 #define _RESTRAINT_SERVER_H
 
 #define PLUGIN_SCRIPT "/usr/share/restraint/plugins/run_plugins"
+#define TASK_PLUGIN_SCRIPT "/usr/share/restraint/plugins/run_task_plugins"
 #define PLUGIN_DIR "/usr/share/restraint/plugins"
 
 typedef struct {
