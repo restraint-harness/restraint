@@ -197,7 +197,9 @@ connections_error (AppData *app_data, GError *error)
 
 gboolean
 server_io_callback (GIOChannel *io, GIOCondition condition, gpointer user_data) {
-    ServerData *server_data = (ServerData *) user_data;
+    ProcessData *process_data = (ProcessData *) user_data;
+    //ServerData *server_data = (ServerData *) user_data;
+    ServerData *server_data = process_data->user_data;
     AppData *app_data = server_data->app_data;
     GError *tmp_error = NULL;
 

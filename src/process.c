@@ -4,6 +4,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <pty.h>
+#include <fcntl.h>
 #include "process.h"
 
 GQuark restraint_process_error (void)
@@ -16,6 +17,15 @@ process_free (ProcessData *process_data)
 {
     g_return_if_fail (process_data != NULL);
     g_slice_free (ProcessData, process_data);
+}
+
+void
+process_io_finish (gpointer user_data)
+{
+    ProcessData *process_data = (ProcessData *) user_data;
+
+    // close the pty
+    close (process_data->fd);
 }
 
 gboolean
@@ -63,6 +73,9 @@ process_run (CommandData *command_data,
     }
     /* Parent process. */
 
+    // close file descriptors on exec.  Should prevent leaking fd's to child processes.
+    fcntl (data->fd, F_SETFD, FD_CLOEXEC);
+
     // Localwatchdog handler
     if (command_data->max_time != 0) {
         data->timeout_handler_id = g_timeout_add_seconds_full (G_PRIORITY_DEFAULT,
@@ -80,8 +93,8 @@ process_run (CommandData *command_data,
                                                    G_PRIORITY_DEFAULT,
                                                    G_IO_IN | G_IO_HUP,
                                                    io_callback,
-                                                   user_data,
-                                                   NULL);
+                                                   data,
+                                                   process_io_finish);
     }
     // Monitor pid for return code
     data->pid_handler_id = g_child_watch_add_full (G_PRIORITY_DEFAULT,
@@ -114,6 +127,12 @@ process_pid_finish (gpointer user_data)
     if (process_data->timeout_handler_id != 0) {
         g_source_remove(process_data->timeout_handler_id);
         process_data->timeout_handler_id = 0;
+    }
+
+    // Remove io handler
+    if (process_data->io_handler_id != 0) {
+        g_source_remove(process_data->io_handler_id);
+        process_data->io_handler_id = 0;
     }
 
     process_data->finish_callback (process_data->pid_result,

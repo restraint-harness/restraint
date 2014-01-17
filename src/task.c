@@ -73,7 +73,8 @@ static void build_param_var(Param *param, GPtrArray *env) {
 
 gboolean
 task_io_callback (GIOChannel *io, GIOCondition condition, gpointer user_data) {
-    TaskRunData *task_run_data = (TaskRunData *) user_data;
+    ProcessData *process_data = (ProcessData *) user_data;
+    TaskRunData *task_run_data = process_data->user_data;
     AppData *app_data = task_run_data->app_data;
     GError *tmp_error = NULL;
 
