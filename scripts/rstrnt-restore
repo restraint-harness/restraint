@@ -44,7 +44,7 @@ if [ -n "$RSTRNT_BACKUP_DIR" ]; then
     [ -d "${SRC}" ] || { echo "Failed to restore files, there is no ${SRC} directory."; exit 1; }
     echo "Backup directory set. Restoring files from ${SRC}."
 else  
-    SRC="/mnt/tests/$(eval echo \$$(echo ${HARNESS_PREFIX}RUNPATH))/backup"
+    SRC="$(eval echo \$$(echo ${HARNESS_PREFIX}RUNPATH))/backup"
     [ -d "${SRC}" ] || { echo "Nothing to restore."; exit 0; }
 fi
 

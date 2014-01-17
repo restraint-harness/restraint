@@ -40,7 +40,7 @@ if [ -n "$RSTRNT_BACKUP_DIR" ]; then
     DEST=$(echo $RSTRNT_BACKUP_DIR | sed 's|/$||')
     echo "Backup directory set. Backing up files to ${DEST}."
 else
-    DEST="/mnt/tests/$(eval echo \$$(echo ${HARNESS_PREFIX}RUNPATH))/backup"
+    DEST="$(eval echo \$$(echo ${HARNESS_PREFIX}RUNPATH))/backup"
 fi
 if [ ! -e "${DEST}" ]; then
     mkdir -p ${DEST} || { echo "Cannot create ${DEST} directory."; exit 1; }
