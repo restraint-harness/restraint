@@ -1,0 +1,3 @@
+
+- If REST backend is detected keep retrying, don't progress to next task.
+- Report_result Plugin: Selinux ausearch, check for errors.
