@@ -1,5 +1,5 @@
 Name:		restraint
-Version:	0.1.4
+Version:	0.1.5
 Release:	1%{?dist}
 Summary:	Simple test harness which can be used with beaker
 
@@ -166,6 +166,18 @@ fi
 %{__rm} -rf %{buildroot}
 
 %changelog
+* Tue Jan 21 2014 Bill Peck <bpeck@redhat.com> 0.1.5-1
+- fix make clean targets (bpeck@redhat.com)
+- fix fd leak (bpeck@redhat.com)
+- fix path for backup/restore (bpeck@redhat.com)
+- More legacy variables (bpeck@redhat.com)
+- fix reporting of which plugins are in use. (bpeck@redhat.com)
+- Fix entry_point to be an array of strings to pass into process
+  (bpeck@redhat.com)
+- Introduced task runner plugins (bpeck@redhat.com)
+- Fix running plugins (both localwatchdog and report_result) (bpeck@redhat.com)
+- use NULL term value (bpeck@redhat.com)
+
 * Thu Jan 09 2014 Bill Peck <bpeck@redhat.com> 0.1.4-1
 - Move localwatchdog plugins to a more generic plugins model.
   (bpeck@redhat.com)
