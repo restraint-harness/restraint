@@ -3,6 +3,9 @@ FILES := rstrnt-backup rstrnt-restore rstrnt-reboot
 .PHONY: all
 all:
 
+.PHONY: clean
+clean:
+
 .PHONY: install
 install:
 	mkdir -p $(DESTDIR)/usr/bin
