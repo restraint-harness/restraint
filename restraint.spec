@@ -1,6 +1,6 @@
 Name:		restraint
 Version:	0.1.5
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Simple test harness which can be used with beaker
 
 Group:		Applications/Internet
@@ -166,6 +166,9 @@ fi
 %{__rm} -rf %{buildroot}
 
 %changelog
+* Wed Jan 22 2014 Jeff Bastian <jbastian@redhat.com> 0.1.5-2
+- update third-party to libffi-3.0.13 for aarch64 support
+
 * Tue Jan 21 2014 Bill Peck <bpeck@redhat.com> 0.1.5-1
 - fix make clean targets (bpeck@redhat.com)
 - fix fd leak (bpeck@redhat.com)

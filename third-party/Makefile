@@ -1,7 +1,7 @@
 
 ZLIB = zlib-1.2.8
 BZIP2 = bzip2-1.0.6
-LIBFFI = libffi-3.0.11
+LIBFFI = libffi-3.0.13
 GLIB = glib-2.38.0
 LIBXML2 = libxml2-2.9.0
 CURL = curl-7.29.0
@@ -41,7 +41,7 @@ tree/lib/pkgconfig/liblzma.pc: $(XZ) $(XZ)/.patches-done
 	$(MAKE) -C $(XZ)
 	$(MAKE) -C $(XZ) install
 
-tree/lib/pkgconfig/libffi.pc: $(LIBFFI) $(LIBFFI)/.patches-done
+tree/lib/pkgconfig/libffi.pc: $(LIBFFI)
 	( cd $(LIBFFI) && ./configure --prefix=$(CURDIR)/tree --enable-portable-binary \
 	    --enable-static --disable-shared )
 	$(MAKE) -C $(LIBFFI)
@@ -173,9 +173,6 @@ $(LIBARCHIVE)/.patches-done:
 #	patch -d$(LIBARCHIVE) -p1 <libarchive-rhel3-headers.patch
 	patch -d$(LIBARCHIVE) -p1 <libarchive-use-pkgconfig.patch
 	touch $@
-
-$(LIBFFI)/.patches-done:
-	patch -d$(LIBFFI) -p1 <libffi-powerpc.patch
 
 $(LIBSOUP)/.patches-done:
 	patch -d$(LIBSOUP) -p1 <libsoup-no-pkgconfig-version-check.patch
