@@ -58,7 +58,8 @@ tree/lib/pkgconfig/glib-2.0.pc: $(GLIB) $(GLIB)/.patches-done tree/lib/pkgconfig
 
 tree/lib/pkgconfig/libxml-2.0.pc: $(LIBXML2) tree/lib/pkgconfig/zlib.pc
 	( cd $(LIBXML2) && ./configure --prefix=$(CURDIR)/tree \
-	    --with-zlib=$(CURDIR)/tree --enable-static --disable-shared )
+	    --with-zlib=$(CURDIR)/tree --without-python \
+	    --enable-static --disable-shared )
 	$(MAKE) -C $(LIBXML2)
 	$(MAKE) -C $(LIBXML2) install
 
