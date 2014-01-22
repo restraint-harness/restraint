@@ -3,7 +3,7 @@ ZLIB = zlib-1.2.8
 BZIP2 = bzip2-1.0.6
 LIBFFI = libffi-3.0.13
 GLIB = glib-2.38.0
-LIBXML2 = libxml2-2.9.0
+LIBXML2 = libxml2-2.9.1
 CURL = curl-7.29.0
 LIBARCHIVE = libarchive-3.1.2
 XZ = xz-5.0.4
@@ -56,7 +56,7 @@ tree/lib/pkgconfig/glib-2.0.pc: $(GLIB) $(GLIB)/.patches-done tree/lib/pkgconfig
 	$(MAKE) -C $(GLIB)
 	$(MAKE) -C $(GLIB) install
 
-tree/lib/pkgconfig/libxml-2.0.pc: $(LIBXML2) $(LIBXML2)/.patches-done tree/lib/pkgconfig/zlib.pc
+tree/lib/pkgconfig/libxml-2.0.pc: $(LIBXML2) tree/lib/pkgconfig/zlib.pc
 	( cd $(LIBXML2) && ./configure --prefix=$(CURDIR)/tree \
 	    --with-zlib=$(CURDIR)/tree --enable-static --disable-shared )
 	$(MAKE) -C $(LIBXML2)
@@ -163,10 +163,6 @@ $(GLIB)/.patches-done:
 	patch -d$(GLIB) -p1 <glib-python2.2.patch
 	patch -d$(GLIB) -p1 <glib-no-pkgconfig-version-check.patch
 #	patch -d$(GLIB) -p1 <glib-gcc3.patch
-	touch $@
-
-$(LIBXML2)/.patches-done:
-	patch -d$(LIBXML2) -p1 <libxml2-timsort-gcc3.patch
 	touch $@
 
 $(LIBARCHIVE)/.patches-done:

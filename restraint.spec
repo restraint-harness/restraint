@@ -167,7 +167,7 @@ fi
 
 %changelog
 * Wed Jan 22 2014 Jeff Bastian <jbastian@redhat.com> 0.1.5-2
-- update third-party to libffi-3.0.13 for aarch64 support
+- update third-party to libffi-3.0.13 and libxml2-2.9.1 for aarch64 support
 
 * Tue Jan 21 2014 Bill Peck <bpeck@redhat.com> 0.1.5-1
 - fix make clean targets (bpeck@redhat.com)
