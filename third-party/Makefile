@@ -41,7 +41,7 @@ tree/lib/pkgconfig/liblzma.pc: $(XZ) $(XZ)/.patches-done
 	$(MAKE) -C $(XZ)
 	$(MAKE) -C $(XZ) install
 
-tree/lib/pkgconfig/libffi.pc: $(LIBFFI)
+tree/lib/pkgconfig/libffi.pc: $(LIBFFI) $(LIBFFI)/.patches-done
 	( cd $(LIBFFI) && ./configure --prefix=$(CURDIR)/tree --enable-portable-binary \
 	    --enable-static --disable-shared )
 	$(MAKE) -C $(LIBFFI)
@@ -158,6 +158,10 @@ tarballs: $(TAR_BALLS)
 
 $(XZ)/.patches-done:
 	patch -d$(XZ) -p1 <xz-no-pkgconfig-url.patch
+	touch $@
+
+$(LIBFFI)/.patches-done:
+	patch -d$(LIBFFI) -p1 <libffi-3.0.13-toolexeclibdir.patch
 	touch $@
 
 $(GLIB)/.patches-done:
