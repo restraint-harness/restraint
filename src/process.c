@@ -89,6 +89,8 @@ process_run (CommandData *command_data,
     if (io_callback != NULL) {
         GIOChannel *io = g_io_channel_unix_new (data->fd);
         g_io_channel_set_flags (io, G_IO_FLAG_NONBLOCK, NULL);
+        // Set Encoding to NULL to keep g_io_channel from trying to decode it.
+        g_io_channel_set_encoding (io, NULL, NULL);
         data->io_handler_id = g_io_add_watch_full (io,
                                                    G_PRIORITY_DEFAULT,
                                                    G_IO_IN | G_IO_HUP,
