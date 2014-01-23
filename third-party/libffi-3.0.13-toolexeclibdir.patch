@@ -1,0 +1,48 @@
+commit a295f149efd9cdc70935dac0d51c1bc269061d04 (HEAD, toolexeclibdir)
+Author: Jeffrey Bastian <jbastian@redhat.com>
+Date:   Wed Jan 22 17:49:15 2014 -0500
+
+    comment out toolexeclibdir from configure
+
+diff --git a/configure b/configure
+index 4b04db74831f..79b9dcaf46ff 100755
+--- a/configure
++++ b/configure
+@@ -14840,11 +14840,11 @@ if test "x$GCC" = "xyes"; then
+     toolexecdir='$(libdir)/gcc-lib/$(target_alias)'
+     toolexeclibdir='$(libdir)'
+   fi
+-  multi_os_directory=`$CC -print-multi-os-directory`
+-  case $multi_os_directory in
+-    .) ;; # Avoid trailing /.
+-    ../*) toolexeclibdir=$toolexeclibdir/$multi_os_directory ;;
+-  esac
++# multi_os_directory=`$CC -print-multi-os-directory`
++# case $multi_os_directory in
++#   .) ;; # Avoid trailing /.
++#   ../*) toolexeclibdir=$toolexeclibdir/$multi_os_directory ;;
++# esac
+ 
+ else
+   toolexeclibdir='$(libdir)'
+diff --git a/configure.ac b/configure.ac
+index 0dc067515c30..78e20433c8f9 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -546,11 +546,11 @@ if test "x$GCC" = "xyes"; then
+     toolexecdir='$(libdir)/gcc-lib/$(target_alias)'
+     toolexeclibdir='$(libdir)'
+   fi
+-  multi_os_directory=`$CC -print-multi-os-directory`
+-  case $multi_os_directory in
+-    .) ;; # Avoid trailing /.
+-    ../*) toolexeclibdir=$toolexeclibdir/$multi_os_directory ;;
+-  esac
++# multi_os_directory=`$CC -print-multi-os-directory`
++# case $multi_os_directory in
++#   .) ;; # Avoid trailing /.
++#   ../*) toolexeclibdir=$toolexeclibdir/$multi_os_directory ;;
++# esac
+   AC_SUBST(toolexecdir)
+ else
+   toolexeclibdir='$(libdir)'
