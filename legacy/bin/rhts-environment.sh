@@ -31,7 +31,7 @@ if [ -z "$FAMILY" ]; then
 fi
 
 function report_result {
-        rstrnt-report-result $@
+        rstrnt-report-result "$@"
 }
 
 function runuser_ {
