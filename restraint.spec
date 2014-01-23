@@ -1,5 +1,5 @@
 Name:		restraint
-Version:	0.1.5
+Version:	0.1.6
 Release:	1%{?dist}
 Summary:	Simple test harness which can be used with beaker
 
@@ -166,6 +166,17 @@ fi
 %{__rm} -rf %{buildroot}
 
 %changelog
+* Thu Jan 23 2014 Bill Peck <bpeck@redhat.com> 0.1.6-1
+- revert spec file changes so tito doesn't get confused. (bpeck@redhat.com)
+- fix legacy report_result.  Was not passing args with quotes
+  (bpeck@redhat.com)
+- patch to fix /usr/lib64 to /usr/lib for libffi (jbastian@redhat.com)
+- build libxml2 without python support (jbastian@redhat.com)
+- also update libxml2-2.9.1 for aarch64 (jbastian@redhat.com)
+- update third-party to libffi-3.0.13 (jbastian@redhat.com)
+- Add IPV6 to TODO list (bpeck@redhat.com)
+- Add TODO list. (bpeck@redhat.com)
+
 * Tue Jan 21 2014 Bill Peck <bpeck@redhat.com> 0.1.5-1
 - fix make clean targets (bpeck@redhat.com)
 - fix fd leak (bpeck@redhat.com)
