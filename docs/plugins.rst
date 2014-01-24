@@ -1,7 +1,7 @@
 Plugins
 -------
 
-restraint relies on plugins to execute tasks in the correct environment and to check for common errors or sinmply
+restraint relies on plugins to execute tasks in the correct environment and to check for common errors or simply
 to provide additional logs for debugging issues.  Here is a typical outline of how plugins are executed::
 
  run_task_plugins
@@ -94,7 +94,7 @@ This plugin checks for the following failure strings::
 
  Oops|BUG|NMI appears to be stuck|cut here|Badness at
 
-But it does then run any matches through an inverted grep which removes the following::
+But then it runs any matches through an inverted grep which removes the following::
 
  BIOS BUG|DEBUG
 
