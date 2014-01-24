@@ -6,37 +6,38 @@ to provide additional logs for debugging issues.  Here is a typical outline of h
 
  run_task_plugins
   \
-  10_bash_login
-  |
-  20_unconfined
-  |
-  make run
-  \
-   report_result
-  \
-   report_result
+   10_bash_login
+   |
+   20_unconfined
+   |
+   make run
+   |\
+   | report_result
+    \
+     report_result
+
  run_task_plugins
   \
-  10_bash_login
-  |
-  20_unconfined
-  |
-  run_plugins <- completed.d
-  \
-   98_restore
+   10_bash_login
+   |
+   20_unconfined
+   |
+   run_plugins <- completed.d
+   \
+    98_restore
 
 
 The report_result commands above cause the following plugins to be executed::
 
  run_task_plugins
- \
-  10_bash_login
-  |
-  20_unconfined
-  |
-  run_plugins <- report_result.d
   \
-   01_dmesg_check
+   10_bash_login
+   |
+   20_unconfined
+   |
+   run_plugins <- report_result.d
+    \
+     01_dmesg_check
 
 These plugins do not run from the task under test.  They run from restraintd process.
 This allows for greater flexibility if your task is running as a non-root user since a non-root
