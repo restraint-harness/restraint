@@ -17,19 +17,17 @@
 typedef enum {
     TASK_IDLE,
     TASK_FETCH,
-    TASK_FETCHING,
     TASK_METADATA,
-    TASK_METADATA_GEN,
     TASK_METADATA_PARSE,
     TASK_ENV,
     TASK_WATCHDOG,
     TASK_DEPENDENCIES,
     TASK_RUN,
-    TASK_RUNNING,
     TASK_ABORTED,
     TASK_CANCEL,
     TASK_CANCELLED,
     TASK_FAIL,
+    TASK_NEXT,
     TASK_COMPLETE,
     TASK_COMPLETED,
 } TaskSetupState;
@@ -107,8 +105,6 @@ typedef struct {
     GPtrArray *env;
     /* State engine holding current state of task */
     TaskSetupState state;
-    /* reported result from task */
-    gint result_id;
     /* reported status from task */
     gchar *status;
     /* Error at the task level */
@@ -138,7 +134,7 @@ gboolean restraint_task_fetch_git(AppData *app_data, GError **error);
 gboolean restraint_task_fetch_http(AppData *app_data, GError **error);
 gboolean restraint_task_fetch(AppData *app_data, GError **error);
 gboolean restraint_build_env(Task *task, GError **error);
-void restraint_task_status (Task *task, gchar *, GError *reason);
+void restraint_task_status (Task *task, AppData *app_data, gchar *, GError *reason);
 void restraint_task_result (Task *task, gchar *result, guint score, gchar *path, gchar *message);
 void restraint_task_run(Task *task);
 void restraint_task_free(Task *task);

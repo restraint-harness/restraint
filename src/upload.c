@@ -4,7 +4,7 @@
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
 
-#define READ_BUFFER_SIZE 8192
+#define READ_BUFFER_SIZE 131072
 static gchar input_buf[READ_BUFFER_SIZE];
 static gssize offset = 0;
 

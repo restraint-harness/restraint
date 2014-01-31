@@ -122,8 +122,8 @@ gboolean restraint_task_fetch_http(AppData *app_data, GError **error) {
         g_free(newPath);
 
         g_string_printf (message, "** Extracting %s\n", archive_entry_pathname(entry));
-        connections_write (app_data, message, STREAM_STDERR, 0);
-        //g_string_free (message, TRUE);
+        connections_write (app_data, message->str, message->len);
+        g_string_free (message, TRUE);
 
         r = archive_read_extract2(a, entry, ext);
         if (r != ARCHIVE_OK) {

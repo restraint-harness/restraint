@@ -13,3 +13,5 @@ gboolean restraint_is_rhts_compat (Task *task);
 gboolean restraint_no_testinfo (Task *task);
 void restraint_parse_run_metadata (Task *task, GError **error);
 void restraint_set_run_metadata (Task *task, gchar *key, GError **error, GType type, ...);
+void restraint_set_running_config (gchar *key, gchar *value, GError **error);
+gchar * restraint_get_running_config (gchar *key, GError **error);

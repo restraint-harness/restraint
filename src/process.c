@@ -42,7 +42,7 @@ process_run (CommandData *command_data,
         .ws_xpixel = 480, .ws_ypixel = 192,
     };
 
-    data = g_slice_new (ProcessData);
+    data = g_slice_new0 (ProcessData);
     data->localwatchdog = FALSE;
     data->command_data = command_data;
     data->finish_callback = finish_callback;

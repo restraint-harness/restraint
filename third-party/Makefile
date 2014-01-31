@@ -167,6 +167,7 @@ $(LIBFFI)/.patches-done:
 $(GLIB)/.patches-done:
 	patch -d$(GLIB) -p1 <glib-python2.2.patch
 	patch -d$(GLIB) -p1 <glib-no-pkgconfig-version-check.patch
+	patch -d$(GLIB) -p1 <glib-g_socket_recovery.patch
 #	patch -d$(GLIB) -p1 <glib-gcc3.patch
 	touch $@
 

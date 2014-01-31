@@ -30,7 +30,7 @@ rstrnt-report-log: result_log.o upload.o
 restraint: client.o
 	$(CC) $(LDFLAFS) -o $@ $^ $(LIBS)
 
-restraintd: server.o recipe.o task.o packages.o fetch_git_task.o fetch_http_task.o param.o role.o metadata.o process.o
+restraintd: server.o recipe.o task.o packages.o fetch_git_task.o fetch_http_task.o param.o role.o metadata.o process.o message.o
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 fetch_git_task.o: task.h
@@ -43,6 +43,9 @@ role.o: role.h
 server.o: recipe.h task.h
 expect_http.o: expect_http.h
 role.o: role.h
+client.o: client.h
+process.o: process.h
+message.o: message.h
 
 TEST_PROGS =
 test_%: test_%.o

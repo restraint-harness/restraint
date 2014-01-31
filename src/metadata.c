@@ -11,6 +11,7 @@
 #include "task.h"
 #include "metadata.h"
 #include "process.h"
+#include "config_defaults.h"
 
 GQuark restraint_metadata_parse_error_quark(void) {
     return g_quark_from_static_string("restraint-metadata-parse-error-quark");
@@ -509,21 +510,88 @@ restraint_parse_run_metadata (Task *task, GError **error)
     }
     g_clear_error (&tmp_error);
 
-    task->result_id = g_key_file_get_integer (keyfile,
-                                              "restraint",
-                                              "result_id",
-                                              &tmp_error);
-    if (tmp_error && tmp_error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND) {
-        g_propagate_prefixed_error(error, tmp_error,
-                    "Task %s:  parse_run_metadata,", task->task_id);
-        goto error;
-    }
-    g_clear_error (&tmp_error);
-
 error:
     g_key_file_free (keyfile);   
     g_free(run_metadata);
     task->parsed = TRUE;
+}
+
+gchar *
+restraint_get_running_config (gchar *key, GError **error)
+{
+    gchar *running_config = g_build_filename(CONFIG_PATH, "config", NULL);
+
+    gchar *value = NULL;
+    GKeyFile *keyfile;
+    GKeyFileFlags flags;
+    GError *tmp_error = NULL;
+
+    keyfile = g_key_file_new ();
+    flags = G_KEY_FILE_KEEP_COMMENTS | G_KEY_FILE_KEEP_TRANSLATIONS;
+
+    if (!g_key_file_load_from_file (keyfile, running_config, flags, NULL)) {
+        goto cleanup;
+    }
+    value = g_key_file_get_string (keyfile,
+                                   "restraint",
+                                   key,
+                                   &tmp_error);
+    if (tmp_error && tmp_error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND) {
+        g_propagate_prefixed_error(error, tmp_error,
+                    "get_running_config,");
+        goto cleanup;
+    }
+    g_clear_error (&tmp_error);
+
+cleanup:
+    g_key_file_free (keyfile);   
+    g_free(running_config);
+    return value;
+}
+
+void
+restraint_set_running_config (gchar *key, gchar *value, GError **error)
+{
+    gchar *running_config = g_build_filename(CONFIG_PATH, "config", NULL);
+
+    GKeyFile *keyfile;
+    GKeyFileFlags flags;
+    GError *tmp_error = NULL;
+
+    gchar *s_data = NULL;
+    gsize length;
+
+    flags = G_KEY_FILE_KEEP_COMMENTS | G_KEY_FILE_KEEP_TRANSLATIONS;
+    keyfile = g_key_file_new ();
+    g_key_file_load_from_file (keyfile, running_config, flags, NULL);
+
+    if (key && value) {
+        g_key_file_set_string (keyfile,
+                               "restraint",
+                               key,
+                               value);
+    } else if (key && !value) {
+        g_key_file_remove_key (keyfile,
+                               "restraint",
+                               key,
+                               NULL);
+    }
+
+    s_data = g_key_file_to_data (keyfile, &length, &tmp_error);
+    if (!s_data) {
+        g_propagate_error (error, tmp_error);
+        goto cleanup;
+    }
+
+    if (!g_file_set_contents (running_config, s_data, length,  &tmp_error)) {
+        g_propagate_error (error, tmp_error);
+        goto cleanup;
+    }
+    
+cleanup:
+    g_free (s_data);
+    g_key_file_free (keyfile);   
+    g_free (running_config);
 }
 
 void

@@ -74,7 +74,7 @@ int main(int argc, char *argv[]) {
     }
 
     result_uri = soup_uri_new (server);
-    session = soup_session_new_with_options("timeout", 0, NULL);
+    session = soup_session_new_with_options("timeout", 3600, NULL);
 
     basename = g_filename_display_basename (filename);
     gchar *location = g_strdup_printf ("%s/logs/%s", server, basename);

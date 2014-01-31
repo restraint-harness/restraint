@@ -74,7 +74,7 @@ int main(int argc, char *argv[]) {
     }
 
     result_uri = soup_uri_new (server);
-    session = soup_session_new_with_options("timeout", 0, NULL);
+    session = soup_session_new_with_options("timeout", 3600, NULL);
 
     data_table = g_hash_table_new (NULL, NULL);
     g_hash_table_insert (data_table, "path", argv[1]);

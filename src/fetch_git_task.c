@@ -344,7 +344,7 @@ git_archive_read_callback (gpointer user_data)
     g_free(newPath);
 
     g_string_printf (message, "** Extracting %s\n", archive_entry_pathname(entry));
-    connections_write (mydata->app_data, message, STREAM_STDERR, 0);
+    connections_write (mydata->app_data, message->str, message->len);
     g_string_free (message, TRUE);
 
     r = archive_read_extract2(mydata->a, entry, mydata->ext);

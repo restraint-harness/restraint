@@ -10,6 +10,7 @@
 #include "task.h"
 #include "common.h"
 #include "server.h"
+#include "metadata.h"
 
 // XXX make this configurable
 #define TASK_LOCATION "/mnt/tests"
@@ -291,10 +292,6 @@ static Task *parse_task(xmlNode *task_node, SoupURI *recipe_uri, GError **error)
      * When running against a static xml file it won't.
      */
     xmlChar *status = xmlGetNoNsProp(task_node, (xmlChar *)"status");
-    if (status == NULL) {
-        unrecognised("Task %s missing 'status' attribute", task->task_id);
-        goto error;
-    }
     if (g_strcmp0((gchar *)status, "Running") == 0) {
         // We can't rely on the server because it "starts" the first task 
         // If we pay attention to that then we won't install the task
@@ -425,20 +422,23 @@ error:
 }
 
 static void
-read_finish (GObject *stream, GAsyncResult *result, gpointer user_data)
+read_finish (GObject *source, GAsyncResult *result, gpointer user_data)
 {
+    GInputStream *stream = G_INPUT_STREAM (source);
     AppData *app_data = (AppData *) user_data;
     gssize size;
 
-    size = g_input_stream_read_finish (G_INPUT_STREAM (stream),
-                                         result, &app_data->error);
+    size = g_input_stream_read_finish (stream, result, &app_data->error);
 
     if (app_data->error || size < 0) {
+        g_input_stream_close (stream, NULL, NULL);
         g_object_unref(stream);
         app_data->state = RECIPE_COMPLETE;
         return;
     } else if (size == 0) {
         // Finished Reading
+        g_input_stream_close (stream, NULL, NULL);
+        g_object_unref(stream);
         xmlParserErrors result = xmlParseChunk(ctxt, buf, 0, /* terminator */ 1);
         if (result != XML_ERR_OK) {
             xmlError *xmlerr = xmlCtxtGetLastError(ctxt);
@@ -448,12 +448,10 @@ read_finish (GObject *stream, GAsyncResult *result, gpointer user_data)
             xmlFreeDoc(ctxt->myDoc);
             xmlFreeParserCtxt(ctxt);
             ctxt = NULL;
-            g_object_unref(stream);
             /* Set us back to idle so we can accept a valid recipe */
             app_data->state = RECIPE_COMPLETE;
             return;
         }
-        g_object_unref(stream);
         app_data->state = RECIPE_PARSE;
         return;
     } else {
@@ -477,13 +475,14 @@ read_finish (GObject *stream, GAsyncResult *result, gpointer user_data)
                 xmlFreeDoc(ctxt->myDoc);
                 xmlFreeParserCtxt(ctxt);
                 ctxt = NULL;
+                g_input_stream_close (stream, NULL, NULL);
                 g_object_unref(stream);
                 /* Set us back to idle so we can accept a valid recipe */
                 app_data->state = RECIPE_COMPLETE;
                 return;
             }
         }
-        g_input_stream_read_async (G_INPUT_STREAM (stream),
+        g_input_stream_read_async (stream,
                                    buf,
                                    buf_size,
                                    G_PRIORITY_DEFAULT,
@@ -516,25 +515,6 @@ restraint_recipe_parse_xml (GObject *source, GAsyncResult *res, gpointer user_da
     return;
 }
 
-static gboolean
-task_summary (GHashTable *result_states_from, Task *task, GString *s)
-{
-    gchar *message = NULL;
-    gchar *result = g_hash_table_lookup (result_states_from, &task->result_id);
-    message = g_strdup_printf ("*  Task: %12s [%-50s] Result: %s Status: %s\n", task->task_id,
-                                                                      task->name,
-                                                                      result,
-                                                                      task->status);
-    s = g_string_append(s, message);
-    g_free (message);
-    if (task->error) {
-        message = g_strdup_printf ("* Error: %-80s\n", task->error->message);
-        s = g_string_append(s, message);
-        g_free (message);
-    }
-    return task->error != NULL;
-}
-
 void
 recipe_finish (gpointer user_data)
 {
@@ -542,13 +522,10 @@ recipe_finish (gpointer user_data)
     // Report any recipe errors, It is not valid to report any more data
     // to clients once an error has been reported.
     if (app_data->error) {
-        connections_error (app_data, app_data->error);
+        //connections_write (app_data, app_data->error);
         g_error_free(app_data->error);
         app_data->error = NULL;
     } 
-    // close connections to all clients.
-    if (app_data->state == RECIPE_IDLE)
-        connections_close(app_data, TRUE);
 }
 
 gboolean
@@ -559,8 +536,6 @@ recipe_handler (gpointer user_data)
     SoupRequest *request;
     GString *message = g_string_new(NULL);
     gboolean result = TRUE;
-    GList *tasks;
-    gboolean task_failed = FALSE;
 
     switch (app_data->state) {
         case RECIPE_FETCH:
@@ -590,6 +565,7 @@ recipe_handler (gpointer user_data)
             }
             break;
         case RECIPE_RUN:
+            restraint_set_running_config ("recipe_url", app_data->recipe_url, NULL);
             app_data->task_handler_id = g_idle_add_full(G_PRIORITY_DEFAULT_IDLE,
                                                         task_handler,
                                                         app_data,
@@ -598,30 +574,16 @@ recipe_handler (gpointer user_data)
             app_data->state = RECIPE_RUNNING;
             break;
         case RECIPE_RUNNING:
-            // close connections to all clients that didn't request monitoring
-            connections_close(app_data, FALSE);
             return FALSE;
             break;
         case RECIPE_COMPLETE:
-            // Generate Summary report
+            // free current recipe
             if (app_data->recipe) {
-              tasks = app_data->recipe->tasks;
-              message = g_string_append(message, "\n* Results Summary\n");
-              do {
-                  task_failed |= task_summary (app_data->result_states_from, tasks->data, message);
-              } while ((tasks = g_list_next (tasks)) != NULL);
               restraint_recipe_free(app_data->recipe);
               app_data->recipe = NULL;
             }
 
-            // If app_data->error hasn't already been set and one of the tasks
-            // failed then propagate that error to the clients.
-            if (!app_data->error && task_failed) {
-                g_set_error (&app_data->error, RESTRAINT_TASK_RUNNER_ERROR,
-                             RESTRAINT_TASK_RUNNER_RESULT_ERROR,
-                             "One or more tasks failed");
-            }
-
+            restraint_set_running_config ("recipe_url", NULL, NULL);
             // We are done. remove ourselves so we can run another recipe.
             app_data->state = RECIPE_IDLE;
             result = FALSE;
@@ -632,7 +594,8 @@ recipe_handler (gpointer user_data)
 
     // write message out to all clients
     if (message->len) {
-      connections_write(app_data, message, STREAM_STDERR, 0);
+      write (STDERR_FILENO, message->str, message->len);
+      connections_write(app_data, message->str, message->len);
       g_string_free(message, TRUE);
     }
 

@@ -23,16 +23,17 @@ PIDFILE=/var/run/${prog}.pid
 LOCKFILE=/var/lock/subsys/$prog
 
 start() {
+    if [ -n "$BEAKER_LAB_CONTROLLER_URL" -a -n "$BEAKER_RECIPE_ID" -a ! -e "/usr/share/restraint/config" ]; then
+        OPTIONS="--recipe $BEAKER_LAB_CONTROLLER_URL/recipes/$BEAKER_RECIPE_ID/"
+    fi
     echo -n $"Starting $prog: "
-    daemon --user $RUN_AS $prog "$OPTIONS >> /mnt/testarea/$prog.out 2>&1 &" 'echo $!' ">$PIDFILE"
+    daemon --user $RUN_AS $prog "$OPTIONS >> /mnt/testarea/$prog.out 2>/dev/console &" 'echo $!' ">$PIDFILE"
     RETVAL=$?
     echo
     echo "$prog running as process `cat $PIDFILE`"
     if test $RETVAL = 0; then
         touch $LOCKFILE
     fi
-    sleep 5
-    restraint --run $BEAKER_LAB_CONTROLLER_URL/recipes/$BEAKER_RECIPE_ID/
     return $RETVAL
 }
 

@@ -18,6 +18,7 @@
 #include "packages.h"
 #include "common.h"
 #include "process.h"
+#include "message.h"
 
 GQuark restraint_task_runner_error(void) {
     return g_quark_from_static_string("restraint-task-runner-error-quark");
@@ -78,18 +79,16 @@ task_io_callback (GIOChannel *io, GIOCondition condition, gpointer user_data) {
     AppData *app_data = task_run_data->app_data;
     GError *tmp_error = NULL;
 
-    GString *s = g_string_new(NULL);
-    gchar buf[8192];
+    gchar buf[131072];
     gsize bytes_read;
 
     if (condition & G_IO_IN) {
         //switch (g_io_channel_read_line_string(io, s, NULL, &tmp_error)) {
-        switch (g_io_channel_read_chars(io, buf, 8192, &bytes_read, &tmp_error)) {
+        switch (g_io_channel_read_chars(io, buf, 131072, &bytes_read, &tmp_error)) {
           case G_IO_STATUS_NORMAL:
             /* Push data to our connections.. */
-            g_string_append_len (s, buf, bytes_read);
-            connections_write(app_data, s, STREAM_STDOUT, 0);
-            g_string_free (s, TRUE);
+            write (STDOUT_FILENO, buf, bytes_read);
+            connections_write(app_data, buf, bytes_read);
             return TRUE;
 
           case G_IO_STATUS_ERROR:
@@ -247,7 +246,8 @@ task_heartbeat_callback (gpointer user_data)
     timeinfo = localtime (&rawtime);
     strftime(currtime,80,"%a %b %d %H:%M:%S %Y", timeinfo);
     g_string_printf(message, "*** Current Time: %s Localwatchdog at: %s\n", currtime, task_run_data->expire_time);
-    connections_write(app_data, message, STREAM_STDERR, 0);
+    write (STDERR_FILENO, message->str, message->len);
+    connections_write(app_data, message->str, message->len);
     g_string_free(message, TRUE);
     return TRUE;
 }
@@ -347,45 +347,20 @@ static gboolean build_env(Task *task, GError **error) {
 }
 
 static void
-status_message_complete (SoupSession *session, SoupMessage *server_msg, gpointer user_data)
+task_message_complete (SoupSession *session, SoupMessage *msg, gpointer user_data)
 {
-    gchar *status = user_data;
-    //task_id = user_data;
-    if (!SOUP_STATUS_IS_SUCCESSFUL(server_msg->status_code)) {
-        g_warning("Updating status to %s Failed for task, libsoup status %u", status, server_msg->status_code);
-        // not much else we can do here...
-    }
-}
-
-static void
-watchdog_message_complete (SoupSession *session, SoupMessage *server_msg, gpointer user_data)
-{
-    if (!SOUP_STATUS_IS_SUCCESSFUL(server_msg->status_code)) {
-        g_warning("Updating watchdog failed for task, libsoup status %u msg: %s %s", server_msg->status_code,
-                                                                                  server_msg->reason_phrase,
-                                                          soup_uri_to_string(soup_message_get_uri(server_msg), FALSE));
-        // depending on the status code we should retry?
-        // We should also keep track and report back if we really fail.
-    }
-}
-
-static void
-results_message_complete (SoupSession *session, SoupMessage *server_msg, gpointer user_data)
-{
-    if (!SOUP_STATUS_IS_SUCCESSFUL(server_msg->status_code)) {
-        g_warning("Reporting result failed for task, libsoup status %u", server_msg->status_code);
-        // depending on the status code we should retry?
-        // We should also keep track and report back if we really fail.
-    }
+    // Add the task_handler back to the main loop
+    AppData *app_data = (AppData *) user_data;
+    app_data->task_handler_id = g_idle_add_full(G_PRIORITY_DEFAULT_IDLE,
+                                                task_handler,
+                                                app_data,
+                                                NULL);
 }
 
 void
-restraint_task_status (Task *task, gchar *status, GError *reason)
+restraint_task_status (Task *task, AppData *app_data, gchar *status, GError *reason)
 {
     g_return_if_fail(task != NULL);
-
-    task->status = status;
-    restraint_set_run_metadata (task, "status", NULL, G_TYPE_STRING, task->status);
 
     SoupURI *task_status_uri;
     SoupMessage *server_msg;
@@ -407,11 +382,11 @@ restraint_task_status (Task *task, gchar *status, GError *reason)
     soup_message_set_request(server_msg, "application/x-www-form-urlencoded",
             SOUP_MEMORY_TAKE, data, strlen(data));
 
-    soup_session_queue_message(soup_session, server_msg, status_message_complete, status);
+    restraint_queue_message(soup_session, server_msg, task_message_complete, app_data);
 }
 
 void
-restraint_task_watchdog (Task *task, guint seconds)
+restraint_task_watchdog (Task *task, AppData *app_data, guint seconds)
 {
     g_return_if_fail(task != NULL);
     g_return_if_fail(seconds != 0);
@@ -434,49 +409,12 @@ restraint_task_watchdog (Task *task, guint seconds)
     soup_message_set_request(server_msg, "application/x-www-form-urlencoded",
             SOUP_MEMORY_TAKE, data, strlen(data));
 
-    soup_session_queue_message(soup_session, server_msg, watchdog_message_complete, NULL);
-}
-
-void
-restraint_task_result (Task *task, gchar *result, guint score, gchar *path, gchar *message)
-{
-    /*
-     * result, score, path and message
-     */
-    g_return_if_fail(task != NULL);
-    g_return_if_fail(result != NULL);
-
-    SoupURI *task_results_uri;
-    SoupMessage *server_msg;
-
-    task_results_uri = soup_uri_new_with_base(task->task_uri, "results/");
-    server_msg = soup_message_new_from_uri("POST", task_results_uri);
-
-    soup_uri_free(task_results_uri);
-    g_return_if_fail(server_msg != NULL);
-
-    gchar *data = NULL;
-    GHashTable *data_table = NULL;
-    data_table = g_hash_table_new (NULL, NULL);
-    g_hash_table_insert (data_table, "result", result);
-    if (score)
-        g_hash_table_insert (data_table, "score", &score);
-    if (path)
-        g_hash_table_insert (data_table, "path", path);
-    if (message)
-        g_hash_table_insert (data_table, "message", message);
-    data = soup_form_encode_hash (data_table);
-
-    soup_message_set_request(server_msg, "application/x-www-form-urlencoded",
-            SOUP_MEMORY_TAKE, data, strlen(data));
-
-    soup_session_queue_message(soup_session, server_msg, results_message_complete, NULL);
+    restraint_queue_message(soup_session, server_msg, task_message_complete, app_data);
 }
 
 Task *restraint_task_new(void) {
     Task *task = g_slice_new0(Task);
     task->max_time = 0;
-    task->result_id = 0;
     gchar *entry_point = g_strdup_printf ("%s %s", TASK_PLUGIN_SCRIPT, DEFAULT_ENTRY_POINT);
     task->entry_point = g_strsplit (entry_point, " ", 0);
     g_free (entry_point);
@@ -503,7 +441,8 @@ void restraint_task_free(Task *task) {
     g_list_free_full(task->roles, (GDestroyNotify) restraint_role_free);
     g_strfreev (task->entry_point);
     //g_strfreev (task->env);
-    g_ptr_array_free (task->env, TRUE);
+    if (task->env)
+        g_ptr_array_free (task->env, TRUE);
     g_list_free_full(task->dependencies, (GDestroyNotify) g_free);
     g_slice_free(Task, task);
 }
@@ -533,8 +472,10 @@ task_handler (gpointer user_data)
   AppData *app_data = (AppData *) user_data;
 
   // No More tasks, return false so this handler gets removed.
-  if (app_data->tasks == NULL)
+  if (app_data->tasks == NULL) {
+      g_print ("no more tasks..\n");
       return FALSE;
+  }
 
   Task *task = app_data->tasks->data;
   GString *message = g_string_new(NULL);
@@ -558,7 +499,7 @@ task_handler (gpointer user_data)
 
       if (task->finished) {
           // If the task is finished skip to the next task.
-          task->state = TASK_COMPLETED;
+          task->state = TASK_NEXT;
       } else if (task->localwatchdog) {
           // If the task is not finished but localwatchdog expired.
           g_string_printf(message, "** Localwatchdog task: %s [%s]\n", task->task_id, task->path);
@@ -569,6 +510,8 @@ task_handler (gpointer user_data)
           task->state = TASK_METADATA;
       } else {
           // If neither started nor finished then fetch the task
+          restraint_task_status (task, app_data, "Running", NULL);
+          result = FALSE;
           g_string_printf(message, "** Fetching task: %s [%s]\n", task->task_id, task->path);
           task->state = TASK_FETCH;
       }
@@ -576,12 +519,10 @@ task_handler (gpointer user_data)
     case TASK_FETCH:
       // Fetch Task from rpm or url
       if (restraint_task_fetch (app_data, &task->error))
-          task->state = TASK_FETCHING;
+          result=FALSE;
       else
           task->state = TASK_COMPLETE;
       break;
-    case TASK_FETCHING:
-        return FALSE;
     case TASK_METADATA:
       // If running in rhts_compat mode and testinfo.desc doesn't exist
       // then we need to generate it.
@@ -589,7 +530,7 @@ task_handler (gpointer user_data)
           task->rhts_compat = TRUE;
           if (restraint_no_testinfo (task)) {
               if (restraint_generate_testinfo (app_data, &task->error)) {
-                  task->state = TASK_METADATA_GEN;
+                  result=FALSE;
                   g_string_printf(message, "** Generating testinfo.desc\n");
               } else {
                   task->state = TASK_COMPLETE;
@@ -603,8 +544,6 @@ task_handler (gpointer user_data)
           task->state = TASK_METADATA_PARSE;
       }
       break;
-    case TASK_METADATA_GEN:
-        return FALSE;
     case TASK_METADATA_PARSE:
       // Update Task metadata
       // entry_point, defaults to "make run"
@@ -635,7 +574,8 @@ task_handler (gpointer user_data)
       if (!task->started) {
           g_string_printf(message, "** Updating watchdog\n");
           // FIXME If KILLTIMEOVERRIDE is defined use that instead of max_time.
-          restraint_task_watchdog (task, task->max_time);
+          restraint_task_watchdog (task, app_data, task->max_time);
+          result=FALSE;
       }
       task->state = TASK_DEPENDENCIES;
       break;
@@ -656,8 +596,7 @@ task_handler (gpointer user_data)
       //       heartbeat_handler
       g_string_printf(message, "** Running task: %s [%s]\n", task->task_id, task->name);
       if (task_run (app_data, &task->error)) {
-        restraint_task_status (task, "Running", NULL);
-        task->state = TASK_RUNNING;
+        result=FALSE;
         task->started = TRUE;
         restraint_set_run_metadata (task, "started", NULL, G_TYPE_BOOLEAN, task->started);
         // Update reboots count
@@ -666,29 +605,30 @@ task_handler (gpointer user_data)
         task->state = TASK_COMPLETE;
       }
       break;
-    case TASK_RUNNING:
-        // TASK is running.
-        // Remove this idle handler
-        // The task_pid_complete will re-add this handler with the 
-        //  state TASK_COMPLETE
-        return FALSE;
     case TASK_COMPLETE:
-      // Some step along the way failed.
-      if (task->error) {
-        g_warning("%s\n", task->error->message);
-        g_string_printf(message, "** ERROR: %s\n", task->error->message);
-        restraint_task_status(task, "Aborted", task->error);
-      } else {
-        restraint_task_status(task, "Completed", NULL);
-      }
       // Set task finished
       task->finished = TRUE;
       restraint_set_run_metadata (task, "finished", NULL, G_TYPE_BOOLEAN, task->finished);
 
-      g_string_printf(message, "** Completed Task : %s\n", task->task_id);
+      if (task->error) {
+          g_string_printf(message, "** Completed Task : %s\n** ERROR: %s\n",
+                         task->task_id, task->error->message);
+      } else {
+          g_string_printf(message, "** Completed Task : %s\n", task->task_id);
+      }
       task->state = TASK_COMPLETED;
       break;
     case TASK_COMPLETED:
+      // Some step along the way failed.
+      if (task->error) {
+        restraint_task_status(task, app_data, "Aborted", task->error);
+      } else {
+        restraint_task_status(task, app_data, "Completed", NULL);
+      }
+      task->state = TASK_NEXT;
+      result = FALSE;
+      break;
+    case TASK_NEXT:
       // Get the next task and run it.
       result = restraint_next_task (app_data, TASK_IDLE);
       break;
@@ -697,32 +637,9 @@ task_handler (gpointer user_data)
       break;
   }
   if (message->len) {
-    connections_write(app_data, message, STREAM_STDERR, 0);
+    write (STDERR_FILENO, message->str, message->len);
+    connections_write(app_data, message->str, message->len);
     g_string_free(message, TRUE);
   }
   return result;
-}
-
-void
-restraint_init_result_hash (AppData *app_data)
-{
-    static gint none = 0;
-    static gint pass = 1;
-    static gint warn = 2;
-    static gint fail = 3;
-
-    GHashTable *hash_to = g_hash_table_new(g_str_hash, g_str_equal);
-    g_hash_table_insert(hash_to, "NONE", &none);
-    g_hash_table_insert(hash_to, "PASS", &pass);
-    g_hash_table_insert(hash_to, "WARN", &warn);
-    g_hash_table_insert(hash_to, "FAIL", &fail);
-
-    GHashTable *hash_from = g_hash_table_new(g_int_hash, g_int_equal);
-    g_hash_table_insert(hash_from, &none, "NONE");
-    g_hash_table_insert(hash_from, &pass, "PASS");
-    g_hash_table_insert(hash_from, &warn, "WARN");
-    g_hash_table_insert(hash_from, &fail, "FAIL");
-
-    app_data->result_states_to = hash_to;
-    app_data->result_states_from = hash_from;
 }
