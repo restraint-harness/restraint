@@ -27,7 +27,7 @@ start() {
         OPTIONS="--recipe $BEAKER_LAB_CONTROLLER_URL/recipes/$BEAKER_RECIPE_ID/"
     fi
     echo -n $"Starting $prog: "
-    daemon --user $RUN_AS $prog "$OPTIONS >> /mnt/testarea/$prog.out 2>/dev/console &" 'echo $!' ">$PIDFILE"
+    daemon --user $RUN_AS log_restraintd "$OPTIONS &" 'echo $!' ">$PIDFILE"
     RETVAL=$?
     echo
     echo "$prog running as process `cat $PIDFILE`"

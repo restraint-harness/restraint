@@ -1,0 +1,6 @@
+#!/bin/sh
+
+# Only error messages to /dev/console
+# All Output to /mnt/testarea/restraint.log
+
+(( restraintd "$@" 3>&1 1>&2 2>&3 ) | tee /dev/console ) >> /var/log/restraintd.log 2>&1

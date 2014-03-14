@@ -136,6 +136,7 @@ fi
 %attr(0755, root, root)%{_bindir}/rstrnt-backup
 %attr(0755, root, root)%{_bindir}/rstrnt-restore
 %attr(0755, root, root)%{_bindir}/rstrnt-reboot
+%attr(0755, root, root)%{_bindir}/log_restraintd
 /usr/share/%{name}
 /usr/share/%{name}/plugins/run_plugins
 /usr/share/%{name}/plugins/run_task_plugins
