@@ -8,6 +8,7 @@ all:
 .PHONY: install
 install:
 	set -e; for i in $(SUBDIRS); do $(MAKE) -C $$i install; done
+	install -m0755 -d $(DESTDIR)/var/lib/restraint
 
 .PHONY: check
 check:

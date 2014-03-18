@@ -114,7 +114,7 @@ typedef struct {
     /* reboot count */
     guint64 reboots;
     /* Filesystem path where the task run data is stored */
-    gchar *run_path;
+    gchar *rundata;
     /* Only true after we have attempted to parse run_metadata on disk. */
     gboolean parsed;
 } Task;

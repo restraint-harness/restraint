@@ -380,11 +380,13 @@ recipe_parse (xmlDoc *doc, SoupURI *recipe_uri, GError **error)
             task->recipe = result;
 
             /*
-             * run_path is where we will store the following:
-             * taskout.log : STDOUT/STDERR from the task run
              * metadata    : variables like rebootcount and time left on the watchdog
              */
-            task->run_path = g_build_filename(TASK_LOCATION, task->recipe->recipe_id, task->task_id, NULL);
+            task->rundata = g_build_filename(VAR_LIB_PATH,
+                                              task->recipe->recipe_id,
+                                              task->task_id,
+                                              "rundata",
+                                              NULL);
 
             task->order = i++;
             tasks = g_list_prepend(tasks, task);

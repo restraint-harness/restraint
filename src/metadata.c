@@ -11,7 +11,6 @@
 #include "task.h"
 #include "metadata.h"
 #include "process.h"
-#include "config_defaults.h"
 
 GQuark restraint_metadata_parse_error_quark(void) {
     return g_quark_from_static_string("restraint-metadata-parse-error-quark");
@@ -404,7 +403,6 @@ restraint_parse_run_metadata (Task *task, GError **error)
 
     g_return_if_fail(task != NULL);
     g_return_if_fail(error == NULL || *error == NULL);
-    gchar *run_metadata = g_build_filename(task->run_path, "metadata", NULL);
 
     GKeyFile *keyfile;
     GKeyFileFlags flags;
@@ -413,7 +411,7 @@ restraint_parse_run_metadata (Task *task, GError **error)
     keyfile = g_key_file_new ();
     flags = G_KEY_FILE_KEEP_COMMENTS | G_KEY_FILE_KEEP_TRANSLATIONS;
 
-    if (!g_key_file_load_from_file (keyfile, run_metadata, flags, NULL)) {
+    if (!g_key_file_load_from_file (keyfile, task->rundata, flags, NULL)) {
         goto error;
     }
 
@@ -512,14 +510,13 @@ restraint_parse_run_metadata (Task *task, GError **error)
 
 error:
     g_key_file_free (keyfile);   
-    g_free(run_metadata);
     task->parsed = TRUE;
 }
 
 gchar *
 restraint_get_running_config (gchar *key, GError **error)
 {
-    gchar *running_config = g_build_filename(CONFIG_PATH, "config", NULL);
+    gchar *running_config = g_build_filename(VAR_LIB_PATH, "config", NULL);
 
     gchar *value = NULL;
     GKeyFile *keyfile;
@@ -552,7 +549,7 @@ cleanup:
 void
 restraint_set_running_config (gchar *key, gchar *value, GError **error)
 {
-    gchar *running_config = g_build_filename(CONFIG_PATH, "config", NULL);
+    gchar *running_config = g_build_filename(VAR_LIB_PATH, "config", NULL);
 
     GKeyFile *keyfile;
     GKeyFileFlags flags;
@@ -606,7 +603,6 @@ restraint_set_run_metadata (Task *task, gchar *key, GError **error, GType type, 
     SOUP_VALUE_SETV (&value, type, args);
     va_end (args);
 
-    gchar *run_metadata = g_build_filename(task->run_path, "metadata", NULL);
     gchar *s_data = NULL;
     gsize length;
     GKeyFile *keyfile;
@@ -615,9 +611,11 @@ restraint_set_run_metadata (Task *task, gchar *key, GError **error, GType type, 
 
     flags = G_KEY_FILE_KEEP_COMMENTS | G_KEY_FILE_KEEP_TRANSLATIONS;
 
-    g_mkdir_with_parents (task->run_path, 0755 /* drwxr-xr-x */);
+    gchar *dirname = g_path_get_dirname (task->rundata);
+    g_mkdir_with_parents (dirname, 0755 /* drwxr-xr-x */);
+    g_free (dirname);
     keyfile = g_key_file_new ();
-    g_key_file_load_from_file (keyfile, run_metadata, flags, NULL);
+    g_key_file_load_from_file (keyfile, task->rundata, flags, NULL);
 
     switch (type) {
         case G_TYPE_UINT64:
@@ -654,7 +652,7 @@ restraint_set_run_metadata (Task *task, gchar *key, GError **error, GType type, 
         goto error;
     }
 
-    if (!g_file_set_contents (run_metadata, s_data, length,  &tmp_error)) {
+    if (!g_file_set_contents (task->rundata, s_data, length,  &tmp_error)) {
         g_propagate_error (error, tmp_error);
         goto error;
     }
@@ -662,7 +660,6 @@ restraint_set_run_metadata (Task *task, gchar *key, GError **error, GType type, 
 error:
     g_free (s_data);
     g_key_file_free (keyfile);   
-    g_free (run_metadata);
 }
 
 gboolean

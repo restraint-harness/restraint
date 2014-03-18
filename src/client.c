@@ -106,8 +106,15 @@ quit_loop_handler (gpointer user_data)
 
 void
 record_log (xmlNodePtr node_ptr,
+            const gchar *path,
             const gchar *filename)
 {
+    xmlNodePtr log_node_ptr = xmlNewTextChild (node_ptr,
+                                               NULL,
+                                              (xmlChar *) "log",
+                                              NULL);
+    xmlSetProp (log_node_ptr, (xmlChar *)"path", (xmlChar *) path);
+    xmlSetProp (log_node_ptr, (xmlChar *)"filename", (xmlChar *) filename);
 }
 
 static gint
@@ -131,6 +138,12 @@ record_result (xmlNodePtr results_node_ptr,
     xmlSetProp (result_node_ptr, (xmlChar *)"id", (xmlChar *) result_id_str);
     xmlSetProp (result_node_ptr, (xmlChar *)"path", (xmlChar *) path);
     xmlSetProp (result_node_ptr, (xmlChar *)"result", (xmlChar *) result);
+
+    // add a logs node
+    xmlNewTextChild (result_node_ptr,
+                     NULL,
+                     (xmlChar *) "logs",
+                     NULL);
 
     if (score)
         xmlSetProp (result_node_ptr, (xmlChar *)"score", (xmlChar *) score);
@@ -286,9 +299,18 @@ task_callback (SoupServer *server, SoupMessage *remote_msg,
         goffset start;
         goffset end;
         goffset total_length;
-        gchar *log_path = g_strjoinv ("/", &entries[3]);
+        gchar *short_path = NULL;
+        gchar *log_path = g_strjoinv ("/", &entries[4]);
         gchar *filename = g_strdup_printf ("%s/%s", app_data->run_dir, log_path);
-        g_free (log_path);
+
+        gchar *logs_xpath = NULL;
+        if (g_strcmp0 (entries[5], "logs") == 0) {
+            logs_xpath = g_strdup_printf("//task[contains(@id,'%s')]/logs", task_id);
+            short_path = g_strjoinv ("/", &entries[6]);
+        } else {
+            logs_xpath = g_strdup_printf("//result[contains(@id,'%s')]/logs", entries[6]);
+            short_path = g_strjoinv ("/", &entries[8]);
+        }
 
         gboolean content_range = soup_message_headers_get_content_range (remote_msg->request_headers,
                                                                          &start, &end, &total_length);
@@ -316,13 +338,23 @@ task_callback (SoupServer *server, SoupMessage *remote_msg,
             }
             if (start == 0) {
                 // Record log in xml
-                //record_log ()
+                xmlXPathObjectPtr logs_node_ptrs = get_node_set (app_data->xml_doc,
+                                                                 (xmlChar *)logs_xpath);
+                if (logs_node_ptrs) {
+                    record_log (logs_node_ptrs->nodesetval->nodeTab[0], log_path, short_path);
+                }
+                xmlXPathFreeObject (logs_node_ptrs);
             }
             update_chunk (filename, body->data, body->length, start);
         } else {
             truncate ((const char *)filename, body->length);
             // Record log in xml
-            //record_log ()
+            xmlXPathObjectPtr logs_node_ptrs = get_node_set (app_data->xml_doc,
+                                                             (xmlChar *)logs_xpath);
+            if (logs_node_ptrs) {
+                record_log (logs_node_ptrs->nodesetval->nodeTab[0], log_path, short_path);
+            }
+            xmlXPathFreeObject (logs_node_ptrs);
             update_chunk (filename, body->data, body->length, (goffset) 0);
         }
         const gchar *log_level_char = soup_message_headers_get_one (remote_msg->request_headers, "log-level");
@@ -332,6 +364,8 @@ task_callback (SoupServer *server, SoupMessage *remote_msg,
                 write (1, body->data, body->length);
             }
         }
+        g_free (short_path);
+        g_free (log_path);
         g_free (filename);
         soup_buffer_free (body);
         soup_message_set_status (remote_msg, SOUP_STATUS_NO_CONTENT);
@@ -391,6 +425,12 @@ copy_task_nodes (xmlNodeSetPtr nodeset, xmlDocPtr orig_xml_doc, xmlDocPtr dst_xm
                                                 NULL,
                                                 (xmlChar *) "task",
                                                 NULL);
+        // Add a logs node
+        xmlNewChild (task_node_ptr,
+                     NULL,
+                     (xmlChar *) "logs",
+                     NULL);
+
         // Copy <fetch> node if present.
         xmlNodePtr fetch_node_ptr = first_child_with_name (nodeset->nodeTab[i],
                                                            "fetch", FALSE);

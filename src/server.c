@@ -256,6 +256,7 @@ server_recipe_callback (SoupServer *server, SoupMessage *client_msg,
         soup_message_set_status_full (client_msg, SOUP_STATUS_BAD_REQUEST, "No Recipe Running");
         return;
     }
+    // FIXME - make sure we have valid tasks first
     Task *task = (Task *) app_data->tasks->data;
 
     if (g_str_has_suffix (path, "/results/")) {

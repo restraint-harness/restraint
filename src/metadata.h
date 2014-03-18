@@ -1,5 +1,6 @@
 
 #define RESTRAINT_METADATA_PARSE_ERROR restraint_metadata_parse_error_quark()
+#define VAR_LIB_PATH "/var/lib/restraint"
 GQuark restraint_metadata_parse_error_quark(void);
 typedef enum {
     RESTRAINT_METADATA_PARSE_ERROR_BAD_SYNTAX, /* parse errors from metadata*/
