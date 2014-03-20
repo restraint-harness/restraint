@@ -1,4 +1,5 @@
 #define _POSIX_C_SOURCE 200809L
+#define _BSD_SOURCE
 #include <glib.h>
 #include <glib/gstdio.h>
 #include <gio/gio.h>

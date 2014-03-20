@@ -167,7 +167,7 @@ fi
 %attr(0755, root, root)%{_unitdir}/%{name}d.service
 %exclude %{_sysconfdir}/init.d
 %else
-%exclude /lib/systemd
+%exclude /usr/lib/systemd
 %attr(0755, root, root)%{_sysconfdir}/init.d/%{name}d
 %endif
 %attr(0755, root, root)%{_bindir}/%{name}
