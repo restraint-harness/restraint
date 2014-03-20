@@ -7,7 +7,7 @@
 %endif
 
 Name:		restraint
-Version:	0.1.6
+Version:	0.1.7
 Release:	1%{?dist}
 Summary:	Simple test harness which can be used with beaker
 
@@ -209,6 +209,17 @@ fi
 %{__rm} -rf %{buildroot}
 
 %changelog
+* Thu Mar 20 2014 Bill Peck <bpeck@redhat.com> 0.1.7-1
+- fixes for systemd (bpeck@redhat.com)
+- use /var/lib/restraint for running state config. also record logs in
+  standalone job xml. (bpeck@redhat.com)
+- fix comment (bpeck@redhat.com)
+- Log errors to /dev/console and all messages to /var/log/restraintd.log
+  (bpeck@redhat.com)
+- Changes to support running stand alone better (bpeck@redhat.com)
+- disable g_io_channel decoding which can barf on binary data.
+  (bpeck@redhat.com)
+
 * Thu Jan 23 2014 Bill Peck <bpeck@redhat.com> 0.1.6-1
 - revert spec file changes so tito doesn't get confused. (bpeck@redhat.com)
 - fix legacy report_result.  Was not passing args with quotes
