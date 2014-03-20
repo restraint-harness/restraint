@@ -9,25 +9,18 @@
 . /etc/rc.d/init.d/functions
 
 prog=restraintd
-# FIXME: may need to change this(?)
-RUN_AS=root
 
 if [ -f /etc/sysconfig/$prog ]; then
     . /etc/sysconfig/$prog
 fi
 
-# Source harness environment so we know what recipe to run.
-. /etc/profile.d/beaker-harness-env.sh
-
 PIDFILE=/var/run/${prog}.pid
 LOCKFILE=/var/lock/subsys/$prog
 
 start() {
-    if [ -n "$BEAKER_LAB_CONTROLLER_URL" -a -n "$BEAKER_RECIPE_ID" -a ! -e "/usr/share/restraint/config" ]; then
-        OPTIONS="--recipe $BEAKER_LAB_CONTROLLER_URL/recipes/$BEAKER_RECIPE_ID/"
-    fi
+    check_beaker
     echo -n $"Starting $prog: "
-    daemon --user $RUN_AS log_restraintd "$OPTIONS &" 'echo $!' ">$PIDFILE"
+    daemon "(( $prog 3>&1 1>&2 2>&3 ) | tee /dev/console ) >> /var/log/restraintd &" 'echo $!' ">$PIDFILE"
     RETVAL=$?
     echo
     echo "$prog running as process `cat $PIDFILE`"

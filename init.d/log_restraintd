@@ -1,6 +1,0 @@
-#!/bin/sh
-
-# Only error messages to /dev/console
-# All Output to /var/log/restraintd.log
-
-(( restraintd "$@" 3>&1 1>&2 2>&3 ) | tee /dev/console ) >> /var/log/restraintd.log 2>&1

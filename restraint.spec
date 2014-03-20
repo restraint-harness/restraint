@@ -1,3 +1,11 @@
+
+# Got Systemd?
+%if 0%{?fedora} >= 18 || 0%{?rhel} >= 7
+%global with_systemd 1
+%else
+%global with_systemd 0
+%endif
+
 Name:		restraint
 Version:	0.1.6
 Release:	1%{?dist}
@@ -17,6 +25,18 @@ BuildRequires:	libselinux-devel
 BuildRequires:	glibc-devel
 %if 0%{?rhel}%{?fedora} > 4
 BuildRequires: selinux-policy-devel
+%endif
+%if %{with_systemd}
+BuildRequires:          systemd-units
+Requires(post):         systemd
+Requires(pre):          systemd
+Requires(postun):       systemd
+%else
+Requires(post): chkconfig
+Requires(preun): chkconfig
+# This is for /sbin/service
+Requires(preun): initscripts
+Requires(postun): initscripts
 %endif
 
 #if not static build
@@ -105,7 +125,13 @@ popd
 
 %post rhts
 if [ "$1" -le "1" ] ; then # First install
+%if %{with_systemd}
+%systemd_post restraintd
+# Enable restraintd by default
+/bin/systemctl enable restraintd.service >/dev/null 2>&1 || :
+%else
 chkconfig --level 345 restraintd on
+%endif
 %if 0%{?rhel}%{?fedora} > 4
 semodule -i %{_datadir}/selinux/packages/%{name}/rhts.pp || :
 %endif
@@ -113,7 +139,11 @@ fi
 
 %preun rhts
 if [ "$1" -lt "1" ] ; then # Final removal
+%if %{with_systemd}
+%systemd_preun %{_services}
+%else
 chkconfig --del restraintd || :
+%endif
 %if 0%{?rhel}%{?fedora} > 4
 semodule -r rhts || :
 %endif
@@ -121,6 +151,11 @@ fi
 
 %postun rhts
 if [ "$1" -ge "1" ] ; then # Upgrade
+%if %{with_systemd}
+%systemd_postun_with_restart %{_services_restart}
+%else
+service restraintd condrestart >/dev/null 2>&1 || :
+%endif
 %if 0%{?rhel}%{?fedora} > 4
 semodule -i %{_datadir}/selinux/packages/%{name}/rhts.pp || :
 %endif
@@ -128,7 +163,13 @@ fi
 
 %files
 %defattr(-,root,root,-)
-/etc/rc.d/init.d/restraintd
+%if %{with_systemd}
+%attr(0755, root, root)%{_unitdir}/%{name}d.service
+%exclude %{_sysconfdir}/init.d
+%else
+%exclude /lib/systemd
+%attr(0755, root, root)%{_sysconfdir}/init.d/%{name}d
+%endif
 %attr(0755, root, root)%{_bindir}/%{name}
 %attr(0755, root, root)%{_bindir}/%{name}d
 %attr(0755, root, root)%{_bindir}/rstrnt-report-result
@@ -136,7 +177,7 @@ fi
 %attr(0755, root, root)%{_bindir}/rstrnt-backup
 %attr(0755, root, root)%{_bindir}/rstrnt-restore
 %attr(0755, root, root)%{_bindir}/rstrnt-reboot
-%attr(0755, root, root)%{_bindir}/log_restraintd
+%attr(0755, root, root)%{_bindir}/check_beaker
 /usr/share/%{name}
 /usr/share/%{name}/plugins/run_plugins
 /usr/share/%{name}/plugins/run_task_plugins

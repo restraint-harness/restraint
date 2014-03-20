@@ -1,4 +1,4 @@
-FILES := rstrnt-backup rstrnt-restore rstrnt-reboot
+FILES := rstrnt-backup rstrnt-restore rstrnt-reboot check_beaker
 
 .PHONY: all
 all:

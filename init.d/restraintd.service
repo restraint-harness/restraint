@@ -1,0 +1,14 @@
+[Unit]
+Description=The restraint harness.
+After=network.target NetworkManager-wait-online.service time-sync.target
+
+[Service]
+Type=simple
+StandardError=syslog+console
+ExecStartPre=/usr/bin/check_beaker
+ExecStart=/usr/bin/restraintd
+KillMode=process
+
+[Install]
+WantedBy=multi-user.target
+
