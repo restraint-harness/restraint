@@ -7,7 +7,7 @@
 %endif
 
 Name:		restraint
-Version:	0.1.7
+Version:	0.1.8
 Release:	1%{?dist}
 Summary:	Simple test harness which can be used with beaker
 
@@ -209,6 +209,10 @@ fi
 %{__rm} -rf %{buildroot}
 
 %changelog
+* Thu Mar 20 2014 Bill Peck <bpeck@redhat.com> 0.1.8-1
+- allow client.c to compile on rhel4 and exclude /usr/lib/systemd on none-
+  systemd systems (bpeck@redhat.com)
+
 * Thu Mar 20 2014 Bill Peck <bpeck@redhat.com> 0.1.7-1
 - fixes for systemd (bpeck@redhat.com)
 - use /var/lib/restraint for running state config. also record logs in
