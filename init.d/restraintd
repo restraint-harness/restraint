@@ -20,7 +20,7 @@ LOCKFILE=/var/lock/subsys/$prog
 start() {
     check_beaker
     echo -n $"Starting $prog: "
-    daemon "(( $prog 3>&1 1>&2 2>&3 ) | tee /dev/console ) >> /var/log/restraintd &" 'echo $!' ">$PIDFILE"
+    daemon "(( $prog 3>&1 1>&2 2>&3 ) | tee /dev/console ) >> /var/log/restraintd.log 2>&1 &" 'echo $!' ">$PIDFILE"
     RETVAL=$?
     echo
     echo "$prog running as process `cat $PIDFILE`"
