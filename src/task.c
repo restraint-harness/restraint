@@ -19,6 +19,7 @@
 #include "common.h"
 #include "process.h"
 #include "message.h"
+#include "dependency.h"
 
 GQuark restraint_task_runner_error(void) {
     return g_quark_from_static_string("restraint-task-runner-error-quark");
@@ -584,6 +585,8 @@ task_handler (gpointer user_data)
       // All repodependencies are installed via fetch_git
       if (!task->started) {
           g_string_printf(message, "** Installing dependencies\n");
+          restraint_install_dependencies (app_data);
+          result=FALSE;
       }
       task->state = TASK_RUN;
       break;

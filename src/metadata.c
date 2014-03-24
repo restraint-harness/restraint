@@ -209,9 +209,8 @@ static void parse_line(Task *task,
         task->max_time = task->max_time ? task->max_time : time;
     } else if(g_strcmp0("NAME", key) == 0) {
         task->name = g_strdup(g_strstrip(value));
-    } else if(g_strcmp0("REQUIRES", key) == 0 ||
-               g_strcmp0("RHTSREQUIRES", key) == 0) {
-        gchar **dependencies = g_strsplit(value,",",0);
+    } else if(g_strcmp0("REQUIRES", key) == 0) {
+        gchar **dependencies = g_strsplit(value," ",0);
         GList *list = NULL;
         gint i = 0;
         while (dependencies[i] != NULL) {
