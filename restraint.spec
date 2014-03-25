@@ -7,7 +7,7 @@
 %endif
 
 Name:		restraint
-Version:	0.1.8
+Version:	0.1.9
 Release:	1%{?dist}
 Summary:	Simple test harness which can be used with beaker
 
@@ -210,6 +210,18 @@ fi
 %{__rm} -rf %{buildroot}
 
 %changelog
+* Tue Mar 25 2014 Bill Peck <bpeck@redhat.com> 0.1.9-1
+- Update the documentation to match how restraint works stand alone now.
+  (bpeck@redhat.com)
+- minor output change (bpeck@redhat.com)
+- minor tweaks to plugins to use proper names (bpeck@redhat.com)
+- update gitignore and remove docs/_build (bpeck@redhat.com)
+- fix logging (bpeck@redhat.com)
+- Install task dependencies, this is important for running outside of beaker.
+  (bpeck@redhat.com)
+- minor grammer and spelling mistakes (bpeck@redhat.com)
+- Started docs.  Documented plugins. (bpeck@redhat.com)
+
 * Thu Mar 20 2014 Bill Peck <bpeck@redhat.com> 0.1.8-1
 - allow client.c to compile on rhel4 and exclude /usr/lib/systemd on none-
   systemd systems (bpeck@redhat.com)
