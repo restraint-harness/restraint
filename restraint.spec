@@ -186,6 +186,7 @@ fi
 /usr/share/%{name}/plugins/report_result.d
 /usr/share/%{name}/plugins/task_run.d
 /var/lib/%{name}
+%doc docs/job2html.xml
 
 %files rhts
 %defattr(-,root,root,-)

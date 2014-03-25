@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+
+<xsl:stylesheet version="1.0"
+xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+xmlns="http://www.w3.org/TR/REC-html40">
+
+ <xsl:output method="html"/>
+
+ <xsl:template match="/">
+ <HTML>
+ <HEAD>
+ <TITLE>Beaker Recipe Results</TITLE>
+ </HEAD>
+ <BODY>
+ <xsl:apply-templates/>
+ </BODY>
+ </HTML>
+ </xsl:template>
+ 
+ <xsl:template match="job/recipeSet/recipe">
+  <table>
+   <tr>
+    <td>recipe ID</td>
+    <td><xsl:value-of select="@id"/></td>
+   </tr>
+   <tr>
+    <table class="table table-condensed table-hover tasks">
+     <thead>
+      <tr>
+       <th>Run ID</th>
+       <th>Task</th>
+       <th>StartTime<br/>[FinishTime]<br/>[Duration]</th>
+       <th class="logs">Logs</th>
+       <th>Status</th>
+       <th>Result</th>
+       <th>Score</th>
+      </tr>
+     </thead>
+    <xsl:apply-templates/>
+    </table>
+   </tr>
+  </table>
+ </xsl:template>
+ 
+ <xsl:template match="task">
+    <tbody>
+     <tr>
+      <td class="task">T:<xsl:value-of select="@id"/></td>
+      <td class="task"><xsl:value-of select="@name"/></td>
+      <td style="white-space:nowrap;" class="task"></td>
+      <td class="task logs"><ul><xsl:apply-templates select="logs"/></ul></td>
+      <td class="task"><xsl:value-of select="@status"/></td>
+      <td class="task"><xsl:value-of select="@result"/></td>
+      <td class="task"></td>
+     </tr>
+     <xsl:apply-templates select="results"/>
+    </tbody>
+ </xsl:template>
+
+ <xsl:template match="result">
+     <tr>
+      <td class="result"></td>
+      <td class="result"><xsl:value-of select="@path"/></td>
+      <td style="white-space:nowrap;" class="result"></td>
+      <td class="result logs"><ul><xsl:apply-templates select="logs"/></ul></td>
+      <td class="result"></td>
+      <td class="result"><xsl:value-of select="@result"/></td>
+      <td class="result"><xsl:value-of select="@score"/></td>
+     </tr>
+ </xsl:template>
+
+ <xsl:template match="log">
+  <li><a><xsl:attribute name="href"><xsl:value-of select="@path"/></xsl:attribute><xsl:value-of select="@filename"/></a></li>
+ </xsl:template>
+</xsl:stylesheet>
