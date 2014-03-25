@@ -19,13 +19,13 @@ dmesg -c >$DMESG_FILE
 
 # Submit dmesg log if any output
 if [ -s "$DMESG_FILE" ]; then
-    rhts-submit-log --server $RSTRNT_RESULT_URL -l $DMESG_FILE
+    rstrnt-submit-log --server $RSTRNT_RESULT_URL -l $DMESG_FILE
 fi
 
 # Check for errors
 cat $DMESG_FILE | grep -E "$FAILURESTRINGS" | grep -v -E "$FALSESTRINGS" > $OUTPUTFILE
 if [ -s "$OUTPUTFILE" ]; then
-    report_result --no-plugins $TEST/$PLUGIN FAIL 0
+    rstrnt-report-result --no-plugins $TEST/$PLUGIN FAIL 0
 fi
 
 rm -f $DMESG_FILE

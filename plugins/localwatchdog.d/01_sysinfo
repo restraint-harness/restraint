@@ -13,7 +13,6 @@ function WatchFile ()
         diff=$(diff -q $FILE $TMPFILE)
         rc=$?
         if [ $rc != 0 ]; then
-            echo "File is still growing.."
             cat $FILE > $TMPFILE
         else
             rm $TMPFILE
@@ -56,12 +55,12 @@ echo "Dumping slabinfo - Stop - $timestamp" >> $SLABLOG
 logger -p local2.info -t "SlabCacheInfo" -f $SLABLOG
 
 # Submit dmesg log if any output
-rhts-submit-log -l /var/log/messages
+rstrnt-submit-log -l /var/log/messages
 
 # Upload any logs the user may want
 if [ -e $TESTPATH/logs2get ]; then
     for l in `cat $TESTPATH/logs2get`; do
-        rhts-submit-log -l $l
+        rstrnt-submit-log -l $l
     done
 fi
 
