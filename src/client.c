@@ -158,7 +158,7 @@ record_result (xmlNodePtr results_node_ptr,
         } else {
             offset_path = &path[offset];
         }
-        g_print ("**   %4s [%-48s] R: %s V: %s\n", result_id_str,
+        g_print ("**   %4s [%-48s] R: %s S: %s\n", result_id_str,
                  offset_path, result, score);
         if (message) {
             g_print ("**            %s\n", message);
@@ -263,7 +263,7 @@ task_callback (SoupServer *server, SoupMessage *remote_msg,
         if (app_data->verbose < 2) {
             xmlChar *task_name = xmlGetNoNsProp (task_node_ptr, (xmlChar *)"name");
             xmlChar *task_result = xmlGetNoNsProp (task_node_ptr, (xmlChar *)"result");
-            g_print ("*  T: %3s [%-48s] R: %s S: %s\n",
+            g_print ("*  T: %3s [%-48s] R: %s %s\n",
                      task_id,
                      (gchar *)task_name,
                      (gchar *)task_result,
