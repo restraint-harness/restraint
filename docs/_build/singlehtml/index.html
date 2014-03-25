@@ -1,0 +1,221 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>restraint 0.1.6 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.1.6',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="None" href="index.html#document-index" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li><a href="index.html#document-index">restraint 0.1.6 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="welcome-to-restraint-s-documentation">
+<h1>Welcome to restraint&#8217;s documentation!<a class="headerlink" href="#welcome-to-restraint-s-documentation" title="Permalink to this headline">¶</a></h1>
+<p>Contents:</p>
+<div class="toctree-wrapper compound">
+<span id="document-plugins"></span><div class="section" id="plugins">
+<h2>Plugins<a class="headerlink" href="#plugins" title="Permalink to this headline">¶</a></h2>
+<p>restraint relies on plugins to execute tasks in the correct environment and to check for common errors or sinmply
+to provide additional logs for debugging issues.  Here is a typical outline of how plugins are executed:</p>
+<div class="highlight-python"><pre>run_task_plugins
+ \
+ 10_bash_login
+ |
+ 20_unconfined
+ |
+ make run
+ \
+  report_result
+ \
+  report_result
+run_task_plugins
+ \
+ 10_bash_login
+ |
+ 20_unconfined
+ |
+ run_plugins &lt;- completed.d
+ \
+  98_restore</pre>
+</div>
+<p>The report_result commands above cause the following plugins to be executed:</p>
+<div class="highlight-python"><pre>run_task_plugins
+\
+ 10_bash_login
+ |
+ 20_unconfined
+ |
+ run_plugins &lt;- report_result.d
+ \
+  01_dmesg_check</pre>
+</div>
+<p>These plugins do not run from the task under test.  They run from restraintd process.
+This allows for greater flexibility if your task is running as a non-root user since a non-root
+user would not be able to inspect some logs and wouldn&#8217;t be able to clear dmesg log.</p>
+<div class="section" id="task-run">
+<h3>Task Run<a class="headerlink" href="#task-run" title="Permalink to this headline">¶</a></h3>
+<p>Task run plugins are used to modify the environment under which the tasks will execute.
+Simply place the executable in /usr/share/restraint/task_run.d.  The list of files in this directory
+will be passed to exec in alphabetical order.</p>
+<p>Restraint currently ships with two task run plugins:</p>
+<ul class="simple">
+<li>10_bash_login - invoke a login shell.</li>
+<li>20_unconfined - if selinux is enabled on system run task in unconfined context</li>
+</ul>
+<p>So the above plugins would get called like so:</p>
+<div class="highlight-python"><pre>exec 10_bash_login 20_unconfined "$@"</pre>
+</div>
+<p>In order for this to work the task run plugins are required to exec &#8220;$&#64;&#8221; at the end of the script.
+Although task run plugins can&#8217;t take any arguments they can make decisions based on environment variables.</p>
+<p>It should be pointed out that the task run plugins are executed for all other plugins!  This is to ensure
+plugins run with the same environment as your task.  When executed under all other plugins the following variable will be defined:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">RSTRNT_NOPLUGINS</span><span class="o">=</span><span class="mi">1</span>
+</pre></div>
+</div>
+<p>You can do conditionals based on this so lets create a plugin which will start a tcp capture:</p>
+<div class="highlight-python"><pre>#Capture tcpdump data from every task
+cat &lt;&lt; "EOF" &gt; /usr/share/restraint/plugins/task_run.d/30_tcpdump
+#!/bin/sh -x
+
+# Don't run from PLUGINS
+if [ -z "$RSTRNT_NOPLUGINS" ]; then
+  tcpdump -q -i any -q -w $RUNPATH/tcpdump.cap 2&gt;&amp;1 &amp;
+  echo $! &gt; $RUNPATH/tcpdump.pid
+fi
+
+exec "$@"
+EOF
+chmod a+x /usr/share/restraint/plugins/task_run.d/30_tcpdump</pre>
+</div>
+</div>
+<div class="section" id="report-result">
+<h3>Report Result<a class="headerlink" href="#report-result" title="Permalink to this headline">¶</a></h3>
+<p>Every time a task reports a result to restraint these plugins will execute.  Currently restraint only
+ships with one plugin:</p>
+<div class="highlight-python"><pre>01_dmesg_check</pre>
+</div>
+<p>This plugin checks for the following failure strings:</p>
+<div class="highlight-python"><pre>Oops|BUG|NMI appears to be stuck|cut here|Badness at</pre>
+</div>
+<p>But it does then run any matches through an inverted grep which removes the following:</p>
+<div class="highlight-python"><pre>BIOS BUG|DEBUG</pre>
+</div>
+<p>This is an effort to reduce false positives.  Both of the above strings can be overridden from each
+task by passing in your own FAILURESTRINGS or FALSESTRINGS variables.</p>
+</div>
+<div class="section" id="local-watchdog">
+<h3>Local Watchdog<a class="headerlink" href="#local-watchdog" title="Permalink to this headline">¶</a></h3>
+<p>These plugins will only be executed if the task runs beyond its expected time limit.  Restraint currently
+ships with two plugins:</p>
+<ul class="simple">
+<li>01_sysinfo - Collect information about the system, issues sysrq m, t and w. Uploads slabinfo and /var/log/messages.  It will also upload any logs listed in $TESTPATH/logs2get.</li>
+<li>99_reboot - Simply reboots the system to try and get the system back to a sane state.</li>
+</ul>
+</div>
+<div class="section" id="completed">
+<h3>Completed<a class="headerlink" href="#completed" title="Permalink to this headline">¶</a></h3>
+<p>These plugins will get executed at the end of every task, regardless if the localwatchdog triggered or not.
+The only plugin currently shipped with restraint is:</p>
+<ul class="simple">
+<li>98_restore - any files backed up by either rhts-backup or rstrnt-backup will be restored.</li>
+</ul>
+<p>To finish our tcpdump example from above we can add the following:</p>
+<div class="highlight-python"><pre>#Kill tcpdump and upload
+cat &lt;&lt; "EOF" &gt; /usr/share/restraint/plugins/completed.d/80_upload_tcpdump
+#!/bin/sh -x
+
+kill $(cat $RUNPATH/tcpdump.pid)
+rstrnt-report-log -l $RUNPATH/tcpdump.cap
+EOF
+chmod a+x /usr/share/restraint/plugins/completed.d/80_upload_tcpdump</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="section" id="indices-and-tables">
+<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
+<ul class="simple">
+<li><a class="reference internal" href="genindex.html"><em>Index</em></a></li>
+<li><a class="reference internal" href="py-modindex.html"><em>Module Index</em></a></li>
+<li><a class="reference internal" href="search.html"><em>Search Page</em></a></li>
+</ul>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html#document-index">Table Of Contents</a></h3>
+  <ul>
+<li class="toctree-l1"><a class="reference internal" href="index.html#document-plugins">Plugins</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="index.html#task-run">Task Run</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#report-result">Report Result</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#local-watchdog">Local Watchdog</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#completed">Completed</a></li>
+</ul>
+</li>
+</ul>
+
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li><a href="index.html#document-index">restraint 0.1.6 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, Bill Peck, Dan Callaghan, Jeff Bastian.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>
