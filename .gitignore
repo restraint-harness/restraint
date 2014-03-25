@@ -30,3 +30,4 @@
 /src/rstrnt-report-log
 /src/*.o
 rel-eng/lib/*.pyc
+/docs/_build
