@@ -1,0 +1,42 @@
+#!/bin/sh
+
+AVC_FILE=/var/lib/restraint/avc_since
+PLUGIN=$(basename $0)
+
+if [ -z "$RSTRNT_RESULT_URL" ]; then
+    echo "RSTRNT_RESULT_URL is not defined!"
+    exit 1
+fi
+
+if [ -x /usr/sbin/selinuxenabled ] && ! selinuxenabled; then
+   echo "selinux disabled, no avc check.."
+   exit
+fi
+
+TMPDIR=$(mktemp -d)
+set -x
+# report selinux status
+sestatus
+# report selinux policy rpm
+rpm -q selinux-policy
+set +x
+
+if [ -e "$AVC_FILE" ]; then
+    SECONDS=$(stat -c%Y $AVC_FILE)
+    # MM/DD/YYYY may not be correct if non en_* locale is used. Always
+    # use en_US for consistency:
+    AVC_SINCE=$(LC_ALL=en_US.UTF-8 date "+-ts %m/%d/%Y %H:%M:%S" --date="@$SECONDS")
+fi
+
+AUSEARCH_FILE=$(mktemp)
+ausearch -m AVC -m USER_AVC -m SELINUX_ERR $AVC_SINCE >$TMPDIR/avc.log
+RC=$?
+if [ $RC == 0 ]; then
+    rstrnt-report-result --no-plugins $TEST/$PLUGIN FAIL $RC
+fi
+
+#Submit ausearch results
+if [ -s "$TMPDIR/avc.log" ]; then
+    rstrnt-report-log --server $RSTRNT_RESULT_URL -l $TMPDIR/avc.log
+fi
+rm -rf $TMPDIR

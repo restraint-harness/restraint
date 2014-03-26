@@ -19,7 +19,7 @@ dmesg -c >$DMESG_FILE
 
 # Submit dmesg log if any output
 if [ -s "$DMESG_FILE" ]; then
-    rstrnt-submit-log --server $RSTRNT_RESULT_URL -l $DMESG_FILE
+    rstrnt-report-log --server $RSTRNT_RESULT_URL -l $DMESG_FILE
 fi
 
 # Check for errors

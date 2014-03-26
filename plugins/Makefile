@@ -11,6 +11,8 @@ install:
 	install -m0755 run_plugins $(DESTDIR)/usr/share/restraint/plugins
 	install -m0755 run_task_plugins $(DESTDIR)/usr/share/restraint/plugins
 	install -m0755 report_result.d/01_dmesg_check $(DESTDIR)/usr/share/restraint/plugins/report_result.d
+	install -m0755 report_result.d/10_avc_check $(DESTDIR)/usr/share/restraint/plugins/report_result.d
+	install -m0755 report_result.d/20_avc_clear $(DESTDIR)/usr/share/restraint/plugins/report_result.d
 	install -m0755 localwatchdog.d/01_sysinfo $(DESTDIR)/usr/share/restraint/plugins/localwatchdog.d
 	install -m0755 completed.d/98_restore $(DESTDIR)/usr/share/restraint/plugins/completed.d
 	install -m0755 localwatchdog.d/99_reboot $(DESTDIR)/usr/share/restraint/plugins/localwatchdog.d

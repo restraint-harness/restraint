@@ -1,0 +1,5 @@
+#!/bin/sh
+
+AVC_FILE=/var/lib/restraint/avc_since
+
+touch $AVC_FILE
