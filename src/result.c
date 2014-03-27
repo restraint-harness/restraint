@@ -8,6 +8,15 @@
 
 static SoupSession *session;
 
+static gboolean
+callback_disable_plugin (const gchar *option_name, const gchar *value,
+                 gpointer user_data, GError **error)
+{
+    GPtrArray *disable_plugin = (GPtrArray *) user_data;
+    g_ptr_array_add (disable_plugin, g_strdup (value));
+    return TRUE;
+}
+
 int main(int argc, char *argv[]) {
 
     gchar filename[] = "logs/resultoutputfile.log";
@@ -31,7 +40,9 @@ int main(int argc, char *argv[]) {
     gboolean no_plugins = FALSE;
 
     gchar *form_data;
-    GHashTable *data_table = NULL;
+    GHashTable *data_table = g_hash_table_new (NULL, NULL);
+    
+    GPtrArray *disable_plugin = g_ptr_array_new_with_free_func (g_free);
 
     GOptionEntry entries[] = {
         {"server", 's', 0, G_OPTION_ARG_STRING, &server,
@@ -40,17 +51,26 @@ int main(int argc, char *argv[]) {
             "Short 100 characters or less message", "TEXT" },
         { "outputfile", 'o', 0, G_OPTION_ARG_STRING, &outputfile,
             "Log to upload with result, $OUTPUTFILE is used by default", "FILE" },
-        { "no-plugins", 'p', 0, G_OPTION_ARG_NONE, &no_plugins,
-            "don't run plugins on server side", NULL },
+        { "disable-plugin", 'p', 0, G_OPTION_ARG_CALLBACK, callback_disable_plugin,
+            "don't run plugin on server side", "PLUGIN" },
+        { "no-plugins", 0, 0, G_OPTION_ARG_NONE, &no_plugins,
+            "don't run any plugins on server side", NULL },
         { NULL }
     };
+    GOptionGroup *option_group = g_option_group_new ("main",
+                                                    "Application Options",
+                                                    "Various application related options",
+                                                    &disable_plugin, NULL);
+
     GOptionContext *context = g_option_context_new("TASK_PATH RESULT SCORE");
     g_option_context_set_summary(context,
             "Report results to lab controller. if you don't specify the\n"
             "the server url you must have RECIPEID and TASKID defined.\n"
             "If HARNESS_PREFIX is defined then the value of that must be\n"
             "prefixed to RECIPEID and TASKID");
-    g_option_context_add_main_entries(context, entries, NULL);
+    g_option_group_add_entries(option_group, entries);
+    g_option_context_set_main_group (context, option_group);
+
     gboolean parse_succeeded = g_option_context_parse(context, &argc, &argv, &error);
     g_option_context_free(context);
 
@@ -76,9 +96,20 @@ int main(int argc, char *argv[]) {
     result_uri = soup_uri_new (server);
     session = soup_session_new_with_options("timeout", 3600, NULL);
 
-    data_table = g_hash_table_new (NULL, NULL);
     g_hash_table_insert (data_table, "path", argv[1]);
     g_hash_table_insert (data_table, "result", argv[2]);
+
+    // if AVC_ERROR=+no_avc_check then disable the selinux check plugin
+    // This is for legacy rhts tests.. please use --disable-plugin
+    gchar *avc_error = getenv("AVC_ERROR");
+    if (g_strcmp0 (avc_error, "+no_avc_check") == 0) {
+        g_ptr_array_add (disable_plugin, g_strdup ("10_avc_check"));
+    }
+
+    if (disable_plugin) {
+        g_hash_table_insert (data_table, "disable_plugin", g_strjoinv (" ", (gchar **)disable_plugin->pdata));
+    }
+    g_ptr_array_free (disable_plugin, TRUE);
     if (no_plugins)
       g_hash_table_insert (data_table, "no_plugins", &no_plugins);
     if (argc > 3)

@@ -186,7 +186,6 @@ server_msg_complete (SoupSession *session, SoupMessage *server_msg, gpointer use
         // reported from the plugins themselves.
         table = soup_form_decode (client_msg->request_body->data);
         no_plugins = g_hash_table_lookup_extended (table, "no_plugins", NULL, NULL);
-        g_hash_table_destroy (table);
 
         // Execute report plugins
         if (!no_plugins) {
@@ -197,22 +196,30 @@ server_msg_complete (SoupSession *session, SoupMessage *server_msg, gpointer use
 
             // Last four entries are NULL.  Replace first three with plugin vars
             gchar *result_server = g_strdup_printf("RSTRNT_RESULT_URL=%s", soup_message_headers_get_one (client_msg->response_headers, "Location"));
+            if (task->env->pdata[task->env->len - 5] != NULL) {
+                g_free (task->env->pdata[task->env->len - 5]);
+            }
+            task->env->pdata[task->env->len - 5] = result_server;
+
+            gchar *plugin_dir = g_strdup_printf("RSTRNT_PLUGINS_DIR=%s/report_result.d", PLUGIN_DIR);
             if (task->env->pdata[task->env->len - 4] != NULL) {
                 g_free (task->env->pdata[task->env->len - 4]);
             }
-            task->env->pdata[task->env->len - 4] = result_server;
+            task->env->pdata[task->env->len - 4] = plugin_dir;
 
-            gchar *plugin_dir = g_strdup_printf("RSTRNT_PLUGINS_DIR=%s/report_result.d", PLUGIN_DIR);
+            gchar *no_plugins = g_strdup_printf("RSTRNT_NOPLUGINS=1");
             if (task->env->pdata[task->env->len - 3] != NULL) {
                 g_free (task->env->pdata[task->env->len - 3]);
             }
-            task->env->pdata[task->env->len - 3] = plugin_dir;
-
-            gchar *no_plugins = g_strdup_printf("RSTRNT_NOPLUGINS=1");
-            if (task->env->pdata[task->env->len - 2] != NULL) {
-                g_free (task->env->pdata[task->env->len - 2]);
+            task->env->pdata[task->env->len - 3] = no_plugins;
+            gchar *disable_plugin = g_hash_table_lookup (table, "disable_plugin");
+            if (disable_plugin) {
+                gchar *disabled_plugins = g_strdup_printf ("RSTRNT_DISABLED=%s", disable_plugin);
+                if (task->env->pdata[task->env->len - 2] != NULL) {
+                    g_free (task->env->pdata[task->env->len - 2]);
+                }
+                task->env->pdata[task->env->len - 2] = disabled_plugins;
             }
-            task->env->pdata[task->env->len - 2] = no_plugins;
 
             command_data->environ = (const gchar **) task->env->pdata;
             command_data->path = "/usr/share/restraint/plugins";
@@ -228,6 +235,7 @@ server_msg_complete (SoupSession *session, SoupMessage *server_msg, gpointer use
                 soup_server_unpause_message (soup_server, client_msg);
             }
         }
+        g_hash_table_destroy (table);
     } else {
         soup_server_unpause_message (soup_server, client_msg);
     }

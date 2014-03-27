@@ -171,22 +171,22 @@ task_finish_callback (gint pid_result, gboolean localwatchdog, gpointer user_dat
     gchar *localwatchdog_plugin = g_strdup_printf(" %s/localwatchdog.d", PLUGIN_DIR);
     gchar *plugin_dir = g_strdup_printf("RSTRNT_PLUGINS_DIR=%s/completed.d%s", PLUGIN_DIR, localwatchdog ? localwatchdog_plugin : "");
     g_free (localwatchdog_plugin);
+    if (task->env->pdata[task->env->len - 5] != NULL) {
+        g_free (task->env->pdata[task->env->len - 5]);
+    }
+    task->env->pdata[task->env->len - 5] = plugin_dir;
+
+    gchar *no_plugins = g_strdup_printf("RSTRNT_NOPLUGINS=1");
     if (task->env->pdata[task->env->len - 4] != NULL) {
         g_free (task->env->pdata[task->env->len - 4]);
     }
-    task->env->pdata[task->env->len - 4] = plugin_dir;
+    task->env->pdata[task->env->len - 4] = no_plugins;
 
-    gchar *no_plugins = g_strdup_printf("RSTRNT_NOPLUGINS=1");
+    gchar *rstrnt_localwatchdog = g_strdup_printf("RSTRNT_LOCALWATCHDOG=%s", localwatchdog ? "TRUE" : "FALSE");
     if (task->env->pdata[task->env->len - 3] != NULL) {
         g_free (task->env->pdata[task->env->len - 3]);
     }
-    task->env->pdata[task->env->len - 3] = no_plugins;
-
-    gchar *rstrnt_localwatchdog = g_strdup_printf("RSTRNT_LOCALWATCHDOG=%s", localwatchdog ? "TRUE" : "FALSE");
-    if (task->env->pdata[task->env->len - 2] != NULL) {
-        g_free (task->env->pdata[task->env->len - 2]);
-    }
-    task->env->pdata[task->env->len - 2] = rstrnt_localwatchdog;
+    task->env->pdata[task->env->len - 3] = rstrnt_localwatchdog;
 
     command_data->environ = (const gchar **) task->env->pdata;
     command_data->path = "/usr/share/restraint/plugins";
@@ -335,7 +335,8 @@ static gboolean build_env(Task *task, GError **error) {
 //    g_ptr_array_add(env, g_strdup_printf ("%sGUESTS=%s", prefix, task->recipe->guests));
     g_list_foreach(task->recipe->params, (GFunc) build_param_var, env);
     g_list_foreach(task->params, (GFunc) build_param_var, env);
-    // Leave three NULL slots for PLUGIN varaibles.
+    // Leave four NULL slots for PLUGIN varaibles.
+    g_ptr_array_add(env, NULL);
     g_ptr_array_add(env, NULL);
     g_ptr_array_add(env, NULL);
     g_ptr_array_add(env, NULL);

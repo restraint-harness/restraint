@@ -10,6 +10,13 @@
 for PLUGIN_DIR in $RSTRNT_PLUGINS_DIR; do
     pushd $PLUGIN_DIR >/dev/null || continue
     for PLUGIN in *; do
+        # Skip any disabled plugins
+        for DISABLED in $RSTRNT_DISABLED; do
+            if [ "$PLUGIN" = "$DISABLED" ]; then
+                echo "*** Skipping Disabled Plugin: $PLUGIN"
+                continue 2
+            fi
+        done
         echo "*** Running Plugin: $PLUGIN"
         ./$PLUGIN
     done
