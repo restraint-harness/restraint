@@ -7,7 +7,7 @@
 %endif
 
 Name:		restraint
-Version:	0.1.9
+Version:	0.1.10
 Release:	1%{?dist}
 Summary:	Simple test harness which can be used with beaker
 
@@ -210,6 +210,12 @@ fi
 %{__rm} -rf %{buildroot}
 
 %changelog
+* Mon Mar 31 2014 Bill Peck <bpeck@redhat.com> 0.1.10-1
+- allow report_plugins to be disabled (bpeck@redhat.com)
+- fix TESTID setting (bpeck@redhat.com)
+- Add TESTID for legacy/beakerlib runs. (bpeck@redhat.com)
+- Added selinux plugin check (bpeck@redhat.com)
+
 * Tue Mar 25 2014 Bill Peck <bpeck@redhat.com> 0.1.9-1
 - Update the documentation to match how restraint works stand alone now.
   (bpeck@redhat.com)
