@@ -62,6 +62,15 @@ Obsoletes:	rhts-test-env
 %description rhts
 Legacy package to allow older rhts tests to run under restraint
 
+%package client
+Summary:	used to run jobs outside of beaker
+Group:		Applications/Internet
+Requires:	restraint = %{version}
+
+%description client
+With the restraint client you can run jobs outside of beaker.  This will provide the same
+restAPI allowing all results and logs to be recorded from the test machine.
+
 %prep
 %setup -q
 
@@ -170,7 +179,6 @@ fi
 %exclude /usr/lib/systemd
 %attr(0755, root, root)%{_sysconfdir}/init.d/%{name}d
 %endif
-%attr(0755, root, root)%{_bindir}/%{name}
 %attr(0755, root, root)%{_bindir}/%{name}d
 %attr(0755, root, root)%{_bindir}/rstrnt-report-result
 %attr(0755, root, root)%{_bindir}/rstrnt-report-log
@@ -186,6 +194,9 @@ fi
 /usr/share/%{name}/plugins/report_result.d
 /usr/share/%{name}/plugins/task_run.d
 /var/lib/%{name}
+
+%files client
+%attr(0755, root, root)%{_bindir}/%{name}
 %doc docs/job2html.xml
 
 %files rhts
@@ -198,6 +209,7 @@ fi
 %attr(0755, root, root)%{_bindir}/rhts_submit_log
 %attr(0755, root, root)%{_bindir}/rhts-run-simple-test
 %attr(0755, root, root)%{_bindir}/rhts-backup
+%attr(0755, root, root)%{_bindir}/rhts-restore
 %attr(0755, root, root)%{_bindir}/rhts-restore
 %{_datadir}/rhts/lib/rhts-make.include
 /mnt/scratchspace
