@@ -38,7 +38,6 @@ typedef enum {
 } RestraintRecipeParseError;
 
 gboolean recipe_handler (gpointer user_data);
-void recipe_finish (gpointer user_data);
 void restraint_recipe_parse_xml (GObject *source, GAsyncResult *res, gpointer user_data);
 void restraint_recipe_free(Recipe *recipe);
 #endif

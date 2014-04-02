@@ -517,19 +517,6 @@ restraint_recipe_parse_xml (GObject *source, GAsyncResult *res, gpointer user_da
     return;
 }
 
-void
-recipe_finish (gpointer user_data)
-{
-    AppData *app_data = (AppData *) user_data;
-    // Report any recipe errors, It is not valid to report any more data
-    // to clients once an error has been reported.
-    if (app_data->error) {
-        //connections_write (app_data, app_data->error);
-        g_error_free(app_data->error);
-        app_data->error = NULL;
-    } 
-}
-
 gboolean
 recipe_handler (gpointer user_data)
 {
@@ -579,6 +566,11 @@ recipe_handler (gpointer user_data)
             return FALSE;
             break;
         case RECIPE_COMPLETE:
+            if (app_data->error) {
+                g_string_printf(message, "* %s\n", app_data->error->message);
+                g_error_free(app_data->error);
+                app_data->error = NULL;
+            } 
             // free current recipe
             if (app_data->recipe) {
               restraint_recipe_free(app_data->recipe);
@@ -594,10 +586,9 @@ recipe_handler (gpointer user_data)
             break;
     }
 
-    // write message out to all clients
+    // write message out to stderr
     if (message->len) {
       write (STDERR_FILENO, message->str, message->len);
-      connections_write(app_data, message->str, message->len);
       g_string_free(message, TRUE);
     }
 

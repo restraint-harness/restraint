@@ -3,6 +3,7 @@
 #include <libsoup/soup.h>
 #include <stdlib.h>
 #include <string.h>
+#include <fcntl.h>
 #include "recipe.h"
 #include "task.h"
 #include "metadata.h"
@@ -122,10 +123,10 @@ handle_recipe_request (gchar *recipe_url, AppData *app_data, GError **error)
     app_data->recipe_url = recipe_url;
     app_data->state = RECIPE_FETCH;
     app_data->recipe_handler_id = g_timeout_add_seconds_full(G_PRIORITY_DEFAULT_IDLE,
-                                                             3,
+                                                             5,
                                                              recipe_handler,
                                                              app_data,
-                                                             recipe_finish);
+                                                             NULL);
   } else {
     g_set_error(error, RESTRAINT_TASK_RUNNER_ERROR,
                 RESTRAINT_TASK_RUNNER_ALREADY_RUNNING_ERROR,
@@ -369,6 +370,9 @@ int main(int argc, char *argv[]) {
       g_printerr ("Unable to bind to server port %d\n", port);
       exit (1);
   }
+
+  SoupSocket *socket = soup_server_get_listener (soup_server);
+  fcntl (soup_socket_get_fd (socket), F_SETFD, FD_CLOEXEC);
 
   soup_server_add_handler (soup_server, "/address",
                            server_address_callback, app_data, NULL);

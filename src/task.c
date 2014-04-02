@@ -464,7 +464,7 @@ restraint_next_task (AppData *app_data, TaskSetupState task_state) {
     app_data->recipe_handler_id = g_idle_add_full(G_PRIORITY_DEFAULT_IDLE,
                                                   recipe_handler,
                                                   app_data,
-                                                  recipe_finish);
+                                                  NULL);
     return FALSE;
 }
 
