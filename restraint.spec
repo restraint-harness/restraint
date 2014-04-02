@@ -211,6 +211,7 @@ fi
 %attr(0755, root, root)%{_bindir}/rhts-backup
 %attr(0755, root, root)%{_bindir}/rhts-restore
 %attr(0755, root, root)%{_bindir}/rhts-restore
+%attr(0755, root, root)%{_bindir}/rhts-lint
 %{_datadir}/rhts/lib/rhts-make.include
 /mnt/scratchspace
 %attr(1777,root,root)/mnt/testarea

@@ -1,4 +1,4 @@
-FILES := rhts-environment.sh rhts-run-simple-test
+FILES := rhts-environment.sh rhts-run-simple-test rhts-lint
 
 .PHONY: install
 install:
