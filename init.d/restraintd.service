@@ -1,6 +1,7 @@
 [Unit]
 Description=The restraint harness.
-After=network.target NetworkManager-wait-online.service time-sync.target
+After=network.target time-sync.target
+Requires=network-online.target
 
 [Service]
 Type=simple
