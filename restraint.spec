@@ -7,7 +7,7 @@
 %endif
 
 Name:		restraint
-Version:	0.1.10
+Version:	0.1.11
 Release:	1%{?dist}
 Summary:	Simple test harness which can be used with beaker
 
@@ -223,6 +223,13 @@ fi
 %{__rm} -rf %{buildroot}
 
 %changelog
+* Thu Apr 03 2014 Bill Peck <bpeck@redhat.com> 0.1.11-1
+- only pass disable_plugin if plugins have been disabled (bpeck@redhat.com)
+- add dummy rhts-lint to allow us to make testinfo.desc (bpeck@redhat.com)
+- Updated service file to depend on network being online (bpeck@redhat.com)
+- separate restraint into client package (bpeck@redhat.com)
+- Report any errors at recipe level. (bpeck@redhat.com)
+
 * Mon Mar 31 2014 Bill Peck <bpeck@redhat.com> 0.1.10-1
 - allow report_plugins to be disabled (bpeck@redhat.com)
 - fix TESTID setting (bpeck@redhat.com)
