@@ -106,7 +106,7 @@ int main(int argc, char *argv[]) {
         g_ptr_array_add (disable_plugin, g_strdup ("10_avc_check"));
     }
 
-    if (disable_plugin) {
+    if (disable_plugin->pdata) {
         g_hash_table_insert (data_table, "disable_plugin", g_strjoinv (" ", (gchar **)disable_plugin->pdata));
     }
     g_ptr_array_free (disable_plugin, TRUE);
