@@ -86,7 +86,7 @@ gboolean parse_metadata(Task *task, GError **error) {
                                                       "entry_point",
                                                       task->recipe->osmajor,
                                                       &tmp_error);
-    if (tmp_error != NULL) {
+    if (tmp_error && tmp_error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND) {
         g_propagate_error(error, tmp_error);
         goto error;
     }
@@ -103,10 +103,11 @@ gboolean parse_metadata(Task *task, GError **error) {
                                                     "max_time",
                                                     task->recipe->osmajor,
                                                     &tmp_error);
-    if (tmp_error != NULL) {
+    if (tmp_error && tmp_error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND) {
         g_propagate_error(error, tmp_error);
         goto error;
     }
+    g_clear_error (&tmp_error);
     if (max_time != NULL) {
         guint64 time = parse_time_string(max_time, &tmp_error);
         g_free(max_time);
@@ -125,11 +126,12 @@ gboolean parse_metadata(Task *task, GError **error) {
                                                      task->recipe->osmajor,
                                                      &length,
                                                      &tmp_error);
-    if (tmp_error != NULL) {
+    if (tmp_error && tmp_error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND) {
         g_propagate_error(error, tmp_error);
         g_strfreev(dependencies);
         goto error;
     }
+    g_clear_error (&tmp_error);
     for (gsize i=0; i < length; i++) {
         task->dependencies = g_list_prepend(task->dependencies,
                                             g_strdup(g_strstrip(dependencies[i])));

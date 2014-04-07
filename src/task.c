@@ -295,7 +295,15 @@ task_run (AppData *app_data, GError **error)
     return TRUE;
 }
 
-static gboolean build_env(Task *task, GError **error) {
+static void
+array_add (GPtrArray *array, const gchar *prefix, const gchar *variable, const gchar *value)
+{
+    if (value) {
+        g_ptr_array_add (array, g_strdup_printf ("%s%s=%s", prefix, variable, value));
+    }
+}
+
+static void build_env(Task *task) {
     //GPtrArray *env = g_ptr_array_new();
     GPtrArray *env = g_ptr_array_new_with_free_func (g_free);
     gchar *prefix = "";
@@ -303,26 +311,26 @@ static gboolean build_env(Task *task, GError **error) {
         prefix = ENV_PREFIX;
         g_ptr_array_add(env, g_strdup_printf("HARNESS_PREFIX=%s", ENV_PREFIX));
     } else {
-        g_ptr_array_add(env, g_strdup_printf("DISTRO=%s", task->recipe->osdistro));
-        g_ptr_array_add(env, g_strdup_printf("VARIANT=%s", task->recipe->osvariant ));
-        g_ptr_array_add(env, g_strdup_printf("FAMILY=%s", task->recipe->osmajor));
-        g_ptr_array_add(env, g_strdup_printf("ARCH=%s", task->recipe->osarch));
-        g_ptr_array_add(env, g_strdup_printf("TESTNAME=%s", task->name));
-        g_ptr_array_add(env, g_strdup_printf("TESTPATH=%s", task->path));
-        g_ptr_array_add(env, g_strdup_printf("TESTID=%s", task->task_id));
+        array_add (env, NULL, "DISTRO", task->recipe->osdistro);
+        array_add (env, NULL, "VARIANT", task->recipe->osvariant);
+        array_add (env, NULL, "FAMILY", task->recipe->osmajor);
+        array_add (env, NULL, "ARCH", task->recipe->osarch);
+        array_add (env, NULL, "TESTNAME", task->name);
+        array_add (env, NULL, "TESTPATH", task->path);
+        array_add (env, NULL, "TESTID", task->task_id);
     }
     g_list_foreach(task->recipe->roles, (GFunc) build_param_var, env);
     g_list_foreach(task->roles, (GFunc) build_param_var, env);
-    g_ptr_array_add(env, g_strdup_printf("%sJOBID=%s", prefix, task->recipe->job_id));
-    g_ptr_array_add(env, g_strdup_printf("%sRECIPESETID=%s", prefix, task->recipe->recipe_set_id));
-    g_ptr_array_add(env, g_strdup_printf("%sRECIPEID=%s", prefix, task->recipe->recipe_id));
-    g_ptr_array_add(env, g_strdup_printf("%sTASKID=%s", prefix, task->task_id));
-    g_ptr_array_add(env, g_strdup_printf("%sOSDISTRO=%s", prefix, task->recipe->osdistro));
-    g_ptr_array_add(env, g_strdup_printf("%sOSMAJOR=%s", prefix, task->recipe->osmajor));
-    g_ptr_array_add(env, g_strdup_printf("%sOSVARIANT=%s", prefix, task->recipe->osvariant ));
-    g_ptr_array_add(env, g_strdup_printf("%sOSARCH=%s", prefix, task->recipe->osarch));
-    g_ptr_array_add(env, g_strdup_printf("%sTASKPATH=%s", prefix, task->path));
-    g_ptr_array_add(env, g_strdup_printf("%sTASKNAME=%s", prefix, task->name));
+    array_add (env, prefix, "JOBID", task->recipe->job_id);
+    array_add (env, prefix, "RECIPESETID", task->recipe->recipe_set_id);
+    array_add (env, prefix, "RECIPEID", task->recipe->recipe_id);
+    array_add (env, prefix, "TASKID", task->task_id);
+    array_add (env, prefix, "OSDISTRO", task->recipe->osdistro);
+    array_add (env, prefix, "OSMAJOR", task->recipe->osmajor);
+    array_add (env, prefix, "OSVARIANT", task->recipe->osvariant);
+    array_add (env, prefix, "OSARCH", task->recipe->osarch);
+    array_add (env, prefix, "TASKNAME", task->name);
+    array_add (env, prefix, "TASKPATH", task->path);
     g_ptr_array_add(env, g_strdup_printf("%sMAXTIME=%" PRIu64, prefix, task->max_time));
     g_ptr_array_add(env, g_strdup_printf("%sREBOOTCOUNT=%" PRIu64, prefix, task->reboots));
     g_ptr_array_add(env, g_strdup_printf("%sLAB_CONTROLLER=", prefix));
@@ -332,8 +340,10 @@ static gboolean build_env(Task *task, GError **error) {
     g_ptr_array_add(env, g_strdup_printf("TERM=vt100"));
     g_ptr_array_add(env, g_strdup_printf("LANG=en_US.UTF-8"));
     g_ptr_array_add(env, g_strdup_printf("PATH=/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin"));
-//    g_ptr_array_add(env, g_strdup_printf ("%sGUESTS=%s", prefix, task->recipe->guests));
+
+    // Override with recipe level params
     g_list_foreach(task->recipe->params, (GFunc) build_param_var, env);
+    // Override with task level params
     g_list_foreach(task->params, (GFunc) build_param_var, env);
     // Leave four NULL slots for PLUGIN varaibles.
     g_ptr_array_add(env, NULL);
@@ -342,10 +352,7 @@ static gboolean build_env(Task *task, GError **error) {
     g_ptr_array_add(env, NULL);
     // This terminates the array
     g_ptr_array_add(env, NULL);
-    //task->env = (gchar **) env->pdata;
     task->env = env;
-    //g_ptr_array_free (env, FALSE);
-    return TRUE;
 }
 
 static void
@@ -566,10 +573,8 @@ task_handler (gpointer user_data)
       // If not running in rhts_compat mode it will prepend
       // the variables with ENV_PREFIX.
       g_string_printf(message, "** Updating env vars\n");
-      if (build_env(task, &task->error))
-        task->state = TASK_WATCHDOG;
-      else
-        task->state = TASK_COMPLETE;
+      build_env(task);
+      task->state = TASK_WATCHDOG;
       break;
     case TASK_WATCHDOG:
       // Setup external watchdog
