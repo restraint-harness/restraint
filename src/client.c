@@ -1,5 +1,6 @@
 #define _POSIX_C_SOURCE 200809L
 #define _BSD_SOURCE
+
 #include <glib.h>
 #include <glib/gstdio.h>
 #include <gio/gio.h>
@@ -18,6 +19,7 @@
 #include "client.h"
 
 static SoupSession *session;
+gchar buf[1024];
 
 // Select first recipe #FIXME - would be nice to support guest recipes too!
 xmlChar *task_xpath = (xmlChar *) "/job/recipeSet/recipe[1]/task";
@@ -369,7 +371,7 @@ task_callback (SoupServer *server, SoupMessage *remote_msg,
         if (log_level_char) {
             gint log_level = g_ascii_strtoll (log_level_char, NULL, 0);
             if (app_data->verbose >= log_level) {
-                write (1, body->data, body->length);
+                write (STDOUT_FILENO, body->data, body->length);
             }
         }
         g_free (short_path);
@@ -545,33 +547,77 @@ find_next_dir (gchar *basename, gint *recipe_id)
 }
 
 static void
-run_recipe_finish (SoupSession *session, SoupMessage *remote_msg, gpointer user_data)
+recipe_read_closed (GObject *source, GAsyncResult *res, gpointer user_data)
 {
     AppData *app_data = (AppData *) user_data;
-    SoupServer *server;
+    GInputStream *stream = G_INPUT_STREAM (source);
+    GError *error = NULL;
 
-    if (!SOUP_STATUS_IS_SUCCESSFUL(remote_msg->status_code)) {
-        g_printerr ("%s\n", remote_msg->reason_phrase);
+    g_print ("%s", app_data->body->str);
+    if (g_strrstr (app_data->body->str, "* WARNING **:") != 0) {
         g_main_loop_quit (app_data->loop);
-    } else {
-        // Run a REST Server to gather results
-        server = soup_server_new (SOUP_SERVER_PORT, SERVER_PORT,
-                                  NULL);
-        if (!server) {
-            g_printerr ("Unable to bind to server port %d\n", SERVER_PORT);
-            exit (1);
-        }
-
-        gchar *recipe_path = g_strdup_printf ("/recipes/%d", app_data->recipe_id);
-        soup_server_add_handler (server, recipe_path,
-                                 recipe_callback, app_data, NULL);
-        g_free (recipe_path);
-        gchar *task_path = g_strdup_printf ("/recipes/%d/tasks", app_data->recipe_id);
-        soup_server_add_handler (server, task_path,
-                                 task_callback, app_data, NULL);
-        g_free (task_path);
-        soup_server_run_async (server);
     }
+    
+    g_string_free (app_data->body, TRUE);
+    g_input_stream_close_finish (stream, res, &error);
+    g_object_unref (stream);
+}
+
+static void
+recipe_read_data (GObject *source, GAsyncResult *res, gpointer user_data)
+{
+    AppData *app_data = (AppData *) user_data;
+    GInputStream *stream = G_INPUT_STREAM (source);
+    GError *error = NULL;
+    gsize nread;
+    GString *body = app_data->body;
+
+    nread = g_input_stream_read_finish (stream, res, &error);
+    if (nread == -1) {
+        g_printerr ("%s\n", error->message);
+        g_clear_error (&error);
+        g_input_stream_close (stream, NULL, NULL);
+        g_object_unref (stream);
+        g_main_loop_quit (app_data->loop);
+        return;
+    } else if (nread == 0) {
+        g_input_stream_close_async (stream,
+                                    G_PRIORITY_DEFAULT, NULL,
+                                    recipe_read_closed, app_data);
+        return;
+    }
+
+    g_string_append_len (body, buf, nread);
+    g_input_stream_read_async (stream, buf, sizeof (buf),
+                              G_PRIORITY_DEFAULT, NULL,
+                              recipe_read_data, app_data);
+}
+
+static void
+run_recipe_sent (GObject *source, GAsyncResult *res, gpointer user_data)
+{
+    AppData *app_data = (AppData *) user_data;
+    SoupRequest *request = SOUP_REQUEST (source);
+    GInputStream *stream;
+    GError *error = NULL;
+
+    SoupMessage *remote_msg = soup_request_http_get_message (SOUP_REQUEST_HTTP (request));
+    if (!SOUP_STATUS_IS_SUCCESSFUL (remote_msg->status_code)) {
+        g_printerr ("* WARNING **: %s\n", remote_msg->reason_phrase);
+        g_main_loop_quit (app_data->loop);
+        return;
+    }
+
+    stream = soup_request_send_finish (request, res, &error);
+    if (!stream) {
+        g_printerr ("* WARNING **: %s\n", error->message);
+        g_clear_error (&error);
+        g_main_loop_quit (app_data->loop);
+        return;
+    }
+    g_input_stream_read_async (stream, buf, sizeof (buf),
+                               G_PRIORITY_DEFAULT, NULL,
+                               recipe_read_data, app_data);
 }
 
 static gboolean
@@ -581,17 +627,22 @@ run_recipe_handler (gpointer user_data)
     GHashTable *data_table = NULL;
     gchar *form_data;
     // Tell restraintd to run our recipe
-    SoupURI *control_uri = soup_uri_new_with_base (app_data->remote_uri, "control");
-    SoupMessage *remote_msg = soup_message_new_from_uri ("POST", control_uri);
-    soup_uri_free (control_uri);
+    SoupRequest *request;
+    SoupURI *uri = soup_uri_new_with_base (app_data->remote_uri, "control");
+
+    request = (SoupRequest *)soup_session_request_http_uri (session, "POST", uri, NULL);
+    app_data->remote_msg = soup_request_http_get_message (SOUP_REQUEST_HTTP (request));
+
+    soup_uri_free (uri);
 
     data_table = g_hash_table_new (NULL, NULL);
     gchar *recipe_url = g_strdup_printf ("http://%s:%d/recipes/%d/", app_data->address, SERVER_PORT, app_data->recipe_id);
     g_hash_table_insert (data_table, "recipe", recipe_url);
     form_data = soup_form_encode_hash (data_table);
-    soup_message_set_request (remote_msg, "application/x-www-form-urlencoded",
+    soup_message_set_request (app_data->remote_msg, "application/x-www-form-urlencoded",
                               SOUP_MEMORY_TAKE, form_data, strlen (form_data));
-    soup_session_queue_message (session, remote_msg, run_recipe_finish, app_data);
+
+    soup_request_send_async (request, NULL, run_recipe_sent, app_data);
     return FALSE;
 }
 
@@ -721,11 +772,14 @@ callback_parse_verbose (const gchar *option_name, const gchar *value,
 
 int main(int argc, char *argv[]) {
 
+    SoupServer *server;
+
     gchar *remote = "http://localhost:8081"; // Replace with a unix socket proxy so no network is required
                                              // when run from localhost.
     gchar *job = NULL;
 
     AppData *app_data = g_slice_new0 (AppData);
+    app_data->body = g_string_new (NULL);
 
     init_result_hash (app_data);
 
@@ -772,6 +826,12 @@ int main(int argc, char *argv[]) {
     // Read in run_dir/job.xml
     parse_new_job (app_data);
 
+    // If all tasks are finished then quit.
+    if (tasks_finished (app_data->tasks)) {
+        g_printerr ("All tasks are finished\n");
+        goto cleanup;
+    }
+
     // ask restraintd what ip address we connected with.
     SoupURI *control_uri = soup_uri_new_with_base (app_data->remote_uri, "address");
     SoupMessage *address_msg = soup_message_new_from_uri("GET", control_uri);
@@ -783,6 +843,24 @@ int main(int argc, char *argv[]) {
     }
     app_data->address = g_strdup(soup_message_headers_get_one (address_msg->response_headers, "Address"));
     g_object_unref (address_msg);
+
+    // Run a REST Server to gather results
+    server = soup_server_new (SOUP_SERVER_PORT, SERVER_PORT,
+                              NULL);
+    if (!server) {
+        g_printerr ("Unable to bind to server port %d\n", SERVER_PORT);
+        exit (1);
+    }
+
+    gchar *recipe_path = g_strdup_printf ("/recipes/%d", app_data->recipe_id);
+    soup_server_add_handler (server, recipe_path,
+                             recipe_callback, app_data, NULL);
+    g_free (recipe_path);
+    gchar *task_path = g_strdup_printf ("/recipes/%d/tasks", app_data->recipe_id);
+    soup_server_add_handler (server, task_path,
+                             task_callback, app_data, NULL);
+    g_free (task_path);
+    soup_server_run_async (server);
 
     // Request to run the recipe.
     g_idle_add_full (G_PRIORITY_LOW,

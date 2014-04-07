@@ -14,6 +14,8 @@ typedef struct {
   Recipe *recipe;
   GList *tasks;
   GError *error;
+  SoupServer *soup_server;
+  SoupMessage *client_msg;
 } AppData;
 
 typedef struct {

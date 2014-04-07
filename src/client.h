@@ -14,4 +14,6 @@ typedef struct {
     SoupURI *remote_uri;
     gint recipe_id;
     gint verbose;
+    GString *body;
+    SoupMessage *remote_msg;
 } AppData;

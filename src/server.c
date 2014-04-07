@@ -115,6 +115,17 @@ server_io_callback (GIOChannel *io, GIOCondition condition, gpointer user_data) 
 
     return FALSE;
 }
+static void
+client_finish (gpointer user_data)
+{
+    AppData *app_data = (AppData *) user_data;
+
+    if (app_data->client_msg) {
+        soup_message_body_complete (app_data->client_msg->response_body);
+        soup_server_unpause_message (app_data->soup_server, app_data->client_msg);
+        app_data->client_msg = NULL;
+    }
+}
 
 static gboolean
 handle_recipe_request (gchar *recipe_url, AppData *app_data, GError **error)
@@ -122,11 +133,10 @@ handle_recipe_request (gchar *recipe_url, AppData *app_data, GError **error)
   if (app_data->state == RECIPE_IDLE) {
     app_data->recipe_url = recipe_url;
     app_data->state = RECIPE_FETCH;
-    app_data->recipe_handler_id = g_timeout_add_seconds_full(G_PRIORITY_DEFAULT_IDLE,
-                                                             5,
-                                                             recipe_handler,
-                                                             app_data,
-                                                             NULL);
+    app_data->recipe_handler_id = g_idle_add_full(G_PRIORITY_DEFAULT_IDLE,
+                                                  recipe_handler,
+                                                  app_data,
+                                                  client_finish);
   } else {
     g_set_error(error, RESTRAINT_TASK_RUNNER_ERROR,
                 RESTRAINT_TASK_RUNNER_ALREADY_RUNNING_ERROR,
@@ -315,6 +325,7 @@ server_control_callback (SoupServer *server, SoupMessage *client_msg,
 
   // Only accept POST requests for running recipes
   if (client_msg->method != SOUP_METHOD_POST ) {
+    soup_message_set_status_full (client_msg, SOUP_STATUS_BAD_REQUEST, "only POST accepted");
     return;
   }
 
@@ -324,19 +335,31 @@ server_control_callback (SoupServer *server, SoupMessage *client_msg,
 
   // Attempt to run a recipe if requested. 
   // if the same url is requested we ignore it and continue running.
-  if (recipe_url && g_strcmp0 (recipe_url, app_data->recipe_url) != 0) {
-    if (!handle_recipe_request (recipe_url, app_data, &error)) {
-      g_warning(error->message);
-      soup_message_set_status_full (client_msg, SOUP_STATUS_BAD_REQUEST, error->message);
-      g_error_free (error);
+  if (recipe_url) {
+    if (g_strcmp0 (recipe_url, app_data->recipe_url) == 0) {
+      gchar *message = "* Continuing recipe\n";
+      soup_message_body_append (client_msg->response_body, SOUP_MEMORY_COPY,
+                                message, strlen(message));
+      soup_message_set_status (client_msg, SOUP_STATUS_OK);
       return;
+    } else {
+      app_data->soup_server = server;
+      app_data->client_msg = client_msg;
+
+      if (!handle_recipe_request (recipe_url, app_data, &error)) {
+        g_warning(error->message);
+        soup_message_set_status_full (client_msg, SOUP_STATUS_BAD_REQUEST, error->message);
+        g_error_free (error);
+        return;
+      }
     }
-  } else if (app_data->state == RECIPE_IDLE) {
-      soup_message_set_status_full (client_msg, SOUP_STATUS_BAD_REQUEST, "No Recipe Running");
+  } else {
+      soup_message_set_status_full (client_msg, SOUP_STATUS_BAD_REQUEST, "Unrecognized Command");
       return;
   }
-
-  soup_message_set_status (client_msg, SOUP_STATUS_NO_CONTENT);
+  soup_message_headers_set_encoding (client_msg->response_headers,
+                                     SOUP_ENCODING_CHUNKED);
+  soup_message_set_status (client_msg, SOUP_STATUS_OK);
 }
 
 int main(int argc, char *argv[]) {

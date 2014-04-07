@@ -447,7 +447,6 @@ read_finish (GObject *source, GAsyncResult *result, gpointer user_data)
             g_set_error_literal(&app_data->error, RESTRAINT_RECIPE_PARSE_ERROR,
                     RESTRAINT_RECIPE_PARSE_ERROR_BAD_SYNTAX,
                     xmlerr != NULL ? xmlerr->message : "Unknown libxml error");
-            xmlFreeDoc(ctxt->myDoc);
             xmlFreeParserCtxt(ctxt);
             ctxt = NULL;
             /* Set us back to idle so we can accept a valid recipe */
@@ -567,14 +566,18 @@ recipe_handler (gpointer user_data)
             break;
         case RECIPE_COMPLETE:
             if (app_data->error) {
-                g_string_printf(message, "* %s\n", app_data->error->message);
+                g_string_printf(message, "* WARNING **:%s\n", app_data->error->message);
                 g_error_free(app_data->error);
                 app_data->error = NULL;
-            } 
+            } else {
+                g_string_printf(message, "* Finished recipe\n");
+            }
             // free current recipe
             if (app_data->recipe) {
               restraint_recipe_free(app_data->recipe);
               app_data->recipe = NULL;
+              g_free (app_data->recipe_url);
+              app_data->recipe_url = NULL;
             }
 
             restraint_set_running_config ("recipe_url", NULL, NULL);
@@ -589,6 +592,13 @@ recipe_handler (gpointer user_data)
     // write message out to stderr
     if (message->len) {
       write (STDERR_FILENO, message->str, message->len);
+      if (app_data->client_msg) {
+          // Append message to client_msg->body
+          soup_message_body_append (app_data->client_msg->response_body,
+                                    SOUP_MEMORY_COPY,
+                                    message->str,
+                                    message->len);
+      }
       g_string_free(message, TRUE);
     }
 
