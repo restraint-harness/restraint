@@ -7,7 +7,7 @@
 %endif
 
 Name:		restraint
-Version:	0.1.11
+Version:	0.1.12
 Release:	1%{?dist}
 Summary:	Simple test harness which can be used with beaker
 
@@ -223,6 +223,13 @@ fi
 %{__rm} -rf %{buildroot}
 
 %changelog
+* Wed Apr 09 2014 Bill Peck <bpeck@redhat.com> 0.1.12-1
+- error checking on client to make sure we can make the run dir.
+  (bpeck@redhat.com)
+- Better client feedback (bpeck@redhat.com)
+- Don't create variables if value is NULL fix metadata parser to use defaults
+  if key is missing. (bpeck@redhat.com)
+
 * Thu Apr 03 2014 Bill Peck <bpeck@redhat.com> 0.1.11-1
 - only pass disable_plugin if plugins have been disabled (bpeck@redhat.com)
 - add dummy rhts-lint to allow us to make testinfo.desc (bpeck@redhat.com)
