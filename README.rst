@@ -107,6 +107,9 @@ need to be accessible as well. Here is the output::
 
  restraint --remote http://addressOfRemoteSystem:8081/ --job simple_job.xml -v
  Using ./simple_job.07 for job run
+ * Fetching recipe: http://192.168.1.198:8000/recipes/07/
+ * Parsing recipe
+ * Running recipe
  *  T:   1 [/kernel/performance/fs_mark                     ] Running
  **      1 [Default                                         ] PASS
  **      2 [Random                                          ] PASS
