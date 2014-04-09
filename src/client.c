@@ -6,6 +6,7 @@
 #include <gio/gio.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <errno.h>
 #include <string.h>
 #include <libsoup/soup.h>
 #include <libxml/parser.h>
@@ -542,7 +543,11 @@ find_next_dir (gchar *basename, gint *recipe_id)
         g_free (file);
         file = g_strdup_printf ("./%s.%02d", basename, *recipe_id);
     }
-    g_mkdir_with_parents (file, 0755 /* drwxr-xr-x */);
+    gint ret = g_mkdir_with_parents (file, 0755 /* drwxr-xr-x */);
+    if (ret != 0) {
+        g_warning ("Failed to make directory %s: %s", file, g_strerror (errno));
+        exit (1);
+    }
     return file;
 }
 
