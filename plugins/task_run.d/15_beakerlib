@@ -1,0 +1,9 @@
+#!/bin/bash
+
+#
+# Tell beakerlib what command to use to report results
+#
+export BEAKERLIB_COMMAND_REPORT_RESULT=/usr/bin/rstrnt-report-result
+export BEAKERLIB_COMMAND_SUBMIT_LOG=/usr/bin/rstrnt-report-log
+
+exec "$@"
