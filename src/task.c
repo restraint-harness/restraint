@@ -299,7 +299,11 @@ static void
 array_add (GPtrArray *array, const gchar *prefix, const gchar *variable, const gchar *value)
 {
     if (value) {
-        g_ptr_array_add (array, g_strdup_printf ("%s%s=%s", prefix, variable, value));
+        if (prefix) {
+            g_ptr_array_add (array, g_strdup_printf ("%s%s=%s", prefix, variable, value));
+        } else {
+            g_ptr_array_add (array, g_strdup_printf ("%s=%s", variable, value));
+        }
     }
 }
 
