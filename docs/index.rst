@@ -6,12 +6,32 @@
 Welcome to restraint's documentation!
 =====================================
 
+Restraint is designed to execute tasks.  These tasks can be tests which
+report results or simply code that you want to automate.
+Which tasks to execute is determined by a job.  The job also describes
+where to retrieve the tasks from and what parameters to pass in.  These 
+tasks can report multiple PASS, FAIL, WARN results along with an optional
+score.  Tasks also have the ability to report log files.  Each task can
+have metadata describing dependencies and max run time for example.
+Execution and reporting can be further enhanced with plugins.
+
+Restraint can be used with Beaker since it talks beaker's Harness API for
+reporting results.  But it can also be used stand alone.
+
+The following documentation will show you how to use restraint in both environments.
+
 Contents:
 
 .. toctree::
    :maxdepth: 2
 
+   daemon
+   commands
+   jobs
+   tasks
+   variables
    plugins
+   todo
 
 Indices and tables
 ==================

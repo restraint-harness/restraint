@@ -1,5 +1,5 @@
 Plugins
--------
+=======
 
 restraint relies on plugins to execute tasks in the correct environment and to check for common errors or simply
 to provide additional logs for debugging issues.  Here is a typical outline of how plugins are executed::
@@ -44,7 +44,7 @@ This allows for greater flexibility if your task is running as a non-root user s
 user would not be able to inspect some logs and wouldn't be able to clear dmesg log.
 
 Task Run
-========
+--------
 
 Task run plugins are used to modify the environment under which the tasks will execute.
 Simply place the executable in /usr/share/restraint/task_run.d.  The list of files in this directory 
@@ -84,7 +84,7 @@ You can do conditionals based on this so lets create a plugin which will start a
  chmod a+x /usr/share/restraint/plugins/task_run.d/30_tcpdump
 
 Report Result
-=============
+-------------
 
 Every time a task reports a result to restraint these plugins will execute.  Currently restraint only
 ships with one plugin::
@@ -103,7 +103,7 @@ This is an effort to reduce false positives.  Both of the above strings can be o
 task by passing in your own FAILURESTRINGS or FALSESTRINGS variables.
 
 Local Watchdog
-==============
+--------------
 
 These plugins will only be executed if the task runs beyond its expected time limit.  Restraint currently
 ships with two plugins:
@@ -112,7 +112,7 @@ ships with two plugins:
 * 99_reboot - Simply reboots the system to try and get the system back to a sane state.
 
 Completed
-=========
+---------
 
 These plugins will get executed at the end of every task, regardless if the localwatchdog triggered or not.
 The only plugin currently shipped with restraint is:
