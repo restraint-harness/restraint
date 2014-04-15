@@ -51,12 +51,6 @@ true then it's the same as the above --disable 10_avc_check argument.
 * rstrnt-backup - helper to backup a config file
 * rstrnt-restore - helper to restore a previously backed up file
 * check_beaker - run from init/systemd, will run a beaker job
-
-If you have the restraint-rhts subpackage installed these commands are provided in order to support legacy tests written for RHTS
-
-* rhts-reboot - Use rstrnt-reboot instead
-* rhts-backup - Use rstrnt-backup instead
-* rhts-restore - Use rstrnt-restore instead
 * job2html.xml - an xslt template to convert the stand alone job.xml results into a html doc.
 
 Here is an example to convert a job run xml into an html doc.  This html doc can 
@@ -65,3 +59,12 @@ be easily navigated with a browser to investigate results and logs.
 ::
 
  xsltproc job2html.xml simple_job.07/job.xml > simple_job.07/index.html
+
+If you have the restraint-rhts subpackage installed these commands are provided in order to support legacy tests written for RHTS
+
+* rhts-reboot - Use rstrnt-reboot instead
+* rhts-backup - Use rstrnt-backup instead
+* rhts-restore - Use rstrnt-restore instead
+* rhts-environment.sh - deprecated
+* rhts-lint - deprecated - only provided so that testinfo.desc can be generated
+* rhts-run-simple-test - deprecated
