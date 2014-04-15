@@ -310,11 +310,16 @@ array_add (GPtrArray *array, const gchar *prefix, const gchar *variable, const g
 static void build_env(Task *task) {
     //GPtrArray *env = g_ptr_array_new();
     GPtrArray *env = g_ptr_array_new_with_free_func (g_free);
-    gchar *prefix = "";
-    if (task->rhts_compat == FALSE) {
-        prefix = ENV_PREFIX;
-        g_ptr_array_add(env, g_strdup_printf("HARNESS_PREFIX=%s", ENV_PREFIX));
-    } else {
+
+    g_list_foreach(task->recipe->roles, (GFunc) build_param_var, env);
+    g_list_foreach(task->roles, (GFunc) build_param_var, env);
+
+    gchar *prefix = ENV_PREFIX;
+    if (task->rhts_compat == TRUE) {
+        array_add (env, NULL, "JOBID", task->recipe->job_id);
+        array_add (env, NULL, "RECIPESETID", task->recipe->recipe_set_id);
+        array_add (env, NULL, "RECIPEID", task->recipe->recipe_id);
+        array_add (env, NULL, "TASKID", task->task_id);
         array_add (env, NULL, "DISTRO", task->recipe->osdistro);
         array_add (env, NULL, "VARIANT", task->recipe->osvariant);
         array_add (env, NULL, "FAMILY", task->recipe->osmajor);
@@ -322,9 +327,11 @@ static void build_env(Task *task) {
         array_add (env, NULL, "TESTNAME", task->name);
         array_add (env, NULL, "TESTPATH", task->path);
         array_add (env, NULL, "TESTID", task->task_id);
+        g_ptr_array_add(env, g_strdup_printf("MAXTIME=%" PRIu64, task->max_time));
+        g_ptr_array_add(env, g_strdup_printf("REBOOTCOUNT=%" PRIu64, task->reboots));
+        g_ptr_array_add(env, g_strdup_printf("TASKORDER=%d", task->order));
     }
-    g_list_foreach(task->recipe->roles, (GFunc) build_param_var, env);
-    g_list_foreach(task->roles, (GFunc) build_param_var, env);
+    g_ptr_array_add(env, g_strdup_printf("HARNESS_PREFIX=%s", ENV_PREFIX));
     array_add (env, prefix, "JOBID", task->recipe->job_id);
     array_add (env, prefix, "RECIPESETID", task->recipe->recipe_set_id);
     array_add (env, prefix, "RECIPEID", task->recipe->recipe_id);
@@ -337,7 +344,7 @@ static void build_env(Task *task) {
     array_add (env, prefix, "TASKPATH", task->path);
     g_ptr_array_add(env, g_strdup_printf("%sMAXTIME=%" PRIu64, prefix, task->max_time));
     g_ptr_array_add(env, g_strdup_printf("%sREBOOTCOUNT=%" PRIu64, prefix, task->reboots));
-    g_ptr_array_add(env, g_strdup_printf("%sLAB_CONTROLLER=", prefix));
+    //g_ptr_array_add(env, g_strdup_printf("%sLAB_CONTROLLER=", prefix));
     g_ptr_array_add(env, g_strdup_printf("%sTASKORDER=%d", prefix, task->order));
     // HOME, LANG and TERM can be overriden by user by passing it as recipe or task params.
     g_ptr_array_add(env, g_strdup_printf("HOME=/root"));
