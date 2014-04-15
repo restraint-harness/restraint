@@ -132,7 +132,7 @@ fi
 popd
 %endif
 
-%post rhts
+%post
 if [ "$1" -le "1" ] ; then # First install
 %if %{with_systemd}
 %systemd_post restraintd
@@ -141,30 +141,36 @@ if [ "$1" -le "1" ] ; then # First install
 %else
 chkconfig --level 345 restraintd on
 %endif
+
+%post rhts
 %if 0%{?rhel}%{?fedora} > 4
 semodule -i %{_datadir}/selinux/packages/%{name}/rhts.pp || :
 %endif
 fi
 
-%preun rhts
+%preun
 if [ "$1" -lt "1" ] ; then # Final removal
 %if %{with_systemd}
 %systemd_preun %{_services}
 %else
 chkconfig --del restraintd || :
 %endif
+
+%preun rhts
 %if 0%{?rhel}%{?fedora} > 4
 semodule -r rhts || :
 %endif
 fi
 
-%postun rhts
+%postun
 if [ "$1" -ge "1" ] ; then # Upgrade
 %if %{with_systemd}
 %systemd_postun_with_restart %{_services_restart}
 %else
 service restraintd condrestart >/dev/null 2>&1 || :
 %endif
+
+%postun rhts
 %if 0%{?rhel}%{?fedora} > 4
 semodule -i %{_datadir}/selinux/packages/%{name}/rhts.pp || :
 %endif
