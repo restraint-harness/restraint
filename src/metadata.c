@@ -20,7 +20,9 @@ GQuark restraint_metadata_parse_error_quark(void) {
         error_code, \
         message, ##__VA_ARGS__)
 
-static guint64 parse_time_string(gchar *time_string, GError **error) {
+guint64
+parse_time_string(gchar *time_string, GError **error)
+{
     /* Convert time string to number of seconds.
      *     5d -> 432000
      *     3m -> 180

@@ -95,4 +95,8 @@ from our example would create an environment variable name foo with the value ba
   <param name="foo" value="bar"/>
  </params>
 
+The parameter RSTRNT_MAX_TIME allows you to specify a different max time than what
+is specified in the tasks metadata.  Setting KILLTIMEOVERRIDE also has the same
+affect and is provided for compatibility with legacy RHTS.
+
 .. [#] `Beaker Job XML <http://beaker-project.org/docs/user-guide/job-xml.html>`_.

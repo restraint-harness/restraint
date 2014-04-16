@@ -591,7 +591,6 @@ task_handler (gpointer user_data)
       // Setup external watchdog
       if (!task->started) {
           g_string_printf(message, "** Updating watchdog\n");
-          // FIXME If KILLTIMEOVERRIDE is defined use that instead of max_time.
           restraint_task_watchdog (task, app_data, task->max_time);
           result=FALSE;
       }

@@ -16,3 +16,4 @@ void restraint_parse_run_metadata (Task *task, GError **error);
 void restraint_set_run_metadata (Task *task, gchar *key, GError **error, GType type, ...);
 void restraint_set_running_config (gchar *key, gchar *value, GError **error);
 gchar * restraint_get_running_config (gchar *key, GError **error);
+guint64 parse_time_string(gchar *time_string, GError **error);
