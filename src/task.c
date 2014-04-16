@@ -423,7 +423,7 @@ restraint_task_watchdog (Task *task, AppData *app_data, guint seconds)
     g_return_if_fail(server_msg != NULL);
 
     // Add EWD_TIME to seconds and use that for the external watchdog.
-    seconds_char = g_strdup_printf("%d", seconds + EWD_TIME);
+    seconds_char = g_strdup_printf("%d", seconds);
     data = soup_form_encode("seconds", seconds_char, NULL);
 
     soup_message_set_request(server_msg, "application/x-www-form-urlencoded",
@@ -590,8 +590,8 @@ task_handler (gpointer user_data)
     case TASK_WATCHDOG:
       // Setup external watchdog
       if (!task->started) {
-          g_string_printf(message, "** Updating watchdog\n");
-          restraint_task_watchdog (task, app_data, task->max_time);
+          g_string_printf(message, "** Updating external watchdog: %d seconds\n", task->max_time + EWD_TIME);
+          restraint_task_watchdog (task, app_data, task->max_time + EWD_TIME);
           result=FALSE;
       }
       task->state = TASK_DEPENDENCIES;
