@@ -590,7 +590,7 @@ task_handler (gpointer user_data)
     case TASK_WATCHDOG:
       // Setup external watchdog
       if (!task->started) {
-          g_string_printf(message, "** Updating external watchdog: %" PRIu64 "seconds\n", task->max_time + EWD_TIME);
+          g_string_printf(message, "** Updating external watchdog: %" PRIu64 " seconds\n", task->max_time + EWD_TIME);
           restraint_task_watchdog (task, app_data, task->max_time + EWD_TIME);
           result=FALSE;
       }
