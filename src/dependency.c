@@ -17,6 +17,9 @@ dependency_callback (gint pid_result, gboolean localwatchdog, gpointer user_data
         // failed to install or remove a package, report fail and abort task
         g_slice_free (DependencyData, dependency_data);
         task->state = TASK_COMPLETE;
+        g_set_error (&task->error, RESTRAINT_TASK_RUNNER_ERROR,
+                     RESTRAINT_TASK_RUNNER_RC_ERROR,
+                     "Command returned non-zero %i", pid_result);
         app_data->task_handler_id = g_idle_add_full(G_PRIORITY_DEFAULT_IDLE,
                                                     task_handler,
                                                     app_data,

@@ -220,6 +220,9 @@ task_handler_callback (gint pid_result, gboolean localwatchdog, gpointer user_da
         task->state = task_run_data->pass_state;
     } else {
         task->state = task_run_data->fail_state;
+        g_set_error (&task->error, RESTRAINT_TASK_RUNNER_ERROR,
+                    RESTRAINT_TASK_RUNNER_RC_ERROR,
+                    "Command returned non-zero %i", pid_result);
     }
 
     app_data->task_handler_id = g_idle_add_full(G_PRIORITY_DEFAULT_IDLE,
