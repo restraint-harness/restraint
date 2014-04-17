@@ -7,7 +7,7 @@
 %endif
 
 Name:		restraint
-Version:	0.1.12
+Version:	0.1.13
 Release:	1%{?dist}
 Summary:	Simple test harness which can be used with beaker
 
@@ -235,6 +235,23 @@ fi
 %{__rm} -rf %{buildroot}
 
 %changelog
+* Thu Apr 17 2014 Bill Peck <bpeck@redhat.com> 0.1.13-1
+- cosmetic change (bpeck@redhat.com)
+- Fix guint64 mistake (bpeck@redhat.com)
+- report the number seconds we are pushing the watchdog out.  Should help with
+  debugging. (bpeck@redhat.com)
+- Support added to allow tasks to use an alternate max time via task params.
+  looks for both KILLTIMEOVERRIDE and RSTRNT_MAX_TIME (bpeck@redhat.com)
+- fixes to %%post scripts (bpeck@redhat.com)
+- Minor updates to doc. (bpeck@redhat.com)
+- Always populate the RSTRNT_* variables to make it easier to migrate.
+  (bpeck@redhat.com)
+- Fix %%post scripts to start restraintd (bpeck@redhat.com)
+- Updates to the documentation (bpeck@redhat.com)
+- Add beakerlib reporting support (bpeck@redhat.com)
+- Fix env variable generation when prefix is NULL. (bpeck@redhat.com)
+- Minor update to expected output (bpeck@redhat.com)
+
 * Wed Apr 09 2014 Bill Peck <bpeck@redhat.com> 0.1.12-1
 - error checking on client to make sure we can make the run dir.
   (bpeck@redhat.com)
