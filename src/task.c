@@ -650,8 +650,8 @@ task_handler (gpointer user_data)
       restraint_set_run_metadata (task, "finished", NULL, G_TYPE_BOOLEAN, task->finished);
 
       if (task->error) {
-          g_string_printf(message, "** Completed Task : %s\n** ERROR: %s\n",
-                         task->task_id, task->error->message);
+          g_string_printf(message, "** ERROR: %s\n** Completed Task : %s\n",
+                         task->error->message, task->task_id);
       } else {
           g_string_printf(message, "** Completed Task : %s\n", task->task_id);
       }

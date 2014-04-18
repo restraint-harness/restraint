@@ -80,6 +80,12 @@ process_run (CommandData *command_data,
             exit (1);
         }
         environ = (gchar **) command_data->environ;
+
+        // Print the command being executed.
+        gchar *command = g_strjoinv (" ", (gchar **) command_data->command);
+        g_print ("%s\n", command);
+        g_free (command);
+
         /* Spawn the command */
         if (execvp (*command_data->command, (gchar **) command_data->command) == -1) {
             g_warning ("Failed to exec() %s, %s error:%s\n",
