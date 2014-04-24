@@ -336,6 +336,7 @@ static void build_env(Task *task) {
 
     gchar *prefix = ENV_PREFIX;
     if (task->rhts_compat == TRUE) {
+        array_add (env, NULL, "RESULT_SERVER", "LEGACY");
         array_add (env, NULL, "JOBID", task->recipe->job_id);
         array_add (env, NULL, "RECIPESETID", task->recipe->recipe_set_id);
         array_add (env, NULL, "RECIPEID", task->recipe->recipe_id);
