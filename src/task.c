@@ -340,6 +340,7 @@ static void build_env(Task *task) {
         array_add (env, NULL, "JOBID", task->recipe->job_id);
         array_add (env, NULL, "RECIPESETID", task->recipe->recipe_set_id);
         array_add (env, NULL, "RECIPEID", task->recipe->recipe_id);
+        array_add (env, NULL, "RECIPETESTID", task->task_id);
         array_add (env, NULL, "TASKID", task->task_id);
         array_add (env, NULL, "DISTRO", task->recipe->osdistro);
         array_add (env, NULL, "VARIANT", task->recipe->osvariant);
