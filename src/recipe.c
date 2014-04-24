@@ -350,6 +350,7 @@ void restraint_recipe_free(Recipe *recipe) {
     g_free(recipe->osmajor);
     g_free(recipe->osvariant);
     g_free(recipe->osarch);
+    g_free(recipe->owner);
     soup_uri_free(recipe->recipe_uri);
     g_list_free_full(recipe->tasks, (GDestroyNotify) restraint_task_free);
     g_list_free_full(recipe->params, (GDestroyNotify) restraint_param_free);
@@ -392,6 +393,7 @@ recipe_parse (xmlDoc *doc, SoupURI *recipe_uri, GError **error)
     result->osdistro = get_attribute(recipe, "distro");
     result->osmajor = get_attribute(recipe, "family");
     result->osvariant = get_attribute(recipe, "variant");
+    result->owner = get_attribute(job, "owner");
     result->recipe_uri = recipe_uri;
 
     GList *tasks = NULL;

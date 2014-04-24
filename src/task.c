@@ -337,6 +337,7 @@ static void build_env(Task *task) {
     gchar *prefix = ENV_PREFIX;
     if (task->rhts_compat == TRUE) {
         array_add (env, NULL, "RESULT_SERVER", "LEGACY");
+        array_add (env, NULL, "SUBMITTER", task->recipe->owner);
         array_add (env, NULL, "JOBID", task->recipe->job_id);
         array_add (env, NULL, "RECIPESETID", task->recipe->recipe_set_id);
         array_add (env, NULL, "RECIPEID", task->recipe->recipe_id);
@@ -355,6 +356,7 @@ static void build_env(Task *task) {
     }
     g_ptr_array_add(env, g_strdup_printf("HARNESS_PREFIX=%s", ENV_PREFIX));
     array_add (env, prefix, "RECIPE_URL", soup_uri_to_string (task->recipe->recipe_uri, FALSE));
+    array_add (env, prefix, "OWNER", task->recipe->owner);
     array_add (env, prefix, "JOBID", task->recipe->job_id);
     array_add (env, prefix, "RECIPESETID", task->recipe->recipe_set_id);
     array_add (env, prefix, "RECIPEID", task->recipe->recipe_id);
