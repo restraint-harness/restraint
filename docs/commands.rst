@@ -9,7 +9,12 @@ since some tasks reboot the system.
 
 ::
 
- restraint --remote http://addressOfMyTestSystem.example.com:8081 --job /path/to/job.xml
+ restraint --remote http://addressOfMyTestSystem.example.com:8081 --job /path/to/simple_job.xml
+
+Restraint will look for the next available directory to store the results in.
+In the above example it will see if the directory simple_job.01 exists.  If
+it does, because of a previous run, it will then look in simple_job.02.  It 
+will continue doing this until it finds a directory that doesn't exist.
 
 By default restraint will report the start and stop of each task run like this
 

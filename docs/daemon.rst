@@ -3,7 +3,7 @@ Daemon
 
 restraintd is the daemon which executes the tasks.
 
-Both a SysV init script and a SystemD unit file are provided.  The included
+Both a SysV init script and a systemd unit file are provided.  The included
 spec file will use the correct one when built on RHEL/Fedora based systems.
 
 Logging
@@ -14,7 +14,7 @@ executing commands will be printed to stdout.
 
 stderr is redirected to /dev/console to help debug when things
 go wrong.  The SysV init script will redirect both stdout + stderr to 
-/var/log/resatraintd.log.  For SystemD you can use the journalctl command::
+/var/log/resatraintd.log.  For systemd you can use the journalctl command::
 
  journalctl --unit restraintd
 

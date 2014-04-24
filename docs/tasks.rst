@@ -35,7 +35,7 @@ The "restraint" section has the following elements which can be defined:
 entry_point
 ~~~~~~~~~~~
 
-This tells restraint how it shoud start running the task.  If you don't specify a program to run it will default to make run which is what legacy RHTS would do. Other examples of entry points:
+This tells restraint how it should start running the task.  If you don't specify a program to run it will default to make run which is what legacy RHTS would do. Other examples of entry points:
 
 * entry_point=autotest-local control-file
 * entry_point=STAF local PROCESS START SHELL COMMAND "ps | grep test | wc >testcount.txt"
