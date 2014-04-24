@@ -353,6 +353,7 @@ static void build_env(Task *task) {
         g_ptr_array_add(env, g_strdup_printf("TASKORDER=%d", task->order));
     }
     g_ptr_array_add(env, g_strdup_printf("HARNESS_PREFIX=%s", ENV_PREFIX));
+    array_add (env, prefix, "RECIPE_URL", soup_uri_to_string (task->recipe->recipe_uri));
     array_add (env, prefix, "JOBID", task->recipe->job_id);
     array_add (env, prefix, "RECIPESETID", task->recipe->recipe_set_id);
     array_add (env, prefix, "RECIPEID", task->recipe->recipe_id);
