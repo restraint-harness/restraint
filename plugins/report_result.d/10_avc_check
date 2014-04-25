@@ -29,7 +29,7 @@ if [ -e "$AVC_FILE" ]; then
 fi
 
 AUSEARCH_FILE=$(mktemp)
-ausearch -m AVC -m USER_AVC -m SELINUX_ERR $AVC_SINCE >$TMPDIR/avc.log
+ausearch -m AVC -m USER_AVC -m SELINUX_ERR -sv no $AVC_SINCE >$TMPDIR/avc.log
 RC=$?
 if [ $RC == 0 ]; then
     rstrnt-report-result --no-plugins $TEST/$PLUGIN FAIL $RC
