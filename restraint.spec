@@ -42,7 +42,7 @@ Requires(postun): initscripts
 #if not static build
 BuildRequires:	zlib-devel
 # If static build...
-%if 0%{?rhel} >= 6
+%if 0%{?rhel}%{?fedora} >= 6
 BuildRequires:	libselinux-static
 BuildRequires:	openssl-static
 BuildRequires:	glibc-static
