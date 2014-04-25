@@ -31,7 +31,8 @@ if [ -z "$FAMILY" ]; then
 fi
 
 function report_result {
-        rstrnt-report-result "$@"
+	# Pass OUTPUTFILE to rstrnt-report-result in case the variable wasn't exported
+        OUTPUTFILE=$OUTPUTFILE rstrnt-report-result "$@"
 }
 
 function runuser_ {
