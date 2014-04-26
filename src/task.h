@@ -134,6 +134,8 @@ typedef struct {
     gchar *rundata;
     /* Only true after we have attempted to parse run_metadata on disk. */
     gboolean parsed;
+    /* The task can request that no localwatchdog be used. Used for reservesys task */
+    gboolean nolocalwatchdog;
 } Task;
 
 typedef struct {

@@ -131,11 +131,6 @@ process_run (CommandData *command_data,
 }
 
 void
-process_update_localwatchdog (void)
-{
-}
-
-void
 process_pid_callback (GPid pid, gint status, gpointer user_data)
 {
     ProcessData *process_data = (ProcessData *) user_data;

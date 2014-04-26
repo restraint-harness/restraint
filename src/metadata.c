@@ -157,6 +157,18 @@ gboolean parse_metadata(Task *task, GError **error) {
     }
     task->dependencies = g_list_reverse(task->dependencies);
     g_strfreev(dependencies);
+
+    task->nolocalwatchdog = g_key_file_get_boolean (keyfile,
+                                                    "restraint",
+                                                    "no_localwatchdog",
+                                                    &tmp_error);
+
+    if (tmp_error && tmp_error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND) {
+        g_propagate_error(error, tmp_error);
+        goto error;
+    }
+    g_clear_error (&tmp_error);
+
     g_key_file_free(keyfile);
     return TRUE;
 

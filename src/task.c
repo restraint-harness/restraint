@@ -18,6 +18,7 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <glib.h>
 #include <gio/gio.h>
 #include <time.h>
@@ -288,7 +289,19 @@ task_run (AppData *app_data, GError **error)
 
     command_data->environ = (const gchar **)task->env->pdata;
     command_data->path = task->path;
-    command_data->max_time = task->max_time;
+    if (!task->nolocalwatchdog) {
+        command_data->max_time = task->max_time;
+        struct tm timeinfo = *localtime (&rawtime);
+        timeinfo.tm_sec += task->max_time;
+        mktime(&timeinfo);
+        strftime(task_run_data->expire_time,
+                 sizeof(task_run_data->expire_time),
+                 "%a %b %d %H:%M:%S %Y", &timeinfo);
+    } else {
+        snprintf (task_run_data->expire_time,
+                  sizeof(task_run_data->expire_time),
+                  " * Disabled! *");
+    }
 
     GError *tmp_error = NULL;
 
@@ -303,10 +316,6 @@ task_run (AppData *app_data, GError **error)
     }
 
     // Local heartbeat, log to console and testout.log
-    struct tm timeinfo = *localtime( &rawtime);
-    timeinfo.tm_sec += task->max_time;
-    mktime(&timeinfo);
-    strftime(task_run_data->expire_time,sizeof(task_run_data->expire_time),"%a %b %d %H:%M:%S %Y", &timeinfo);
     task_run_data->heartbeat_handler_id = g_timeout_add_seconds_full (G_PRIORITY_DEFAULT,
                                                            HEARTBEAT, //every 5 minutes
                                                            task_heartbeat_callback,
