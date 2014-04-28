@@ -25,9 +25,9 @@
 #include "param.h"
 #include "role.h"
 #include "task.h"
-#include "common.h"
 #include "server.h"
 #include "metadata.h"
+#include "utils.h"
 
 // XXX make this configurable
 #define TASK_LOCATION "/mnt/tests"

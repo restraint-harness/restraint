@@ -28,6 +28,7 @@
 #include "task.h"
 #include "metadata.h"
 #include "process.h"
+#include "utils.h"
 
 GQuark restraint_metadata_parse_error_quark(void) {
     return g_quark_from_static_string("restraint-metadata-parse-error-quark");
@@ -36,35 +37,6 @@ GQuark restraint_metadata_parse_error_quark(void) {
 #define unrecognised(error_code, message, ...) g_set_error(error, RESTRAINT_METADATA_PARSE_ERROR, \
         error_code, \
         message, ##__VA_ARGS__)
-
-guint64
-parse_time_string(gchar *time_string, GError **error)
-{
-    /* Convert time string to number of seconds.
-     *     5d -> 432000
-     *     3m -> 180
-     *     2h -> 7200
-     *     600s -> 600
-     */
-    gchar time_unit;
-    guint64 max_time = 0;
-    gint read = sscanf(time_string, "%" SCNu64 " %c", &max_time, &time_unit);
-    if (read == 2) {
-        time_unit = g_ascii_toupper(time_unit);
-        if (time_unit == 'D')
-            max_time = 24 * 3600 * max_time;
-        else if (time_unit == 'H')
-            max_time = 3600 * max_time;
-        else if (time_unit == 'M')
-            max_time = 60 * max_time;
-        else if (time_unit == 'S')
-            max_time = max_time;
-        else {
-            unrecognised(RESTRAINT_METADATA_PARSE_ERROR_BAD_SYNTAX, "Unrecognised time unit '%c'", time_unit);
-        }
-    }
-    return max_time;
-}
 
 gboolean parse_metadata(Task *task, GError **error) {
     g_return_val_if_fail(error == NULL || *error == NULL, FALSE);

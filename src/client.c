@@ -33,7 +33,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include "common.h"
 #include "client.h"
 
 static SoupSession *session;

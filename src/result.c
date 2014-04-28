@@ -20,7 +20,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <libsoup/soup.h>
-#include "common.h"
 #include "upload.h"
 
 static SoupSession *session;

@@ -28,7 +28,6 @@
 #include <libsoup/soup-uri.h>
 
 #include "task.h"
-#include "common.h"
 
 #define GIT_PORT 9418
 #define GIT_BRANCH "master"

@@ -24,7 +24,6 @@
 #include "recipe.h"
 #include "task.h"
 #include "metadata.h"
-#include "common.h"
 #include "server.h"
 #include "process.h"
 #include "message.h"
@@ -303,6 +302,10 @@ server_recipe_callback (SoupServer *server, SoupMessage *client_msg,
         server_uri = soup_uri_new (log_url);
         g_free (log_url);
         server_msg = soup_message_new_from_uri ("PUT", server_uri);
+    } else if (g_str_has_suffix (path, "watchdog")) {
+        // This does *not* update the localwatchdog.
+        server_uri = soup_uri_new_with_base (task->recipe->recipe_uri, "watchdog");
+        server_msg = soup_message_new_from_uri ("POST", server_uri);
     } else {
         soup_message_set_status_full (client_msg, SOUP_STATUS_BAD_REQUEST, "No Match, Invalid request");
         return;

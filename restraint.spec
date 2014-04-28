@@ -198,6 +198,7 @@ fi
 %attr(0755, root, root)%{_bindir}/rstrnt-restore
 %attr(0755, root, root)%{_bindir}/rstrnt-reboot
 %attr(0755, root, root)%{_bindir}/check_beaker
+%attr(0755, root, root)%{_bindir}/rstrnt-adjust-watchdog
 /usr/share/%{name}
 /usr/share/%{name}/plugins/run_plugins
 /usr/share/%{name}/plugins/run_task_plugins

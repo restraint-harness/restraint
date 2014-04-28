@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <libsoup/soup.h>
-#include "upload.h"
+#include "utils.h"
 
 static SoupSession *session;
 
@@ -29,36 +29,26 @@ int main(int argc, char *argv[]) {
     GError *error = NULL;
 
     gchar *server = NULL;
-    SoupURI *result_uri;
+    gchar *form_data;
+    SoupURI *watchdog_uri;
+    guint ret = 0;
 
-    gchar *filename = NULL;
-    gchar *basename = NULL;
     gchar *prefix = NULL;
     gchar *recipe_id_key = NULL;
     gchar *recipe_id = NULL;
-    gchar *task_id = NULL;
-    gchar *task_id_key = NULL;
-
-    gchar *deprecated1 = NULL;
-    gchar *deprecated2 = NULL;
+    GHashTable *data_table = g_hash_table_new (NULL, NULL);
 
     GOptionEntry entries[] = {
         {"server", 's', 0, G_OPTION_ARG_STRING, &server,
             "Server to connect to", "URL" },
-        { "filename", 'l', 0, G_OPTION_ARG_STRING, &filename,
-            "Log to upload", "FILE" },
-        {"deprecated1", 'S', G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_STRING, &deprecated1,
-            "deprecated option", NULL},
-        {"deprecated2", 'T', G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_STRING, &deprecated2,
-            "deprecated option", NULL},
         { NULL }
     };
     GOptionContext *context = g_option_context_new(NULL);
     g_option_context_set_summary(context,
-            "Report results to lab controller. if you don't specify the\n"
-            "the server url you must have RECIPEID and TASKID defined.\n"
+            "Adjust watchdog on lab controller. if you don't specify the\n"
+            "the server url you must have RECIPEID defined.\n"
             "If HARNESS_PREFIX is defined then the value of that must be\n"
-            "prefixed to RECIPEID and TASKID");
+            "prefixed to RECIPEID");
     g_option_context_add_main_entries(context, entries, NULL);
     gboolean parse_succeeded = g_option_context_parse(context, &argc, &argv, &error);
     g_option_context_free(context);
@@ -67,45 +57,39 @@ int main(int argc, char *argv[]) {
         goto cleanup;
     }
 
+    guint64 seconds = parse_time_string (argv[1], &error);
+    if (error) {
+        goto cleanup;
+     }
+
     prefix = getenv("HARNESS_PREFIX") ? getenv("HARNESS_PREFIX") : "";
     recipe_id_key = g_strdup_printf ("%sRECIPEID", prefix);
     recipe_id = getenv(recipe_id_key);
-    task_id_key = g_strdup_printf ("%sTASKID", prefix);
-    task_id = getenv(task_id_key);
 
-    if (!server && recipe_id && task_id) {
-        server = g_strdup_printf ("http://localhost:8081/recipes/%s/tasks/%s", recipe_id, task_id);
+    if (!server && recipe_id) {
+        server = g_strdup_printf ("http://localhost:8081/recipes/%s/watchdog", recipe_id);
     }
 
-    if (!filename || !server) {
+    if (!server) {
         g_printerr("Try %s --help\n", argv[0]);
         goto cleanup;
     }
 
-    if (deprecated1 != NULL) {
-        g_warning ("Option -S deprecated! Update your code.\n");
-    }
-    if (deprecated2 != NULL) {
-        g_warning ("Option -T deprecated! Update your code.\n");
-    }
-
-    result_uri = soup_uri_new (server);
+    watchdog_uri = soup_uri_new (server);
     session = soup_session_new_with_options("timeout", 3600, NULL);
+    SoupMessage *server_msg = soup_message_new_from_uri ("POST", watchdog_uri);
+    g_hash_table_insert (data_table, "seconds", &seconds);
+    form_data = soup_form_encode_hash (data_table);
+    soup_message_set_request (server_msg, "application/x-www-form-urlencoded",
+                              SOUP_MEMORY_TAKE, form_data, strlen (form_data));
 
-    basename = g_filename_display_basename (filename);
-    gchar *location = g_strdup_printf ("%s/logs/%s", server, basename);
-    result_uri = soup_uri_new (location);
-    g_free (location);
-    if (g_file_test (filename, G_FILE_TEST_EXISTS)) 
-    {
-        g_print ("Uploading %s ", basename);
-        if (upload_file (session, filename, basename, result_uri, &error)) {
-            g_print ("done\n");
-        } else {
-            g_print ("failed\n");
-        }
+    ret = soup_session_send_message (session, server_msg);
+    if (SOUP_STATUS_IS_SUCCESSFUL (ret)) {
+    } else {
+        g_warning ("Failed to adjust watchdog, status: %d Message: %s\n", ret, server_msg->reason_phrase);
     }
-    soup_uri_free (result_uri);
+
+    soup_uri_free (watchdog_uri);
 
 cleanup:
     if (error) {

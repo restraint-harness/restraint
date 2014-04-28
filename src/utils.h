@@ -15,8 +15,11 @@
     along with Restraint.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+
+#define RESTRAINT_PARSE_ERROR restraint_parse_error_quark()
+GQuark restraint_metadata_parse_error_quark (void);
 typedef enum {
-  STREAM_STDOUT,
-  STREAM_STDERR,
-  STREAM_ERROR,
-} StreamType;
+    RESTRAINT_PARSE_ERROR_BAD_SYNTAX, /* parse errors */
+} RestraintParseError;
+
+guint64 parse_time_string (gchar *time_string, GError **error);
