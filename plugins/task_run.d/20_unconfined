@@ -1,5 +1,7 @@
 #!/bin/bash
 
+echo "*** Running Plugin: $0"
+
 _is_rhfamily() {
   local family=$1
   local op=$2

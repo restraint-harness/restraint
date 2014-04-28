@@ -1,0 +1,21 @@
+#!/bin/bash
+
+#
+# If the following variables aren't defined try and guess them from the system
+#
+
+echo "*** Running Plugin: $0"
+
+if [ -z "$HOSTNAME" ]; then
+   HOSTNAME=$(hostname)
+fi
+
+if [ -z "$RSTRNT_OSARCH" ]; then
+        RSTRNT_OSARCH=$(uname -i)
+fi
+
+if [ -z "$RSTRNT_OSMAJOR" ]; then
+        RSTRNT_OSMAJOR=$(cat /etc/redhat-release | sed -e 's/\(.*\)release\s\([0-9]*\).*/\1\2/; s/\s//g')
+fi
+
+exec "$@"

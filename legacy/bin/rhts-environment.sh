@@ -18,10 +18,6 @@ if [ -z "$OUTPUTFILE" ]; then
         export OUTPUTFILE=`mktemp /mnt/testarea/tmp.XXXXXX`
 fi
 
-if [ -z "$HOSTNAME" ]; then
-   HOSTNAME=$(hostname)
-fi
-
 if [ -z "$ARCH" ]; then
         ARCH=$(uname -i)
 fi

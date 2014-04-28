@@ -1,3 +1,5 @@
 #!/bin/bash -l
 
+echo "*** Running Plugin: $0"
+
 exec "$@"
