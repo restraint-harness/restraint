@@ -21,6 +21,8 @@
 #include <string.h>
 #include <libsoup/soup.h>
 #include "utils.h"
+#define __STDC_FORMAT_MACROS
+#include <inttypes.h>
 
 static SoupSession *session;
 
@@ -30,8 +32,10 @@ int main(int argc, char *argv[]) {
 
     gchar *server = NULL;
     gchar *form_data;
+    gchar *form_seconds;
     SoupURI *watchdog_uri;
     guint ret = 0;
+    guint64 seconds;
 
     gchar *prefix = NULL;
     gchar *recipe_id_key = NULL;
@@ -57,7 +61,7 @@ int main(int argc, char *argv[]) {
         goto cleanup;
     }
 
-    guint64 seconds = parse_time_string (argv[1], &error);
+    seconds = parse_time_string (argv[1], &error);
     if (error) {
         goto cleanup;
      }
@@ -78,8 +82,10 @@ int main(int argc, char *argv[]) {
     watchdog_uri = soup_uri_new (server);
     session = soup_session_new_with_options("timeout", 3600, NULL);
     SoupMessage *server_msg = soup_message_new_from_uri ("POST", watchdog_uri);
-    g_hash_table_insert (data_table, "seconds", &seconds);
+    form_seconds = g_strdup_printf ("%" PRIu64, seconds);
+    g_hash_table_insert (data_table, "seconds", form_seconds);
     form_data = soup_form_encode_hash (data_table);
+    g_free (form_seconds);
     soup_message_set_request (server_msg, "application/x-www-form-urlencoded",
                               SOUP_MEMORY_TAKE, form_data, strlen (form_data));
 
