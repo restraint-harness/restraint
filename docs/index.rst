@@ -22,6 +22,7 @@ Features
 --------
 
 * Tasks can be retrieved directly from git.
+* Does not rely on Anaconda/kickstart to install test dependencies
 * Can be statically linked to make it easier to test the system without changing the system.
 * Can be run stand alone without Beaker.
 
