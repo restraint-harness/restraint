@@ -79,6 +79,10 @@ restraint can be built and linked dynamically or statically. To build it dynamic
  - sqlite-autoconf-3080002
  - intltool-0.35.5
 
+Clone from git::
+
+ % git clone https://github.com/p3ck/restraint.git
+
 Build restraint::
 
  % make
