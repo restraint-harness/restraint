@@ -8,7 +8,11 @@ to provide additional logs for debugging issues.  Here is a typical outline of h
   \
    10_bash_login
    |
+   15_beakerlib
+   |
    20_unconfined
+   |
+   25_environment
    |
    make run
    |\
@@ -20,7 +24,11 @@ to provide additional logs for debugging issues.  Here is a typical outline of h
   \
    10_bash_login
    |
+   15_beakerlib
+   |
    20_unconfined
+   |
+   25_environment
    |
    run_plugins <- completed.d
    \
@@ -38,6 +46,10 @@ The report_result commands above cause the following plugins to be executed::
    run_plugins <- report_result.d
     \
      01_dmesg_check
+     |
+     10_avc_check
+     |
+     20_avc_clear
 
 These plugins do not run from the task under test.  They run from restraintd process.
 This allows for greater flexibility if your task is running as a non-root user since a non-root
@@ -53,11 +65,13 @@ will be passed to exec in alphabetical order.
 Restraint currently ships with two task run plugins:
 
 * 10_bash_login - invoke a login shell.
-* 20_unconfined - if selinux is enabled on system run task in unconfined context
+* 15_beakerlib - Sets env vars to tell beakerlib how to report results in restraint.
+* 20_unconfined - if selinux is enabled on system run task in unconfined context.
+* 25_environment - Will attempt to guess certain variables if they weren't defined, (OSARCH, OSMAJOR, etc..)
 
 So the above plugins would get called like so::
 
- exec 10_bash_login 20_unconfined "$@"
+ exec 10_bash_login 15_beakerlib 20_unconfined 25_environment "$@"
 
 In order for this to work the task run plugins are required to exec "$@" at the end of the script.
 Although task run plugins can't take any arguments they can make decisions based on environment variables.
@@ -73,6 +87,8 @@ You can do conditionals based on this so lets create a plugin which will start a
  cat << "EOF" > /usr/share/restraint/plugins/task_run.d/30_tcpdump
  #!/bin/sh -x
 
+ echo "*** Running PLugin: $0"
+
  # Don't run from PLUGINS
  if [ -z "$RSTRNT_NOPLUGINS" ]; then
    tcpdump -q -i any -q -w $RUNPATH/tcpdump.cap 2>&1 &
@@ -86,21 +102,25 @@ You can do conditionals based on this so lets create a plugin which will start a
 Report Result
 -------------
 
-Every time a task reports a result to restraint these plugins will execute.  Currently restraint only
-ships with one plugin::
+Every time a task reports a result to restraint these plugins will execute.
 
- 01_dmesg_check
+* 01_dmesg_check - This plugin checks for the following failure strings
 
-This plugin checks for the following failure strings::
+::
 
  Oops|BUG|NMI appears to be stuck|cut here|Badness at
 
-But then it runs any matches through an inverted grep which removes the following::
+But then it runs any matches through an inverted grep which removes the following
+
+::
 
  BIOS BUG|DEBUG
 
 This is an effort to reduce false positives.  Both of the above strings can be overridden from each
 task by passing in your own FAILURESTRINGS or FALSESTRINGS variables.
+
+* 10_avc_check - This plugin seaches for avc errors that have occured since the last time a result was reported.
+* 20_avc_clear - This moves the time stamp used by avc_check forward so that we don't see the same avc's reported again, some tests might generate avc's on purpose and disable the check but you will still want to move the time stamp forward.
 
 Local Watchdog
 --------------
