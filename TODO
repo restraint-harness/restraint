@@ -1,4 +1,2 @@
 
-- If REST backend is detected keep retrying, don't progress to next task.
-- Report_result Plugin: Selinux ausearch, check for errors.
 - Add IPV6 soup listener, pass appropriate soup_server to calls.
