@@ -49,8 +49,8 @@ int main(int argc, char *argv[]) {
     gchar *result_msg = NULL;
     gchar *outputfile = getenv("OUTPUTFILE");
     gchar *prefix = NULL;
-    gchar *recipe_id_key = NULL;
-    gchar *recipe_id = NULL;
+    gchar *server_recipe_key = NULL;
+    gchar *server_recipe = NULL;
     gchar *task_id = NULL;
     gchar *task_id_key = NULL;
     gboolean no_plugins = FALSE;
@@ -95,13 +95,13 @@ int main(int argc, char *argv[]) {
     }
 
     prefix = getenv("HARNESS_PREFIX") ? getenv("HARNESS_PREFIX") : "";
-    recipe_id_key = g_strdup_printf ("%sRECIPEID", prefix);
-    recipe_id = getenv(recipe_id_key);
+    server_recipe_key = g_strdup_printf ("%sRECIPE_URL", prefix);
+    server_recipe = getenv(server_recipe_key);
     task_id_key = g_strdup_printf ("%sTASKID", prefix);
     task_id = getenv(task_id_key);
 
-    if (!server && recipe_id && task_id) {
-        server = g_strdup_printf ("http://localhost:8081/recipes/%s/tasks/%s/results/", recipe_id, task_id);
+    if (!server && server_recipe && task_id) {
+        server = g_strdup_printf ("%s/tasks/%s/results/", server_recipe, task_id);
     }
 
     if (argc < 3 || !server) {

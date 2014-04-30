@@ -38,8 +38,8 @@ int main(int argc, char *argv[]) {
     guint64 seconds;
 
     gchar *prefix = NULL;
-    gchar *recipe_id_key = NULL;
-    gchar *recipe_id = NULL;
+    gchar *server_recipe_key = NULL;
+    gchar *server_recipe = NULL;
     GHashTable *data_table = g_hash_table_new (NULL, NULL);
 
     GOptionEntry entries[] = {
@@ -67,11 +67,11 @@ int main(int argc, char *argv[]) {
      }
 
     prefix = getenv("HARNESS_PREFIX") ? getenv("HARNESS_PREFIX") : "";
-    recipe_id_key = g_strdup_printf ("%sRECIPEID", prefix);
-    recipe_id = getenv(recipe_id_key);
+    server_recipe_key = g_strdup_printf ("%sRECIPE_URL", prefix);
+    server_recipe = getenv(server_recipe_key);
 
-    if (!server && recipe_id) {
-        server = g_strdup_printf ("http://localhost:8081/recipes/%s/watchdog", recipe_id);
+    if (!server && server_recipe) {
+        server = g_strdup_printf ("%s/watchdog", server_recipe);
     }
 
     if (!server) {

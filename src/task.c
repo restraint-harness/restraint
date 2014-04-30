@@ -37,6 +37,8 @@
 #include "process.h"
 #include "message.h"
 #include "dependency.h"
+#include "config.h"
+#include "errors.h"
 
 GQuark restraint_task_runner_error(void) {
     return g_quark_from_static_string("restraint-task-runner-error-quark");
@@ -167,7 +169,9 @@ task_finish_callback (gint pid_result, gboolean localwatchdog, gpointer user_dat
 
         if (localwatchdog) {
             task->localwatchdog = localwatchdog;
-            restraint_set_run_metadata (task, "localwatchdog", NULL, G_TYPE_BOOLEAN, task->localwatchdog);
+            restraint_config_set (app_data->config_file, task->task_id,
+                                  "localwatchdog", NULL,
+                                  G_TYPE_BOOLEAN, task->localwatchdog);
 
             g_set_error(&task->error, RESTRAINT_TASK_RUNNER_ERROR,
                             RESTRAINT_TASK_RUNNER_WATCHDOG_ERROR,
@@ -261,7 +265,9 @@ task_heartbeat_callback (gpointer user_data)
     gchar currtime[80];
 
     task->max_time -= HEARTBEAT;
-    restraint_set_run_metadata (task, "max_time", NULL, G_TYPE_UINT64, task->max_time);
+    restraint_config_set (app_data->config_file, task->task_id,
+                          "max_time", NULL,
+                          G_TYPE_UINT64, task->max_time);
 
     time (&rawtime);
     timeinfo = localtime (&rawtime);
@@ -335,7 +341,7 @@ array_add (GPtrArray *array, const gchar *prefix, const gchar *variable, const g
     }
 }
 
-static void build_env(Task *task) {
+static void build_env(AppData *app_data, Task *task) {
     //GPtrArray *env = g_ptr_array_new();
     GPtrArray *env = g_ptr_array_new_with_free_func (g_free);
 
@@ -363,7 +369,9 @@ static void build_env(Task *task) {
         g_ptr_array_add(env, g_strdup_printf("TASKORDER=%d", task->order));
     }
     g_ptr_array_add(env, g_strdup_printf("HARNESS_PREFIX=%s", ENV_PREFIX));
-    array_add (env, prefix, "RECIPE_URL", soup_uri_to_string (task->recipe->recipe_uri, FALSE));
+    gchar *recipe_url = g_strdup_printf ("%s/recipes/%s", app_data->restraint_url, task->recipe->recipe_id);
+    array_add (env, prefix, "RECIPE_URL", recipe_url);
+    g_free (recipe_url);
     array_add (env, prefix, "OWNER", task->recipe->owner);
     array_add (env, prefix, "JOBID", task->recipe->job_id);
     array_add (env, prefix, "RECIPESETID", task->recipe->recipe_set_id);
@@ -520,6 +528,72 @@ restraint_next_task (AppData *app_data, TaskSetupState task_state) {
 }
 
 gboolean
+parse_task_config (gchar *config_file, Task *task, GError **error)
+{
+    GError *tmp_error = NULL;
+
+    task->max_time = restraint_config_get_uint64 (config_file,
+                                                  task->task_id,
+                                                  "max_time",
+                                                  &tmp_error);
+    if (tmp_error) {
+        g_propagate_prefixed_error(error, tmp_error,
+                    "Task %s:  parse_task_config,", task->task_id);
+        goto error;
+    }
+    g_clear_error (&tmp_error);
+
+    task->reboots = restraint_config_get_uint64 (config_file,
+                                                 task->task_id,
+                                                 "reboots",
+                                                 &tmp_error);
+    if (tmp_error) {
+        g_propagate_prefixed_error(error, tmp_error,
+                    "Task %s:  parse_task_config,", task->task_id);
+        goto error;
+    }
+    g_clear_error (&tmp_error);
+
+    task->offset = restraint_config_get_uint64 (config_file,
+                                                task->task_id,
+                                                "offset",
+                                                &tmp_error);
+    if (tmp_error) {
+        g_propagate_prefixed_error(error, tmp_error,
+                    "Task %s:  parse_task_config,", task->task_id);
+        goto error;
+    }
+    g_clear_error (&tmp_error);
+
+    task->started = restraint_config_get_boolean (config_file,
+                                                  task->task_id,
+                                                  "started",
+                                                  &tmp_error);
+    if (tmp_error) {
+        g_propagate_prefixed_error(error, tmp_error,
+                    "Task %s:  parse_task_config,", task->task_id);
+        goto error;
+    }
+    g_clear_error (&tmp_error);
+
+    task->localwatchdog = restraint_config_get_boolean (config_file,
+                                                        task->task_id,
+                                                        "localwatchdog",
+                                                        &tmp_error);
+    if (tmp_error) {
+        g_propagate_prefixed_error(error, tmp_error,
+                    "Task %s:  parse_task_config,", task->task_id);
+        goto error;
+    }
+    g_clear_error (&tmp_error);
+
+    return TRUE;
+
+error:
+    return FALSE;
+}
+
+gboolean
 task_handler (gpointer user_data)
 {
   AppData *app_data = (AppData *) user_data;
@@ -548,25 +622,27 @@ task_handler (gpointer user_data)
   switch (task->state) {
     case TASK_IDLE:
       // Read in previous state..
-      restraint_parse_run_metadata (task, NULL);
-
-      if (task->finished) {
-          // If the task is finished skip to the next task.
-          task->state = TASK_NEXT;
-      } else if (task->localwatchdog) {
-          // If the task is not finished but localwatchdog expired.
-          g_string_printf(message, "** Localwatchdog task: %s [%s]\n", task->task_id, task->path);
-          task->state = TASK_COMPLETE;
-      } else if (task->started) {
-          // If the task is not finished but started then skip fetching the task again.
-          g_string_printf(message, "** Continuing task: %s [%s]\n", task->task_id, task->path);
-          task->state = TASK_METADATA;
+      if (parse_task_config (app_data->config_file, task, &task->error)) {
+          if (task->finished) {
+              // If the task is finished skip to the next task.
+              task->state = TASK_NEXT;
+          } else if (task->localwatchdog) {
+              // If the task is not finished but localwatchdog expired.
+              g_string_printf(message, "** Localwatchdog task: %s [%s]\n", task->task_id, task->path);
+              task->state = TASK_COMPLETE;
+          } else if (task->started) {
+              // If the task is not finished but started then skip fetching the task again.
+              g_string_printf(message, "** Continuing task: %s [%s]\n", task->task_id, task->path);
+              task->state = TASK_METADATA;
+          } else {
+              // If neither started nor finished then fetch the task
+              restraint_task_status (task, app_data, "Running", NULL);
+              result = FALSE;
+              g_string_printf(message, "** Fetching task: %s [%s]\n", task->task_id, task->path);
+              task->state = TASK_FETCH;
+          }
       } else {
-          // If neither started nor finished then fetch the task
-          restraint_task_status (task, app_data, "Running", NULL);
-          result = FALSE;
-          g_string_printf(message, "** Fetching task: %s [%s]\n", task->task_id, task->path);
-          task->state = TASK_FETCH;
+          task->state = TASK_COMPLETE;
       }
       break;
     case TASK_FETCH:
@@ -606,7 +682,6 @@ task_handler (gpointer user_data)
       g_string_printf(message, "** Parsing metadata\n");
       if (restraint_metadata_parse(task, &task->error)) {
         task->state = TASK_ENV;
-        restraint_set_run_metadata (task, "name", NULL, G_TYPE_STRING, task->name);
       } else {
         task->state = TASK_COMPLETE;
       }
@@ -617,7 +692,7 @@ task_handler (gpointer user_data)
       // If not running in rhts_compat mode it will prepend
       // the variables with ENV_PREFIX.
       g_string_printf(message, "** Updating env vars\n");
-      build_env(task);
+      build_env(app_data, task);
       task->state = TASK_WATCHDOG;
       break;
     case TASK_WATCHDOG:
@@ -650,18 +725,23 @@ task_handler (gpointer user_data)
       if (task_run (app_data, &task->error)) {
         result=FALSE;
         task->started = TRUE;
-        restraint_set_run_metadata (task, "started", NULL, G_TYPE_BOOLEAN, task->started);
+        restraint_config_set (app_data->config_file,
+                              task->task_id,
+                              "started", NULL,
+                              G_TYPE_BOOLEAN,
+                              task->started);
         // Update reboots count
-        restraint_set_run_metadata (task, "reboots", NULL, G_TYPE_UINT64, task->reboots + 1);
+        restraint_config_set (app_data->config_file,
+                              task->task_id,
+                              "reboots", NULL,
+                              G_TYPE_UINT64,
+                              task->reboots + 1);
       } else {
         task->state = TASK_COMPLETE;
       }
       break;
     case TASK_COMPLETE:
       // Set task finished
-      task->finished = TRUE;
-      restraint_set_run_metadata (task, "finished", NULL, G_TYPE_BOOLEAN, task->finished);
-
       if (task->error) {
           g_string_printf(message, "** ERROR: %s\n** Completed Task : %s\n",
                          task->error->message, task->task_id);
@@ -677,6 +757,8 @@ task_handler (gpointer user_data)
       } else {
         restraint_task_status(task, app_data, "Completed", NULL);
       }
+      // Rmeove the entire [task] section from the config.
+      restraint_config_set (app_data->config_file, task->task_id, NULL, NULL, -1);
       task->state = TASK_NEXT;
       result = FALSE;
       break;

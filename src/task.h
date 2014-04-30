@@ -122,18 +122,12 @@ typedef struct {
     GPtrArray *env;
     /* State engine holding current state of task */
     TaskSetupState state;
-    /* reported status from task */
-    gchar *status;
     /* Error at the task level */
     GError *error;
     /* offset of TASKOUT.log */
     gssize offset;
     /* reboot count */
     guint64 reboots;
-    /* Filesystem path where the task run data is stored */
-    gchar *rundata;
-    /* Only true after we have attempted to parse run_metadata on disk. */
-    gboolean parsed;
     /* The task can request that no localwatchdog be used. Used for reservesys task */
     gboolean nolocalwatchdog;
 } Task;

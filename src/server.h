@@ -18,6 +18,7 @@
 #ifndef _RESTRAINT_SERVER_H
 #define _RESTRAINT_SERVER_H
 
+#define VAR_LIB_PATH "/var/lib/restraint"
 #define PLUGIN_SCRIPT "/usr/share/restraint/plugins/run_plugins"
 #define TASK_PLUGIN_SCRIPT "/usr/share/restraint/plugins/run_task_plugins"
 #define PLUGIN_DIR "/usr/share/restraint/plugins"
@@ -33,6 +34,8 @@ typedef struct {
   GError *error;
   SoupServer *soup_server;
   SoupMessage *client_msg;
+  gchar *config_file;
+  gchar *restraint_url;
 } AppData;
 
 typedef struct {

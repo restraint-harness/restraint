@@ -5,4 +5,5 @@
 PLUGIN=$(basename $0)
 
 # Should we report a warn if this doesn't succeed?
+echo -n "**** "
 rstrnt-restore

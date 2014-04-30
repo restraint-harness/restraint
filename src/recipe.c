@@ -28,6 +28,7 @@
 #include "server.h"
 #include "metadata.h"
 #include "utils.h"
+#include "config.h"
 
 // XXX make this configurable
 #define TASK_LOCATION "/mnt/tests"
@@ -312,13 +313,6 @@ static Task *parse_task(xmlNode *task_node, SoupURI *recipe_uri, GError **error)
         }
     }
 
-    /*
-     * override the run_metadata values for started and finished
-     * with the value of status from the xml.
-     * When running against the RESTAPI the status value will 
-     * update as the recipe executes.
-     * When running against a static xml file it won't.
-     */
     xmlChar *status = xmlGetNoNsProp(task_node, (xmlChar *)"status");
     if (g_strcmp0((gchar *)status, "Running") == 0) {
         // We can't rely on the server because it "starts" the first task 
@@ -408,16 +402,6 @@ recipe_parse (xmlDoc *doc, SoupURI *recipe_uri, GError **error)
             }
             /* link task to recipe for additional attributes */
             task->recipe = result;
-
-            /*
-             * metadata    : variables like rebootcount and time left on the watchdog
-             */
-            task->rundata = g_build_filename(VAR_LIB_PATH,
-                                              task->recipe->recipe_id,
-                                              task->task_id,
-                                              "rundata",
-                                              NULL);
-
             task->order = i++;
             tasks = g_list_prepend(tasks, task);
         } else
@@ -583,7 +567,12 @@ recipe_handler (gpointer user_data)
             }
             break;
         case RECIPE_RUN:
-            restraint_set_running_config ("recipe_url", app_data->recipe_url, NULL);
+            restraint_config_set (app_data->config_file,
+                                  "restraint",
+                                  "recipe_url",
+                                  NULL,
+                                  G_TYPE_STRING,
+                                  app_data->recipe_url);
             app_data->task_handler_id = g_idle_add_full(G_PRIORITY_DEFAULT_IDLE,
                                                         task_handler,
                                                         app_data,
@@ -610,7 +599,12 @@ recipe_handler (gpointer user_data)
               app_data->recipe_url = NULL;
             }
 
-            restraint_set_running_config ("recipe_url", NULL, NULL);
+            restraint_config_set (app_data->config_file,
+                                  "restraint",
+                                  "recipe_url",
+                                  NULL,
+                                  -1);
+
             // We are done. remove ourselves so we can run another recipe.
             app_data->state = RECIPE_IDLE;
             result = FALSE;

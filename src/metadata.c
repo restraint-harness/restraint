@@ -28,15 +28,9 @@
 #include "task.h"
 #include "metadata.h"
 #include "process.h"
+#include "config.h"
+#include "errors.h"
 #include "utils.h"
-
-GQuark restraint_metadata_parse_error_quark(void) {
-    return g_quark_from_static_string("restraint-metadata-parse-error-quark");
-}
-
-#define unrecognised(error_code, message, ...) g_set_error(error, RESTRAINT_METADATA_PARSE_ERROR, \
-        error_code, \
-        message, ##__VA_ARGS__)
 
 gboolean parse_metadata(Task *task, GError **error) {
     g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
@@ -68,7 +62,8 @@ gboolean parse_metadata(Task *task, GError **error) {
         goto error;
     }
     if (task_name == NULL)
-        unrecognised(RESTRAINT_METADATA_PARSE_ERROR_BAD_SYNTAX, "Missing name");
+        g_set_error (error, RESTRAINT_PARSE_ERROR,
+                      RESTRAINT_PARSE_ERROR_BAD_SYNTAX, "Missing name");
     task->name = g_strdup(g_strstrip(task_name));
     g_free(task_name);
 
@@ -169,7 +164,9 @@ gboolean restraint_generate_testinfo(AppData *app_data, GError **error) {
 
     gchar *makefile = g_build_filename(task->path, "Makefile", NULL);
     if (g_stat(makefile, &stat_buf) != 0) {
-        unrecognised(RESTRAINT_METADATA_MISSING_FILE, "running in rhts_compat mode and missing 'Makefile'");
+        g_set_error (error, RESTRAINT_PARSE_ERROR,
+                     RESTRAINT_MISSING_FILE,
+                     "running in rhts_compat mode and missing 'Makefile'");
         g_free(makefile);
         return FALSE;
     }
@@ -318,7 +315,7 @@ static gboolean parse_testinfo_from_fd(Task *task,
 
     if (!S_ISREG (stat_buf.st_mode)) {
         g_set_error_literal (error, G_FILE_ERROR,
-                             RESTRAINT_METADATA_OPEN,
+                             RESTRAINT_OPEN,
                              "Not a regular file");
       g_string_free(parse_buffer, TRUE);
       return FALSE;
@@ -391,279 +388,6 @@ static gboolean parse_testinfo_from_file(Task *task,
         return FALSE;
     }
     return TRUE;
-}
-
-void
-restraint_parse_run_metadata (Task *task, GError **error)
-{
-   /*
-    * Metadata about the running task
-    * rebootcount : how many times this task has rebooted
-    * offset      : number of bytes uploaded to lab controller
-    * started     : True if the task has started
-    * finished    : True if the task has finished
-    * max_time    : If we reboot this will be used instead of max_time.
-    */
-
-    g_return_if_fail(task != NULL);
-    g_return_if_fail(error == NULL || *error == NULL);
-
-    GKeyFile *keyfile;
-    GKeyFileFlags flags;
-    GError *tmp_error = NULL;
-
-    keyfile = g_key_file_new ();
-    flags = G_KEY_FILE_KEEP_COMMENTS | G_KEY_FILE_KEEP_TRANSLATIONS;
-
-    if (!g_key_file_load_from_file (keyfile, task->rundata, flags, NULL)) {
-        goto error;
-    }
-
-    task->max_time = g_key_file_get_uint64 (keyfile,
-                                           "restraint",
-                                           "max_time",
-                                           &tmp_error);
-    if (tmp_error && tmp_error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND) {
-        g_propagate_prefixed_error(error, tmp_error,
-                    "Task %s:  parse_run_metadata,", task->task_id);
-        goto error;
-    }
-    g_clear_error (&tmp_error);
-
-    task->reboots = g_key_file_get_uint64 (keyfile,
-                                           "restraint",
-                                           "reboots",
-                                           &tmp_error);
-    if (tmp_error && tmp_error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND) {
-        g_propagate_prefixed_error(error, tmp_error,
-                    "Task %s:  parse_run_metadata,", task->task_id);
-        goto error;
-    }
-    g_clear_error (&tmp_error);
-
-    task->offset = g_key_file_get_uint64 (keyfile,
-                                          "restraint",
-                                          "offset",
-                                          &tmp_error);
-    if (tmp_error && tmp_error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND) {
-        g_propagate_prefixed_error(error, tmp_error,
-                    "Task %s:  parse_run_metadata,", task->task_id);
-        goto error;
-    }
-    g_clear_error (&tmp_error);
-
-    task->started = g_key_file_get_boolean (keyfile,
-                                          "restraint",
-                                          "started",
-                                          &tmp_error);
-    if (tmp_error && tmp_error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND) {
-        g_propagate_prefixed_error(error, tmp_error,
-                    "Task %s:  parse_run_metadata,", task->task_id);
-        goto error;
-    }
-    g_clear_error (&tmp_error);
-
-    task->finished = g_key_file_get_boolean (keyfile,
-                                          "restraint",
-                                          "finished",
-                                          &tmp_error);
-    if (tmp_error && tmp_error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND) {
-        g_propagate_prefixed_error(error, tmp_error,
-                    "Task %s:  parse_run_metadata,", task->task_id);
-        goto error;
-    }
-    g_clear_error (&tmp_error);
-
-    task->localwatchdog = g_key_file_get_boolean (keyfile,
-                                          "restraint",
-                                          "localwatchdog",
-                                          &tmp_error);
-    if (tmp_error && tmp_error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND) {
-        g_propagate_prefixed_error(error, tmp_error,
-                    "Task %s:  parse_run_metadata,", task->task_id);
-        goto error;
-    }
-    g_clear_error (&tmp_error);
-    if (task->localwatchdog) {
-        g_set_error(&task->error, RESTRAINT_TASK_RUNNER_ERROR,
-                            RESTRAINT_TASK_RUNNER_WATCHDOG_ERROR,
-                            "Local watchdog expired!");
-    }
-
-    task->name = g_key_file_get_string (keyfile,
-                                          "restraint",
-                                          "name",
-                                          &tmp_error);
-    if (tmp_error && tmp_error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND) {
-        g_propagate_prefixed_error(error, tmp_error,
-                    "Task %s:  parse_run_metadata,", task->task_id);
-        goto error;
-    }
-    g_clear_error (&tmp_error);
-
-    task->status = g_key_file_get_string (keyfile,
-                                          "restraint",
-                                          "status",
-                                          &tmp_error);
-    if (tmp_error && tmp_error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND) {
-        g_propagate_prefixed_error(error, tmp_error,
-                    "Task %s:  parse_run_metadata,", task->task_id);
-        goto error;
-    }
-    g_clear_error (&tmp_error);
-
-error:
-    g_key_file_free (keyfile);   
-    task->parsed = TRUE;
-}
-
-gchar *
-restraint_get_running_config (gchar *key, GError **error)
-{
-    gchar *running_config = g_build_filename(VAR_LIB_PATH, "config", NULL);
-
-    gchar *value = NULL;
-    GKeyFile *keyfile;
-    GKeyFileFlags flags;
-    GError *tmp_error = NULL;
-
-    keyfile = g_key_file_new ();
-    flags = G_KEY_FILE_KEEP_COMMENTS | G_KEY_FILE_KEEP_TRANSLATIONS;
-
-    if (!g_key_file_load_from_file (keyfile, running_config, flags, NULL)) {
-        goto cleanup;
-    }
-    value = g_key_file_get_string (keyfile,
-                                   "restraint",
-                                   key,
-                                   &tmp_error);
-    if (tmp_error && tmp_error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND) {
-        g_propagate_prefixed_error(error, tmp_error,
-                    "get_running_config,");
-        goto cleanup;
-    }
-    g_clear_error (&tmp_error);
-
-cleanup:
-    g_key_file_free (keyfile);   
-    g_free(running_config);
-    return value;
-}
-
-void
-restraint_set_running_config (gchar *key, gchar *value, GError **error)
-{
-    gchar *running_config = g_build_filename(VAR_LIB_PATH, "config", NULL);
-
-    GKeyFile *keyfile;
-    GKeyFileFlags flags;
-    GError *tmp_error = NULL;
-
-    gchar *s_data = NULL;
-    gsize length;
-
-    flags = G_KEY_FILE_KEEP_COMMENTS | G_KEY_FILE_KEEP_TRANSLATIONS;
-    keyfile = g_key_file_new ();
-    g_key_file_load_from_file (keyfile, running_config, flags, NULL);
-
-    if (key && value) {
-        g_key_file_set_string (keyfile,
-                               "restraint",
-                               key,
-                               value);
-    } else if (key && !value) {
-        g_key_file_remove_key (keyfile,
-                               "restraint",
-                               key,
-                               NULL);
-    }
-
-    s_data = g_key_file_to_data (keyfile, &length, &tmp_error);
-    if (!s_data) {
-        g_propagate_error (error, tmp_error);
-        goto cleanup;
-    }
-
-    if (!g_file_set_contents (running_config, s_data, length,  &tmp_error)) {
-        g_propagate_error (error, tmp_error);
-        goto cleanup;
-    }
-    
-cleanup:
-    g_free (s_data);
-    g_key_file_free (keyfile);   
-    g_free (running_config);
-}
-
-void
-restraint_set_run_metadata (Task *task, gchar *key, GError **error, GType type, ...)
-{
-    g_return_if_fail(task != NULL);
-    g_return_if_fail(error == NULL || *error == NULL);
-    va_list args;
-    GValue value;
-
-    va_start (args, type);
-    SOUP_VALUE_SETV (&value, type, args);
-    va_end (args);
-
-    gchar *s_data = NULL;
-    gsize length;
-    GKeyFile *keyfile;
-    GKeyFileFlags flags;
-    GError *tmp_error = NULL;
-
-    flags = G_KEY_FILE_KEEP_COMMENTS | G_KEY_FILE_KEEP_TRANSLATIONS;
-
-    gchar *dirname = g_path_get_dirname (task->rundata);
-    g_mkdir_with_parents (dirname, 0755 /* drwxr-xr-x */);
-    g_free (dirname);
-    keyfile = g_key_file_new ();
-    g_key_file_load_from_file (keyfile, task->rundata, flags, NULL);
-
-    switch (type) {
-        case G_TYPE_UINT64:
-            g_key_file_set_uint64 (keyfile,
-                                   "restraint",
-                                   key,
-                                   g_value_get_uint64 (&value));
-            break;
-        case G_TYPE_INT:
-            g_key_file_set_integer (keyfile,
-                                   "restraint",
-                                   key,
-                                   g_value_get_int (&value));
-            break;
-        case G_TYPE_BOOLEAN:
-            g_key_file_set_boolean (keyfile,
-                                   "restraint",
-                                   key,
-                                   g_value_get_boolean (&value));
-            break;
-        case G_TYPE_STRING:
-            g_key_file_set_string (keyfile,
-                                   "restraint",
-                                   key,
-                                   g_value_get_string (&value));
-            break;
-        default:
-            g_warning ("invalid GType\n");
-    }
-
-    s_data = g_key_file_to_data (keyfile, &length, &tmp_error);
-    if (!s_data) {
-        g_propagate_error (error, tmp_error);
-        goto error;
-    }
-
-    if (!g_file_set_contents (task->rundata, s_data, length,  &tmp_error)) {
-        g_propagate_error (error, tmp_error);
-        goto error;
-    }
-    
-error:
-    g_free (s_data);
-    g_key_file_free (keyfile);   
 }
 
 gboolean

@@ -21,19 +21,19 @@ endif
 .PHONY: all
 all: restraint restraintd rstrnt-report-result rstrnt-report-log rstrnt-adjust-watchdog
 
-rstrnt-report-result: result.o upload.o
+rstrnt-report-result: cmd_result.o upload.o
 	$(CC) $(LDFLAFS) -o $@ $^ $(LIBS)
 
-rstrnt-report-log: result_log.o upload.o
+rstrnt-report-log: cmd_log.o upload.o
 	$(CC) $(LDFLAFS) -o $@ $^ $(LIBS)
 
-rstrnt-adjust-watchdog: cmd_watchdog.o utils.o
+rstrnt-adjust-watchdog: cmd_watchdog.o utils.o errors.o
 	$(CC) $(LDFLAFS) -o $@ $^ $(LIBS)
 
 restraint: client.o
 	$(CC) $(LDFLAFS) -o $@ $^ $(LIBS)
 
-restraintd: server.o recipe.o task.o packages.o fetch_git_task.o fetch_http_task.o param.o role.o metadata.o process.o message.o dependency.o utils.o
+restraintd: server.o recipe.o task.o packages.o fetch_git_task.o fetch_http_task.o param.o role.o metadata.o process.o message.o dependency.o utils.o config.o errors.o
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 fetch_git_task.o: task.h
@@ -43,7 +43,7 @@ task.o: task.h
 recipe.o: recipe.h task.h
 param.o: param.h
 role.o: role.h
-server.o: recipe.h task.h
+server.o: recipe.h task.h server.h
 expect_http.o: expect_http.h
 role.o: role.h
 client.o: client.h
@@ -51,6 +51,8 @@ process.o: process.h
 message.o: message.h
 dependency.o: dependency.h
 utils.o: utils.h
+config.o: config.h
+errors.o: errors.h
 
 TEST_PROGS =
 test_%: test_%.o

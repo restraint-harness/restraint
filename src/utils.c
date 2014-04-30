@@ -22,11 +22,8 @@
 #include <string.h>
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
+#include "errors.h"
 #include "utils.h"
-
-GQuark restraint_parse_error_quark(void) {
-    return g_quark_from_static_string("restraint-parse-error-quark");
-}
 
 guint64
 parse_time_string(gchar *time_string, GError **error)

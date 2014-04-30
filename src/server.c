@@ -23,7 +23,7 @@
 #include <fcntl.h>
 #include "recipe.h"
 #include "task.h"
-#include "metadata.h"
+#include "config.h"
 #include "server.h"
 #include "process.h"
 #include "message.h"
@@ -60,10 +60,7 @@ swap_base (const gchar *orig, const gchar *new_base, gchar *split_string)
 void connections_write (AppData *app_data, gchar *msg_data, gsize msg_len)
 {
     // Active parsed task?  Send the output to taskout.log via REST
-    if (app_data->tasks && ((Task *) app_data->tasks->data)->parsed) {
-        gint *retries = malloc( sizeof( *retries));
-        *retries = 0;
-
+    if (app_data->tasks) {
         Task *task = (Task *) app_data->tasks->data;
         SoupURI *task_output_uri = soup_uri_new_with_base (task->task_uri, "logs/taskoutput.log");
         SoupMessage *server_msg = soup_message_new_from_uri ("PUT", task_output_uri);
@@ -80,8 +77,10 @@ void connections_write (AppData *app_data, gchar *msg_data, gsize msg_len)
 
         restraint_queue_message (soup_session, server_msg, NULL, NULL);
 
-        // Update run_metadata file with new taskout.log offset.
-        restraint_set_run_metadata (task, "offset", NULL, G_TYPE_UINT64, task->offset);
+        // Update config file with new taskout.log offset.
+        restraint_config_set (app_data->config_file, task->task_id,
+                              "offset", NULL,
+                              G_TYPE_UINT64, task->offset);
     }
 }
 
@@ -160,24 +159,6 @@ handle_recipe_request (gchar *recipe_url, AppData *app_data, GError **error)
     return FALSE;
   }
   return TRUE;
-}
-
-static gboolean
-handle_running_config (gpointer user_data)
-{
-    AppData *app_data = (AppData *) user_data;
-    GError *error = NULL;
-    gchar *recipe_url = restraint_get_running_config ("recipe_url", &error);
-    if (error) {
-        g_warning(error->message);
-        g_error_free (error);
-    } else if (recipe_url) {
-        if (!handle_recipe_request (recipe_url, app_data, &error)) {
-            g_warning(error->message);
-            g_error_free (error);
-        }
-    }
-    return FALSE;
 }
 
 void
@@ -386,12 +367,13 @@ int main(int argc, char *argv[]) {
   AppData *app_data = g_slice_new0(AppData);
   GMainLoop *loop;
   gint port = 8081;
-  gchar *recipe = NULL;
+  app_data->config_file = NULL;
+  gchar *config_port = "config.conf";
   GError *error = NULL;
 
   GOptionEntry entries [] = {
-        { "recipe", 'r', 0, G_OPTION_ARG_STRING, &recipe,
-            "Run recipe from file", "URL" },
+        { "port", 'p', 0, G_OPTION_ARG_INT, &port,
+            "Use the following config file", "CONFIGFILE" },
         { NULL }
   };
   GOptionContext *context = g_option_context_new(NULL);
@@ -403,6 +385,30 @@ int main(int argc, char *argv[]) {
 
   if (!parse_succeeded) {
     exit (1);
+  }
+
+  // port option passed in.
+  if (port != 8081) {
+      config_port = g_strdup_printf ("config_%d.conf", port);
+  }
+  app_data->restraint_url = g_strdup_printf ("http://localhost:%d", port);
+  app_data->config_file = g_build_filename (VAR_LIB_PATH, config_port, NULL);
+                                        
+  app_data->recipe_url = restraint_config_get_string (app_data->config_file,
+                                                      "restraint",
+                                                      "recipe_url", &error);
+  if (error) {
+      g_printerr ("%s [%s, %d]\n", error->message,
+                  g_quark_to_string (error->domain), error->code);
+      exit (1);
+  }
+
+  if (app_data->recipe_url) {
+    app_data->state = RECIPE_FETCH;
+    app_data->recipe_handler_id = g_idle_add_full(G_PRIORITY_DEFAULT_IDLE,
+                                                  recipe_handler,
+                                                  app_data,
+                                                  client_finish);
   }
 
   soup_session = soup_session_new();
@@ -431,21 +437,6 @@ int main(int argc, char *argv[]) {
 
 
   soup_server_run_async (soup_server);
-
-  if (recipe) {
-    // If recipe is passed on command line run that.
-    if (!handle_recipe_request (recipe, app_data, &error)) {
-      g_warning(error->message);
-      g_error_free (error);
-      exit (1);
-    }
-  } else {
-    // Check config file for recipe to continue running.
-    g_idle_add_full(G_PRIORITY_DEFAULT_IDLE,
-                    handle_running_config,
-                    app_data,
-                    NULL);
-  }
 
   /* enter mainloop */
   g_print ("Waiting for client!\n");

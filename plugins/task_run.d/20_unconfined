@@ -49,13 +49,13 @@ function runcon_unconfined() {
     # Run command with SELinux context of the root
     exec $runcon_cmd -- "$@"
   else
-    echo "-- WARNING: '$runcon_cmd -- true' failed. Running in default context!"
+    echo "**** -- WARNING: '$runcon_cmd -- true' failed. Running in default context!"
     exec "$@"
   fi
 }
 
 if selinuxenabled; then
-  echo "-- INFO: selinux enabled: trying to switch context..."
+  echo "**** -- INFO: selinux enabled: trying to switch context..."
   runcon_unconfined "$@"
 else
   exec "$@"
