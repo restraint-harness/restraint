@@ -7,7 +7,7 @@
 %endif
 
 Name:		restraint
-Version:	0.1.13
+Version:	0.1.14
 Release:	1%{?dist}
 Summary:	Simple test harness which can be used with beaker
 
@@ -236,6 +236,39 @@ fi
 %{__rm} -rf %{buildroot}
 
 %changelog
+* Mon May 05 2014 Bill Peck <bpeck@redhat.com> 0.1.14-1
+- Updated usecases (bpeck@redhat.com)
+- Allow multiple versions of restraint to run if different ports are used.
+  (bpeck@redhat.com)
+- install task run plugin (bpeck@redhat.com)
+- update TODO file (bpeck@redhat.com)
+- Update features list (bpeck@redhat.com)
+- Updates to plugin docs to match newest plugins. (bpeck@redhat.com)
+- Add git clone info to docs (bpeck@redhat.com)
+- Setup some environment variables if they aren't defined. Make the plugin
+  reporting a little clearer. (bpeck@redhat.com)
+- fixes for watchdog adjust (bpeck@redhat.com)
+- final pieces to support extending watchdog from reserve task.
+  (bpeck@redhat.com)
+- Allow tasks to disable localwatchdog. (bpeck@redhat.com)
+- Only report denials in avc_check. (bpeck@redhat.com)
+- Update static build requires to pick up fedora (bpeck@redhat.com)
+- Pass OUTPUTFILE to rstrnt-report-result in case the variable wasn't exported
+  (bpeck@redhat.com)
+- minor doc updates (bpeck@redhat.com)
+- Provide SUBMITTER for legacy rhts and RSTRNT_OWNER for new.
+  (bpeck@redhat.com)
+- minor fix for RSTRNT_RECIPE_URL (bpeck@redhat.com)
+- Another variable that legacy rhts expects. (bpeck@redhat.com)
+- define RSTRNT_RECIPE_URL so that tasks can request the current recipe xml.
+  (bpeck@redhat.com)
+- Define RESULT_SERVER for rhts legacy tasks.  The value shouldn't matter.
+  (bpeck@redhat.com)
+- Display the commands being executed (bpeck@redhat.com)
+- License Restraint under the GPL 3.0 (bpeck@redhat.com)
+- Propagate the error when we fail a command returns non-zero
+  (bpeck@redhat.com)
+
 * Thu Apr 17 2014 Bill Peck <bpeck@redhat.com> 0.1.13-1
 - cosmetic change (bpeck@redhat.com)
 - Fix guint64 mistake (bpeck@redhat.com)
