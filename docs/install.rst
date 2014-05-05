@@ -66,6 +66,8 @@ If you need to run legacy RHTS tests install the -rhts sub-package on the system
 Building from Source
 --------------------
 
+Source code is located at https://github.com/p3ck/restraint.
+
 restraint can be built and linked dynamically or statically. To build it dynamically you will need the following packages installed (Minimum versions are listed):
 
  - zlib-1.2.8

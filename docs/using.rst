@@ -38,7 +38,7 @@ If you need RHTS compatibility and/or beakerlib you can add it here as well::
 
  bkr <WORKFLOW> --ks-meta="harness='restraint-rhts beakerlib'" --repo http://bpeck.fedorapeople.org/restraint/fc19/
 
-Running Stand Alone
+Running Standalone
 -------------------
 
 Restraint can run on its own without beaker, this is handy when you are devleoping a test and would like quicker
@@ -109,4 +109,48 @@ You can convert this into html with the following command::
  % xsltproc job2html.xml simple_job.07/job.xml >simple_job.07/index.html
 
 jobs2html.xml is found in restraint's rpm doc directory.
+
+Running in Beaker and Standalone
+--------------------------------
+
+Sometimes the tests that I am devleoping can be destrcutive to the system so I don't want
+to run them on my development box.  Or the test is specific to an architecture that I can't
+use VM for on my machine.  These are cases where it's really handy to use a combination of
+Beaker for provisioning and Standalone for executing the tests.
+
+First step is to run the following workflow to reserve a system in beaker::
+
+ <job>
+  <recipeSet>
+   <recipe ks_meta="harness=restraint">
+    <distroRequires>
+     <and>
+      <distro_name op="=" value="Fedora-20"/>
+      <distro_arch op="=" value="ppc64"/>
+     </and>
+    </distroRequires>
+    <hostRequires/>
+    <repos>
+     <repo name="myrepo_0" url="http://bpeck.fedorapeople.org/restraint/fc20/"/>
+    </repos>
+    <task name="/distribution/install" role="STANDALONE" />
+    <task name="/distribution/reservesys" role="None">
+     <fetch url="git://fedorapeople.org/home/fedora/bpeck/public_git/tests.git#distribution/reservesys"/>
+    </task>
+   </recipe>
+  </recipeSet>
+ </job>
+
+This will reserve a ppc64 system running Fedora20.  The /distribution/reservesys task will email
+the submitter of the job when run so you know the system is available.  By default the reservesys
+task will give you access to the system for 24 hours, after that the external watchdog will reclaim
+the system.  You can extend it using extendtesttime.sh on the system.  Finally It will also run a second
+instance of restraintd on port 8082 which you can then connect to with the restraint client running
+on your developer machine.::
+
+ % restraint --remote http://FQDN.example.com:8082/ --job simple_job.xml
+
+If the task you are developing doesn't work as expected you can make changes and try again.  Just
+remember to push your changes to git, the system under test will pull from the git url you put in your
+job xml.
 
