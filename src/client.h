@@ -16,7 +16,6 @@
 */
 
 #define READ_BUFFER_SIZE 131072
-#define SERVER_PORT 8000
 
 typedef struct {
     GError *error;
@@ -32,4 +31,5 @@ typedef struct {
     gint verbose;
     GString *body;
     SoupMessage *remote_msg;
+    guint port;
 } AppData;

@@ -274,7 +274,7 @@ task_callback (SoupServer *server, SoupMessage *remote_msg,
         // set result Location
         gchar *result_url = g_strdup_printf ("http://%s:%d/recipes/%s/tasks/%s/results/%d",
                                              app_data->address,
-                                             SERVER_PORT,
+                                             app_data->port,
                                              recipe_id,
                                              task_id,
                                              result_id);
@@ -657,7 +657,7 @@ run_recipe_handler (gpointer user_data)
     soup_uri_free (uri);
 
     data_table = g_hash_table_new (NULL, NULL);
-    gchar *recipe_url = g_strdup_printf ("http://%s:%d/recipes/%d/", app_data->address, SERVER_PORT, app_data->recipe_id);
+    gchar *recipe_url = g_strdup_printf ("http://%s:%d/recipes/%d/", app_data->address, app_data->port, app_data->recipe_id);
     g_hash_table_insert (data_table, "recipe", recipe_url);
     form_data = soup_form_encode_hash (data_table);
     soup_message_set_request (app_data->remote_msg, "application/x-www-form-urlencoded",
@@ -736,6 +736,7 @@ copy_job_as_template (gchar *job)
     // Write out our new job.
     gchar *filename = g_build_filename (run_dir, "job.xml", NULL);
     put_doc (new_xml_doc_ptr, filename);
+    g_free (filename);
     xmlFreeDoc(template_xml_doc_ptr);
     xmlFreeDoc(new_xml_doc_ptr);
 
@@ -751,6 +752,7 @@ parse_new_job (AppData *app_data)
     app_data->xml_doc = get_doc(filename);
     if (!app_data->xml_doc) {
         g_printerr ("Unable to parse %s\n", filename);
+        g_free (filename);
         xmlFreeDoc(app_data->xml_doc);
         return;
     }
@@ -758,7 +760,8 @@ parse_new_job (AppData *app_data)
     // find recipe node
     xmlXPathObjectPtr recipe_node_ptrs = get_node_set (app_data->xml_doc, recipe_xpath);
     if (!recipe_node_ptrs) {
-        g_printerr ("No <task> element(s) in %s\n", filename);
+        g_printerr ("No <recipe> element in %s\n", filename);
+        g_free (filename);
         xmlXPathFreeObject (recipe_node_ptrs);
         xmlFreeDoc(app_data->xml_doc);
         return;
@@ -768,10 +771,17 @@ parse_new_job (AppData *app_data)
     app_data->recipe_id = (gint) g_ascii_strtoll ((gchar *)recipe_id, NULL, 0);
     g_free (recipe_id);
 
+    // If the port number was recorded use it.
+    xmlChar *port = xmlGetNoNsProp(app_data->recipe_node_ptr, (xmlChar *)"port");
+    if (port) {
+        app_data->port = (gint) g_ascii_strtoll ((gchar *)port, NULL, 0);
+    }
+
     // find task nodes
     xmlXPathObjectPtr node_ptrs = get_node_set (app_data->xml_doc, task_xpath);
     if (!node_ptrs) {
         g_printerr ("No <task> element(s) in %s\n", filename);
+        g_free (filename);
         xmlXPathFreeObject (node_ptrs);
         xmlFreeDoc(app_data->xml_doc);
         return;
@@ -780,6 +790,7 @@ parse_new_job (AppData *app_data)
     app_data->tasks = g_hash_table_new (g_str_hash, g_str_equal);
     parse_task_nodes (node_ptrs->nodesetval, app_data->tasks);
     xmlXPathFreeObject (node_ptrs);
+    g_free (filename);
 }
 
 static gboolean
@@ -794,6 +805,7 @@ callback_parse_verbose (const gchar *option_name, const gchar *value,
 int main(int argc, char *argv[]) {
 
     SoupServer *server;
+    SoupAddress *addr;
 
     gchar *remote = "http://localhost:8081"; // Replace with a unix socket proxy so no network is required
                                              // when run from localhost.
@@ -807,6 +819,8 @@ int main(int argc, char *argv[]) {
     GOptionEntry entries[] = {
         {"remote", 's', 0, G_OPTION_ARG_STRING, &remote,
             "Remote machine to connect to", "URL" },
+        {"port", 'p', 0, G_OPTION_ARG_INT, &app_data->port,
+            "Specify the port to listen on", "PORT" },
         { "job", 'j', 0, G_OPTION_ARG_STRING, &job,
             "Run job from file", "FILE" },
         { "run", 'r', 0, G_OPTION_ARG_STRING, &app_data->run_dir,
@@ -839,6 +853,11 @@ int main(int argc, char *argv[]) {
         app_data->run_dir = copy_job_as_template (job);
     }
 
+    if (app_data->run_dir && app_data->port) {
+        g_printerr ("You can't specify both run_dir and port\n");
+        g_printerr ("Try %s --help\n", argv[0]);
+        goto cleanup;
+    }
     if (!parse_succeeded || !app_data->run_dir) {
         g_printerr("Try %s --help\n", argv[0]);
         goto cleanup;
@@ -866,12 +885,28 @@ int main(int argc, char *argv[]) {
     g_object_unref (address_msg);
 
     // Run a REST Server to gather results
-    server = soup_server_new (SOUP_SERVER_PORT, SERVER_PORT,
-                              NULL);
+    // FIXME: use -4 and -6 options to force IPV4 and IPv6
+    if (app_data->port) {
+        addr = soup_address_new_any (SOUP_ADDRESS_FAMILY_IPV4,
+                                     app_data->port);
+    } else {
+        addr = soup_address_new_any (SOUP_ADDRESS_FAMILY_IPV4,
+                                     SOUP_ADDRESS_ANY_PORT);
+    }
+    server = soup_server_new (SOUP_SERVER_INTERFACE, addr, NULL);
+    app_data->port = soup_server_get_port (server);
     if (!server) {
-        g_printerr ("Unable to bind to server port %d\n", SERVER_PORT);
+        g_printerr ("Unable to bind to server port %d\n", app_data->port);
         exit (1);
     }
+
+    // Record the port with the job.xml
+    gchar *port_str = g_strdup_printf ("%d", app_data->port);
+    xmlSetProp (app_data->recipe_node_ptr, (xmlChar *)"port", (xmlChar *) port_str);
+    g_free (port_str);
+    gchar *filename = g_build_filename (app_data->run_dir, "job.xml", NULL);
+    put_doc (app_data->xml_doc, filename);
+    g_free (filename);
 
     gchar *recipe_path = g_strdup_printf ("/recipes/%d", app_data->recipe_id);
     soup_server_add_handler (server, recipe_path,
