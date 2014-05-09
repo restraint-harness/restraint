@@ -31,7 +31,8 @@ message_complete (SoupSession *sesison, SoupMessage *msg, gpointer user_data)
     MessageData *message_data = (MessageData *) user_data;
     static gint delay = 2;
 
-    if (SOUP_STATUS_IS_SUCCESSFUL (message_data->msg->status_code)) {
+    if (SOUP_STATUS_IS_SUCCESSFUL (message_data->msg->status_code) ||
+        SOUP_STATUS_IS_CLIENT_ERROR (message_data->msg->status_code)) {
         delay = 2;
         if (message_data->finish_callback) {
             message_data->finish_callback (message_data->session,
