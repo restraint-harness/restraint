@@ -4,12 +4,13 @@
 xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
 xmlns="http://www.w3.org/TR/REC-html40">
 
- <xsl:output method="html"/>
+ <xsl:output method="html" indent="yes"/>
 
  <xsl:template match="/">
  <HTML>
  <HEAD>
  <TITLE>Beaker Recipe Results</TITLE>
+ <LINK REL="stylesheet" HREF="http://netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css"/>
  </HEAD>
  <BODY>
  <xsl:apply-templates/>
