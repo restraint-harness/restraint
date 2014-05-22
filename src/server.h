@@ -32,8 +32,6 @@ typedef struct {
   Recipe *recipe;
   GList *tasks;
   GError *error;
-  SoupServer *soup_server;
-  SoupMessage *client_msg;
   gchar *config_file;
   gchar *restraint_url;
 } AppData;
@@ -42,7 +40,7 @@ typedef struct {
     const gchar *path;
     AppData *app_data;
     SoupMessage *client_msg;
-    gchar **environ;
+    SoupServer *server;
 } ServerData;
 
 void connections_write (AppData *app_data, gchar *msg_data, gsize msg_len);

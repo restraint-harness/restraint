@@ -530,10 +530,23 @@ restraint_recipe_parse_xml (GObject *source, GAsyncResult *res, gpointer user_da
     return;
 }
 
+void
+recipe_handler_finish (gpointer user_data)
+{
+    ServerData *server_data = (ServerData *) user_data;
+
+    if (server_data->client_msg) {
+        soup_message_body_complete (server_data->client_msg->response_body);
+        soup_server_unpause_message (server_data->server, server_data->client_msg);
+    }
+    g_slice_free (ServerData, server_data);
+}
+
 gboolean
 recipe_handler (gpointer user_data)
 {
-    AppData *app_data = (AppData *) user_data;
+    ServerData *server_data = (ServerData *) user_data;
+    AppData *app_data = server_data->app_data;
     SoupURI *recipe_uri;
     SoupRequest *request;
     GString *message = g_string_new(NULL);
@@ -616,9 +629,9 @@ recipe_handler (gpointer user_data)
     // write message out to stderr
     if (message->len) {
       write (STDERR_FILENO, message->str, message->len);
-      if (app_data->client_msg) {
+      if (server_data->client_msg) {
           // Append message to client_msg->body
-          soup_message_body_append (app_data->client_msg->response_body,
+          soup_message_body_append (server_data->client_msg->response_body,
                                     SOUP_MEMORY_COPY,
                                     message->str,
                                     message->len);

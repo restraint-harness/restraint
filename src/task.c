@@ -519,11 +519,13 @@ restraint_next_task (AppData *app_data, TaskSetupState task_state) {
     }
 
     // No more tasks, let the recipe_handler know we are done.
+    ServerData *server_data = g_slice_new0 (ServerData);
+    server_data->app_data = app_data;
     app_data->state = RECIPE_COMPLETE;
     app_data->recipe_handler_id = g_idle_add_full(G_PRIORITY_DEFAULT_IDLE,
                                                   recipe_handler,
-                                                  app_data,
-                                                  NULL);
+                                                  server_data,
+                                                  recipe_handler_finish);
     return FALSE;
 }
 
