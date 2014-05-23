@@ -802,6 +802,53 @@ callback_parse_verbose (const gchar *option_name, const gchar *value,
     return TRUE;
 }
 
+void
+pretty_results ()
+{
+    gchar* cmdline;
+    gchar* job2html;
+    gchar* std_out;
+    size_t std_out_len;
+    gchar* std_err;
+    gint exitstat;
+    GError *gerror;
+    gint results_fd;
+    ssize_t results_len;
+
+    // TODO: find job2html.xml in /usr/share/doc/restraint-client-$VERSION
+#define VERSION "0.1.14"
+    job2html = g_strdup_printf("/usr/share/doc/restraint-client-%s/job2html.xml", VERSION);
+    cmdline = g_strdup_printf("xsltproc %s job.xml", job2html);
+
+    if (!g_spawn_command_line_sync(cmdline, &std_out, &std_err, &exitstat, &gerror)) {
+        g_printerr("cannot spawn '%s': %s\n", cmdline, gerror->message);
+        g_error_free(gerror);
+        goto cleanup;
+    }
+
+    results_fd = g_open("results.html", O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR);
+    if (results_fd == -1) {
+        g_printerr("Error opening results.html for writing\n");
+        goto cleanup;
+    }
+    std_out_len = strlen(std_out);
+    results_len = write(results_fd, std_out, std_out_len);
+    if(!g_close(results_fd, &gerror)) {
+        g_printerr("cannot close results.html: %s\n", gerror->message);
+        g_error_free(gerror);
+        goto cleanup;
+    }
+    if (results_len != std_out_len) {
+        g_printerr("Error writing to results.html\n");
+    }
+
+cleanup:
+    g_free(cmdline);
+    g_free(job2html);
+    g_free(std_out);
+    g_free(std_err);
+}
+
 int main(int argc, char *argv[]) {
 
     SoupServer *server;
@@ -931,6 +978,9 @@ int main(int argc, char *argv[]) {
     // We're done.
     xmlFreeDoc(app_data->xml_doc);
     xmlCleanupParser();
+
+    // convert job.xml to results.html
+    pretty_results();
 
 cleanup:
     if (app_data->error) {
