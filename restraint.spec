@@ -8,11 +8,11 @@
 
 Name:		restraint
 Version:	0.1.14
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Simple test harness which can be used with beaker
 
 Group:		Applications/Internet
-License:	GPLv3+
+License:	GPLv3+ and MIT
 URL:		https://github.com/p3ck/%{name}
 Source0:	https://github.com/p3ck/%{name}/%{name}-%{version}.tar.gz
 
@@ -66,6 +66,7 @@ Legacy package to allow older rhts tests to run under restraint
 Summary:	used to run jobs outside of beaker
 Group:		Applications/Internet
 Requires:	restraint = %{version}
+Requires:	libxslt
 
 %description client
 With the restraint client you can run jobs outside of beaker.  This will provide the same
@@ -211,6 +212,9 @@ fi
 %files client
 %attr(0755, root, root)%{_bindir}/%{name}
 %doc docs/job2html.xml
+%doc docs/bootstrap/LICENSE
+%doc docs/bootstrap/README
+%doc docs/bootstrap/bootstrap.min.css
 
 %files rhts
 %defattr(-,root,root,-)
@@ -236,6 +240,10 @@ fi
 %{__rm} -rf %{buildroot}
 
 %changelog
+* Fri May 23 2014 Jeff Bastian <jbastian@redhat.com> 0.1.14-2
+- add local copy of boostrap CSS
+- automatically generate results.html from job.xml (when running from client)
+
 * Mon May 05 2014 Bill Peck <bpeck@redhat.com> 0.1.14-1
 - Updated usecases (bpeck@redhat.com)
 - Allow multiple versions of restraint to run if different ports are used.
