@@ -93,6 +93,7 @@ pushd src
 PKG_CONFIG_PATH=../third-party/tree/lib/pkgconfig make STATIC=1
 popd
 
+sed -i 's/@VERSION@/%{version}/' docs/job2html.xml
 
 %install
 %{__rm} -rf %{buildroot}
