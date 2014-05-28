@@ -7,7 +7,7 @@
 %endif
 
 Name:		restraint
-Version:	0.1.14
+Version:	0.1.15
 Release:	1%{?dist}
 Summary:	Simple test harness which can be used with beaker
 
@@ -236,6 +236,12 @@ fi
 %{__rm} -rf %{buildroot}
 
 %changelog
+* Wed May 28 2014 Bill Peck <bpeck@redhat.com> 0.1.15-1
+- Add IPv6 support (bpeck@redhat.com)
+- If we fail to send a message because of a client issue, don't keep retrying.
+  (bpeck@redhat.com)
+- Remove hard coded server port. (bpeck@redhat.com)
+
 * Mon May 05 2014 Bill Peck <bpeck@redhat.com> 0.1.14-1
 - Updated usecases (bpeck@redhat.com)
 - Allow multiple versions of restraint to run if different ports are used.
