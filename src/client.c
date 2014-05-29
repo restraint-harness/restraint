@@ -803,41 +803,49 @@ callback_parse_verbose (const gchar *option_name, const gchar *value,
 }
 
 void
-pretty_results ()
+pretty_results (gchar* run_dir)
 {
     gchar* cmdline;
     gchar* job2html;
+    gchar* jobxml;
     gchar* std_out;
     size_t std_out_len;
     gchar* std_err;
     gint exitstat;
     GError *gerror;
+    gchar* results_filename;
     gint results_fd;
     ssize_t results_len;
 
     job2html = g_strdup_printf("/usr/share/restraint/client/job2html.xml");
-    cmdline = g_strdup_printf("xsltproc %s job.xml", job2html);
+    jobxml = g_build_filename (run_dir, "job.xml", NULL);
+    cmdline = g_strdup_printf("xsltproc %s %s", job2html, jobxml);
 
     if (!g_spawn_command_line_sync(cmdline, &std_out, &std_err, &exitstat, &gerror)) {
         g_printerr("cannot spawn '%s': %s\n", cmdline, gerror->message);
         g_error_free(gerror);
         goto cleanup;
     }
+    if (exitstat != 0) {
+        g_printerr("xsltproc error: %s\n", std_err);
+        goto cleanup;
+    }
 
-    results_fd = g_open("index.html", O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR);
+    results_filename = g_build_filename (run_dir, "index.html", NULL);
+    results_fd = g_open(results_filename, O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR);
     if (results_fd == -1) {
-        g_printerr("Error opening index.html for writing\n");
+        g_printerr("Error opening %s for writing\n", results_filename);
         goto cleanup;
     }
     std_out_len = strlen(std_out);
     results_len = write(results_fd, std_out, std_out_len);
     if(!g_close(results_fd, &gerror)) {
-        g_printerr("cannot close index.html: %s\n", gerror->message);
+        g_printerr("cannot close %s: %s\n", gerror->message, results_filename);
         g_error_free(gerror);
         goto cleanup;
     }
     if (results_len != std_out_len) {
-        g_printerr("Error writing to index.html\n");
+        g_printerr("Error writing to %s\n", results_filename);
     }
 
 cleanup:
@@ -1001,7 +1009,7 @@ int main(int argc, char *argv[]) {
     xmlCleanupParser();
 
     // convert job.xml to index.html
-    pretty_results();
+    pretty_results(app_data->run_dir);
 
 cleanup:
     if (app_data->error) {
