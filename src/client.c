@@ -824,20 +824,20 @@ pretty_results ()
         goto cleanup;
     }
 
-    results_fd = g_open("results.html", O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR);
+    results_fd = g_open("index.html", O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR);
     if (results_fd == -1) {
-        g_printerr("Error opening results.html for writing\n");
+        g_printerr("Error opening index.html for writing\n");
         goto cleanup;
     }
     std_out_len = strlen(std_out);
     results_len = write(results_fd, std_out, std_out_len);
     if(!g_close(results_fd, &gerror)) {
-        g_printerr("cannot close results.html: %s\n", gerror->message);
+        g_printerr("cannot close index.html: %s\n", gerror->message);
         g_error_free(gerror);
         goto cleanup;
     }
     if (results_len != std_out_len) {
-        g_printerr("Error writing to results.html\n");
+        g_printerr("Error writing to index.html\n");
     }
 
 cleanup:
@@ -1000,7 +1000,7 @@ int main(int argc, char *argv[]) {
     xmlFreeDoc(app_data->xml_doc);
     xmlCleanupParser();
 
-    // convert job.xml to results.html
+    // convert job.xml to index.html
     pretty_results();
 
 cleanup:
