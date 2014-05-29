@@ -272,9 +272,8 @@ task_callback (SoupServer *server, SoupMessage *remote_msg,
             xmlSetProp (app_data->recipe_node_ptr, (xmlChar *)"result", (xmlChar *) result);
 
         // set result Location
-        gchar *result_url = g_strdup_printf ("http://%s:%d/recipes/%s/tasks/%s/results/%d",
+        gchar *result_url = g_strdup_printf ("%srecipes/%s/tasks/%s/results/%d",
                                              app_data->address,
-                                             app_data->port,
                                              recipe_id,
                                              task_id,
                                              result_id);
@@ -657,7 +656,8 @@ run_recipe_handler (gpointer user_data)
     soup_uri_free (uri);
 
     data_table = g_hash_table_new (NULL, NULL);
-    gchar *recipe_url = g_strdup_printf ("http://%s:%d/recipes/%d/", app_data->address, app_data->port, app_data->recipe_id);
+
+    gchar *recipe_url = g_strdup_printf ("%srecipes/%d/", app_data->address, app_data->recipe_id);
     g_hash_table_insert (data_table, "recipe", recipe_url);
     form_data = soup_form_encode_hash (data_table);
     soup_message_set_request (app_data->remote_msg, "application/x-www-form-urlencoded",
@@ -851,10 +851,12 @@ int main(int argc, char *argv[]) {
 
     SoupServer *server;
     SoupAddress *addr;
+    SoupAddressFamily address_family;
 
     gchar *remote = "http://localhost:8081"; // Replace with a unix socket proxy so no network is required
                                              // when run from localhost.
     gchar *job = NULL;
+    gboolean ipv6 = FALSE;
 
     AppData *app_data = g_slice_new0 (AppData);
     app_data->body = g_string_new (NULL);
@@ -864,6 +866,8 @@ int main(int argc, char *argv[]) {
     GOptionEntry entries[] = {
         {"remote", 's', 0, G_OPTION_ARG_STRING, &remote,
             "Remote machine to connect to", "URL" },
+        {"ipv6", '6', 0, G_OPTION_ARG_NONE, &ipv6,
+            "Use IPV6 for communication", NULL },
         {"port", 'p', 0, G_OPTION_ARG_INT, &app_data->port,
             "Specify the port to listen on", "PORT" },
         { "job", 'j', 0, G_OPTION_ARG_STRING, &job,
@@ -891,7 +895,17 @@ int main(int argc, char *argv[]) {
 
     // Setup soup session to talk to restraintd
     app_data->remote_uri = soup_uri_new (remote);
-    session = soup_session_new();
+
+    if (ipv6) {
+        address_family = SOUP_ADDRESS_FAMILY_IPV6;
+    } else {
+        address_family = SOUP_ADDRESS_FAMILY_IPV4;
+    }
+
+    SoupAddress *address = soup_address_new_any (address_family,
+                                                   SOUP_ADDRESS_ANY_PORT);
+
+    session = soup_session_new_with_options("local-address", address, NULL);
 
     if (job) {
         // if template job is passed in use it to generate our job
@@ -926,16 +940,13 @@ int main(int argc, char *argv[]) {
         g_printerr ("%s\n", address_msg->reason_phrase);
         goto cleanup;
     }
-    app_data->address = g_strdup(soup_message_headers_get_one (address_msg->response_headers, "Address"));
-    g_object_unref (address_msg);
 
     // Run a REST Server to gather results
-    // FIXME: use -4 and -6 options to force IPV4 and IPv6
     if (app_data->port) {
-        addr = soup_address_new_any (SOUP_ADDRESS_FAMILY_IPV4,
+        addr = soup_address_new_any (address_family,
                                      app_data->port);
     } else {
-        addr = soup_address_new_any (SOUP_ADDRESS_FAMILY_IPV4,
+        addr = soup_address_new_any (address_family,
                                      SOUP_ADDRESS_ANY_PORT);
     }
     server = soup_server_new (SOUP_SERVER_INTERFACE, addr, NULL);
@@ -944,6 +955,18 @@ int main(int argc, char *argv[]) {
         g_printerr ("Unable to bind to server port %d\n", app_data->port);
         exit (1);
     }
+
+    // Construct the url where we will serve from.
+    gchar *host = g_strdup(soup_message_headers_get_one (address_msg->response_headers, "Address"));
+    SoupURI *proxy_uri = soup_uri_new(NULL);
+    soup_uri_set_scheme (proxy_uri, "http");
+    soup_uri_set_host (proxy_uri, host);
+    soup_uri_set_port (proxy_uri, app_data->port);
+    soup_uri_set_path (proxy_uri, "/");
+    app_data->address = soup_uri_to_string (proxy_uri, FALSE);
+    soup_uri_free (proxy_uri);
+    g_free (host);
+    g_object_unref (address_msg);
 
     // Record the port with the job.xml
     gchar *port_str = g_strdup_printf ("%d", app_data->port);

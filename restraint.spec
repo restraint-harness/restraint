@@ -7,7 +7,7 @@
 %endif
 
 Name:		restraint
-Version:	0.1.14
+Version:	0.1.15
 Release:	2%{?dist}
 Summary:	Simple test harness which can be used with beaker
 
@@ -239,9 +239,15 @@ fi
 %{__rm} -rf %{buildroot}
 
 %changelog
-* Fri May 23 2014 Jeff Bastian <jbastian@redhat.com> 0.1.14-2
+* Thu May 29 2014 Jeff Bastian <jbastian@redhat.com> 0.1.15-2
 - add local copy of boostrap CSS
 - automatically generate results.html from job.xml (when running from client)
+
+* Wed May 28 2014 Bill Peck <bpeck@redhat.com> 0.1.15-1
+- Add IPv6 support (bpeck@redhat.com)
+- If we fail to send a message because of a client issue, don't keep retrying.
+  (bpeck@redhat.com)
+- Remove hard coded server port. (bpeck@redhat.com)
 
 * Mon May 05 2014 Bill Peck <bpeck@redhat.com> 0.1.14-1
 - Updated usecases (bpeck@redhat.com)
