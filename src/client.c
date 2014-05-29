@@ -815,9 +815,7 @@ pretty_results ()
     gint results_fd;
     ssize_t results_len;
 
-    // TODO: find job2html.xml in /usr/share/doc/restraint-client-$VERSION
-#define VERSION "0.1.14"
-    job2html = g_strdup_printf("/usr/share/doc/restraint-client-%s/job2html.xml", VERSION);
+    job2html = g_strdup_printf("/usr/share/restraint/client/job2html.xml");
     cmdline = g_strdup_printf("xsltproc %s job.xml", job2html);
 
     if (!g_spawn_command_line_sync(cmdline, &std_out, &std_err, &exitstat, &gerror)) {

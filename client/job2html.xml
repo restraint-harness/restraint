@@ -10,7 +10,7 @@ xmlns="http://www.w3.org/TR/REC-html40">
  <HTML>
  <HEAD>
  <TITLE>Beaker Recipe Results</TITLE>
- <LINK REL="stylesheet" HREF="/usr/share/doc/restraint-client-@VERSION@/bootstrap/bootstrap.min.css"/>
+ <LINK REL="stylesheet" HREF="/usr/share/restraint/client/bootstrap/bootstrap.min.css"/>
  </HEAD>
  <BODY>
  <xsl:apply-templates/>

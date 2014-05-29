@@ -93,8 +93,6 @@ pushd src
 PKG_CONFIG_PATH=../third-party/tree/lib/pkgconfig make STATIC=1
 popd
 
-sed -i 's/@VERSION@/%{version}/' docs/job2html.xml
-
 %install
 %{__rm} -rf %{buildroot}
 
@@ -212,10 +210,10 @@ fi
 
 %files client
 %attr(0755, root, root)%{_bindir}/%{name}
-%doc docs/job2html.xml
-%doc docs/bootstrap/LICENSE
-%doc docs/bootstrap/README
-%doc docs/bootstrap/bootstrap.min.css
+/usr/share/%{name}/client/job2html.xml
+/usr/share/%{name}/client/bootstrap/LICENSE
+/usr/share/%{name}/client/bootstrap/README
+/usr/share/%{name}/client/bootstrap/bootstrap.min.css
 
 %files rhts
 %defattr(-,root,root,-)
