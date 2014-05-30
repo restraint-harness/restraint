@@ -805,19 +805,45 @@ callback_parse_verbose (const gchar *option_name, const gchar *value,
 void
 pretty_results (gchar* run_dir)
 {
-    gchar* cmdline;
-    gchar* job2html;
-    gchar* jobxml;
-    gchar* std_out;
-    size_t std_out_len;
-    gchar* std_err;
+    gchar* cmdline = NULL;
+    gchar *bootstrap_src = "/usr/share/restraint/client/bootstrap/bootstrap.min.css";
+    gchar *bootstrap = NULL;
+    gchar* job2html = "/usr/share/restraint/client/job2html.xml";
+    gchar* jobxml = NULL;
+    gchar* std_out = NULL;
+    gchar *contents = NULL;
+    gsize length;
+    gchar* std_err = NULL;
     gint exitstat;
-    GError *gerror;
+    GError *gerror = NULL;
     gchar* results_filename;
     gint results_fd;
-    ssize_t results_len;
+    gssize results_len;
+    gboolean success = FALSE;
 
-    job2html = g_strdup_printf("/usr/share/restraint/client/job2html.xml");
+    success = g_file_get_contents (bootstrap_src,
+                                   &contents,
+                                   &length,
+                                   &gerror);
+    if (!success) {
+        g_printerr ("Error opening %s for reading: %s\n",
+                    bootstrap_src,
+                    gerror->message);
+        goto cleanup;
+    }
+
+    bootstrap = g_build_filename (run_dir, "bootstrap.min.css", NULL);
+    success = g_file_set_contents (bootstrap,
+                                   contents,
+                                   length,
+                                   &gerror);
+    if (!success) {
+        g_printerr ("Error opening %s for writing: %s\n",
+                    bootstrap,
+                    gerror->message);
+        goto cleanup;
+    }
+
     jobxml = g_build_filename (run_dir, "job.xml", NULL);
     cmdline = g_strdup_printf("xsltproc %s %s", job2html, jobxml);
 
@@ -837,22 +863,26 @@ pretty_results (gchar* run_dir)
         g_printerr("Error opening %s for writing\n", results_filename);
         goto cleanup;
     }
-    std_out_len = strlen(std_out);
-    results_len = write(results_fd, std_out, std_out_len);
+    length = strlen(std_out);
+    results_len = write(results_fd, std_out, length);
     if(!g_close(results_fd, &gerror)) {
-        g_printerr("cannot close %s: %s\n", gerror->message, results_filename);
+        g_printerr("cannot close %s: %s\n", results_filename, gerror->message);
         g_error_free(gerror);
         goto cleanup;
     }
-    if (results_len != std_out_len) {
+    if (results_len != length) {
         g_printerr("Error writing to %s\n", results_filename);
     }
 
 cleanup:
-    g_free(cmdline);
-    g_free(job2html);
-    g_free(std_out);
-    g_free(std_err);
+    if (contents != NULL)
+        g_free (contents);
+    if (cmdline != NULL)
+        g_free (cmdline);
+    if (std_out != NULL)
+        g_free (std_out);
+    if (std_err != NULL)
+        g_free (std_err);
 }
 
 int main(int argc, char *argv[]) {
