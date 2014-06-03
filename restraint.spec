@@ -65,7 +65,6 @@ Legacy package to allow older rhts tests to run under restraint
 %package client
 Summary:	used to run jobs outside of beaker
 Group:		Applications/Internet
-Requires:	restraint = %{version}
 Requires:	libxslt
 
 %description client
