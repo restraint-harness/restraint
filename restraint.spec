@@ -7,8 +7,8 @@
 %endif
 
 Name:		restraint
-Version:	0.1.15
-Release:	2%{?dist}
+Version:	0.1.16
+Release:	1%{?dist}
 Summary:	Simple test harness which can be used with beaker
 
 Group:		Applications/Internet
@@ -238,6 +238,21 @@ fi
 %{__rm} -rf %{buildroot}
 
 %changelog
+* Tue Jun 03 2014 Bill Peck <bpeck@redhat.com> 0.1.16-1
+- client package doesn't need the daemon to be installed. (bpeck@redhat.com)
+- fix possible memory leak when trying to open both ipv4 and ipv6 sockets
+  (bpeck@redhat.com)
+- use correct path to job.xml and for index.html (jbastian@redhat.com)
+- use index.html as output instead of results.html (jbastian@redhat.com)
+- update Makefiles to install client files (jbastian@redhat.com)
+- updates for move to /usr/share/restraint/client (jbastian@redhat.com)
+- move client files out of docs (jbastian@redhat.com)
+- generate pretty html from job.xml (jbastian@redhat.com)
+- update version string in path to CSS files (jbastian@redhat.com)
+- update rpm spec for bootstrap CSS files (jbastian@redhat.com)
+- add local copy of bootstrap min CSS source (jbastian@redhat.com)
+- add link to bootstrap CSS framework (jbastian@redhat.com)
+
 * Thu May 29 2014 Jeff Bastian <jbastian@redhat.com> 0.1.15-2
 - add local copy of boostrap CSS
 - automatically generate results.html from job.xml (when running from client)
