@@ -28,15 +28,10 @@ if [ -e "$AVC_FILE" ]; then
     AVC_SINCE=$(LC_ALL=en_US.UTF-8 date "+-ts %m/%d/%Y %H:%M:%S" --date="@$SECONDS")
 fi
 
-AUSEARCH_FILE=$(mktemp)
 ausearch -m AVC -m USER_AVC -m SELINUX_ERR -sv no $AVC_SINCE >$TMPDIR/avc.log
 RC=$?
 if [ $RC == 0 ]; then
-    rstrnt-report-result --no-plugins $TEST/$PLUGIN FAIL $RC
+    rstrnt-report-result --no-plugins -o $TMPDIR/avc.log $TEST/$PLUGIN FAIL $RC
 fi
 
-#Submit ausearch results
-if [ -s "$TMPDIR/avc.log" ]; then
-    rstrnt-report-log --server $RSTRNT_RESULT_URL -l $TMPDIR/avc.log
-fi
 rm -rf $TMPDIR

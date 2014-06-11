@@ -24,18 +24,41 @@
 
 static SoupSession *session;
 
+typedef struct {
+    gchar *filename;
+    gchar *outputfile;
+    GPtrArray *disable_plugin;
+} AppData;
+
 static gboolean
 callback_disable_plugin (const gchar *option_name, const gchar *value,
                  gpointer user_data, GError **error)
 {
-    GPtrArray *disable_plugin = (GPtrArray *) user_data;
-    g_ptr_array_add (disable_plugin, g_strdup (value));
+    AppData *app_data = (AppData *) user_data;
+
+    g_ptr_array_add (app_data->disable_plugin, g_strdup (value));
+    return TRUE;
+}
+
+static gboolean
+callback_outputfile (const gchar *option_name, const gchar *value,
+                     gpointer user_data, GError **error)
+{
+    AppData *app_data = (AppData *) user_data;
+
+    app_data->filename = g_filename_display_basename (value);
+    app_data->outputfile = g_strdup (value);
     return TRUE;
 }
 
 int main(int argc, char *argv[]) {
 
+    AppData *app_data = g_slice_new0 (AppData);
     gchar filename[] = "logs/resultoutputfile.log";
+    app_data->filename = filename;
+    app_data->outputfile = getenv("OUTPUTFILE");
+    app_data->disable_plugin = g_ptr_array_new_with_free_func (g_free);
+
     GError *error = NULL;
 
     gchar *server = NULL;
@@ -47,7 +70,6 @@ int main(int argc, char *argv[]) {
     SoupRequest *request;
 
     gchar *result_msg = NULL;
-    gchar *outputfile = getenv("OUTPUTFILE");
     gchar *prefix = NULL;
     gchar *server_recipe_key = NULL;
     gchar *server_recipe = NULL;
@@ -58,14 +80,12 @@ int main(int argc, char *argv[]) {
     gchar *form_data;
     GHashTable *data_table = g_hash_table_new (NULL, NULL);
     
-    GPtrArray *disable_plugin = g_ptr_array_new_with_free_func (g_free);
-
     GOptionEntry entries[] = {
         {"server", 's', 0, G_OPTION_ARG_STRING, &server,
             "Server to connect to", "URL" },
         { "message", 't', 0, G_OPTION_ARG_STRING, &result_msg,
             "Short 100 characters or less message", "TEXT" },
-        { "outputfile", 'o', 0, G_OPTION_ARG_STRING, &outputfile,
+        { "outputfile", 'o', 0, G_OPTION_ARG_CALLBACK, callback_outputfile,
             "Log to upload with result, $OUTPUTFILE is used by default", "FILE" },
         { "disable-plugin", 'p', 0, G_OPTION_ARG_CALLBACK, callback_disable_plugin,
             "don't run plugin on server side", "PLUGIN" },
@@ -76,7 +96,7 @@ int main(int argc, char *argv[]) {
     GOptionGroup *option_group = g_option_group_new ("main",
                                                     "Application Options",
                                                     "Various application related options",
-                                                    &disable_plugin, NULL);
+                                                    app_data, NULL);
 
     GOptionContext *context = g_option_context_new("TASK_PATH RESULT SCORE");
     g_option_context_set_summary(context,
@@ -119,13 +139,14 @@ int main(int argc, char *argv[]) {
     // This is for legacy rhts tests.. please use --disable-plugin
     gchar *avc_error = getenv("AVC_ERROR");
     if (g_strcmp0 (avc_error, "+no_avc_check") == 0) {
-        g_ptr_array_add (disable_plugin, g_strdup ("10_avc_check"));
+        g_ptr_array_add (app_data->disable_plugin, g_strdup ("10_avc_check"));
     }
 
-    if (disable_plugin->pdata) {
-        g_hash_table_insert (data_table, "disable_plugin", g_strjoinv (" ", (gchar **)disable_plugin->pdata));
+    if (app_data->disable_plugin->pdata) {
+        g_hash_table_insert (data_table, "disable_plugin",
+                             g_strjoinv (" ", (gchar **)app_data->disable_plugin->pdata));
     }
-    g_ptr_array_free (disable_plugin, TRUE);
+    g_ptr_array_free (app_data->disable_plugin, TRUE);
     if (no_plugins)
       g_hash_table_insert (data_table, "no_plugins", &no_plugins);
     if (argc > 3)
@@ -146,10 +167,10 @@ int main(int argc, char *argv[]) {
                                            soup_message_headers_get_one (server_msg->response_headers, "Location"));
         result_uri = soup_uri_new (location);
         g_free (location);
-        if (g_file_test (outputfile, G_FILE_TEST_EXISTS)) 
+        if (g_file_test (app_data->outputfile, G_FILE_TEST_EXISTS)) 
         {
             g_print ("Uploading %s ", filename);
-            if (upload_file (session, outputfile, filename, result_uri, &error)) {
+            if (upload_file (session, app_data->outputfile, app_data->filename, result_uri, &error)) {
                 g_print ("done\n");
             } else {
                 g_print ("failed\n");
