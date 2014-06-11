@@ -120,18 +120,18 @@ Beaker for provisioning and Standalone for executing the tests.
 
 First step is to run the following workflow to reserve a system in beaker::
 
- <job>
+ <job><whiteboard>restraint reservesys</whiteboard>
   <recipeSet>
    <recipe ks_meta="harness=restraint">
     <distroRequires>
      <and>
       <distro_name op="=" value="Fedora-20"/>
-      <distro_arch op="=" value="ppc64"/>
+      <distro_arch op="=" value="x86_64"/>
      </and>
     </distroRequires>
     <hostRequires/>
     <repos>
-     <repo name="myrepo_0" url="http://bpeck.fedorapeople.org/restraint/fc20/"/>
+     <repo name="myrepo_0" url="http://copr-be.cloud.fedoraproject.org/results/bpeck/restraint/fedora-20-x86_64"/>
     </repos>
     <task name="/distribution/install" role="STANDALONE" />
     <task name="/distribution/reservesys" role="None">
