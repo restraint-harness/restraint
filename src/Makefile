@@ -58,22 +58,26 @@ TEST_PROGS =
 test_%: test_%.o
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
-TEST_PROGS += test_packages
+TEST_PROGS += test_process
+test_process: process.o
+test_process.o: process.h
+
+#TEST_PROGS += test_packages
 test_packages: packages.o
 test_packages.o: packages.h
 
-TEST_PROGS += test_task
+#TEST_PROGS += test_task
 test_task: task.o packages.o fetch_git_task.o expect_http.o param.o role.o metadata.o
 test_task.o: task.h expect_http.h
 
 test-data/git-remote: test-data/git-remote.tgz
 	tar -C test-data -xzf $<
 
-TEST_PROGS += test_recipe
+#TEST_PROGS += test_recipe
 test_recipe: recipe.o task.o packages.o fetch_git_task.o param.o role.o metadata.o
 test_recipe.o: recipe.h task.h param.h
 
-TEST_PROGS += test_metadata
+#TEST_PROGS += test_metadata
 test_metadata: metadata.o task.o fetch_git_task.o param.o role.o packages.o
 test_metadata.o: task.h
 
