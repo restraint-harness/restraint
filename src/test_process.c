@@ -91,10 +91,80 @@ static void test_process_failure(void) {
     g_assert_cmpint (run_data->pid_result, !=, 0);
 }
 
+static void test_watchdog_success(void) {
+    CommandData *command_data;
+    RunData *run_data;
+    gboolean succeeded;
+    GError *error = NULL;
+    // Watchdog success so command time < max time
+    const guint64 maximumtime = 30;
+    const gchar *command[] = { "sleep", "25", NULL };
+
+    run_data = g_slice_new0 (RunData);
+    run_data->loop = g_main_loop_new (NULL, TRUE);
+
+    command_data = g_slice_new0 (CommandData);
+    command_data->command = command;
+    command_data->max_time = maximumtime;
+    // What I set localwatchdog to doesn't matter, process_run alters it
+    run_data->localwatchdog = FALSE;
+    succeeded = process_run (command_data,
+                             NULL,
+                             process_finish_callback,
+                             run_data,
+                             &error);
+    // check that initial request worked.
+    g_assert (succeeded);
+    g_assert_no_error (error);
+    
+    // run event loop while process is running.
+    g_main_loop_run (run_data->loop);
+    
+    // process finished, check our results.
+    // g_assert fails if false arg so need ! 
+    g_assert (!run_data->localwatchdog);
+    g_assert_cmpint (run_data->pid_result, ==, 0);
+}
+
+static void test_watchdog_failure(void) {
+    CommandData *command_data;
+    RunData *run_data;
+    gboolean succeeded;
+    GError *error = NULL;
+    // Watchdog fail to command time > max time
+    const guint64 maximumtime = 25;
+    const gchar *command[] = { "sleep", "30", NULL };
+
+    run_data = g_slice_new0 (RunData);
+    run_data->loop = g_main_loop_new (NULL, TRUE);
+
+    command_data = g_slice_new0 (CommandData);
+    command_data->command = command;
+    command_data->max_time = maximumtime;
+    // What I set localwatchdog to doesn't matter, process_run alters it
+    run_data->localwatchdog = TRUE;
+    succeeded = process_run (command_data,
+                             NULL,
+                             process_finish_callback,
+                             run_data,
+                             &error);
+    // check that initial request worked.
+    g_assert (succeeded);
+    g_assert_no_error (error);
+    
+    // run event loop while process is running.
+    g_main_loop_run (run_data->loop);
+    
+    // process finished, check our results.
+    g_assert (run_data->localwatchdog);
+    g_assert_cmpint (run_data->pid_result, !=, 0);
+}
+
 int main(int argc, char *argv[]) {
     g_test_init(&argc, &argv, NULL);
     g_test_add_func("/process/success", test_process_success);
     g_test_add_func("/process/failure", test_process_failure);
-//    g_test_add_func("/process/watchdog", test_process_failure);
+    g_test_add_func("/process/watchdog_pass", test_watchdog_success);
+    g_test_add_func("/process/watchdog_failure", test_watchdog_failure);
     return g_test_run();
 }
