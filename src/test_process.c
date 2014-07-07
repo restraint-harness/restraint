@@ -106,8 +106,6 @@ static void test_watchdog_success(void) {
     command_data = g_slice_new0 (CommandData);
     command_data->command = command;
     command_data->max_time = maximumtime;
-    // What I set localwatchdog to doesn't matter, process_run alters it
-    run_data->localwatchdog = FALSE;
     succeeded = process_run (command_data,
                              NULL,
                              process_finish_callback,
@@ -141,8 +139,6 @@ static void test_watchdog_failure(void) {
     command_data = g_slice_new0 (CommandData);
     command_data->command = command;
     command_data->max_time = maximumtime;
-    // What I set localwatchdog to doesn't matter, process_run alters it
-    run_data->localwatchdog = TRUE;
     succeeded = process_run (command_data,
                              NULL,
                              process_finish_callback,
