@@ -231,16 +231,19 @@ server_msg_complete (SoupSession *session, SoupMessage *server_msg, gpointer use
                 g_warning ("run_plugins failed to run: %s\n", tmp_error->message);
                 g_clear_error (&tmp_error);
                 soup_server_unpause_message (server_data->server, client_msg);
+                g_slice_free (ServerData, server_data);
             }
         }
         g_hash_table_destroy (table);
     } else {
         soup_server_unpause_message (server_data->server, client_msg);
+        g_slice_free (ServerData, server_data);
     }
 
     // If no plugins are running we should return to the client right away.
     if (no_plugins) {
         soup_server_unpause_message (server_data->server, client_msg);
+        g_slice_free (ServerData, server_data);
     }
 }
 

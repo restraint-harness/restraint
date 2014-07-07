@@ -33,6 +33,7 @@ void
 process_free (ProcessData *process_data)
 {
     g_return_if_fail (process_data != NULL);
+    g_slice_free (CommandData, process_data->command_data);
     g_slice_free (ProcessData, process_data);
 }
 

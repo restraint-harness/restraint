@@ -179,6 +179,7 @@ gboolean restraint_generate_testinfo(AppData *app_data, GError **error) {
                       &tmp_error)) {
         g_propagate_prefixed_error (error, tmp_error,
                                     "While running make testinfo.desc: ");
+        g_slice_free (TaskRunData, task_run_data);
         return FALSE;
     }
 

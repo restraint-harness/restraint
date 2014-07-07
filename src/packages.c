@@ -46,6 +46,7 @@ gboolean restraint_install_package(AppData *app_data, const gchar *package_name,
                       &tmp_error)) {
         g_propagate_prefixed_error (error, tmp_error,
                                     "While installing package %s: ", package_name);
+        g_slice_free (TaskRunData, task_run_data);
         return FALSE;
     }
 

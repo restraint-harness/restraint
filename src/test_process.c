@@ -33,6 +33,7 @@ process_finish_callback (gint pid_result, gboolean localwatchdog, gpointer user_
     run_data->pid_result = pid_result;
     run_data->localwatchdog = localwatchdog;
     g_main_loop_quit (run_data->loop);
+    g_main_loop_unref (run_data->loop);
 }
 
 static void test_process_success(void) {
@@ -61,6 +62,7 @@ static void test_process_success(void) {
 
     // process finished, check our results.
     g_assert_cmpint (run_data->pid_result, ==, 0);
+    g_slice_free (RunData, run_data);
 }
 
 static void test_process_failure(void) {
@@ -89,6 +91,7 @@ static void test_process_failure(void) {
 
     // process finished, check our results.
     g_assert_cmpint (run_data->pid_result, !=, 0);
+    g_slice_free (RunData, run_data);
 }
 
 static void test_watchdog_success(void) {
@@ -122,6 +125,7 @@ static void test_watchdog_success(void) {
     // g_assert fails if false arg so need ! 
     g_assert (!run_data->localwatchdog);
     g_assert_cmpint (run_data->pid_result, ==, 0);
+    g_slice_free (RunData, run_data);
 }
 
 static void test_watchdog_failure(void) {
@@ -154,6 +158,7 @@ static void test_watchdog_failure(void) {
     // process finished, check our results.
     g_assert (run_data->localwatchdog);
     g_assert_cmpint (run_data->pid_result, !=, 0);
+    g_slice_free (RunData, run_data);
 }
 
 int main(int argc, char *argv[]) {

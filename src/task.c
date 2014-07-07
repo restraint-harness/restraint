@@ -245,6 +245,8 @@ task_handler_callback (gint pid_result, gboolean localwatchdog, gpointer user_da
                     RESTRAINT_TASK_RUNNER_RC_ERROR,
                     "Command returned non-zero %i", pid_result);
     }
+    // free the task_run_data
+    g_slice_free (TaskRunData, task_run_data);
 
     app_data->task_handler_id = g_idle_add_full(G_PRIORITY_DEFAULT_IDLE,
                                                 task_handler,
