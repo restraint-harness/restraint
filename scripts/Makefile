@@ -10,3 +10,6 @@ clean:
 install:
 	mkdir -p $(DESTDIR)/usr/bin
 	for file in $(FILES); do install -m 755 $$file $(DESTDIR)/usr/bin; done
+
+.PHONY: check
+check:

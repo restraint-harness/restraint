@@ -23,3 +23,6 @@ install:
 
 .PHONY: clean
 clean:
+
+.PHONY: check
+check:

@@ -11,3 +11,6 @@ install: restraintd
 
 .PHONY: clean
 clean:
+
+.PHONY: check
+check:
