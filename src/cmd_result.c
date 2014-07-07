@@ -54,7 +54,7 @@ callback_outputfile (const gchar *option_name, const gchar *value,
 int main(int argc, char *argv[]) {
 
     AppData *app_data = g_slice_new0 (AppData);
-    gchar filename[] = "logs/resultoutputfile.log";
+    gchar filename[] = "resultoutputfile.log";
     app_data->filename = filename;
     app_data->outputfile = getenv("OUTPUTFILE");
     app_data->disable_plugin = g_ptr_array_new_with_free_func (g_free);
@@ -163,7 +163,7 @@ int main(int argc, char *argv[]) {
     g_print ("** %s %s Score:%s\n", argv[1], argv[2], argv[3]);
     ret = soup_session_send_message (session, server_msg);
     if (SOUP_STATUS_IS_SUCCESSFUL (ret)) {
-        gchar *location = g_strdup_printf ("%s/",
+        gchar *location = g_strdup_printf ("%s/logs/",
                                            soup_message_headers_get_one (server_msg->response_headers, "Location"));
         result_uri = soup_uri_new (location);
         g_free (location);
