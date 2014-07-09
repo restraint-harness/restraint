@@ -9,17 +9,27 @@ export G_SLICE="debug-blocks"
 
 testargs=""
 
+function kill_daemons() {
+    test -f git-daemon.pid && kill -TERM $(cat git-daemon.pid) || :
+    test -f git-daemon.pid && rm -f git-daemon.pid || :
+    test -f thttpd-daemon.pid && kill -TERM $(cat thttpd-daemon.pid) || :
+    test -f thttpd-daemon.pid && rm -f thttpd-daemon.pid || :
+}
+
+trap kill_daemons EXIT
+
 if [[ -f /usr/libexec/git-core/git-daemon ]] ; then
     git daemon --reuseaddr --listen=127.0.0.1 \
         --base-path=test-data/git-remote --export-all --enable=upload-archive \
         --verbose --detach --pid-file=git-daemon.pid
-    function kill_git_daemon() {
-        test -f git-daemon.pid && kill -TERM $(cat git-daemon.pid) || :
-        rm -f git-daemon.pid
-    }
-    trap kill_git_daemon EXIT
 else
-    testargs="-s /task/fetch_git -s /task/fetch_git/negative $testargs"
+    testargs="-s /fetch_git/success -s /fetch_git/fail $testargs"
+fi
+
+if [[ -f /usr/sbin/thttpd ]] ; then
+    thttpd -p 8000 -d test-data/http-remote -h 127.0.0.1 -l /dev/null -i thttpd-daemon.pid
+else
+    testargs="-s /fetch_http/success -s /fetch_http/fail $testargs"
 fi
 
 if [[ $1 == "--valgrind" ]] ; then

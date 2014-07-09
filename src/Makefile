@@ -33,11 +33,11 @@ rstrnt-adjust-watchdog: cmd_watchdog.o utils.o errors.o
 restraint: client.o
 	$(CC) $(LDFLAFS) -o $@ $^ $(LIBS)
 
-restraintd: server.o recipe.o task.o packages.o fetch_git_task.o fetch_http_task.o param.o role.o metadata.o process.o message.o dependency.o utils.o config.o errors.o
+restraintd: server.o recipe.o task.o packages.o fetch.o fetch_git.o fetch_http.o param.o role.o metadata.o process.o message.o dependency.o utils.o config.o errors.o
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
-fetch_git_task.o: task.h
-fetch_http_task.o: task.h
+fetch_git.o: fetch.h fetch_git.h
+fetch_http.o: fetch.h fetch_http.h
 packages.o: packages.h
 task.o: task.h
 recipe.o: recipe.h task.h
@@ -58,6 +58,14 @@ TEST_PROGS =
 test_%: test_%.o
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
+TEST_PROGS += test_fetch_git
+test_fetch_git: fetch.o fetch_git.o
+test_fetch_git.o: fetch_git.h
+
+TEST_PROGS += test_fetch_http
+test_fetch_http: fetch.o fetch_http.o
+test_fetch_http.o: fetch_http.h
+
 TEST_PROGS += test_process
 test_process: process.o
 test_process.o: process.h
@@ -67,18 +75,18 @@ test_packages: packages.o
 test_packages.o: packages.h
 
 #TEST_PROGS += test_task
-test_task: task.o packages.o fetch_git_task.o expect_http.o param.o role.o metadata.o
+test_task: task.o packages.o fetch_git.o expect_http.o param.o role.o metadata.o
 test_task.o: task.h expect_http.h
 
 test-data/git-remote: test-data/git-remote.tgz
 	tar -C test-data -xzf $<
 
 #TEST_PROGS += test_recipe
-test_recipe: recipe.o task.o packages.o fetch_git_task.o param.o role.o metadata.o
+test_recipe: recipe.o task.o packages.o fetch_git.o param.o role.o metadata.o
 test_recipe.o: recipe.h task.h param.h
 
 #TEST_PROGS += test_metadata
-test_metadata: metadata.o task.o fetch_git_task.o param.o role.o packages.o
+test_metadata: metadata.o task.o fetch_git.o param.o role.o packages.o
 test_metadata.o: task.h
 
 .PHONY: check

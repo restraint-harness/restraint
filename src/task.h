@@ -54,18 +54,6 @@ typedef enum {
     TASK_FETCH_UNPACK,
 } TaskFetchMethod;
 
-#define RESTRAINT_TASK_FETCH_ERROR restraint_task_fetch_error()
-GQuark restraint_task_fetch_error(void);
-typedef enum {
-    RESTRAINT_TASK_FETCH_ERROR_GIT_PROTOCOL_ERROR,
-    RESTRAINT_TASK_FETCH_ERROR_GIT_NAK,
-    RESTRAINT_TASK_FETCH_ERROR_GIT_REMOTE_ERROR,
-} RestraintTaskFetchError;
-
-// error domain for libarchive's errnos
-#define RESTRAINT_TASK_FETCH_LIBARCHIVE_ERROR restraint_task_fetch_libarchive_error()
-GQuark restraint_task_fetch_libarchive_error(void);
-
 #define RESTRAINT_TASK_RUNNER_ERROR restraint_task_runner_error()
 GQuark restraint_task_runner_error(void);
 
@@ -143,7 +131,6 @@ typedef struct {
 Task *restraint_task_new(void);
 gboolean task_handler (gpointer user_data);
 void task_finish (gpointer user_data);
-gboolean restraint_task_fetch_git(AppData *app_data, GError **error);
 gboolean restraint_task_fetch_http(AppData *app_data, GError **error);
 gboolean restraint_task_fetch(AppData *app_data, GError **error);
 gboolean restraint_build_env(Task *task, GError **error);

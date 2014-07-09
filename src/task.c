@@ -39,17 +39,42 @@
 #include "dependency.h"
 #include "config.h"
 #include "errors.h"
+#include "fetch.h"
+#include "fetch_git.h"
+#include "fetch_http.h"
 
 GQuark restraint_task_runner_error(void) {
     return g_quark_from_static_string("restraint-task-runner-error-quark");
 }
 
-GQuark restraint_task_fetch_error(void) {
-    return g_quark_from_static_string("restraint-task-fetch-error-quark");
+void
+archive_entry_callback (const gchar *entry, gpointer user_data)
+{
+    AppData *app_data = (AppData *) user_data;
+    GString *message = g_string_new (NULL);
+
+    g_string_printf (message, "** Extracting %s\n", entry);
+    connections_write (app_data, message->str, message->len);
+    g_string_free (message, TRUE);
 }
 
-GQuark restraint_task_fetch_libarchive_error(void) {
-    return g_quark_from_static_string("restraint-task-fetch-libarchive-error-quark");
+void
+fetch_finish_callback (GError *error, gpointer user_data)
+{
+    AppData *app_data = (AppData *) user_data;
+    Task *task = (Task *) app_data->tasks->data;
+
+    if (error) {
+        g_propagate_error (&task->error, error);
+        task->state = TASK_FAIL;
+    } else {
+        task->state = TASK_METADATA;
+    }
+
+    app_data->task_handler_id = g_idle_add_full(G_PRIORITY_DEFAULT_IDLE,
+                                                task_handler,
+                                                app_data,
+                                                NULL);
 }
 
 gboolean restraint_task_fetch(AppData *app_data, GError **error) {
@@ -62,15 +87,17 @@ gboolean restraint_task_fetch(AppData *app_data, GError **error) {
     switch (task->fetch_method) {
         case TASK_FETCH_UNPACK:
             if (g_strcmp0(soup_uri_get_scheme(task->fetch.url), "git") == 0) {
-                if (!restraint_task_fetch_git(app_data, &tmp_error)) {
-                    g_propagate_error(error, tmp_error);
-                    return FALSE;
-                }
+                restraint_fetch_git (task->fetch.url,
+                                     task->path,
+                                     archive_entry_callback,
+                                     fetch_finish_callback,
+                                     app_data);
             } else if (g_strcmp0(soup_uri_get_scheme(task->fetch.url), "http") == 0) {
-                if (!restraint_task_fetch_http(app_data, &tmp_error)) {
-                    g_propagate_error(error, tmp_error);
-                    return FALSE;
-                }
+                restraint_fetch_http (task->fetch.url,
+                                      task->path,
+                                      archive_entry_callback,
+                                      fetch_finish_callback,
+                                      app_data);
             } else {
                 g_critical("XXX IMPLEMENTME");
                 return FALSE;
