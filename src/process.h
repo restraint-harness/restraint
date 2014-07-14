@@ -17,7 +17,8 @@
 
 typedef void (*ProcessFinishCallback)	(gint		pid_result,
 					 gboolean	localwatchdog,
-					 gpointer	user_data);
+					 gpointer	user_data,
+                                         GError         *error);
 
 #define RESTRAINT_PROCESS_ERROR restraint_process_error()
 GQuark restraint_process_error(void);
@@ -34,10 +35,6 @@ typedef struct {
     // The path to chdir before executing
     const gchar *path;
     guint64 max_time;
-} CommandData;
-
-typedef struct {
-    CommandData *command_data;
     // pid of our forked process
     pid_t pid;
     // file descriptor of our pty
@@ -58,14 +55,17 @@ typedef struct {
     GError *error;
 } ProcessData;
 
-gboolean process_run (CommandData *command_data,
+void
+process_run (const gchar **command,
+                      const gchar **environ,
+                      const gchar *path,
+                      guint64 max_time,
                       GIOFunc io_callback,
                       ProcessFinishCallback finish_callback,
-                      gpointer user_data,
-                      GError **error);
+                      gpointer user_data);
 //gboolean process_io_callback (GIOChannel *io, GIOCondition condition, gpointer user_data);
 void process_pid_callback (GPid pid, gint status, gpointer user_data);
-void process_pid_finish (gpointer user_data);
+gboolean process_pid_finish (gpointer user_data);
 gboolean process_timeout_callback (gpointer user_data);
 //gboolean process_heartbeat_callback (gpointer user_data);
 void process_free (ProcessData *process_data);

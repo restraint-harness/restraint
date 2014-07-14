@@ -33,7 +33,6 @@
 #include "param.h"
 #include "role.h"
 #include "metadata.h"
-#include "packages.h"
 #include "process.h"
 #include "message.h"
 #include "dependency.h"
@@ -77,13 +76,12 @@ fetch_finish_callback (GError *error, gpointer user_data)
                                                 NULL);
 }
 
-gboolean restraint_task_fetch(AppData *app_data, GError **error) {
-    g_return_val_if_fail(app_data != NULL, FALSE);
-    g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
-
+void
+restraint_task_fetch(AppData *app_data) {
+    g_return_if_fail(app_data != NULL);
+    GError *error = NULL;
     Task *task = (Task *) app_data->tasks->data;
 
-    GError *tmp_error = NULL;
     switch (task->fetch_method) {
         case TASK_FETCH_UNPACK:
             if (g_strcmp0(soup_uri_get_scheme(task->fetch.url), "git") == 0) {
@@ -99,20 +97,34 @@ gboolean restraint_task_fetch(AppData *app_data, GError **error) {
                                       fetch_finish_callback,
                                       app_data);
             } else {
-                g_critical("XXX IMPLEMENTME");
-                return FALSE;
+                g_set_error (&error, RESTRAINT_TASK_RUNNER_ERROR,
+                             RESTRAINT_TASK_RUNNER_SCHEMA_ERROR,
+                             "Unimplemented schema method %s", soup_uri_get_scheme(task->fetch.url));
+                fetch_finish_callback (error, app_data);
+                g_clear_error (&error);
+                return;
             }
             break;
         case TASK_FETCH_INSTALL_PACKAGE:
-            if (!restraint_install_package(app_data, task->fetch.package_name, &tmp_error)) {
-                g_propagate_error(error, tmp_error);
-                return FALSE;
-            }
+            ;
+            const gchar *command[] = { "yum", "-y", "install", task->fetch.package_name, NULL };
+            // Use appropriate package install command
+            TaskRunData *task_run_data = g_slice_new0(TaskRunData);
+            task_run_data->app_data = app_data;
+            task_run_data->pass_state = TASK_METADATA;
+            task_run_data->fail_state = TASK_COMPLETE;
+            process_run (command, NULL, NULL, 0, task_io_callback, task_handler_callback,
+                         task_run_data);
             break;
         default:
-            g_return_val_if_reached(FALSE);
+            // Set task_run_data->error and add task_handler_callback
+            g_set_error (&error, RESTRAINT_TASK_RUNNER_ERROR,
+                         RESTRAINT_TASK_RUNNER_FETCH_ERROR,
+                         "Unknown fetch method");
+            fetch_finish_callback (error, app_data);
+            g_clear_error (&error);
+            g_return_if_reached();
     }
-    return TRUE;
 }
 
 static void build_param_var(Param *param, GPtrArray *env) {
@@ -164,7 +176,7 @@ task_io_callback (GIOChannel *io, GIOCondition condition, gpointer user_data) {
 }
 
 void
-task_finish_plugins_callback (gint pid_result, gboolean localwatchdog, gpointer user_data)
+task_finish_plugins_callback (gint pid_result, gboolean localwatchdog, gpointer user_data, GError *error)
 {
     TaskRunData *task_run_data = (TaskRunData *) user_data;
     AppData *app_data = task_run_data->app_data;
@@ -176,7 +188,7 @@ task_finish_plugins_callback (gint pid_result, gboolean localwatchdog, gpointer 
 }
 
 void
-task_finish_callback (gint pid_result, gboolean localwatchdog, gpointer user_data)
+task_finish_callback (gint pid_result, gboolean localwatchdog, gpointer user_data, GError *error)
 {
     TaskRunData *task_run_data = (TaskRunData *) user_data;
     AppData *app_data = task_run_data->app_data;
@@ -212,9 +224,7 @@ task_finish_callback (gint pid_result, gboolean localwatchdog, gpointer user_dat
 
     // Run Finish/Completed plugins
     // Always run completed plugins and if localwatchdog triggered run those as well.
-    CommandData *command_data = g_slice_new0 (CommandData);
     const gchar *command[] = {TASK_PLUGIN_SCRIPT, PLUGIN_SCRIPT, NULL};
-    command_data->command = command;
     // Last four entries are NULL.  Replace first three with plugin vars
     gchar *localwatchdog_plugin = g_strdup_printf(" %s/localwatchdog.d", PLUGIN_DIR);
     gchar *plugin_dir = g_strdup_printf("RSTRNT_PLUGINS_DIR=%s/completed.d%s", PLUGIN_DIR, localwatchdog ? localwatchdog_plugin : "");
@@ -236,23 +246,17 @@ task_finish_callback (gint pid_result, gboolean localwatchdog, gpointer user_dat
     }
     task->env->pdata[task->env->len - 3] = rstrnt_localwatchdog;
 
-    command_data->environ = (const gchar **) task->env->pdata;
-    command_data->path = "/usr/share/restraint/plugins";
-
-    GError *tmp_error = NULL;
-    if (process_run (command_data,
-                     task_io_callback,
-                     task_finish_plugins_callback,
-                     task_run_data,
-                     &tmp_error)) {
-    } else {
-        g_warning ("run_plugins failed to run: %s\n", tmp_error->message);
-        g_clear_error (&tmp_error);
-    }
+    process_run (command,
+                 (const gchar **) task->env->pdata,
+                 "/usr/share/restraint/plugins",
+                 0,
+                 task_io_callback,
+                 task_finish_plugins_callback,
+                 task_run_data);
 }
 
 void
-task_handler_callback (gint pid_result, gboolean localwatchdog, gpointer user_data)
+task_handler_callback (gint pid_result, gboolean localwatchdog, gpointer user_data, GError *error)
 {
     /*
      * Generic task handler routine.
@@ -263,14 +267,19 @@ task_handler_callback (gint pid_result, gboolean localwatchdog, gpointer user_da
     AppData *app_data = task_run_data->app_data;
     Task *task = app_data->tasks->data;
 
-    // Did the command Succeed?
-    if (pid_result == 0) {
-        task->state = task_run_data->pass_state;
-    } else {
+    if (error) {
+        task->error = g_error_copy (error);
         task->state = task_run_data->fail_state;
-        g_set_error (&task->error, RESTRAINT_TASK_RUNNER_ERROR,
-                    RESTRAINT_TASK_RUNNER_RC_ERROR,
-                    "Command returned non-zero %i", pid_result);
+    } else {
+        // Did the command Succeed?
+        if (pid_result == 0) {
+            task->state = task_run_data->pass_state;
+        } else {
+            task->state = task_run_data->fail_state;
+            g_set_error (&task->error, RESTRAINT_TASK_RUNNER_ERROR,
+                        RESTRAINT_TASK_RUNNER_RC_ERROR,
+                        "Command returned non-zero %i", pid_result);
+        }
     }
     // free the task_run_data
     g_slice_free (TaskRunData, task_run_data);
@@ -308,8 +317,8 @@ task_heartbeat_callback (gpointer user_data)
     return TRUE;
 }
 
-static gboolean
-task_run (AppData *app_data, GError **error)
+void
+task_run (AppData *app_data)
 {
     Task *task = (Task *) app_data->tasks->data;
     time_t rawtime = time (NULL);
@@ -318,13 +327,7 @@ task_run (AppData *app_data, GError **error)
     task_run_data->pass_state = TASK_COMPLETE;
     task_run_data->fail_state = TASK_COMPLETE;
 
-    CommandData *command_data = g_slice_new0 (CommandData);
-    command_data->command = (const gchar **) task->entry_point;
-
-    command_data->environ = (const gchar **)task->env->pdata;
-    command_data->path = task->path;
     if (!task->nolocalwatchdog) {
-        command_data->max_time = task->max_time;
         struct tm timeinfo = *localtime (&rawtime);
         timeinfo.tm_sec += task->max_time;
         mktime(&timeinfo);
@@ -337,17 +340,13 @@ task_run (AppData *app_data, GError **error)
                   " * Disabled! *");
     }
 
-    GError *tmp_error = NULL;
-
-    if (!process_run (command_data,
+    process_run ((const gchar **) task->entry_point,
+                      (const gchar **)task->env->pdata,
+                      task->path,
+                      task->max_time,
                       task_io_callback,
                       task_finish_callback,
-                      task_run_data,
-                      &tmp_error)) {
-        g_propagate_prefixed_error (error, tmp_error,
-                                    "Task %s failed to run", task->task_id);
-        return FALSE;
-    }
+                      task_run_data);
 
     // Local heartbeat, log to console and testout.log
     task_run_data->heartbeat_handler_id = g_timeout_add_seconds_full (G_PRIORITY_DEFAULT,
@@ -355,7 +354,6 @@ task_run (AppData *app_data, GError **error)
                                                            task_heartbeat_callback,
                                                            task_run_data,
                                                            NULL);
-    return TRUE;
 }
 
 static void
@@ -678,10 +676,8 @@ task_handler (gpointer user_data)
       break;
     case TASK_FETCH:
       // Fetch Task from rpm or url
-      if (restraint_task_fetch (app_data, &task->error))
-          result=FALSE;
-      else
-          task->state = TASK_COMPLETE;
+      restraint_task_fetch (app_data);
+      result=FALSE;
       break;
     case TASK_METADATA:
       // If running in rhts_compat mode and testinfo.desc doesn't exist
@@ -689,12 +685,9 @@ task_handler (gpointer user_data)
       if (restraint_is_rhts_compat (task)) {
           task->rhts_compat = TRUE;
           if (restraint_no_testinfo (task)) {
-              if (restraint_generate_testinfo (app_data, &task->error)) {
-                  result=FALSE;
-                  g_string_printf(message, "** Generating testinfo.desc\n");
-              } else {
-                  task->state = TASK_COMPLETE;
-              }
+              restraint_generate_testinfo (app_data);
+              g_string_printf(message, "** Generating testinfo.desc\n");
+              result=FALSE;
           } else {
               task->state = TASK_METADATA_PARSE;
           }
@@ -753,23 +746,20 @@ task_handler (gpointer user_data)
       //       timeout_handler
       //       heartbeat_handler
       g_string_printf(message, "** Running task: %s [%s]\n", task->task_id, task->name);
-      if (task_run (app_data, &task->error)) {
-        result=FALSE;
-        task->started = TRUE;
-        restraint_config_set (app_data->config_file,
-                              task->task_id,
-                              "started", NULL,
-                              G_TYPE_BOOLEAN,
-                              task->started);
-        // Update reboots count
-        restraint_config_set (app_data->config_file,
-                              task->task_id,
-                              "reboots", NULL,
-                              G_TYPE_UINT64,
-                              task->reboots + 1);
-      } else {
-        task->state = TASK_COMPLETE;
-      }
+      task_run (app_data);
+      result=FALSE;
+      task->started = TRUE;
+      restraint_config_set (app_data->config_file,
+                            task->task_id,
+                            "started", NULL,
+                            G_TYPE_BOOLEAN,
+                            task->started);
+      // Update reboots count
+      restraint_config_set (app_data->config_file,
+                            task->task_id,
+                            "reboots", NULL,
+                            G_TYPE_UINT64,
+                            task->reboots + 1);
       break;
     case TASK_COMPLETE:
       // Set task finished

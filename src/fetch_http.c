@@ -59,12 +59,13 @@ myopen(FetchData *fetch_data, GError **error)
 {
     g_return_val_if_fail(fetch_data != NULL, FALSE);
     g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
-    SoupRequest *request;
+    SoupRequestHTTP *reqh;
 
     GError *tmp_error = NULL;
 
-    request = (SoupRequest *)soup_session_request_http_uri (session, "GET", fetch_data->url, NULL);
-    fetch_data->istream = soup_request_send (request, NULL, &tmp_error);
+    reqh = soup_session_request_http_uri (session, "GET", fetch_data->url, NULL);
+    fetch_data->istream = soup_request_send (SOUP_REQUEST (reqh), NULL, &tmp_error);
+    g_object_unref (reqh);
 
     if (tmp_error != NULL) {
         gchar *url = soup_uri_to_string (fetch_data->url, TRUE);
@@ -113,6 +114,9 @@ archive_finish_callback (gpointer user_data)
         fetch_data->finish_callback (fetch_data->error,
                                      fetch_data->user_data);
     }
+
+    soup_session_abort (session);
+    g_object_unref (session);
 
     g_clear_error (&fetch_data->error);
     if (fetch_data != NULL)

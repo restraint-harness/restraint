@@ -16,6 +16,6 @@
 */
 
 gboolean restraint_metadata_parse(Task *task, GError **error);
-gboolean restraint_generate_testinfo(AppData *app_data, GError **error);
+void restraint_generate_testinfo(AppData *app_data);
 gboolean restraint_is_rhts_compat (Task *task);
 gboolean restraint_no_testinfo (Task *task);

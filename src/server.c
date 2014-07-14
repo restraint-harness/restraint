@@ -152,9 +152,15 @@ handle_recipe_request (gchar *recipe_url, ServerData *server_data, GError **erro
 }
 
 void
-plugin_finish_callback (gint pid_result, gboolean localwatchdog, gpointer user_data)
+plugin_finish_callback (gint pid_result, gboolean localwatchdog, gpointer user_data, GError *error)
 {
     ServerData *server_data = (ServerData *) user_data;
+    if (error) {
+        g_warning ("** ERROR: running plugins, %s\n", error->message);
+    }
+    if (pid_result != 0) {
+        g_warning ("** ERROR: running plugins returned non-zero %i\n", pid_result);
+    }
     soup_server_unpause_message (server_data->server, server_data->client_msg);
 }
 
@@ -188,9 +194,7 @@ server_msg_complete (SoupSession *session, SoupMessage *server_msg, gpointer use
         // Execute report plugins
         if (!no_plugins) {
             // Create a new ProcessCommand
-            CommandData *command_data = g_slice_new0 (CommandData);
             const gchar *command[] = {TASK_PLUGIN_SCRIPT, PLUGIN_SCRIPT, NULL};
-            command_data->command = command;
 
             // Last four entries are NULL.  Replace first three with plugin vars
             gchar *result_server = g_strdup_printf("RSTRNT_RESULT_URL=%s", soup_message_headers_get_one (client_msg->response_headers, "Location"));
@@ -219,20 +223,13 @@ server_msg_complete (SoupSession *session, SoupMessage *server_msg, gpointer use
                 task->env->pdata[task->env->len - 2] = disabled_plugins;
             }
 
-            command_data->environ = (const gchar **) task->env->pdata;
-            command_data->path = "/usr/share/restraint/plugins";
-
-            GError *tmp_error = NULL;
-            if (!process_run (command_data,
-                              server_io_callback,
-                              plugin_finish_callback,
-                              server_data,
-                              &tmp_error)) {
-                g_warning ("run_plugins failed to run: %s\n", tmp_error->message);
-                g_clear_error (&tmp_error);
-                soup_server_unpause_message (server_data->server, client_msg);
-                g_slice_free (ServerData, server_data);
-            }
+            process_run (command,
+                         (const gchar **) task->env->pdata,
+                         "/usr/share/restraint/plugins",
+                         0,
+                         server_io_callback,
+                         plugin_finish_callback,
+                         server_data);
         }
         g_hash_table_destroy (table);
     } else {

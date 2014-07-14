@@ -66,6 +66,8 @@ typedef enum {
   RESTRAINT_TASK_RUNNER_EXEC_ERROR,
   RESTRAINT_TASK_RUNNER_RC_ERROR,
   RESTRAINT_TASK_RUNNER_RESULT_ERROR,
+  RESTRAINT_TASK_RUNNER_FETCH_ERROR,
+  RESTRAINT_TASK_RUNNER_SCHEMA_ERROR,
 } RestraintTaskRunnerError;
 
 typedef struct {
@@ -132,7 +134,8 @@ Task *restraint_task_new(void);
 gboolean task_handler (gpointer user_data);
 void task_finish (gpointer user_data);
 gboolean restraint_task_fetch_http(AppData *app_data, GError **error);
-gboolean restraint_task_fetch(AppData *app_data, GError **error);
+void
+restraint_task_fetch(AppData *app_data);
 gboolean restraint_build_env(Task *task, GError **error);
 void restraint_task_status (Task *task, AppData *app_data, gchar *, GError *reason);
 void restraint_task_result (Task *task, gchar *result, guint score, gchar *path, gchar *message);
@@ -140,7 +143,7 @@ void restraint_task_run(Task *task);
 void restraint_task_free(Task *task);
 void restraint_init_result_hash (AppData *app_data);
 gboolean task_io_callback (GIOChannel *io, GIOCondition condition, gpointer user_data);
-void task_handler_callback (gint pid_result, gboolean localwatchdog, gpointer user_data);
+void task_handler_callback (gint pid_result, gboolean localwatchdog, gpointer user_data, GError *error);
 gboolean idle_task_setup (gpointer user_data);
 extern SoupSession *soup_session;
 #endif

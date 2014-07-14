@@ -27,7 +27,7 @@ else
 fi
 
 if [[ -f /usr/sbin/thttpd ]] ; then
-    thttpd -p 8000 -d test-data/http-remote -h 127.0.0.1 -l /dev/null -i thttpd-daemon.pid
+    thttpd -i $PWD/thttpd-daemon.pid -p 8000 -d test-data/http-remote -h 127.0.0.1 -l /dev/null
 else
     testargs="-s /fetch_http/success -s /fetch_http/fail $testargs"
 fi

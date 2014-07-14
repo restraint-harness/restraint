@@ -22,13 +22,20 @@
 static void dependency_handler (gpointer user_data);
 
 static void
-dependency_callback (gint pid_result, gboolean localwatchdog, gpointer user_data)
+dependency_callback (gint pid_result, gboolean localwatchdog, gpointer user_data, GError *error)
 {
     DependencyData *dependency_data = (DependencyData *) user_data;
     AppData *app_data = (AppData *) dependency_data->app_data;
     Task *task = (Task *) app_data->tasks->data;
 
-    if (task->rhts_compat != TRUE && pid_result != 0) {
+    if (error) {
+        g_propagate_error (&task->error, error);
+        g_slice_free (DependencyData, dependency_data);
+        app_data->task_handler_id = g_idle_add_full(G_PRIORITY_DEFAULT_IDLE,
+                                                    task_handler,
+                                                    app_data,
+                                                    NULL);
+    } else if (task->rhts_compat != TRUE && pid_result != 0) {
         // If running in rhts_compat mode we don't check whether a packge installed
         // or not.
         // failed to install or remove a package, report fail and abort task
@@ -55,20 +62,24 @@ dependency_handler (gpointer user_data)
     Task *task = (Task *) app_data->tasks->data;
     if (dependency_data->dependencies) {
         gchar *package_name = dependency_data->dependencies->data;
-        CommandData *command_data = g_slice_new0 (CommandData);
+        // FIXME: use a generic shell wrapper to abstract away
+        // different system install comamnds, yum, apt-get, up2date, etc..
         const gchar *install_command[] = {"yum", "-y", "install", package_name, NULL };
         const gchar *remove_command[] = {"yum", "-y", "remove", &package_name[1], NULL };
+        const gchar **command;
         if (g_str_has_prefix (package_name, "-") == TRUE) {
-            command_data->command = remove_command;
+            command = remove_command;
         } else {
-            command_data->command = install_command;
+            command = install_command;
         }
 
-        process_run (command_data,
+        process_run (command,
+                     NULL,
+                     NULL,
+                     0,
                      task_io_callback,
                      dependency_callback,
-                     dependency_data,
-                     NULL);
+                     dependency_data);
     } else {
         // no more packages to install/remove
         // move on to next stage.

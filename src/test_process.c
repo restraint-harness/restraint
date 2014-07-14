@@ -21,15 +21,17 @@
 #include "process.h"
 
 typedef struct {
+    GError *error;
     gint pid_result;
     gboolean localwatchdog;
     GMainLoop *loop;
 } RunData;
 
 void
-process_finish_callback (gint pid_result, gboolean localwatchdog, gpointer user_data)
+process_finish_callback (gint pid_result, gboolean localwatchdog, gpointer user_data, GError *error)
 {
     RunData *run_data = (RunData *) user_data;
+    run_data->error = error;
     run_data->pid_result = pid_result;
     run_data->localwatchdog = localwatchdog;
     g_main_loop_quit (run_data->loop);
@@ -37,125 +39,107 @@ process_finish_callback (gint pid_result, gboolean localwatchdog, gpointer user_
 }
 
 static void test_process_success(void) {
-    CommandData *command_data;
     RunData *run_data;
-    gboolean succeeded;
-    GError *error = NULL;
     const gchar *command[] = { "true", NULL };
 
     run_data = g_slice_new0 (RunData);
     run_data->loop = g_main_loop_new (NULL, TRUE);
 
-    command_data = g_slice_new0 (CommandData);
-    command_data->command = command;
-    succeeded = process_run (command_data,
-                             NULL,
-                             process_finish_callback,
-                             run_data,
-                             &error);
-    // check that initial request worked.
-    g_assert (succeeded);
-    g_assert_no_error (error);
+    process_run (command,
+                 NULL,
+                 NULL,
+                 0,
+                 NULL,
+                 process_finish_callback,
+                 run_data);
 
     // run event loop while process is running.
     g_main_loop_run (run_data->loop);
 
     // process finished, check our results.
+    g_assert_no_error (run_data->error);
+    g_clear_error (&run_data->error);
     g_assert_cmpint (run_data->pid_result, ==, 0);
     g_slice_free (RunData, run_data);
 }
 
 static void test_process_failure(void) {
-    CommandData *command_data;
     RunData *run_data;
-    gboolean succeeded;
-    GError *error = NULL;
     const gchar *command[] = { "false", NULL };
 
     run_data = g_slice_new0 (RunData);
     run_data->loop = g_main_loop_new (NULL, TRUE);
 
-    command_data = g_slice_new0 (CommandData);
-    command_data->command = command;
-    succeeded = process_run (command_data,
-                             NULL,
-                             process_finish_callback,
-                             run_data,
-                             &error);
-    // check that initial request worked.
-    g_assert (succeeded);
-    g_assert_no_error (error);
+    process_run (command,
+                 NULL,
+                 NULL,
+                 0,
+                 NULL,
+                 process_finish_callback,
+                 run_data);
 
     // run event loop while process is running.
     g_main_loop_run (run_data->loop);
 
     // process finished, check our results.
+    g_assert_no_error (run_data->error);
+    g_clear_error (&run_data->error);
     g_assert_cmpint (run_data->pid_result, !=, 0);
     g_slice_free (RunData, run_data);
 }
 
 static void test_watchdog_success(void) {
-    CommandData *command_data;
     RunData *run_data;
-    gboolean succeeded;
-    GError *error = NULL;
     // Watchdog success so command time < max time
-    const guint64 maximumtime = 30;
-    const gchar *command[] = { "sleep", "25", NULL };
+    const guint64 maximumtime = 2;
+    const gchar *command[] = { "sleep", "1", NULL };
 
     run_data = g_slice_new0 (RunData);
     run_data->loop = g_main_loop_new (NULL, TRUE);
 
-    command_data = g_slice_new0 (CommandData);
-    command_data->command = command;
-    command_data->max_time = maximumtime;
-    succeeded = process_run (command_data,
-                             NULL,
-                             process_finish_callback,
-                             run_data,
-                             &error);
-    // check that initial request worked.
-    g_assert (succeeded);
-    g_assert_no_error (error);
+    process_run (command,
+                 NULL,
+                 NULL,
+                 maximumtime,
+                 NULL,
+                 process_finish_callback,
+                 run_data);
     
     // run event loop while process is running.
     g_main_loop_run (run_data->loop);
     
     // process finished, check our results.
     // g_assert fails if false arg so need ! 
+    g_assert_no_error (run_data->error);
+    g_clear_error (&run_data->error);
     g_assert (!run_data->localwatchdog);
     g_assert_cmpint (run_data->pid_result, ==, 0);
     g_slice_free (RunData, run_data);
 }
 
 static void test_watchdog_failure(void) {
-    CommandData *command_data;
     RunData *run_data;
-    gboolean succeeded;
-    GError *error = NULL;
     // Watchdog fail to command time > max time
-    const guint64 maximumtime = 25;
-    const gchar *command[] = { "sleep", "30", NULL };
+    const guint64 maximumtime = 1;
+    const gchar *command[] = { "sleep", "2", NULL };
 
     run_data = g_slice_new0 (RunData);
     run_data->loop = g_main_loop_new (NULL, TRUE);
 
-    command_data = g_slice_new0 (CommandData);
-    command_data->command = command;
-    command_data->max_time = maximumtime;
-    succeeded = process_run (command_data,
-                             NULL,
-                             process_finish_callback,
-                             run_data,
-                             &error);
-    // check that initial request worked.
-    g_assert (succeeded);
-    g_assert_no_error (error);
+    process_run (command,
+                 NULL,
+                 NULL,
+                 maximumtime,
+                 NULL,
+                 process_finish_callback,
+                 run_data);
     
     // run event loop while process is running.
     g_main_loop_run (run_data->loop);
     
     // process finished, check our results.
+    g_assert_no_error (run_data->error);
+    g_clear_error (&run_data->error);
     g_assert (run_data->localwatchdog);
     g_assert_cmpint (run_data->pid_result, !=, 0);
     g_slice_free (RunData, run_data);

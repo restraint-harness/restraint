@@ -144,10 +144,11 @@ error:
     return FALSE;
 }
 
-gboolean restraint_generate_testinfo(AppData *app_data, GError **error) {
-    g_return_val_if_fail(app_data != NULL, FALSE);
-    g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
+void
+restraint_generate_testinfo(AppData *app_data) {
+    g_return_if_fail(app_data != NULL);
 
+    GError *error = NULL;
     Task *task = app_data->tasks->data;
 
     TaskRunData *task_run_data = g_slice_new0(TaskRunData);
@@ -155,35 +156,29 @@ gboolean restraint_generate_testinfo(AppData *app_data, GError **error) {
     task_run_data->pass_state = TASK_METADATA_PARSE;
     task_run_data->fail_state = TASK_COMPLETE;
 
-    CommandData *command_data = g_slice_new0 (CommandData);
     const gchar *command[] = { "make", "testinfo.desc", NULL };
-    command_data->command = command;
-    command_data->path = task->path;
     GStatBuf stat_buf;
-    GError *tmp_error = NULL;
 
     gchar *makefile = g_build_filename(task->path, "Makefile", NULL);
     if (g_stat(makefile, &stat_buf) != 0) {
-        g_set_error (error, RESTRAINT_PARSE_ERROR,
+        g_set_error (&error, RESTRAINT_PARSE_ERROR,
                      RESTRAINT_MISSING_FILE,
                      "running in rhts_compat mode and missing 'Makefile'");
-        g_free(makefile);
-        return FALSE;
+        task_handler_callback (0, FALSE, task_run_data, error);
+        g_clear_error (&error);
+        goto error;
     }
+
+    process_run (command,
+                 NULL,
+                 task->path,
+                 0,
+                 task_io_callback,
+                 task_handler_callback,
+                 task_run_data);
+
+error:
     g_free(makefile);
-
-    if (!process_run (command_data,
-                      task_io_callback,
-                      task_handler_callback,
-                      task_run_data,
-                      &tmp_error)) {
-        g_propagate_prefixed_error (error, tmp_error,
-                                    "While running make testinfo.desc: ");
-        g_slice_free (TaskRunData, task_run_data);
-        return FALSE;
-    }
-
-    return TRUE;
 }
 
 static void parse_line(Task *task,

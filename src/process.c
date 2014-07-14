@@ -33,7 +33,7 @@ void
 process_free (ProcessData *process_data)
 {
     g_return_if_fail (process_data != NULL);
-    g_slice_free (CommandData, process_data->command_data);
+    g_clear_error (&process_data->error);
     g_slice_free (ProcessData, process_data);
 }
 
@@ -46,89 +46,93 @@ process_io_finish (gpointer user_data)
     close (process_data->fd);
 }
 
-gboolean
-process_run (CommandData *command_data,
+void
+process_run (const gchar **command,
+             const gchar **envp,
+             const gchar *path,
+             guint64 max_time,
              GIOFunc io_callback,
              ProcessFinishCallback finish_callback,
-             gpointer user_data,
-             GError **error)
+             gpointer user_data)
 {
-    ProcessData *data;
+    ProcessData *process_data;
     //struct termios term;
     struct winsize win = {
         .ws_col = 80, .ws_row = 24,
         .ws_xpixel = 480, .ws_ypixel = 192,
     };
 
-    data = g_slice_new0 (ProcessData);
-    data->localwatchdog = FALSE;
-    data->command_data = command_data;
-    data->finish_callback = finish_callback;
-    data->user_data = user_data;
+    process_data = g_slice_new0 (ProcessData);
+    process_data->localwatchdog = FALSE;
+    process_data->command = command;
+    process_data->path = path;
+    process_data->max_time = max_time;
+    process_data->finish_callback = finish_callback;
+    process_data->user_data = user_data;
 
-    data->pid = forkpty (&data->fd, NULL, NULL, &win);
-    if (data->pid < 0) {
+    process_data->pid = forkpty (&process_data->fd, NULL, NULL, &win);
+    if (process_data->pid < 0) {
         /* Failed to fork */
-        g_set_error (error, RESTRAINT_PROCESS_ERROR,
+        g_set_error (&process_data->error, RESTRAINT_PROCESS_ERROR,
                      RESTRAINT_PROCESS_FORK_ERROR,
                      "Failed to fork: %s", g_strerror (errno));
-        return FALSE;
-    } else if (data->pid == 0) {
+        g_idle_add (process_pid_finish, process_data);
+        return;
+    } else if (process_data->pid == 0) {
         /* Child process. */
-        if (command_data->path && (chdir (command_data->path) == -1)) {
+        if (process_data->path && (chdir (process_data->path) == -1)) {
             /* command_path was supplied and we failed to chdir to it. */
-            g_warning ("Failed to chdir() to %s: %s\n", command_data->path, g_strerror (errno));
+            g_warning ("Failed to chdir() to %s: %s\n", process_data->path, g_strerror (errno));
             exit (1);
         }
-        environ = (gchar **) command_data->environ;
+        environ = (gchar **) envp;
 
         // Print the command being executed.
-        gchar *command = g_strjoinv (" ", (gchar **) command_data->command);
+        gchar *command = g_strjoinv (" ", (gchar **) process_data->command);
         g_print ("%s\n", command);
         g_free (command);
 
         /* Spawn the command */
-        if (execvp (*command_data->command, (gchar **) command_data->command) == -1) {
+        if (execvp (*process_data->command, (gchar **) process_data->command) == -1) {
             g_warning ("Failed to exec() %s, %s error:%s\n",
-                       *command_data->command,
-                       command_data->path, g_strerror (errno));
+                       *process_data->command,
+                       process_data->path, g_strerror (errno));
             exit (1);
         }
     }
     /* Parent process. */
 
     // close file descriptors on exec.  Should prevent leaking fd's to child processes.
-    fcntl (data->fd, F_SETFD, FD_CLOEXEC);
+    fcntl (process_data->fd, F_SETFD, FD_CLOEXEC);
 
     // Localwatchdog handler
-    if (command_data->max_time != 0) {
-        data->timeout_handler_id = g_timeout_add_seconds_full (G_PRIORITY_DEFAULT,
-                                                               command_data->max_time,
+    if (process_data->max_time != 0) {
+        process_data->timeout_handler_id = g_timeout_add_seconds_full (G_PRIORITY_DEFAULT,
+                                                               process_data->max_time,
                                                                process_timeout_callback,
-                                                               data,
+                                                               process_data,
                                                                NULL);
     }
 
     // IO handler
     if (io_callback != NULL) {
-        GIOChannel *io = g_io_channel_unix_new (data->fd);
+        GIOChannel *io = g_io_channel_unix_new (process_data->fd);
         g_io_channel_set_flags (io, G_IO_FLAG_NONBLOCK, NULL);
         // Set Encoding to NULL to keep g_io_channel from trying to decode it.
         g_io_channel_set_encoding (io, NULL, NULL);
-        data->io_handler_id = g_io_add_watch_full (io,
+        process_data->io_handler_id = g_io_add_watch_full (io,
                                                    G_PRIORITY_DEFAULT,
                                                    G_IO_IN | G_IO_HUP,
                                                    io_callback,
-                                                   data,
+                                                   process_data,
                                                    process_io_finish);
     }
     // Monitor pid for return code
-    data->pid_handler_id = g_child_watch_add_full (G_PRIORITY_DEFAULT,
-                                                   data->pid,
+    process_data->pid_handler_id = g_child_watch_add_full (G_PRIORITY_DEFAULT,
+                                                   process_data->pid,
                                                    process_pid_callback,
-                                                   data,
-                                                   process_pid_finish);
-    return TRUE;
+                                                   process_data,
+                                                   NULL);
 }
 
 void
@@ -137,9 +141,10 @@ process_pid_callback (GPid pid, gint status, gpointer user_data)
     ProcessData *process_data = (ProcessData *) user_data;
 
     process_data->pid_result = status;
+    g_idle_add (process_pid_finish, process_data);
 }
 
-void
+gboolean
 process_pid_finish (gpointer user_data)
 {
     ProcessData *process_data = (ProcessData *) user_data;
@@ -158,10 +163,12 @@ process_pid_finish (gpointer user_data)
 
     process_data->finish_callback (process_data->pid_result,
                                    process_data->localwatchdog,
-                                   process_data->user_data);
+                                   process_data->user_data,
+                                   process_data->error);
 
     // Free process_data.
     process_free (process_data);
+    return FALSE;
 }
 
 gboolean

@@ -31,14 +31,14 @@ typedef struct {
     GMainLoop *loop;
 } RunData;
 
-void
+static void
 archive_entry_callback (const gchar *entry, gpointer user_data)
 {
     RunData *run_data = (RunData *) user_data;
     run_data->entry = g_string_append (run_data->entry, entry);
 }
 
-void
+static void
 fetch_finish_callback (GError *error, gpointer user_data)
 {
     RunData *run_data = (RunData *) user_data;
@@ -48,7 +48,8 @@ fetch_finish_callback (GError *error, gpointer user_data)
     g_main_loop_unref (run_data->loop);
 }
 
-static void test_fetch_git_success(void) {
+static void
+test_fetch_git_success(void) {
     RunData *run_data;
 
     gchar *expected = "MakefilePURPOSEmetadataruntest.sh";
@@ -107,7 +108,8 @@ static void test_fetch_git_success(void) {
     soup_uri_free (url);
 }
 
-static void test_fetch_git_fail(void) {
+static void
+test_fetch_git_fail(void) {
     RunData *run_data;
 
     gchar *expected = "";
