@@ -49,7 +49,7 @@ dependency_callback (gint pid_result, gboolean localwatchdog, gpointer user_data
                                                     app_data,
                                                     NULL);
     } else {
-        dependency_data->dependencies = g_list_next (dependency_data->dependencies);
+        dependency_data->dependencies = dependency_data->dependencies->next;
         dependency_handler (dependency_data);
     }
 }
@@ -64,22 +64,21 @@ dependency_handler (gpointer user_data)
         gchar *package_name = dependency_data->dependencies->data;
         // FIXME: use a generic shell wrapper to abstract away
         // different system install comamnds, yum, apt-get, up2date, etc..
-        const gchar *install_command[] = {"yum", "-y", "install", package_name, NULL };
-        const gchar *remove_command[] = {"yum", "-y", "remove", &package_name[1], NULL };
-        const gchar **command;
+        gchar *command;
         if (g_str_has_prefix (package_name, "-") == TRUE) {
-            command = remove_command;
+            command = g_strdup_printf ("yum -y remove %s", &package_name[1]);
         } else {
-            command = install_command;
+            command = g_strdup_printf ("yum -y install %s", package_name);
         }
 
-        process_run (command,
+        process_run ((const gchar *)command,
                      NULL,
                      NULL,
                      0,
                      task_io_callback,
                      dependency_callback,
                      dependency_data);
+        g_free (command);
     } else {
         // no more packages to install/remove
         // move on to next stage.
@@ -99,7 +98,7 @@ restraint_install_dependencies (AppData *app_data)
 
     DependencyData *dependency_data = g_slice_new0 (DependencyData);
     dependency_data->app_data = app_data;
-    dependency_data->dependencies = task->dependencies;
+    dependency_data->dependencies = task->metadata->dependencies;
 
     dependency_handler (dependency_data);
 }

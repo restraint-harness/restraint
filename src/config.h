@@ -15,6 +15,7 @@
     along with Restraint.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+gint64 restraint_config_get_int64 (gchar *config_file, gchar *section, gchar *key, GError **error);
 guint64 restraint_config_get_uint64 (gchar *config_file, gchar *section, gchar *key, GError **error);
 gboolean restraint_config_get_boolean (gchar *config_file, gchar *section, gchar *key, GError **error);
 gchar *restraint_config_get_string (gchar *config_file, gchar *section, gchar *key, GError **error);

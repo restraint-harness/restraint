@@ -80,9 +80,9 @@ test-data/git-remote: test-data/git-remote.tgz
 test_recipe: recipe.o task.o fetch_git.o param.o role.o metadata.o
 test_recipe.o: recipe.h task.h param.h
 
-#TEST_PROGS += test_metadata
-test_metadata: metadata.o task.o fetch_git.o param.o role.o
-test_metadata.o: task.h
+TEST_PROGS += test_metadata
+test_metadata: metadata.o utils.o errors.o
+test_metadata.o: metadata.h utils.h errors.h
 
 .PHONY: check
 check: $(TEST_PROGS) test-data/git-remote

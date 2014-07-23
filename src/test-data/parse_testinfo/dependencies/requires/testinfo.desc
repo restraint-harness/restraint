@@ -1,0 +1,24 @@
+Owner:        Bill Peck <bpeck@redhat.com>
+Name:         /TOPLEVEL/filesystems/nfs/testsuite
+Path:         /mnt/tests/we/ignore/this
+TestVersion:  1.2
+Description:  Connectathon Testsuite 	to test NFS versions 2,3 and 4.
+TestTime:     20m
+RunFor:       kernel
+RunFor:       nfs-utils
+Requires:	lib-virt, httpd
+requIres:     postgresql 
+Requires:     nfs-utils
+Requires:     net-tools
+Requires:     net-snmp
+Requires:     ethereal
+Requires:     wireshark
+Requires:     tcpdump
+Requires:     rusers
+Requires:     bzip2
+Requires:     gcc
+Priority:     Medium
+Type:         Regression
+Type:         Tier1
+Type:         KernelTier1
+License:      GPL v2

@@ -194,7 +194,7 @@ server_msg_complete (SoupSession *session, SoupMessage *server_msg, gpointer use
         // Execute report plugins
         if (!no_plugins) {
             // Create a new ProcessCommand
-            const gchar *command[] = {TASK_PLUGIN_SCRIPT, PLUGIN_SCRIPT, NULL};
+            gchar *command = g_strdup_printf ("%s %s", TASK_PLUGIN_SCRIPT, PLUGIN_SCRIPT);
 
             // Last four entries are NULL.  Replace first three with plugin vars
             gchar *result_server = g_strdup_printf("RSTRNT_RESULT_URL=%s", soup_message_headers_get_one (client_msg->response_headers, "Location"));
@@ -223,13 +223,14 @@ server_msg_complete (SoupSession *session, SoupMessage *server_msg, gpointer use
                 task->env->pdata[task->env->len - 2] = disabled_plugins;
             }
 
-            process_run (command,
+            process_run ((const gchar *) command,
                          (const gchar **) task->env->pdata,
                          "/usr/share/restraint/plugins",
                          0,
                          server_io_callback,
                          plugin_finish_callback,
                          server_data);
+            g_free (command);
         }
         g_hash_table_destroy (table);
     } else {

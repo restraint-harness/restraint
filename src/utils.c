@@ -17,6 +17,7 @@
 
 #include <stdio.h>
 #include <glib.h>
+#include <glib/gstdio.h>
 
 #include <errno.h>
 #include <string.h>
@@ -54,4 +55,19 @@ parse_time_string(gchar *time_string, GError **error)
         }
     }
     return max_time;
+}
+
+gboolean
+file_exists (gchar *filename)
+{
+    /* Checking if a file exists before creating it can be
+     * prone to race conditions.  Be careful.
+     */
+
+    GStatBuf stat_buf;
+    if (g_stat (filename, &stat_buf) == 0) {
+        return TRUE;
+    } else {
+        return FALSE;
+    }
 }

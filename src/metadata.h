@@ -15,7 +15,22 @@
     along with Restraint.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-gboolean restraint_metadata_parse(Task *task, GError **error);
-void restraint_generate_testinfo(AppData *app_data);
-gboolean restraint_is_rhts_compat (Task *task);
-gboolean restraint_no_testinfo (Task *task);
+#ifndef _RESTRAINT_METADATA_H
+#define _RESTRAINT_METADATA_H
+
+typedef struct {
+    gchar *name;
+    /* entry_point, defaults to make run */
+    gchar *entry_point;
+    /* List of dependencies */
+    GSList *dependencies;
+    /* maximum time task is allowed to run before being killed */
+    gint64 max_time;
+    /* The task can request that no localwatchdog be used. Used for reservesys task */
+    gboolean nolocalwatchdog;
+} MetaData;
+
+MetaData* restraint_parse_metadata (gchar *filename, gchar *locale, GError **error);
+MetaData* restraint_parse_testinfo (gchar *filename, GError **error);
+void restraint_metadata_free (MetaData *metadata);
+#endif

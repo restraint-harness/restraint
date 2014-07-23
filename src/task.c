@@ -41,6 +41,7 @@
 #include "fetch.h"
 #include "fetch_git.h"
 #include "fetch_http.h"
+#include "utils.h"
 
 GQuark restraint_task_runner_error(void) {
     return g_quark_from_static_string("restraint-task-runner-error-quark");
@@ -67,7 +68,7 @@ fetch_finish_callback (GError *error, gpointer user_data)
         g_propagate_error (&task->error, error);
         task->state = TASK_FAIL;
     } else {
-        task->state = TASK_METADATA;
+        task->state = TASK_GEN_TESTINFO;
     }
 
     app_data->task_handler_id = g_idle_add_full(G_PRIORITY_DEFAULT_IDLE,
@@ -107,14 +108,15 @@ restraint_task_fetch(AppData *app_data) {
             break;
         case TASK_FETCH_INSTALL_PACKAGE:
             ;
-            const gchar *command[] = { "yum", "-y", "install", task->fetch.package_name, NULL };
+            gchar *command = g_strdup_printf ("yum -y install %s", task->fetch.package_name);
             // Use appropriate package install command
             TaskRunData *task_run_data = g_slice_new0(TaskRunData);
             task_run_data->app_data = app_data;
-            task_run_data->pass_state = TASK_METADATA;
+            task_run_data->pass_state = TASK_GEN_TESTINFO;
             task_run_data->fail_state = TASK_COMPLETE;
-            process_run (command, NULL, NULL, 0, task_io_callback, task_handler_callback,
+            process_run ((const gchar *)command, NULL, NULL, 0, task_io_callback, task_handler_callback,
                          task_run_data);
+            g_free (command);
             break;
         default:
             // Set task_run_data->error and add task_handler_callback
@@ -224,7 +226,7 @@ task_finish_callback (gint pid_result, gboolean localwatchdog, gpointer user_dat
 
     // Run Finish/Completed plugins
     // Always run completed plugins and if localwatchdog triggered run those as well.
-    const gchar *command[] = {TASK_PLUGIN_SCRIPT, PLUGIN_SCRIPT, NULL};
+    gchar *command = g_strdup_printf ("%s %s", TASK_PLUGIN_SCRIPT, PLUGIN_SCRIPT);
     // Last four entries are NULL.  Replace first three with plugin vars
     gchar *localwatchdog_plugin = g_strdup_printf(" %s/localwatchdog.d", PLUGIN_DIR);
     gchar *plugin_dir = g_strdup_printf("RSTRNT_PLUGINS_DIR=%s/completed.d%s", PLUGIN_DIR, localwatchdog ? localwatchdog_plugin : "");
@@ -246,13 +248,14 @@ task_finish_callback (gint pid_result, gboolean localwatchdog, gpointer user_dat
     }
     task->env->pdata[task->env->len - 3] = rstrnt_localwatchdog;
 
-    process_run (command,
+    process_run ((const gchar *) command,
                  (const gchar **) task->env->pdata,
                  "/usr/share/restraint/plugins",
                  0,
                  task_io_callback,
                  task_finish_plugins_callback,
                  task_run_data);
+    g_free (command);
 }
 
 void
@@ -302,10 +305,10 @@ task_heartbeat_callback (gpointer user_data)
     GString *message = g_string_new(NULL);
     gchar currtime[80];
 
-    task->max_time -= HEARTBEAT;
+    task->remaining_time -= HEARTBEAT;
     restraint_config_set (app_data->config_file, task->task_id,
-                          "max_time", NULL,
-                          G_TYPE_UINT64, task->max_time);
+                          "remaining_time", NULL,
+                          G_TYPE_UINT64, task->remaining_time);
 
     time (&rawtime);
     timeinfo = localtime (&rawtime);
@@ -327,9 +330,9 @@ task_run (AppData *app_data)
     task_run_data->pass_state = TASK_COMPLETE;
     task_run_data->fail_state = TASK_COMPLETE;
 
-    if (!task->nolocalwatchdog) {
+    if (!task->metadata->nolocalwatchdog) {
         struct tm timeinfo = *localtime (&rawtime);
-        timeinfo.tm_sec += task->max_time;
+        timeinfo.tm_sec += task->remaining_time;
         mktime(&timeinfo);
         strftime(task_run_data->expire_time,
                  sizeof(task_run_data->expire_time),
@@ -340,13 +343,21 @@ task_run (AppData *app_data)
                   " * Disabled! *");
     }
 
-    process_run ((const gchar **) task->entry_point,
+    gchar *entry_point;
+    if (task->metadata->entry_point) {
+        entry_point = g_strdup_printf ("%s %s", TASK_PLUGIN_SCRIPT, task->metadata->entry_point);
+    } else {
+        entry_point = g_strdup_printf ("%s %s", TASK_PLUGIN_SCRIPT, DEFAULT_ENTRY_POINT);
+    }
+    process_run ((const gchar *) entry_point,
                       (const gchar **)task->env->pdata,
                       task->path,
-                      task->max_time,
+                      task->remaining_time,
                       task_io_callback,
                       task_finish_callback,
                       task_run_data);
+
+    g_free (entry_point);
 
     // Local heartbeat, log to console and testout.log
     task_run_data->heartbeat_handler_id = g_timeout_add_seconds_full (G_PRIORITY_DEFAULT,
@@ -391,7 +402,7 @@ static void build_env(AppData *app_data, Task *task) {
         array_add (env, NULL, "TESTNAME", task->name);
         array_add (env, NULL, "TESTPATH", task->path);
         array_add (env, NULL, "TESTID", task->task_id);
-        g_ptr_array_add(env, g_strdup_printf("MAXTIME=%" PRIu64, task->max_time));
+        g_ptr_array_add(env, g_strdup_printf("MAXTIME=%" PRIu64, task->remaining_time));
         g_ptr_array_add(env, g_strdup_printf("REBOOTCOUNT=%" PRIu64, task->reboots));
         g_ptr_array_add(env, g_strdup_printf("TASKORDER=%d", task->order));
     }
@@ -410,7 +421,7 @@ static void build_env(AppData *app_data, Task *task) {
     array_add (env, prefix, "OSARCH", task->recipe->osarch);
     array_add (env, prefix, "TASKNAME", task->name);
     array_add (env, prefix, "TASKPATH", task->path);
-    g_ptr_array_add(env, g_strdup_printf("%sMAXTIME=%" PRIu64, prefix, task->max_time));
+    g_ptr_array_add(env, g_strdup_printf("%sMAXTIME=%" PRIu64, prefix, task->remaining_time));
     g_ptr_array_add(env, g_strdup_printf("%sREBOOTCOUNT=%" PRIu64, prefix, task->reboots));
     //g_ptr_array_add(env, g_strdup_printf("%sLAB_CONTROLLER=", prefix));
     g_ptr_array_add(env, g_strdup_printf("%sTASKORDER=%d", prefix, task->order));
@@ -502,10 +513,7 @@ restraint_task_watchdog (Task *task, AppData *app_data, guint64 seconds)
 
 Task *restraint_task_new(void) {
     Task *task = g_slice_new0(Task);
-    task->max_time = 0;
-    gchar *entry_point = g_strdup_printf ("%s %s", TASK_PLUGIN_SCRIPT, DEFAULT_ENTRY_POINT);
-    task->entry_point = g_strsplit (entry_point, " ", 0);
-    g_free (entry_point);
+    task->remaining_time = -1;
     return task;
 }
 
@@ -527,11 +535,10 @@ void restraint_task_free(Task *task) {
     }
     g_list_free_full(task->params, (GDestroyNotify) restraint_param_free);
     g_list_free_full(task->roles, (GDestroyNotify) restraint_role_free);
-    g_strfreev (task->entry_point);
     //g_strfreev (task->env);
     if (task->env)
         g_ptr_array_free (task->env, TRUE);
-    g_list_free_full(task->dependencies, (GDestroyNotify) g_free);
+    //g_list_free_full(task->metadata->dependencies, (GDestroyNotify) g_free);
     g_slice_free(Task, task);
 }
 
@@ -561,10 +568,13 @@ parse_task_config (gchar *config_file, Task *task, GError **error)
 {
     GError *tmp_error = NULL;
 
-    task->max_time = restraint_config_get_uint64 (config_file,
-                                                  task->task_id,
-                                                  "max_time",
-                                                  &tmp_error);
+    gint64 remaining_time = restraint_config_get_int64 (config_file,
+                                                        task->task_id,
+                                                        "remaining_time",
+                                                        &tmp_error);
+
+    task->remaining_time = remaining_time == 0 ? -1 : remaining_time;
+
     if (tmp_error) {
         g_propagate_prefixed_error(error, tmp_error,
                     "Task %s:  parse_task_config,", task->task_id);
@@ -634,6 +644,8 @@ task_handler (gpointer user_data)
   }
 
   Task *task = app_data->tasks->data;
+  gchar *metadata_file = NULL;
+  gchar *testinfo_file = NULL;
   GString *message = g_string_new(NULL);
   gboolean result = TRUE;
 
@@ -662,7 +674,7 @@ task_handler (gpointer user_data)
           } else if (task->started) {
               // If the task is not finished but started then skip fetching the task again.
               g_string_printf(message, "** Continuing task: %s [%s]\n", task->task_id, task->path);
-              task->state = TASK_METADATA;
+              task->state = TASK_GEN_TESTINFO;
           } else {
               // If neither started nor finished then fetch the task
               restraint_task_status (task, app_data, "Running", NULL);
@@ -679,23 +691,39 @@ task_handler (gpointer user_data)
       restraint_task_fetch (app_data);
       result=FALSE;
       break;
-    case TASK_METADATA:
-      // If running in rhts_compat mode and testinfo.desc doesn't exist
-      // then we need to generate it.
-      if (restraint_is_rhts_compat (task)) {
-          task->rhts_compat = TRUE;
-          if (restraint_no_testinfo (task)) {
-              restraint_generate_testinfo (app_data);
-              g_string_printf(message, "** Generating testinfo.desc\n");
-              result=FALSE;
-          } else {
-              task->state = TASK_METADATA_PARSE;
-          }
-      } else {
-          // not running in rhts_compat mode, skip to next step where we parse the config.
+    case TASK_GEN_TESTINFO:
+      // if new metadata file is found then don't bother trying to generate
+      // old testinfo.desc
+      metadata_file = g_build_filename (task->path, "metadata", NULL);
+      testinfo_file = g_build_filename (task->path, "testinfo.desc", NULL);
+      if (file_exists (metadata_file)) {
           task->rhts_compat = FALSE;
           task->state = TASK_METADATA_PARSE;
+      } else if (file_exists (testinfo_file)) {
+          task->rhts_compat = TRUE;
+          task->state = TASK_METADATA_PARSE;
+      } else {
+          task->rhts_compat = TRUE;
+          TaskRunData *task_run_data = g_slice_new0(TaskRunData);
+          task_run_data->app_data = app_data;
+          task_run_data->pass_state = TASK_METADATA_PARSE;
+          task_run_data->fail_state = TASK_METADATA_PARSE;
+
+          const gchar *command = "make testinfo.desc";
+
+          process_run (command,
+                       NULL,
+                       task->path,
+                       0,
+                       task_io_callback,
+                       task_handler_callback,
+                       task_run_data);
+
+          g_string_printf(message, "** Generating testinfo.desc\n");
+          result=FALSE;
       }
+      g_free (testinfo_file);
+      g_free (metadata_file);
       break;
     case TASK_METADATA_PARSE:
       // Update Task metadata
@@ -703,12 +731,32 @@ task_handler (gpointer user_data)
       // max_time which is used by both localwatchdog and externalwatchdog
       // dependencies required for task execution
       // rhts_compat is set to false if new "metadata" file exists.
-      g_string_printf(message, "** Parsing metadata\n");
-      if (restraint_metadata_parse(task, &task->error)) {
-        task->state = TASK_ENV;
+      metadata_file = g_build_filename (task->path, "metadata", NULL);
+      testinfo_file = g_build_filename (task->path, "testinfo.desc", NULL);
+      if (task->rhts_compat) {
+          task->metadata = restraint_parse_testinfo (testinfo_file, &task->error);
+          g_string_printf (message, "** Parsing testinfo.desc\n");
+          task->state = TASK_ENV;
       } else {
-        task->state = TASK_COMPLETE;
+          task->metadata = restraint_parse_metadata (metadata_file, task->recipe->osmajor, &task->error);
+          g_string_printf (message, "** Parsing metadata\n");
+          task->state = TASK_ENV;
       }
+      if (task->metadata == NULL) {
+          task->state = TASK_COMPLETE;
+      }
+
+      // If task->remaining_time is not set then set it from metadata
+      if (task->remaining_time == -1) {
+          task->remaining_time = task->metadata->max_time;
+      }
+      // If task->name is NULL then take name from metadata
+      if (task->name == NULL) {
+          task->name = task->metadata->name;
+      }
+
+      g_free (testinfo_file);
+      g_free (metadata_file);
       break;
     case TASK_ENV:
       // Build environment to execute task
@@ -722,8 +770,8 @@ task_handler (gpointer user_data)
     case TASK_WATCHDOG:
       // Setup external watchdog
       if (!task->started) {
-          g_string_printf(message, "** Updating external watchdog: %" PRIu64 " seconds\n", task->max_time + EWD_TIME);
-          restraint_task_watchdog (task, app_data, task->max_time + EWD_TIME);
+          g_string_printf(message, "** Updating external watchdog: %" PRIu64 " seconds\n", task->remaining_time + EWD_TIME);
+          restraint_task_watchdog (task, app_data, task->remaining_time + EWD_TIME);
           result=FALSE;
       }
       task->state = TASK_DEPENDENCIES;

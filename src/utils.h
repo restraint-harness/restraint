@@ -16,3 +16,4 @@
 */
 
 guint64 parse_time_string (gchar *time_string, GError **error);
+gboolean file_exists (gchar *filename);

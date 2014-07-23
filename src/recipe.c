@@ -222,7 +222,7 @@ check_param_max_time (Param *param, Task *task)
 {
     if (g_strcmp0 (param->name, "KILLTIMEOVERRIDE") == 0 ||
         g_strcmp0 (param->name, "RSTRNT_MAX_TIME") == 0) {
-        task->max_time = parse_time_string (param->value, NULL);
+        task->remaining_time = parse_time_string (param->value, NULL);
     }
 }
 
@@ -234,6 +234,10 @@ static Task *parse_task(xmlNode *task_node, SoupURI *recipe_uri, GError **error)
 
     Task *task = restraint_task_new();
     g_return_val_if_fail(task != NULL, NULL);
+
+    xmlChar *task_name = xmlGetNoNsProp(task_node, (xmlChar *)"name");
+    task->name = g_strdup((gchar *)task_name);
+    xmlFree (task_name);
 
     xmlChar *task_id = xmlGetNoNsProp(task_node, (xmlChar *)"id");
     if (task_id == NULL) {

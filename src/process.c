@@ -34,6 +34,7 @@ process_free (ProcessData *process_data)
 {
     g_return_if_fail (process_data != NULL);
     g_clear_error (&process_data->error);
+    g_strfreev (process_data->command);
     g_slice_free (ProcessData, process_data);
 }
 
@@ -47,7 +48,7 @@ process_io_finish (gpointer user_data)
 }
 
 void
-process_run (const gchar **command,
+process_run (const gchar *command,
              const gchar **envp,
              const gchar *path,
              guint64 max_time,
@@ -64,7 +65,7 @@ process_run (const gchar **command,
 
     process_data = g_slice_new0 (ProcessData);
     process_data->localwatchdog = FALSE;
-    process_data->command = command;
+    process_data->command = g_strsplit (command, " ", 0);
     process_data->path = path;
     process_data->max_time = max_time;
     process_data->finish_callback = finish_callback;

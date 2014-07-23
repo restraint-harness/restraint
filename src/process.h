@@ -29,7 +29,7 @@ typedef enum {
 
 typedef struct {
     // Command to run
-    const gchar **command;
+    gchar **command;
     // Environment to use
     const gchar **environ;
     // The path to chdir before executing
@@ -56,7 +56,7 @@ typedef struct {
 } ProcessData;
 
 void
-process_run (const gchar **command,
+process_run (const gchar *command,
                       const gchar **environ,
                       const gchar *path,
                       guint64 max_time,

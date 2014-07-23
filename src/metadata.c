@@ -19,75 +19,78 @@
 #include <glib.h>
 #include <glib/gstdio.h>
 
+#include <unistd.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <string.h>
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
 
-#include "task.h"
 #include "metadata.h"
 #include "process.h"
-#include "config.h"
 #include "errors.h"
 #include "utils.h"
 
-gboolean parse_metadata(Task *task, GError **error) {
+void
+restraint_metadata_free (MetaData *metadata)
+{
+    if (metadata) {
+        g_slist_free_full (metadata->dependencies, g_free);
+        g_slice_free (MetaData, metadata);
+    }
+}
+
+MetaData *
+restraint_parse_metadata (gchar *filename,
+                          gchar *locale,
+                          GError **error)
+{
     g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
     GKeyFile *keyfile;
     GKeyFileFlags flags;
     GError *tmp_error = NULL;
+    MetaData *metadata = g_slice_new0 (MetaData);
 
     /* Create a new GKeyFile object and a bitwise list of flags. */
     keyfile = g_key_file_new();
     /* This is not really needed since I don't envision writing the file back out */
     flags = G_KEY_FILE_KEEP_COMMENTS | G_KEY_FILE_KEEP_TRANSLATIONS;
 
-    gchar *task_metadata = g_build_filename(task->path, "metadata", NULL);
-    /* Load the GKeyFile from task_metadata or return. */
-    if (!g_key_file_load_from_file(keyfile, task_metadata, flags, &tmp_error)) {
+    /* Load the GKeyFile from metadata or return. */
+    if (!g_key_file_load_from_file(keyfile, filename, flags, &tmp_error)) {
         g_propagate_error(error, tmp_error);
-        g_free (task_metadata);
         goto error;
     }
-    g_free (task_metadata);
 
-    gchar *task_name = g_key_file_get_locale_string(keyfile,
+    metadata->name = g_strstrip(g_key_file_get_locale_string(keyfile,
                                                       "General",
                                                       "name",
-                                                      task->recipe->osmajor,
-                                                      &tmp_error);
-    if (tmp_error != NULL) {
+                                                      locale,
+                                                      &tmp_error));
+    if (tmp_error != NULL && tmp_error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND) {
         g_propagate_error(error, tmp_error);
         goto error;
     }
-    if (task_name == NULL)
-        g_set_error (error, RESTRAINT_PARSE_ERROR,
-                      RESTRAINT_PARSE_ERROR_BAD_SYNTAX, "Missing name");
-    task->name = g_strdup(g_strstrip(task_name));
-    g_free(task_name);
+    g_clear_error (&tmp_error);
 
     gchar *key_entry_point = g_key_file_get_locale_string(keyfile,
                                                       "restraint",
                                                       "entry_point",
-                                                      task->recipe->osmajor,
+                                                      locale,
                                                       &tmp_error);
     if (tmp_error && tmp_error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND) {
         g_propagate_error(error, tmp_error);
         goto error;
     }
+    g_clear_error (&tmp_error);
     if (key_entry_point != NULL) {
-        g_strfreev (task->entry_point);
-        gchar *entry_point = g_strdup_printf ("%s %s", TASK_PLUGIN_SCRIPT, key_entry_point);
-        task->entry_point = g_strsplit (entry_point, " ", 0);
-        g_free (key_entry_point);
-        g_free (entry_point);
+        metadata->entry_point = key_entry_point;
     }
 
     gchar *max_time = g_key_file_get_locale_string (keyfile,
                                                     "restraint",
                                                     "max_time",
-                                                    task->recipe->osmajor,
+                                                    locale,
                                                     &tmp_error);
     if (tmp_error && tmp_error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND) {
         g_propagate_error(error, tmp_error);
@@ -95,37 +98,37 @@ gboolean parse_metadata(Task *task, GError **error) {
     }
     g_clear_error (&tmp_error);
     if (max_time != NULL) {
-        guint64 time = parse_time_string(max_time, &tmp_error);
+        gint64 time = parse_time_string(max_time, &tmp_error);
         g_free(max_time);
         if (tmp_error) {
             g_propagate_error(error, tmp_error);
             goto error;
         }
         // If max_time is set it's because we read it from our run data
-        task->max_time = task->max_time ? task->max_time : time;
+        metadata->max_time = time;
     }
 
     gsize length;
     gchar **dependencies = g_key_file_get_locale_string_list(keyfile,
-                                                     "restraint",
-                                                     "dependencies",
-                                                     task->recipe->osmajor,
-                                                     &length,
-                                                     &tmp_error);
+                                                            "restraint",
+                                                            "dependencies",
+                                                            locale,
+                                                            &length,
+                                                            &tmp_error);
+    gchar **dependency = dependencies;
+    while (*dependency) {
+        metadata->dependencies = g_slist_prepend (metadata->dependencies, g_strdup(*dependency));
+        dependency++;
+    }
+    g_strfreev (dependencies);
+
     if (tmp_error && tmp_error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND) {
         g_propagate_error(error, tmp_error);
-        g_strfreev(dependencies);
         goto error;
     }
     g_clear_error (&tmp_error);
-    for (gsize i=0; i < length; i++) {
-        task->dependencies = g_list_prepend(task->dependencies,
-                                            g_strdup(g_strstrip(dependencies[i])));
-    }
-    task->dependencies = g_list_reverse(task->dependencies);
-    g_strfreev(dependencies);
 
-    task->nolocalwatchdog = g_key_file_get_boolean (keyfile,
+    metadata->nolocalwatchdog = g_key_file_get_boolean (keyfile,
                                                     "restraint",
                                                     "no_localwatchdog",
                                                     &tmp_error);
@@ -137,56 +140,20 @@ gboolean parse_metadata(Task *task, GError **error) {
     g_clear_error (&tmp_error);
 
     g_key_file_free(keyfile);
-    return TRUE;
+
+    return metadata;
 
 error:
     g_key_file_free(keyfile);
-    return FALSE;
+    return NULL;
 }
 
-void
-restraint_generate_testinfo(AppData *app_data) {
-    g_return_if_fail(app_data != NULL);
-
-    GError *error = NULL;
-    Task *task = app_data->tasks->data;
-
-    TaskRunData *task_run_data = g_slice_new0(TaskRunData);
-    task_run_data->app_data = app_data;
-    task_run_data->pass_state = TASK_METADATA_PARSE;
-    task_run_data->fail_state = TASK_COMPLETE;
-
-    const gchar *command[] = { "make", "testinfo.desc", NULL };
-    GStatBuf stat_buf;
-
-    gchar *makefile = g_build_filename(task->path, "Makefile", NULL);
-    if (g_stat(makefile, &stat_buf) != 0) {
-        g_set_error (&error, RESTRAINT_PARSE_ERROR,
-                     RESTRAINT_MISSING_FILE,
-                     "running in rhts_compat mode and missing 'Makefile'");
-        task_handler_callback (0, FALSE, task_run_data, error);
-        g_clear_error (&error);
-        goto error;
-    }
-
-    process_run (command,
-                 NULL,
-                 task->path,
-                 0,
-                 task_io_callback,
-                 task_handler_callback,
-                 task_run_data);
-
-error:
-    g_free(makefile);
-}
-
-static void parse_line(Task *task,
+static void parse_line(MetaData *metadata,
                        const gchar *line,
                        gsize length,
                        GError **error) {
 
-    g_return_if_fail(task != NULL);
+    g_return_if_fail(metadata != NULL);
     g_return_if_fail(error == NULL || *error == NULL);
 
     GError *tmp_error = NULL;
@@ -203,36 +170,33 @@ static void parse_line(Task *task,
             g_propagate_error(error, tmp_error);
             return;
         }
-        // If max_time is set it's because we read it from our run data
-        task->max_time = task->max_time ? task->max_time : time;
+        metadata->max_time = time;
     } else if(g_strcmp0("NAME", key) == 0) {
-        task->name = g_strdup(g_strstrip(value));
+        metadata->name = g_strstrip(value);
     } else if(g_strcmp0("REQUIRES", key) == 0) {
-        gchar **dependencies = g_strsplit(value," ",0);
-        GList *list = NULL;
-        gint i = 0;
-        while (dependencies[i] != NULL) {
-            list = g_list_prepend(list, g_strdup(g_strstrip(dependencies[i])));
-            i++;
+        gchar **dependencies = g_strsplit_set (value,", ", -1);
+        gchar **dependency = dependencies;
+        while (*dependency) {
+            if (g_strcmp0 (*dependency, "") != 0) {
+                metadata->dependencies = g_slist_prepend (metadata->dependencies, g_strdup(*dependency));
+            }
+            dependency++;
         }
-        g_strfreev(dependencies);
-        list = g_list_reverse(list);
-        if (list) {
-            task->dependencies = g_list_concat(task->dependencies, list);
-        }
+        // We only want to free the array not the values that it's pointing to
+        g_strfreev (dependencies);
     }
     g_free(key);
     g_free(value);
 }
 
-static void flush_parse_buffer(Task *task, GString *parse_buffer, GError **error) {
-    g_return_if_fail(task != NULL);
+static void flush_parse_buffer(MetaData *metadata, GString *parse_buffer, GError **error) {
+    g_return_if_fail(metadata != NULL);
     g_return_if_fail(error == NULL || *error == NULL);
 
     GError *tmp_error = NULL;
     
     if (parse_buffer->len > 0) {
-        parse_line(task, parse_buffer->str, parse_buffer->len, &tmp_error);
+        parse_line(metadata, parse_buffer->str, parse_buffer->len, &tmp_error);
         g_string_erase(parse_buffer, 0, -1);
         if (tmp_error) {
             g_propagate_error(error, tmp_error);
@@ -241,12 +205,12 @@ static void flush_parse_buffer(Task *task, GString *parse_buffer, GError **error
     }
 }
 
-static void file_parse_data(Task *task,
+static void file_parse_data(MetaData *metadata,
                        GString *parse_buffer,
                        const gchar *data,
                        gsize length,
                        GError **error) {
-    g_return_if_fail(task != NULL);
+    g_return_if_fail(metadata != NULL);
     g_return_if_fail(error == NULL || *error == NULL);
 
     GError *parse_error;
@@ -267,7 +231,7 @@ static void file_parse_data(Task *task,
              * line can be parsed.  Completely blank lines are skipped.
              */
             if (parse_buffer->len > 0)
-                flush_parse_buffer(task, parse_buffer, &parse_error);
+                flush_parse_buffer(metadata, parse_buffer, &parse_error);
             if (parse_error) {
                 g_propagate_error(error, parse_error);
                 return;
@@ -292,7 +256,7 @@ static void file_parse_data(Task *task,
     }
 }
 
-static gboolean parse_testinfo_from_fd(Task *task,
+static gboolean parse_testinfo_from_fd(MetaData *metadata,
                                        gint fd,
                                        GError **error) {
     g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
@@ -333,7 +297,7 @@ static gboolean parse_testinfo_from_fd(Task *task,
             g_string_free(parse_buffer, TRUE);
             return FALSE;
         }
-        file_parse_data(task,
+        file_parse_data(metadata,
                         parse_buffer,
                         read_buf,
                         bytes_read,
@@ -346,7 +310,7 @@ static gboolean parse_testinfo_from_fd(Task *task,
         return FALSE;
     }
 
-    flush_parse_buffer(task, parse_buffer, &tmp_error);
+    flush_parse_buffer(metadata, parse_buffer, &tmp_error);
     if (tmp_error) {
         g_propagate_error(error, tmp_error);
         g_string_free(parse_buffer, TRUE);
@@ -356,89 +320,33 @@ static gboolean parse_testinfo_from_fd(Task *task,
     return TRUE;
 }
 
-static gboolean parse_testinfo_from_file(Task *task,
-                                         GError **error) {
-    g_return_val_if_fail(task != NULL, FALSE);
-    g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
+MetaData *
+restraint_parse_testinfo(gchar *filename,
+                         GError **error)
+{
+    g_return_val_if_fail(filename != NULL, NULL);
+    g_return_val_if_fail(error == NULL || *error == NULL, NULL);
+
+    MetaData *metadata = g_slice_new0 (MetaData);
 
     GError *tmp_error = NULL;
     gint fd;
 
-
-    gchar *task_testinfo = g_build_filename(task->path, "testinfo.desc", NULL);
-    fd = g_open(task_testinfo, O_RDONLY, 0);
-    g_free (task_testinfo);
+    fd = g_open(filename, O_RDONLY, 0);
 
     if (fd == -1) {
         g_set_error_literal(error, G_FILE_ERROR,
                             g_file_error_from_errno(errno),
                             g_strerror(errno));
-        return FALSE;
+        return NULL;
     }
 
-    parse_testinfo_from_fd(task, fd, &tmp_error);
+    parse_testinfo_from_fd(metadata, fd, &tmp_error);
     close(fd);
 
     if (tmp_error) {
         g_propagate_error(error, tmp_error);
-        return FALSE;
+        return NULL;
     }
-    return TRUE;
-}
-
-gboolean
-restraint_is_rhts_compat (Task *task)
-{
-    GStatBuf stat_buf;
-    gchar *task_metadata = g_build_filename(task->path, "metadata", NULL);
-    if (g_stat(task_metadata, &stat_buf) == 0) {
-        g_free (task_metadata);
-        return FALSE;
-    } else {
-        g_free (task_metadata);
-        return TRUE;
-    }
-}
-
-gboolean
-restraint_no_testinfo (Task *task)
-{
-    GStatBuf stat_buf;
-    gchar *task_testinfo = g_build_filename(task->path, "testinfo.desc", NULL);
-    if (g_stat(task_testinfo, &stat_buf) != 0) {
-        g_free (task_testinfo);
-        return TRUE;
-    } else {
-        g_free (task_testinfo);
-        return FALSE;
-    }
-}
-
-gboolean restraint_metadata_parse(Task *task, GError **error) {
-    g_return_val_if_fail(task != NULL, FALSE);
-    g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
-    GError *tmp_error = NULL;
-    gboolean ret;
-    /* metadata can be stored in two ways.
-     *
-     * If rhts_compat is True then we parse "testinfo.desc", if False
-     * then we parse "metadata"
-     *
-     */
-
-    if (task->rhts_compat) {
-        ret = parse_testinfo_from_file(task, &tmp_error);
-    } else {
-        ret = parse_metadata(task, &tmp_error);
-    }
-    if (!ret) {
-        g_propagate_prefixed_error(error, tmp_error,
-                                   "Task %s: ", task->task_id);
-        return FALSE;
-    }
-
-    // Set to default max time if max_time is 0
-    task->max_time = task->max_time ? task->max_time : DEFAULT_MAX_TIME;
-
-    return TRUE;
+    return metadata;
 }

@@ -40,7 +40,7 @@ process_finish_callback (gint pid_result, gboolean localwatchdog, gpointer user_
 
 static void test_process_success(void) {
     RunData *run_data;
-    const gchar *command[] = { "true", NULL };
+    const gchar *command = "true";
 
     run_data = g_slice_new0 (RunData);
     run_data->loop = g_main_loop_new (NULL, TRUE);
@@ -65,7 +65,7 @@ static void test_process_success(void) {
 
 static void test_process_failure(void) {
     RunData *run_data;
-    const gchar *command[] = { "false", NULL };
+    const gchar *command = "false";
 
     run_data = g_slice_new0 (RunData);
     run_data->loop = g_main_loop_new (NULL, TRUE);
@@ -92,7 +92,7 @@ static void test_watchdog_success(void) {
     RunData *run_data;
     // Watchdog success so command time < max time
     const guint64 maximumtime = 2;
-    const gchar *command[] = { "sleep", "1", NULL };
+    const gchar *command = "sleep 1";
 
     run_data = g_slice_new0 (RunData);
     run_data->loop = g_main_loop_new (NULL, TRUE);
@@ -121,7 +121,7 @@ static void test_watchdog_failure(void) {
     RunData *run_data;
     // Watchdog fail to command time > max time
     const guint64 maximumtime = 1;
-    const gchar *command[] = { "sleep", "2", NULL };
+    const gchar *command = "sleep 2";
 
     run_data = g_slice_new0 (RunData);
     run_data->loop = g_main_loop_new (NULL, TRUE);

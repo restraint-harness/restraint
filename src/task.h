@@ -24,6 +24,7 @@
 #include <pty.h>
 #include "recipe.h"
 #include "server.h"
+#include "metadata.h"
 
 #define DEFAULT_MAX_TIME 10 * 60 // default amount of time before local watchdog kills process
 #define HEARTBEAT 5 * 60 // heartbeat every 5 minutes
@@ -34,7 +35,7 @@
 typedef enum {
     TASK_IDLE,
     TASK_FETCH,
-    TASK_METADATA,
+    TASK_GEN_TESTINFO,
     TASK_METADATA_PARSE,
     TASK_ENV,
     TASK_WATCHDOG,
@@ -98,14 +99,10 @@ typedef struct {
     gboolean finished;
     /* Has this task triggered the localwatchdog? */
     gboolean localwatchdog;
-    /* List of dependencies */
-    GList *dependencies;
     /* Are we running in rhts_compat mode? */
     gboolean rhts_compat;
-    /* entry_point, defaults to make run */
-    gchar **entry_point;
-    /* maximum time task is allowed to run before being killed */
-    guint64 max_time;
+    /* remaining time task is allowed to run before being killed */
+    gint64 remaining_time;
     /* task order needed for multi-host tasks */
     gint order;
     /* environment variables that will be passed on to task */
@@ -118,8 +115,7 @@ typedef struct {
     gssize offset;
     /* reboot count */
     guint64 reboots;
-    /* The task can request that no localwatchdog be used. Used for reservesys task */
-    gboolean nolocalwatchdog;
+    MetaData *metadata;
 } Task;
 
 typedef struct {

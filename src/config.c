@@ -33,6 +33,34 @@
         error_code, \
         message, ##__VA_ARGS__)
 
+gint64
+restraint_config_get_int64 (gchar *config_file, gchar *section, gchar *key, GError **error)
+{
+    g_return_val_if_fail(config_file != NULL, -1);
+    g_return_val_if_fail(section != NULL, -1);
+    g_return_val_if_fail(error == NULL || *error == NULL, -1);
+
+    GKeyFile *keyfile;
+    GKeyFileFlags flags;
+    GError *tmp_error = NULL;
+
+    flags = G_KEY_FILE_KEEP_COMMENTS | G_KEY_FILE_KEEP_TRANSLATIONS;
+
+    keyfile = g_key_file_new ();
+    g_key_file_load_from_file (keyfile, config_file, flags, NULL);
+    gint64 value = g_key_file_get_int64 (keyfile,
+                                         section,
+                                         key,
+                                         &tmp_error);
+    if (tmp_error && tmp_error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND &&
+        tmp_error->code != G_KEY_FILE_ERROR_GROUP_NOT_FOUND ) {
+        g_propagate_prefixed_error(error, tmp_error, "config get int64,");
+    }
+
+    g_key_file_free (keyfile);   
+    return value;
+}
+
 guint64
 restraint_config_get_uint64 (gchar *config_file, gchar *section, gchar *key, GError **error)
 {
@@ -49,9 +77,9 @@ restraint_config_get_uint64 (gchar *config_file, gchar *section, gchar *key, GEr
     keyfile = g_key_file_new ();
     g_key_file_load_from_file (keyfile, config_file, flags, NULL);
     guint64 value = g_key_file_get_uint64 (keyfile,
-                                          section,
-                                          key,
-                                          &tmp_error);
+                                           section,
+                                           key,
+                                           &tmp_error);
     if (tmp_error && tmp_error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND &&
         tmp_error->code != G_KEY_FILE_ERROR_GROUP_NOT_FOUND ) {
         g_propagate_prefixed_error(error, tmp_error, "config get uint64,");
