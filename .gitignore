@@ -25,6 +25,7 @@
 /src/test_fetch_git
 /src/test_fetch_http
 /src/test_process
+/src/test_dependency
 /src/restraint
 /src/restraintd
 /src/rstrnt-report-result

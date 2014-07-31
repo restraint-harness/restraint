@@ -45,10 +45,14 @@ typedef struct {
     guint io_handler_id;
     // id of the pid handler
     guint pid_handler_id;
+    // id of finish handler
+    guint finish_handler_id;
     // id of the timeout handler
     guint timeout_handler_id;
     // True if localwatch kicked in for this process
     gboolean localwatchdog;
+    // IO handler to call
+    GIOFunc io_callback;
     // next handler to call.
     ProcessFinishCallback finish_callback;
     gpointer user_data;

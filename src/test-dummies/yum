@@ -6,9 +6,15 @@ if [[ "$*" == -y\ install\ * ]] ; then
     shift 2
     if [[ "$*" == *fail* ]] ; then
         echo "dummy yum: fail" >&2
+        # Something is wrong with GIO - without the sleep we sometimes don't get 
+        # the last line of data.
+        sleep .11
         exit 1
     fi
     echo "dummy yum: installing $*"
+    # Something is wrong with GIO - without the sleep we sometimes don't get 
+    # the last line of data.
+    sleep .11
     exit 0
 fi
 

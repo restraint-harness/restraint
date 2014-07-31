@@ -43,10 +43,6 @@
 #include "fetch_http.h"
 #include "utils.h"
 
-GQuark restraint_task_runner_error(void) {
-    return g_quark_from_static_string("restraint-task-runner-error-quark");
-}
-
 void
 archive_entry_callback (const gchar *entry, gpointer user_data)
 {
@@ -98,7 +94,7 @@ restraint_task_fetch(AppData *app_data) {
                                       fetch_finish_callback,
                                       app_data);
             } else {
-                g_set_error (&error, RESTRAINT_TASK_RUNNER_ERROR,
+                g_set_error (&error, RESTRAINT_ERROR,
                              RESTRAINT_TASK_RUNNER_SCHEMA_ERROR,
                              "Unimplemented schema method %s", soup_uri_get_scheme(task->fetch.url));
                 fetch_finish_callback (error, app_data);
@@ -120,7 +116,7 @@ restraint_task_fetch(AppData *app_data) {
             break;
         default:
             // Set task_run_data->error and add task_handler_callback
-            g_set_error (&error, RESTRAINT_TASK_RUNNER_ERROR,
+            g_set_error (&error, RESTRAINT_ERROR,
                          RESTRAINT_TASK_RUNNER_FETCH_ERROR,
                          "Unknown fetch method");
             fetch_finish_callback (error, app_data);
@@ -135,8 +131,7 @@ static void build_param_var(Param *param, GPtrArray *env) {
 
 gboolean
 task_io_callback (GIOChannel *io, GIOCondition condition, gpointer user_data) {
-    ProcessData *process_data = (ProcessData *) user_data;
-    TaskRunData *task_run_data = process_data->user_data;
+    TaskRunData *task_run_data = (TaskRunData *) user_data;
     AppData *app_data = task_run_data->app_data;
     GError *tmp_error = NULL;
 
@@ -214,11 +209,11 @@ task_finish_callback (gint pid_result, gboolean localwatchdog, gpointer user_dat
                                   "localwatchdog", NULL,
                                   G_TYPE_BOOLEAN, task->localwatchdog);
 
-            g_set_error(&task->error, RESTRAINT_TASK_RUNNER_ERROR,
+            g_set_error(&task->error, RESTRAINT_ERROR,
                             RESTRAINT_TASK_RUNNER_WATCHDOG_ERROR,
                             "Local watchdog expired!");
         } else {
-            g_set_error(&task->error, RESTRAINT_TASK_RUNNER_ERROR,
+            g_set_error(&task->error, RESTRAINT_ERROR,
                         RESTRAINT_TASK_RUNNER_RC_ERROR,
                             "Command returned non-zero %i", pid_result);
         }
@@ -258,6 +253,25 @@ task_finish_callback (gint pid_result, gboolean localwatchdog, gpointer user_dat
     g_free (command);
 }
 
+void dependency_finish_cb (gpointer user_data, GError *error)
+{
+    TaskRunData *task_run_data = (TaskRunData *) user_data;
+    AppData *app_data = (AppData *) task_run_data->app_data;
+    Task *task = app_data->tasks->data;
+
+    if (error) {
+        task->error = g_error_copy (error);
+        task->state = TASK_COMPLETE;
+    } else {
+        task->state = TASK_RUN;
+    }
+    g_slice_free (TaskRunData, task_run_data);
+    app_data->task_handler_id = g_idle_add_full(G_PRIORITY_DEFAULT_IDLE,
+                                                task_handler,
+                                                app_data,
+                                                NULL);
+}
+
 void
 task_handler_callback (gint pid_result, gboolean localwatchdog, gpointer user_data, GError *error)
 {
@@ -279,7 +293,7 @@ task_handler_callback (gint pid_result, gboolean localwatchdog, gpointer user_da
             task->state = task_run_data->pass_state;
         } else {
             task->state = task_run_data->fail_state;
-            g_set_error (&task->error, RESTRAINT_TASK_RUNNER_ERROR,
+            g_set_error (&task->error, RESTRAINT_ERROR,
                         RESTRAINT_TASK_RUNNER_RC_ERROR,
                         "Command returned non-zero %i", pid_result);
         }
@@ -782,7 +796,10 @@ task_handler (gpointer user_data)
       // All repodependencies are installed via fetch_git
       if (!task->started) {
           g_string_printf(message, "** Installing dependencies\n");
-          restraint_install_dependencies (app_data);
+          TaskRunData *task_run_data = g_slice_new0(TaskRunData);
+          task_run_data->app_data = app_data;
+          restraint_install_dependencies (task->metadata->dependencies, task->rhts_compat,
+                                          task_io_callback, dependency_finish_cb, task_run_data);
           result=FALSE;
       }
       task->state = TASK_RUN;

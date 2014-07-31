@@ -16,50 +16,47 @@
 */
 
 #include "dependency.h"
-#include "task.h"
+#include "errors.h"
 #include "process.h"
 
 static void dependency_handler (gpointer user_data);
+
+static gboolean
+dependency_io_callback (GIOChannel *io, GIOCondition condition, gpointer user_data)
+{
+    DependencyData *dependency_data = (DependencyData *) user_data;
+    return dependency_data->io_callback (io, condition, dependency_data->user_data);
+}
 
 static void
 dependency_callback (gint pid_result, gboolean localwatchdog, gpointer user_data, GError *error)
 {
     DependencyData *dependency_data = (DependencyData *) user_data;
-    AppData *app_data = (AppData *) dependency_data->app_data;
-    Task *task = (Task *) app_data->tasks->data;
 
     if (error) {
-        g_propagate_error (&task->error, error);
+        dependency_data->finish_cb (dependency_data->user_data, error);
         g_slice_free (DependencyData, dependency_data);
-        app_data->task_handler_id = g_idle_add_full(G_PRIORITY_DEFAULT_IDLE,
-                                                    task_handler,
-                                                    app_data,
-                                                    NULL);
-    } else if (task->rhts_compat != TRUE && pid_result != 0) {
+    } else if (dependency_data->ignore_failed_install != TRUE && pid_result != 0) {
         // If running in rhts_compat mode we don't check whether a packge installed
         // or not.
         // failed to install or remove a package, report fail and abort task
-        g_slice_free (DependencyData, dependency_data);
-        task->state = TASK_COMPLETE;
-        g_set_error (&task->error, RESTRAINT_TASK_RUNNER_ERROR,
+        g_set_error (&error, RESTRAINT_ERROR,
                      RESTRAINT_TASK_RUNNER_RC_ERROR,
                      "Command returned non-zero %i", pid_result);
-        app_data->task_handler_id = g_idle_add_full(G_PRIORITY_DEFAULT_IDLE,
-                                                    task_handler,
-                                                    app_data,
-                                                    NULL);
+        dependency_data->finish_cb (dependency_data->user_data, error);
+        g_slice_free (DependencyData, dependency_data);
     } else {
         dependency_data->dependencies = dependency_data->dependencies->next;
         dependency_handler (dependency_data);
     }
+    g_clear_error (&error);
 }
 
 static void
 dependency_handler (gpointer user_data)
 {
     DependencyData *dependency_data = (DependencyData *) user_data;
-    AppData *app_data = (AppData *) dependency_data->app_data;
-    Task *task = (Task *) app_data->tasks->data;
+    GError *error = NULL;
     if (dependency_data->dependencies) {
         gchar *package_name = dependency_data->dependencies->data;
         // FIXME: use a generic shell wrapper to abstract away
@@ -75,30 +72,33 @@ dependency_handler (gpointer user_data)
                      NULL,
                      NULL,
                      0,
-                     task_io_callback,
+                     dependency_io_callback,
                      dependency_callback,
                      dependency_data);
         g_free (command);
     } else {
         // no more packages to install/remove
         // move on to next stage.
+        dependency_data->finish_cb (dependency_data->user_data, error);
         g_slice_free (DependencyData, dependency_data);
-        task->state = TASK_RUN;
-        app_data->task_handler_id = g_idle_add_full(G_PRIORITY_DEFAULT_IDLE,
-                                                    task_handler,
-                                                    app_data,
-                                                    NULL);
     }
+    g_clear_error (&error);
 }
 
 void
-restraint_install_dependencies (AppData *app_data)
+restraint_install_dependencies (GSList *dependencies,
+                                gboolean ignore_failed_install,
+                                GIOFunc io_callback,
+                                DependencyCallback finish_cb,
+                                gpointer user_data)
 {
-    Task *task = (Task *) app_data->tasks->data;
-
-    DependencyData *dependency_data = g_slice_new0 (DependencyData);
-    dependency_data->app_data = app_data;
-    dependency_data->dependencies = task->metadata->dependencies;
+    DependencyData *dependency_data;
+    dependency_data = g_slice_new0 (DependencyData);
+    dependency_data->user_data = user_data;
+    dependency_data->dependencies = dependencies;
+    dependency_data->ignore_failed_install = ignore_failed_install;
+    dependency_data->io_callback = io_callback;
+    dependency_data->finish_cb = finish_cb;
 
     dependency_handler (dependency_data);
 }

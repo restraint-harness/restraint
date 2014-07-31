@@ -19,9 +19,16 @@
 #include "recipe.h"
 #include "server.h"
 
+typedef void (*DependencyCallback)   (gpointer user_data, GError *error);
+
 typedef struct {
-    AppData *app_data;
     GSList *dependencies;
+    gboolean ignore_failed_install;
+    GIOFunc io_callback;
+    DependencyCallback finish_cb;
+    gpointer user_data;
 } DependencyData;
 
-void restraint_install_dependencies (AppData *app_data);
+void restraint_install_dependencies (GSList *dependencies, gboolean ignore_failed_install,
+                                     GIOFunc io_callback, DependencyCallback finish_cb,
+                                     gpointer user_data);

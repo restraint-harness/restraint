@@ -22,6 +22,7 @@
 #include <unistd.h>
 #include <pty.h>
 #include <fcntl.h>
+#include <stdio.h>
 #include "process.h"
 
 GQuark restraint_process_error (void)
@@ -45,6 +46,19 @@ process_io_finish (gpointer user_data)
 
     // close the pty
     close (process_data->fd);
+
+    // io handler is no longer active
+    process_data->io_handler_id = 0;
+    if (process_data->finish_handler_id == 0) {
+        process_data->finish_handler_id = g_idle_add (process_pid_finish, process_data);
+    }
+}
+
+gboolean
+process_io_cb (GIOChannel *io, GIOCondition condition, gpointer user_data)
+{
+    ProcessData *process_data = (ProcessData *) user_data;
+    return process_data->io_callback (io, condition, process_data->user_data);
 }
 
 void
@@ -68,6 +82,7 @@ process_run (const gchar *command,
     process_data->command = g_strsplit (command, " ", 0);
     process_data->path = path;
     process_data->max_time = max_time;
+    process_data->io_callback = io_callback;
     process_data->finish_callback = finish_callback;
     process_data->user_data = user_data;
 
@@ -81,12 +96,15 @@ process_run (const gchar *command,
         return;
     } else if (process_data->pid == 0) {
         /* Child process. */
+        setbuf (stdout, NULL);
+        setbuf (stderr, NULL);
         if (process_data->path && (chdir (process_data->path) == -1)) {
             /* command_path was supplied and we failed to chdir to it. */
             g_warning ("Failed to chdir() to %s: %s\n", process_data->path, g_strerror (errno));
             exit (1);
         }
-        environ = (gchar **) envp;
+        if (envp)
+            environ = (gchar **) envp;
 
         // Print the command being executed.
         gchar *command = g_strjoinv (" ", (gchar **) process_data->command);
@@ -121,10 +139,12 @@ process_run (const gchar *command,
         g_io_channel_set_flags (io, G_IO_FLAG_NONBLOCK, NULL);
         // Set Encoding to NULL to keep g_io_channel from trying to decode it.
         g_io_channel_set_encoding (io, NULL, NULL);
+        // Disable Buffering
+        g_io_channel_set_buffered (io, FALSE);
         process_data->io_handler_id = g_io_add_watch_full (io,
                                                    G_PRIORITY_DEFAULT,
                                                    G_IO_IN | G_IO_HUP,
-                                                   io_callback,
+                                                   process_io_cb,
                                                    process_data,
                                                    process_io_finish);
     }
@@ -142,7 +162,10 @@ process_pid_callback (GPid pid, gint status, gpointer user_data)
     ProcessData *process_data = (ProcessData *) user_data;
 
     process_data->pid_result = status;
-    g_idle_add (process_pid_finish, process_data);
+    process_data->pid = 0;
+    if (process_data->finish_handler_id == 0) {
+        process_data->finish_handler_id = g_idle_add (process_pid_finish, process_data);
+    }
 }
 
 gboolean
@@ -150,16 +173,18 @@ process_pid_finish (gpointer user_data)
 {
     ProcessData *process_data = (ProcessData *) user_data;
 
+    // If both childwatch and io_callback are finished
+    // Then finish and clean ourselves up.
+    if ((process_data->pid != 0) |
+        (process_data->io_handler_id != 0)) {
+        process_data->finish_handler_id = 0;
+        return FALSE;
+    }
+
     // Remove local watchdog handler
     if (process_data->timeout_handler_id != 0) {
         g_source_remove(process_data->timeout_handler_id);
         process_data->timeout_handler_id = 0;
-    }
-
-    // Remove io handler
-    if (process_data->io_handler_id != 0) {
-        g_source_remove(process_data->io_handler_id);
-        process_data->io_handler_id = 0;
     }
 
     process_data->finish_callback (process_data->pid_result,
@@ -188,5 +213,8 @@ process_timeout_callback (gpointer user_data)
             process_data->pid_handler_id = 0;
         }
     }
+
+    process_data->timeout_handler_id = 0;
+
     return FALSE;
 }

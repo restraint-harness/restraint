@@ -29,7 +29,7 @@
 #include "errors.h"
 #include "config.h"
 
-#define unrecognised(error_code, message, ...) g_set_error(error, RESTRAINT_PARSE_ERROR, \
+#define unrecognised(error_code, message, ...) g_set_error(error, RESTRAINT_ERROR, \
         error_code, \
         message, ##__VA_ARGS__)
 

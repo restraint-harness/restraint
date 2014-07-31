@@ -23,6 +23,7 @@
 #include <fcntl.h>
 #include "recipe.h"
 #include "task.h"
+#include "errors.h"
 #include "config.h"
 #include "server.h"
 #include "process.h"
@@ -87,9 +88,9 @@ void connections_write (AppData *app_data, gchar *msg_data, gsize msg_len)
 
 gboolean
 server_io_callback (GIOChannel *io, GIOCondition condition, gpointer user_data) {
-    ProcessData *process_data = (ProcessData *) user_data;
-    //ServerData *server_data = (ServerData *) user_data;
-    ServerData *server_data = process_data->user_data;
+    //ProcessData *process_data = (ProcessData *) user_data;
+    ServerData *server_data = (ServerData *) user_data;
+    //ServerData *server_data = process_data->user_data;
     AppData *app_data = server_data->app_data;
     GError *tmp_error = NULL;
 
@@ -143,8 +144,8 @@ handle_recipe_request (gchar *recipe_url, ServerData *server_data, GError **erro
                                                   server_data,
                                                   recipe_handler_finish);
   } else {
-    g_set_error(error, RESTRAINT_TASK_RUNNER_ERROR,
-                RESTRAINT_TASK_RUNNER_ALREADY_RUNNING_ERROR,
+    g_set_error(error, RESTRAINT_ERROR,
+                RESTRAINT_ALREADY_RUNNING_RECIPE_ERROR,
                 "Already running a recipe");
     return FALSE;
   }
