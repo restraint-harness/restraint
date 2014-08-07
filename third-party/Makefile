@@ -1,7 +1,7 @@
 
 ZLIB = zlib-1.2.8
 BZIP2 = bzip2-1.0.6
-LIBFFI = libffi-3.0.13
+LIBFFI = libffi-3.1
 GLIB = glib-2.38.0
 LIBXML2 = libxml2-2.9.1
 CURL = curl-7.29.0
@@ -56,14 +56,14 @@ tree/lib/pkgconfig/glib-2.0.pc: $(GLIB) $(GLIB)/.patches-done tree/lib/pkgconfig
 	$(MAKE) -C $(GLIB)
 	$(MAKE) -C $(GLIB) install
 
-tree/lib/pkgconfig/libxml-2.0.pc: $(LIBXML2) tree/lib/pkgconfig/zlib.pc
+tree/lib/pkgconfig/libxml-2.0.pc: $(LIBXML2) $(LIBXML2)/.patches-done tree/lib/pkgconfig/zlib.pc
 	( cd $(LIBXML2) && ./configure --prefix=$(CURDIR)/tree \
 	    --with-zlib=$(CURDIR)/tree --without-python \
 	    --enable-static --disable-shared )
 	$(MAKE) -C $(LIBXML2)
 	$(MAKE) -C $(LIBXML2) install
 
-tree/lib/pkgconfig/sqlite3.pc: $(SQLITE)
+tree/lib/pkgconfig/sqlite3.pc: $(SQLITE) $(SQLITE)/.patches-done
 	( cd $(SQLITE) && ./configure --prefix=$(CURDIR)/tree \
 	    --enable-static --disable-shared )
 	$(MAKE) -C $(SQLITE)
@@ -84,7 +84,7 @@ tree/lib/pkgconfig/libsoup-2.4.pc: $(LIBSOUP) $(LIBSOUP)/.patches-done tree/lib/
 	( PATH=$(CURDIR)/tree/bin:$(PATH) $(MAKE) -C $(LIBSOUP) )
 	$(MAKE) -C $(LIBSOUP) install
 
-tree/lib/pkgconfig/libcurl.pc: $(CURL) tree/lib/pkgconfig/zlib.pc
+tree/lib/pkgconfig/libcurl.pc: $(CURL) $(CURL)/.patches-done tree/lib/pkgconfig/zlib.pc
 	( cd $(CURL) && PKG_CONFIG_PATH=../tree/lib/pkgconfig ./configure --prefix=$(CURDIR)/tree \
 	    --with-zlib=$(CURDIR)/tree --with-ssl --enable-ipv6 --disable-manual \
 	    --enable-static --disable-shared )
@@ -156,12 +156,21 @@ tarballs: $(TAR_BALLS)
 %: %.tar.xz tree/lib/pkgconfig/liblzma.pc
 	$(CURDIR)/tree/bin/xzcat $< | tar -xf -
 
+$(CURL)/.patches-done:
+	patch -d$(CURL) -p1 <curl_add_ppc64le.patch
+	touch $@
+
 $(XZ)/.patches-done:
 	patch -d$(XZ) -p1 <xz-no-pkgconfig-url.patch
+	patch -d$(XZ) -p1 <xz_add_ppc64le.patch
 	touch $@
 
 $(LIBFFI)/.patches-done:
-	patch -d$(LIBFFI) -p1 <libffi-3.0.13-toolexeclibdir.patch
+	patch -d$(LIBFFI) -p1 <libffi-3.1-toolexeclibdir.patch
+	touch $@
+
+$(SQLITE)/.patches-done:
+	patch -d$(SQLITE) -p1 <sqlite_add_ppc64le.patch
 	touch $@
 
 $(GLIB)/.patches-done:
@@ -174,11 +183,17 @@ $(GLIB)/.patches-done:
 $(LIBARCHIVE)/.patches-done:
 #	patch -d$(LIBARCHIVE) -p1 <libarchive-rhel3-headers.patch
 	patch -d$(LIBARCHIVE) -p1 <libarchive-use-pkgconfig.patch
+	patch -d$(LIBARCHIVE) -p1 <libarchive_add_ppc64le.patch
 	touch $@
 
 $(LIBSOUP)/.patches-done:
 	patch -d$(LIBSOUP) -p1 <libsoup-no-pkgconfig-version-check.patch
 	patch -d$(LIBSOUP) -p1 <libsoup-perl580.patch
+	patch -d$(LIBSOUP) -p1 <libsoup_add_ppc64le.patch
+	touch $@
+
+$(LIBXML2)/.patches-done:
+	patch -d$(LIBXML2) -p1 <libxml2_add_ppc64le.patch
 	touch $@
 
 .PHONY: clean
