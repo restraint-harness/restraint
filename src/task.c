@@ -794,7 +794,7 @@ task_handler (gpointer user_data)
   if (message->len) {
     write (STDERR_FILENO, message->str, message->len);
     connections_write(app_data, message->str, message->len);
-    g_string_free(message, TRUE);
   }
+  g_string_free(message, TRUE);
   return result;
 }
