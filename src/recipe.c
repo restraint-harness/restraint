@@ -636,8 +636,8 @@ recipe_handler (gpointer user_data)
                                     message->str,
                                     message->len);
       }
-      g_string_free(message, TRUE);
     }
 
+    g_string_free(message, TRUE);
     return result;
 }
