@@ -569,8 +569,8 @@ recipe_handler (gpointer user_data)
             g_string_printf(message, "* Parsing recipe\n");
             recipe_uri = soup_uri_new(app_data->recipe_url);
             app_data->recipe = recipe_parse(ctxt->myDoc, recipe_uri, &app_data->error);
-            xmlFreeParserCtxt(ctxt);
             xmlFreeDoc(ctxt->myDoc);
+            xmlFreeParserCtxt(ctxt);
             ctxt = NULL;
             if (app_data->recipe && ! app_data->error) {
                 app_data->tasks = app_data->recipe->tasks;
