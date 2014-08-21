@@ -182,6 +182,7 @@ task_finish_plugins_callback (gint pid_result, gboolean localwatchdog, gpointer 
                                                 task_handler,
                                                 app_data,
                                                 NULL);
+    g_slice_free(TaskRunData, task_run_data);
 }
 
 void
