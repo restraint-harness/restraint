@@ -43,6 +43,8 @@ typedef struct {
     gint pid_result;
     // id of the io handler
     guint io_handler_id;
+    // IO channel
+    GIOChannel *io;
     // id of the pid handler
     guint pid_handler_id;
     // id of finish handler
