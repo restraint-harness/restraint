@@ -179,6 +179,7 @@ plugin_finish_callback (gint pid_result, gboolean localwatchdog, gpointer user_d
         g_warning ("** ERROR: running plugins returned non-zero %i\n", pid_result);
     }
     soup_server_unpause_message (server_data->server, server_data->client_msg);
+    g_slice_free(ServerData, server_data);
 }
 
 static void
