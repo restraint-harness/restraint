@@ -288,9 +288,11 @@ server_recipe_callback (SoupServer *server, SoupMessage *client_msg,
         server_uri = soup_uri_new_with_base (task->task_uri, "results/");
         server_msg = soup_message_new_from_uri ("POST", server_uri);
     } else if (g_strrstr (path, "/logs/") != NULL) {
-        gchar *log_url = swap_base(path, soup_uri_to_string(task->task_uri, FALSE), "/recipes/");
+        gchar *uri = soup_uri_to_string(task->task_uri, FALSE);
+        gchar *log_url = swap_base(path, uri, "/recipes/");
         server_uri = soup_uri_new (log_url);
         g_free (log_url);
+        g_free (uri);
         server_msg = soup_message_new_from_uri ("PUT", server_uri);
     } else if (g_str_has_suffix (path, "watchdog")) {
         // This does *not* update the localwatchdog.
