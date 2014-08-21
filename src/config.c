@@ -136,12 +136,16 @@ restraint_config_get_string (gchar *config_file, gchar *section, gchar *key, GEr
                                           section,
                                           key,
                                           &tmp_error);
-    if (tmp_error && tmp_error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND &&
-        tmp_error->code != G_KEY_FILE_ERROR_GROUP_NOT_FOUND ) {
-        g_propagate_prefixed_error(error, tmp_error, "config get string,");
+    if (tmp_error) {
+        if (tmp_error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND &&
+            tmp_error->code != G_KEY_FILE_ERROR_GROUP_NOT_FOUND ) {
+            g_propagate_prefixed_error(error, tmp_error, "config get string,");
+        } else {
+            g_clear_error(&tmp_error);
+        }
     }
 
-    g_key_file_free (keyfile);   
+    g_key_file_free (keyfile);
     return value;
 }
 

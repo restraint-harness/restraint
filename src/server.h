@@ -24,7 +24,6 @@
 #define PLUGIN_DIR "/usr/share/restraint/plugins"
 
 typedef struct {
-  GMainLoop *loop;
   RecipeSetupState state;
   guint recipe_handler_id;
   guint task_handler_id;
