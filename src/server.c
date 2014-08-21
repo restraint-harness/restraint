@@ -342,6 +342,7 @@ server_control_callback (SoupServer *server, SoupMessage *client_msg,
   // decode data from request_body
   table = soup_form_decode(client_msg->request_body->data);
   recipe_url = g_strdup_printf ("%s", (gchar *)g_hash_table_lookup (table, "recipe"));
+  g_hash_table_destroy(table);
 
   // Attempt to run a recipe if requested.
   // if the same url is requested we ignore it and continue running.
