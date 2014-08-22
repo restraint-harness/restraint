@@ -945,8 +945,7 @@ int main(int argc, char *argv[]) {
     SoupAddress *addr;
     SoupAddressFamily address_family;
 
-    gchar *remote = "http://localhost:8081"; // Replace with a unix socket proxy so no network is required
-                                             // when run from localhost.
+    gchar *remote = NULL;
     gchar *job = NULL;
     gboolean ipv6 = FALSE;
 
@@ -984,6 +983,11 @@ int main(int argc, char *argv[]) {
 
     gboolean parse_succeeded = g_option_context_parse(context, &argc, &argv, &app_data->error);
     g_option_context_free(context);
+
+    if (remote == NULL) {
+	remote = g_strdup("http://localhost:8081"); // Replace with a unix socket proxy so no network is required
+						    // when run from localhost.
+    }
 
     // Setup soup session to talk to restraintd
     app_data->remote_uri = soup_uri_new (remote);
@@ -1100,6 +1104,10 @@ int main(int argc, char *argv[]) {
 
 cleanup:
     g_object_unref(session);
+    g_free(remote);
+    if (job != NULL) {
+	g_free(job);
+    }
     if (app_data->error) {
         g_printerr("%s [%s, %d]\n", app_data->error->message,
                 g_quark_to_string(app_data->error->domain), app_data->error->code);
