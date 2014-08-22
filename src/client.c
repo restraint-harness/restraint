@@ -648,6 +648,7 @@ run_recipe_sent (GObject *source, GAsyncResult *res, gpointer user_data)
     g_input_stream_read_async (stream, buf, sizeof (buf),
                                G_PRIORITY_DEFAULT, NULL,
                                recipe_read_data, app_data);
+    g_object_unref(request);
 }
 
 static gboolean
@@ -990,6 +991,7 @@ int main(int argc, char *argv[]) {
 
     // ask restraintd what ip address we connected with.
     SoupURI *control_uri = soup_uri_new_with_base (app_data->remote_uri, "address");
+    g_object_unref(address);
     SoupMessage *address_msg = soup_message_new_from_uri("GET", control_uri);
     soup_uri_free (control_uri);
     soup_session_send_message (session, address_msg);
@@ -1007,6 +1009,7 @@ int main(int argc, char *argv[]) {
                                      SOUP_ADDRESS_ANY_PORT);
     }
     server = soup_server_new (SOUP_SERVER_INTERFACE, addr, NULL);
+    g_object_unref(addr);
     app_data->port = soup_server_get_port (server);
     if (!server) {
         g_printerr ("Unable to bind to server port %d\n", app_data->port);
@@ -1059,8 +1062,10 @@ int main(int argc, char *argv[]) {
 
     // convert job.xml to index.html
     pretty_results(app_data->run_dir);
+    g_object_unref(server);
 
 cleanup:
+    g_object_unref(session);
     if (app_data->error) {
         g_printerr("%s [%s, %d]\n", app_data->error->message,
                 g_quark_to_string(app_data->error->domain), app_data->error->code);
