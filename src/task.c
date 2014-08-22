@@ -840,6 +840,7 @@ task_handler (gpointer user_data)
       // Some step along the way failed.
       if (task->error) {
         restraint_task_status(task, app_data, "Aborted", task->error);
+        g_clear_error(&task->error);
       } else {
         restraint_task_status(task, app_data, "Completed", NULL);
       }
