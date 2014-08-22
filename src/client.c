@@ -187,6 +187,7 @@ record_result (xmlNodePtr results_node_ptr,
             g_print ("**            %s\n", message);
         }
     }
+    g_free(result_id_str);
     return result_id;
 }
 
@@ -270,6 +271,8 @@ task_callback (SoupServer *server, SoupMessage *remote_msg,
             xmlSetProp (task_node_ptr, (xmlChar *)"result", (xmlChar *) result);
         if (result_to_id (result, app_data->result_states_to) > result_to_id (recipe_result, app_data->result_states_to))
             xmlSetProp (app_data->recipe_node_ptr, (xmlChar *)"result", (xmlChar *) result);
+        g_free(recipe_result);
+        g_free(task_result);
 
         // set result Location
         gchar *result_url = g_strdup_printf ("%srecipes/%s/tasks/%s/results/%d",
@@ -279,6 +282,7 @@ task_callback (SoupServer *server, SoupMessage *remote_msg,
                                              result_id);
         soup_message_headers_append (remote_msg->response_headers, "Location", result_url);
         soup_message_set_status (remote_msg, SOUP_STATUS_CREATED);
+        g_free(result_url);
     } else if (g_str_has_suffix (path, "/status")) {
         gchar *status = g_hash_table_lookup (table, "status");
         gchar *message = g_hash_table_lookup (table, "message");
@@ -308,6 +312,7 @@ task_callback (SoupServer *server, SoupMessage *remote_msg,
         // If recipe status is not already "Aborted" then record push task status to recipe.
         if (g_strcmp0 (recipe_status, "Aborted") != 0) 
             xmlSetProp (app_data->recipe_node_ptr, (xmlChar *)"status", (xmlChar *) status);
+        g_free(recipe_status);
 
         // Write out the current version of the results xml.
         gchar *filename = g_build_filename (app_data->run_dir, "job.xml", NULL);
@@ -320,6 +325,7 @@ task_callback (SoupServer *server, SoupMessage *remote_msg,
                              app_data->loop,
                              NULL);
 
+        g_free(filename);
         soup_message_set_status (remote_msg, SOUP_STATUS_NO_CONTENT);
     } else if (g_strrstr (path, "/logs/") != NULL) {
         goffset start;
@@ -351,13 +357,13 @@ task_callback (SoupServer *server, SoupMessage *remote_msg,
                 soup_message_set_status_full (remote_msg,
                                               SOUP_STATUS_BAD_REQUEST,
                                               "Content length does not match range length");
-                return;
+                goto logs_cleanup;
             }
             if (total_length > 0 && total_length < end ) {
                 soup_message_set_status_full (remote_msg,
                                               SOUP_STATUS_BAD_REQUEST,
                                               "Total length is smaller than range end");
-                return;
+                goto logs_cleanup;
             }
             if (total_length > 0) {
                 truncate ((const char *)filename, total_length);
@@ -390,7 +396,9 @@ task_callback (SoupServer *server, SoupMessage *remote_msg,
                 write (STDOUT_FILENO, body->data, body->length);
             }
         }
+logs_cleanup:
         g_free (short_path);
+        g_free (logs_xpath);
         g_free (log_path);
         g_free (filename);
         soup_buffer_free (body);
@@ -408,7 +416,7 @@ get_doc (char *docname)
 {
     xmlDocPtr doc;
     doc = xmlReadFile (docname, NULL, XML_PARSE_NOBLANKS);
-	
+
     if (doc == NULL ) {
         fprintf(stderr,"Document not parsed successfully. \n");
         return NULL;
@@ -486,6 +494,8 @@ copy_task_nodes (xmlNodeSetPtr nodeset, xmlDocPtr orig_xml_doc, xmlDocPtr dst_xm
         xmlSetProp (task_node_ptr, (xmlChar *) "id", (xmlChar *) new_id);
         xmlSetProp (task_node_ptr, (xmlChar *) "status", (xmlChar *) "New");
         xmlSetProp (task_node_ptr, (xmlChar *) "result", (xmlChar *) "None");
+        g_free(new_id);
+        g_free(name);
     }
 }
 
@@ -577,7 +587,7 @@ recipe_read_closed (GObject *source, GAsyncResult *res, gpointer user_data)
     if (g_strrstr (app_data->body->str, "* WARNING **:") != 0) {
         g_main_loop_quit (app_data->loop);
     }
-    
+
     g_string_free (app_data->body, TRUE);
     g_input_stream_close_finish (stream, res, &error);
     g_object_unref (stream);
@@ -693,6 +703,7 @@ new_recipe (xmlDocPtr xml_doc_ptr, gint recipe_id)
     xmlSetProp (recipe_node_ptr, (xmlChar *)"id", (xmlChar *) new_id);
     xmlSetProp (recipe_node_ptr, (xmlChar *)"status", (xmlChar *) "New");
     xmlSetProp (recipe_node_ptr, (xmlChar *)"result", (xmlChar *) "None");
+    g_free(new_id);
     return recipe_node_ptr;
 }
 
@@ -724,6 +735,8 @@ copy_job_as_template (gchar *job)
     gchar *base = remove_ext (basename, '.', 0);
     run_dir = find_next_dir (base, &recipe_id);
     g_print ("Using %s for job run\n", run_dir);
+    g_free(basename);
+    g_free(base);
 
     // Create new job based on template job.
     xmlDocPtr new_xml_doc_ptr = new_job ();
@@ -875,6 +888,12 @@ pretty_results (gchar* run_dir)
     }
 
 cleanup:
+    if (results_filename != NULL)
+        g_free (results_filename);
+    if (jobxml != NULL)
+        g_free (jobxml);
+    if (bootstrap != NULL)
+        g_free (bootstrap);
     if (contents != NULL)
         g_free (contents);
     if (cmdline != NULL)
