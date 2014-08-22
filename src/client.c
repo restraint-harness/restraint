@@ -55,6 +55,34 @@ restraint_client_stream_error(void) {
 
 xmlXPathObjectPtr get_node_set (xmlDocPtr doc, xmlChar *xpath);
 
+static void restraint_free_task_id(xmlChar *id, gpointer value,
+	gpointer user_data)
+{
+    xmlFree(id);
+}
+
+static void restraint_free_app_data(AppData *app_data)
+{
+    g_clear_error(&app_data->error);
+    g_free(app_data->run_dir);
+    g_free((gchar*)app_data->address);
+    soup_uri_free(app_data->remote_uri);
+    if (app_data->tasks != NULL) {
+	g_hash_table_foreach(app_data->tasks, (GHFunc)&restraint_free_task_id,
+			     NULL);
+	g_hash_table_destroy(app_data->tasks);
+    }
+
+    if (app_data->result_states_to != NULL) {
+	g_hash_table_destroy(app_data->result_states_to);
+    }
+    g_string_free(app_data->body, TRUE);
+    if (app_data->loop != NULL) {
+	g_main_loop_unref(app_data->loop);
+    }
+    g_slice_free(AppData, app_data);
+}
+
 static void
 recipe_callback (SoupServer *server, SoupMessage *remote_msg,
                  const char *path, GHashTable *query,
@@ -590,6 +618,8 @@ recipe_read_closed (GObject *source, GAsyncResult *res, gpointer user_data)
     }
 
     g_string_free (app_data->body, TRUE);
+    app_data->body = g_string_new (NULL);
+
     g_input_stream_close_finish (stream, res, &error);
     g_object_unref (stream);
 }
@@ -1073,8 +1103,10 @@ cleanup:
     if (app_data->error) {
         g_printerr("%s [%s, %d]\n", app_data->error->message,
                 g_quark_to_string(app_data->error->domain), app_data->error->code);
+	restraint_free_app_data(app_data);
         return app_data->error->code;
     } else {
+	restraint_free_app_data(app_data);
         return EXIT_SUCCESS;
     }
 }
