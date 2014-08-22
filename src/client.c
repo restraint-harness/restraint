@@ -787,6 +787,7 @@ parse_new_job (AppData *app_data)
     xmlChar *recipe_id = xmlGetNoNsProp(app_data->recipe_node_ptr, (xmlChar *)"id");
     app_data->recipe_id = (gint) g_ascii_strtoll ((gchar *)recipe_id, NULL, 0);
     g_free (recipe_id);
+    xmlXPathFreeObject (recipe_node_ptrs);
 
     // If the port number was recorded use it.
     xmlChar *port = xmlGetNoNsProp(app_data->recipe_node_ptr, (xmlChar *)"port");
