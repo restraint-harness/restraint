@@ -405,6 +405,7 @@ logs_cleanup:
         soup_message_set_status (remote_msg, SOUP_STATUS_NO_CONTENT);
     }
 
+    g_hash_table_destroy(table);
 cleanup:
     g_free (task_id);
     g_free (recipe_id);
@@ -675,6 +676,8 @@ run_recipe_handler (gpointer user_data)
                               SOUP_MEMORY_TAKE, form_data, strlen (form_data));
 
     soup_request_send_async (request, NULL, run_recipe_sent, app_data);
+    g_hash_table_destroy(data_table);
+    g_free(recipe_url);
     return FALSE;
 }
 
