@@ -65,7 +65,6 @@ myopen(FetchData *fetch_data, GError **error)
 
     reqh = soup_session_request_http_uri (session, "GET", fetch_data->url, NULL);
     fetch_data->istream = soup_request_send (SOUP_REQUEST (reqh), NULL, &tmp_error);
-    g_object_unref (reqh);
 
     if (tmp_error != NULL) {
         gchar *url = soup_uri_to_string (fetch_data->url, TRUE);
@@ -75,6 +74,7 @@ myopen(FetchData *fetch_data, GError **error)
         return FALSE;
     }
 
+    g_object_unref (reqh);
     return TRUE;
 }
 
