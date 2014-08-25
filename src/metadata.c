@@ -35,6 +35,8 @@ void
 restraint_metadata_free (MetaData *metadata)
 {
     if (metadata) {
+        g_free(metadata->name);
+        g_free(metadata->entry_point);
         g_slist_free_full (metadata->dependencies, g_free);
         g_slice_free (MetaData, metadata);
     }
@@ -172,7 +174,7 @@ static void parse_line(MetaData *metadata,
         }
         metadata->max_time = time;
     } else if(g_strcmp0("NAME", key) == 0) {
-        metadata->name = g_strstrip(value);
+        metadata->name = g_strdup(g_strstrip(value));
     } else if(g_strcmp0("REQUIRES", key) == 0) {
         gchar **dependencies = g_strsplit_set (value,", ", -1);
         gchar **dependency = dependencies;

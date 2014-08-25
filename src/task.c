@@ -555,7 +555,7 @@ void restraint_task_free(Task *task) {
     //g_strfreev (task->env);
     if (task->env)
         g_ptr_array_free (task->env, TRUE);
-    //g_list_free_full(task->metadata->dependencies, (GDestroyNotify) g_free);
+    restraint_metadata_free(task->metadata);
     g_slice_free(Task, task);
 }
 
