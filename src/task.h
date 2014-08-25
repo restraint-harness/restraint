@@ -44,7 +44,6 @@ typedef enum {
     TASK_ABORTED,
     TASK_CANCEL,
     TASK_CANCELLED,
-    TASK_FAIL,
     TASK_NEXT,
     TASK_COMPLETE,
     TASK_COMPLETED,

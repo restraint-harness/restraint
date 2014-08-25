@@ -62,7 +62,7 @@ fetch_finish_callback (GError *error, gpointer user_data)
 
     if (error) {
         g_propagate_error (&task->error, error);
-        task->state = TASK_FAIL;
+        task->state = TASK_COMPLETE;
     } else {
         task->state = TASK_GEN_TESTINFO;
     }
