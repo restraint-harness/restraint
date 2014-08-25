@@ -29,7 +29,7 @@ fi
 if [[ -f /usr/sbin/thttpd ]] ; then
     thttpd -i $PWD/thttpd-daemon.pid -p 8000 -d test-data/http-remote -h 127.0.0.1 -l /dev/null
 else
-    testargs="-s /fetch_http/success -s /fetch_http/fail $testargs"
+    testargs="-s /fetch_http/success -s /fetch_http/fail -s /fetch_http/bad_archive $testargs"
 fi
 
 if [[ $1 == "--valgrind" ]] ; then
