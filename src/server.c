@@ -1,4 +1,4 @@
-/*  
+/*
     This file is part of Restraint.
 
     Restraint is free software: you can redistribute it and/or modify
@@ -31,6 +31,7 @@
 
 #define MAX_RETRIES 5
 SoupSession *soup_session;
+GMainLoop *loop;
 
 static void
 copy_header (const char *name, const char *value, gpointer dest_headers)
@@ -57,6 +58,21 @@ swap_base (const gchar *orig, const gchar *new_base, gchar *split_string)
   return new;
 }
 
+static void restraint_free_app_data(AppData *app_data)
+{
+  g_free(app_data->recipe_url);
+  g_free(app_data->config_file);
+  g_free(app_data->restraint_url);
+
+  if (app_data->recipe != NULL) {
+    restraint_recipe_free(app_data->recipe);
+    app_data->recipe = NULL;
+  }
+
+  g_clear_error(&app_data->error);
+  g_slice_free(AppData, app_data);
+}
+
 void connections_write (AppData *app_data, gchar *msg_data, gsize msg_len)
 {
     // Active parsed task?  Send the output to taskout.log via REST
@@ -66,7 +82,7 @@ void connections_write (AppData *app_data, gchar *msg_data, gsize msg_len)
         SoupMessage *server_msg = soup_message_new_from_uri ("PUT", task_output_uri);
         soup_uri_free (task_output_uri);
         g_return_if_fail (server_msg != NULL);
-    
+
         gchar *range = g_strdup_printf ("bytes %zu-%zu/*", task->offset, task->offset + msg_len - 1);
         task->offset = task->offset + msg_len;
         soup_message_headers_append (server_msg->request_headers, "Content-Range", range);
@@ -163,6 +179,7 @@ plugin_finish_callback (gint pid_result, gboolean localwatchdog, gpointer user_d
         g_warning ("** ERROR: running plugins returned non-zero %i\n", pid_result);
     }
     soup_server_unpause_message (server_data->server, server_data->client_msg);
+    g_slice_free(ServerData, server_data);
 }
 
 static void
@@ -272,9 +289,11 @@ server_recipe_callback (SoupServer *server, SoupMessage *client_msg,
         server_uri = soup_uri_new_with_base (task->task_uri, "results/");
         server_msg = soup_message_new_from_uri ("POST", server_uri);
     } else if (g_strrstr (path, "/logs/") != NULL) {
-        gchar *log_url = swap_base(path, soup_uri_to_string(task->task_uri, FALSE), "/recipes/");
+        gchar *uri = soup_uri_to_string(task->task_uri, FALSE);
+        gchar *log_url = swap_base(path, uri, "/recipes/");
         server_uri = soup_uri_new (log_url);
         g_free (log_url);
+        g_free (uri);
         server_msg = soup_message_new_from_uri ("PUT", server_uri);
     } else if (g_str_has_suffix (path, "watchdog")) {
         // This does *not* update the localwatchdog.
@@ -326,8 +345,9 @@ server_control_callback (SoupServer *server, SoupMessage *client_msg,
   // decode data from request_body
   table = soup_form_decode(client_msg->request_body->data);
   recipe_url = g_strdup_printf ("%s", (gchar *)g_hash_table_lookup (table, "recipe"));
+  g_hash_table_destroy(table);
 
-  // Attempt to run a recipe if requested. 
+  // Attempt to run a recipe if requested.
   // if the same url is requested we ignore it and continue running.
   if (recipe_url) {
     if (g_strcmp0 (recipe_url, app_data->recipe_url) == 0) {
@@ -359,9 +379,13 @@ server_control_callback (SoupServer *server, SoupMessage *client_msg,
   soup_message_set_status (client_msg, SOUP_STATUS_OK);
 }
 
+void term(int signum) {
+  printf("[*] Caught %d, stopping mainloop\n", signum);
+  g_main_loop_quit(loop);
+}
+
 int main(int argc, char *argv[]) {
   AppData *app_data = g_slice_new0(AppData);
-  GMainLoop *loop;
   gint port = 8081;
   app_data->config_file = NULL;
   gchar *config_port = "config.conf";
@@ -391,13 +415,14 @@ int main(int argc, char *argv[]) {
   }
   app_data->restraint_url = g_strdup_printf ("http://localhost:%d", port);
   app_data->config_file = g_build_filename (VAR_LIB_PATH, config_port, NULL);
-                                        
+
   app_data->recipe_url = restraint_config_get_string (app_data->config_file,
                                                       "restraint",
                                                       "recipe_url", &error);
   if (error) {
       g_printerr ("%s [%s, %d]\n", error->message,
                   g_quark_to_string (error->domain), error->code);
+      g_clear_error(&error);
       exit (1);
   }
 
@@ -469,18 +494,34 @@ int main(int argc, char *argv[]) {
       soup_server_run_async (soup_server_ipv4);
   }
 
-    
   if (!soup_server_ipv4 && !soup_server_ipv6) {
       g_printerr ("Unable to bind to server port %d\n", port);
       exit (1);
   }
+
+  signal(SIGINT, &term);
+  signal(SIGTERM, &term);
 
   /* enter mainloop */
   g_print ("Waiting for client!\n");
 
   loop = g_main_loop_new (NULL, FALSE);
   g_main_loop_run (loop);
-  g_main_loop_unref (loop);
+
+  soup_session_abort(soup_session);
+  soup_session_remove_feature_by_type (soup_session, SOUP_TYPE_CONTENT_SNIFFER);
+  g_object_unref(soup_session);
+
+  soup_server_disconnect(soup_server_ipv6);
+  g_object_unref(soup_server_ipv6);
+  if (ipv6_only == 1) {
+    soup_server_disconnect(soup_server_ipv4);
+    g_object_unref(soup_server_ipv4);
+  }
+
+  restraint_free_app_data(app_data);
+
+  g_main_loop_unref(loop);
 
   return 0;
 }

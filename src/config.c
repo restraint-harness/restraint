@@ -1,4 +1,4 @@
-/*  
+/*
     This file is part of Restraint.
 
     Restraint is free software: you can redistribute it and/or modify
@@ -52,12 +52,16 @@ restraint_config_get_int64 (gchar *config_file, gchar *section, gchar *key, GErr
                                          section,
                                          key,
                                          &tmp_error);
-    if (tmp_error && tmp_error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND &&
-        tmp_error->code != G_KEY_FILE_ERROR_GROUP_NOT_FOUND ) {
-        g_propagate_prefixed_error(error, tmp_error, "config get int64,");
+    if (tmp_error) {
+        if (tmp_error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND &&
+            tmp_error->code != G_KEY_FILE_ERROR_GROUP_NOT_FOUND ) {
+            g_propagate_prefixed_error(error, tmp_error, "config get int64,");
+        } else {
+            g_clear_error(&tmp_error);
+        }
     }
 
-    g_key_file_free (keyfile);   
+    g_key_file_free (keyfile);
     return value;
 }
 
@@ -80,12 +84,16 @@ restraint_config_get_uint64 (gchar *config_file, gchar *section, gchar *key, GEr
                                            section,
                                            key,
                                            &tmp_error);
-    if (tmp_error && tmp_error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND &&
-        tmp_error->code != G_KEY_FILE_ERROR_GROUP_NOT_FOUND ) {
-        g_propagate_prefixed_error(error, tmp_error, "config get uint64,");
+    if (tmp_error) {
+        if (tmp_error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND &&
+            tmp_error->code != G_KEY_FILE_ERROR_GROUP_NOT_FOUND ) {
+            g_propagate_prefixed_error(error, tmp_error, "config get uint64,");
+        } else {
+            g_clear_error(&tmp_error);
+        }
     }
 
-    g_key_file_free (keyfile);   
+    g_key_file_free (keyfile);
     return value;
 }
 
@@ -108,12 +116,16 @@ restraint_config_get_boolean (gchar *config_file, gchar *section, gchar *key, GE
                                             section,
                                             key,
                                             &tmp_error);
-    if (tmp_error && tmp_error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND &&
-        tmp_error->code != G_KEY_FILE_ERROR_GROUP_NOT_FOUND ) {
-        g_propagate_prefixed_error(error, tmp_error, "config get gboolean,");
+    if (tmp_error) {
+        if (tmp_error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND &&
+            tmp_error->code != G_KEY_FILE_ERROR_GROUP_NOT_FOUND ) {
+            g_propagate_prefixed_error(error, tmp_error, "config get gboolean,");
+        } else {
+            g_clear_error(&tmp_error);
+        }
     }
 
-    g_key_file_free (keyfile);   
+    g_key_file_free (keyfile);
     return value;
 }
 
@@ -136,12 +148,16 @@ restraint_config_get_string (gchar *config_file, gchar *section, gchar *key, GEr
                                           section,
                                           key,
                                           &tmp_error);
-    if (tmp_error && tmp_error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND &&
-        tmp_error->code != G_KEY_FILE_ERROR_GROUP_NOT_FOUND ) {
-        g_propagate_prefixed_error(error, tmp_error, "config get string,");
+    if (tmp_error) {
+        if (tmp_error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND &&
+            tmp_error->code != G_KEY_FILE_ERROR_GROUP_NOT_FOUND ) {
+            g_propagate_prefixed_error(error, tmp_error, "config get string,");
+        } else {
+            g_clear_error(&tmp_error);
+        }
     }
 
-    g_key_file_free (keyfile);   
+    g_key_file_free (keyfile);
     return value;
 }
 
@@ -224,8 +240,8 @@ restraint_config_set (gchar *config_file, gchar *section, gchar *key, GError **e
         g_propagate_error (error, tmp_error);
         goto error;
     }
-    
+
 error:
     g_free (s_data);
-    g_key_file_free (keyfile);   
+    g_key_file_free (keyfile);
 }

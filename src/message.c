@@ -53,10 +53,13 @@ message_complete (SoupSession *sesison, SoupMessage *msg, gpointer user_data)
         if (delay > 625) {
             delay = 625;
         }
+        gchar *uri = soup_uri_to_string(soup_message_get_uri(message_data->msg), TRUE);
         g_warning("%s: Unable to send %s, delaying %d seconds..",
                   message_data->msg->reason_phrase,
-                  soup_uri_to_string(soup_message_get_uri(message_data->msg), TRUE),
+                  uri,
                   delay);
+
+        g_free(uri);
         // push it back onto the queue.
         g_object_ref (message_data->msg);
         g_queue_push_head (message_queue, message_data);

@@ -182,6 +182,7 @@ task_finish_plugins_callback (gint pid_result, gboolean localwatchdog, gpointer 
                                                 task_handler,
                                                 app_data,
                                                 NULL);
+    g_slice_free(TaskRunData, task_run_data);
 }
 
 void
@@ -523,6 +524,8 @@ restraint_task_watchdog (Task *task, AppData *app_data, guint64 seconds)
             SOUP_MEMORY_TAKE, data, strlen(data));
 
     restraint_queue_message(soup_session, server_msg, task_message_complete, app_data);
+
+    g_free(seconds_char);
 }
 
 Task *restraint_task_new(void) {
@@ -552,7 +555,7 @@ void restraint_task_free(Task *task) {
     //g_strfreev (task->env);
     if (task->env)
         g_ptr_array_free (task->env, TRUE);
-    //g_list_free_full(task->metadata->dependencies, (GDestroyNotify) g_free);
+    restraint_metadata_free(task->metadata);
     g_slice_free(Task, task);
 }
 

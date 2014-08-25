@@ -52,6 +52,8 @@ process_io_finish (gpointer user_data)
     if (process_data->finish_handler_id == 0) {
         process_data->finish_handler_id = g_idle_add (process_pid_finish, process_data);
     }
+
+    g_io_channel_unref(process_data->io);
 }
 
 gboolean
@@ -85,6 +87,7 @@ process_run (const gchar *command,
     process_data->io_callback = io_callback;
     process_data->finish_callback = finish_callback;
     process_data->user_data = user_data;
+    process_data->io = NULL;
 
     process_data->pid = forkpty (&process_data->fd, NULL, NULL, &win);
     if (process_data->pid < 0) {
@@ -141,6 +144,8 @@ process_run (const gchar *command,
         g_io_channel_set_encoding (io, NULL, NULL);
         // Disable Buffering
         g_io_channel_set_buffered (io, FALSE);
+
+        process_data->io = io;
         process_data->io_handler_id = g_io_add_watch_full (io,
                                                    G_PRIORITY_DEFAULT,
                                                    G_IO_IN | G_IO_HUP,

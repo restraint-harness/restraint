@@ -598,7 +598,7 @@ recipe_handler (gpointer user_data)
             app_data->state = RECIPE_RUNNING;
             break;
         case RECIPE_RUNNING:
-            return FALSE;
+            result = FALSE;
             break;
         case RECIPE_COMPLETE:
             if (app_data->error) {
