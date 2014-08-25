@@ -102,6 +102,7 @@ static void test_dependencies_success (void)
     g_assert_no_error (run_data->error);
     g_clear_error (&run_data->error);
     g_assert_cmpstr(run_data->output->str, == , expected);
+    g_string_free (run_data->output, TRUE);
     g_slice_free (RunData, run_data);
     g_slist_free (dependencies);
 }
@@ -132,6 +133,7 @@ static void test_dependencies_fail (void)
     g_assert_error (run_data->error, RESTRAINT_ERROR, RESTRAINT_TASK_RUNNER_RC_ERROR);
     g_clear_error (&run_data->error);
     g_assert_cmpstr(run_data->output->str, == , expected);
+    g_string_free (run_data->output, TRUE);
     g_slice_free (RunData, run_data);
     g_slist_free (dependencies);
 }
@@ -162,7 +164,9 @@ static void test_dependencies_ignore_fail (void)
     g_assert_no_error (run_data->error);
     g_clear_error (&run_data->error);
     g_assert_cmpstr(run_data->output->str, == , expected);
+    g_string_free (run_data->output, TRUE);
     g_slice_free (RunData, run_data);
+    g_slist_free (dependencies);
 }
 
 int main(int argc, char *argv[]) {
