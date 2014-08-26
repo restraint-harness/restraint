@@ -26,6 +26,12 @@
 #include "errors.h"
 #include "utils.h"
 
+void cmd_usage(GOptionContext *context) {
+    gchar *usage_str = g_option_context_get_help(context, FALSE, NULL);
+    g_print(usage_str);
+    g_free(usage_str);
+}
+
 guint64
 parse_time_string(gchar *time_string, GError **error)
 {
@@ -53,6 +59,10 @@ parse_time_string(gchar *time_string, GError **error)
                          RESTRAINT_PARSE_ERROR_BAD_SYNTAX,
                          "Unrecognised time unit '%c'", time_unit);
         }
+    } else {
+        g_set_error (error, RESTRAINT_ERROR,
+                     RESTRAINT_PARSE_ERROR_BAD_SYNTAX,
+                     "Failed to parse time string: %s", time_string);
     }
     return max_time;
 }

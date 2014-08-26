@@ -53,14 +53,15 @@ upload_chunk (SoupSession *session,
         g_free (range);
         soup_message_set_request (server_msg, "text/plain", SOUP_MEMORY_COPY, input_buf, bytes_read);
         ret = soup_session_send_message (session, server_msg);
-        g_object_unref (server_msg);   
         if (SOUP_STATUS_IS_SUCCESSFUL (ret)) {
             return 1;
         } else {
             g_set_error_literal (error, SOUP_HTTP_ERROR, server_msg->status_code,
                                      server_msg->reason_phrase);
+            g_object_unref (server_msg);
             return -1;
         }
+        g_object_unref (server_msg);
     }
     return 0; 
 }
@@ -89,6 +90,7 @@ upload_file (SoupSession *session,
     }
 
     filesize = g_file_info_get_attribute_uint64 (fileinfo, G_FILE_ATTRIBUTE_STANDARD_SIZE);
+    g_object_unref(fileinfo);
 
     /* get input stream */
     fis = g_file_read (f, NULL, &tmp_error);
@@ -105,8 +107,14 @@ upload_file (SoupSession *session,
         // replace with callback
         g_print (".");
     }
+
+    if (tmp_error) {
+        g_propagate_prefixed_error (error, tmp_error,
+            "Error uploading: %s ", filepath);
+    }
     soup_uri_free (result_log_uri);
     g_object_unref(fis);
+    g_object_unref (f);
 
     if (ret == 0)
         return TRUE;

@@ -23,6 +23,7 @@
 #include "utils.h"
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
+#include "errors.h"
 
 static SoupSession *session;
 
@@ -33,7 +34,7 @@ int main(int argc, char *argv[]) {
     gchar *server = NULL;
     gchar *form_data;
     gchar *form_seconds;
-    SoupURI *watchdog_uri;
+    SoupURI *watchdog_uri = NULL;
     guint ret = 0;
     guint64 seconds;
 
@@ -47,7 +48,7 @@ int main(int argc, char *argv[]) {
             "Server to connect to", "URL" },
         { NULL }
     };
-    GOptionContext *context = g_option_context_new(NULL);
+    GOptionContext *context = g_option_context_new("<time>");
     g_option_context_set_summary(context,
             "Adjust watchdog on lab controller. if you don't specify the\n"
             "the server url you must have RECIPEID defined.\n"
@@ -55,31 +56,42 @@ int main(int argc, char *argv[]) {
             "prefixed to RECIPEID");
     g_option_context_add_main_entries(context, entries, NULL);
     gboolean parse_succeeded = g_option_context_parse(context, &argc, &argv, &error);
-    g_option_context_free(context);
 
-    if (!parse_succeeded) {
+    if (argc < 2 || !parse_succeeded) {
+        g_set_error (&error, RESTRAINT_ERROR,
+                     RESTRAINT_PARSE_ERROR_BAD_SYNTAX,
+                     "Wrong arguments");
+        cmd_usage(context);
         goto cleanup;
     }
 
     seconds = parse_time_string (argv[1], &error);
     if (error) {
+        cmd_usage(context);
         goto cleanup;
      }
 
     prefix = getenv("HARNESS_PREFIX") ? getenv("HARNESS_PREFIX") : "";
     server_recipe_key = g_strdup_printf ("%sRECIPE_URL", prefix);
     server_recipe = getenv(server_recipe_key);
+    g_free(server_recipe_key);
 
     if (!server && server_recipe) {
         server = g_strdup_printf ("%s/watchdog", server_recipe);
     }
 
     if (!server) {
-        g_printerr("Try %s --help\n", argv[0]);
+        cmd_usage(context);
         goto cleanup;
     }
 
     watchdog_uri = soup_uri_new (server);
+    if (!watchdog_uri) {
+        g_set_error (&error, RESTRAINT_ERROR,
+                     RESTRAINT_PARSE_ERROR_BAD_SYNTAX,
+                     "Malformed server url: %s", server);
+        goto cleanup;
+    }
     session = soup_session_new_with_options("timeout", 3600, NULL);
     SoupMessage *server_msg = soup_message_new_from_uri ("POST", watchdog_uri);
     form_seconds = g_strdup_printf ("%" PRIu64, seconds);
@@ -94,14 +106,26 @@ int main(int argc, char *argv[]) {
     } else {
         g_warning ("Failed to adjust watchdog, status: %d Message: %s\n", ret, server_msg->reason_phrase);
     }
+    g_object_unref(server_msg);
 
-    soup_uri_free (watchdog_uri);
+    soup_session_abort(session);
+    g_object_unref(session);
 
 cleanup:
+    g_hash_table_destroy(data_table);
+    g_option_context_free(context);
+    if (server != NULL) {
+        g_free(server);
+    }
+    if (watchdog_uri != NULL) {
+        soup_uri_free (watchdog_uri);
+    }
     if (error) {
+        int retcode = error->code;
         g_printerr("%s [%s, %d]\n", error->message,
                 g_quark_to_string(error->domain), error->code);
-        return error->code;
+        g_clear_error(&error);
+        return retcode;
     } else {
         return EXIT_SUCCESS;
     }
