@@ -27,12 +27,6 @@
 
 static SoupSession *session;
 
-static void usage(GOptionContext *context) {
-    gchar *usage_str = g_option_context_get_help(context, FALSE, NULL);
-    g_print(usage_str);
-    g_free(usage_str);
-}
-
 int main(int argc, char *argv[]) {
 
     GError *error = NULL;
@@ -67,13 +61,13 @@ int main(int argc, char *argv[]) {
         g_set_error (&error, RESTRAINT_ERROR,
                      RESTRAINT_PARSE_ERROR_BAD_SYNTAX,
                      "Wrong arguments");
-        usage(context);
+        cmd_usage(context);
         goto cleanup;
     }
 
     seconds = parse_time_string (argv[1], &error);
     if (error) {
-        usage(context);
+        cmd_usage(context);
         goto cleanup;
      }
 
@@ -87,7 +81,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (!server) {
-        usage(context);
+        cmd_usage(context);
         goto cleanup;
     }
 

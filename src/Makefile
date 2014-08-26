@@ -24,7 +24,7 @@ all: restraint restraintd rstrnt-report-result rstrnt-report-log rstrnt-adjust-w
 rstrnt-report-result: cmd_result.o upload.o
 	$(CC) $(LDFLAFS) -o $@ $^ $(LIBS)
 
-rstrnt-report-log: cmd_log.o upload.o
+rstrnt-report-log: cmd_log.o upload.o utils.o errors.o
 	$(CC) $(LDFLAFS) -o $@ $^ $(LIBS)
 
 rstrnt-adjust-watchdog: cmd_watchdog.o utils.o errors.o

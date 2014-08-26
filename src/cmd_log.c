@@ -21,6 +21,8 @@
 #include <string.h>
 #include <libsoup/soup.h>
 #include "upload.h"
+#include "utils.h"
+#include "errors.h"
 
 static SoupSession *session;
 
@@ -29,7 +31,7 @@ int main(int argc, char *argv[]) {
     GError *error = NULL;
 
     gchar *server = NULL;
-    SoupURI *result_uri;
+    SoupURI *result_uri = NULL;
 
     gchar *filename = NULL;
     gchar *basename = NULL;
@@ -61,7 +63,6 @@ int main(int argc, char *argv[]) {
             "prefixed to RECIPEID and TASKID");
     g_option_context_add_main_entries(context, entries, NULL);
     gboolean parse_succeeded = g_option_context_parse(context, &argc, &argv, &error);
-    g_option_context_free(context);
 
     if (!parse_succeeded) {
         goto cleanup;
@@ -72,13 +73,15 @@ int main(int argc, char *argv[]) {
     server_recipe = getenv(server_recipe_key);
     task_id_key = g_strdup_printf ("%sTASKID", prefix);
     task_id = getenv(task_id_key);
+    g_free(task_id_key);
+    g_free(server_recipe_key);
 
     if (!server && server_recipe && task_id) {
         server = g_strdup_printf ("%s/tasks/%s", server_recipe, task_id);
     }
 
     if (!filename || !server) {
-        g_printerr("Try %s --help\n", argv[0]);
+        cmd_usage(context);
         goto cleanup;
     }
 
@@ -90,10 +93,17 @@ int main(int argc, char *argv[]) {
     }
 
     result_uri = soup_uri_new (server);
+    if (!result_uri) {
+        g_set_error (&error, RESTRAINT_ERROR,
+                     RESTRAINT_PARSE_ERROR_BAD_SYNTAX,
+                     "Malformed server url: %s", server);
+        goto cleanup;
+    }
     session = soup_session_new_with_options("timeout", 3600, NULL);
 
     basename = g_filename_display_basename (filename);
     gchar *location = g_strdup_printf ("%s/logs/%s", server, basename);
+    soup_uri_free(result_uri);
     result_uri = soup_uri_new (location);
     g_free (location);
     if (g_file_test (filename, G_FILE_TEST_EXISTS)) 
@@ -105,13 +115,27 @@ int main(int argc, char *argv[]) {
             g_print ("failed\n");
         }
     }
-    soup_uri_free (result_uri);
+    g_free(basename);
+    soup_session_abort(session);
+    g_object_unref(session);
 
 cleanup:
+    g_option_context_free(context);
+    if (result_uri != NULL) {
+        soup_uri_free (result_uri);
+    }
+    if (filename != NULL) {
+        g_free(filename);
+    }
+    if (server != NULL) {
+        g_free(server);
+    }
     if (error) {
+        int retcode = error->code;
         g_printerr("%s [%s, %d]\n", error->message,
                 g_quark_to_string(error->domain), error->code);
-        return error->code;
+        g_clear_error(&error);
+        return retcode;
     } else {
         return EXIT_SUCCESS;
     }
