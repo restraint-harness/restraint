@@ -21,7 +21,7 @@ endif
 .PHONY: all
 all: restraint restraintd rstrnt-report-result rstrnt-report-log rstrnt-adjust-watchdog
 
-rstrnt-report-result: cmd_result.o upload.o
+rstrnt-report-result: cmd_result.o upload.o utils.o errors.o
 	$(CC) $(LDFLAFS) -o $@ $^ $(LIBS)
 
 rstrnt-report-log: cmd_log.o upload.o utils.o errors.o

@@ -21,6 +21,8 @@
 #include <string.h>
 #include <libsoup/soup.h>
 #include "upload.h"
+#include "utils.h"
+#include "errors.h"
 
 static SoupSession *session;
 
@@ -51,18 +53,30 @@ callback_outputfile (const gchar *option_name, const gchar *value,
     return TRUE;
 }
 
+static void restraint_free_appdata(AppData *app_data)
+{
+    if (app_data->filename != NULL) {
+        g_free(app_data->filename);
+    }
+    if (app_data->outputfile != NULL) {
+        g_free(app_data->outputfile);
+    }
+    g_ptr_array_free(app_data->disable_plugin, TRUE);
+    g_slice_free(AppData, app_data);
+}
+
 int main(int argc, char *argv[]) {
 
     AppData *app_data = g_slice_new0 (AppData);
     gchar filename[] = "resultoutputfile.log";
-    app_data->filename = filename;
+    app_data->filename = g_strdup(filename);
     app_data->outputfile = getenv("OUTPUTFILE");
     app_data->disable_plugin = g_ptr_array_new_with_free_func (g_free);
 
     GError *error = NULL;
 
     gchar *server = NULL;
-    SoupURI *result_uri;
+    SoupURI *result_uri = NULL;
 
     guint ret = 0;
 
@@ -79,7 +93,7 @@ int main(int argc, char *argv[]) {
 
     gchar *form_data;
     GHashTable *data_table = g_hash_table_new (NULL, NULL);
-    
+
     GOptionEntry entries[] = {
         {"server", 's', 0, G_OPTION_ARG_STRING, &server,
             "Server to connect to", "URL" },
@@ -108,7 +122,6 @@ int main(int argc, char *argv[]) {
     g_option_context_set_main_group (context, option_group);
 
     gboolean parse_succeeded = g_option_context_parse(context, &argc, &argv, &error);
-    g_option_context_free(context);
 
     if (!parse_succeeded) {
         goto cleanup;
@@ -119,17 +132,25 @@ int main(int argc, char *argv[]) {
     server_recipe = getenv(server_recipe_key);
     task_id_key = g_strdup_printf ("%sTASKID", prefix);
     task_id = getenv(task_id_key);
+    g_free(task_id_key);
+    g_free(server_recipe_key);
 
     if (!server && server_recipe && task_id) {
         server = g_strdup_printf ("%s/tasks/%s/results/", server_recipe, task_id);
     }
 
     if (argc < 3 || !server) {
-        g_printerr("Try %s --help\n", argv[0]);
+        cmd_usage(context);
         goto cleanup;
     }
 
     result_uri = soup_uri_new (server);
+    if (result_uri == NULL) {
+        g_set_error (&error, RESTRAINT_ERROR,
+                     RESTRAINT_PARSE_ERROR_BAD_SYNTAX,
+                     "Malformed server url: %s", server);
+        goto cleanup;
+    }
     session = soup_session_new_with_options("timeout", 3600, NULL);
 
     g_hash_table_insert (data_table, "path", argv[1]);
@@ -146,7 +167,6 @@ int main(int argc, char *argv[]) {
         g_hash_table_insert (data_table, "disable_plugin",
                              g_strjoinv (" ", (gchar **)app_data->disable_plugin->pdata));
     }
-    g_ptr_array_free (app_data->disable_plugin, TRUE);
     if (no_plugins)
       g_hash_table_insert (data_table, "no_plugins", &no_plugins);
     if (argc > 3)
@@ -156,7 +176,7 @@ int main(int argc, char *argv[]) {
 
     request = (SoupRequest *)soup_session_request_http_uri (session, "POST", result_uri, &error);
     server_msg = soup_request_http_get_message (SOUP_REQUEST_HTTP (request));
-    soup_uri_free (result_uri);
+    g_object_unref(request);
     form_data = soup_form_encode_hash (data_table);
     soup_message_set_request (server_msg, "application/x-www-form-urlencoded",
                               SOUP_MEMORY_TAKE, form_data, strlen (form_data));
@@ -165,9 +185,11 @@ int main(int argc, char *argv[]) {
     if (SOUP_STATUS_IS_SUCCESSFUL (ret)) {
         gchar *location = g_strdup_printf ("%s/logs/",
                                            soup_message_headers_get_one (server_msg->response_headers, "Location"));
+        soup_uri_free (result_uri);
         result_uri = soup_uri_new (location);
         g_free (location);
-        if (g_file_test (app_data->outputfile, G_FILE_TEST_EXISTS)) 
+        if (app_data->outputfile != NULL &&
+            g_file_test (app_data->outputfile, G_FILE_TEST_EXISTS))
         {
             g_print ("Uploading %s ", filename);
             if (upload_file (session, app_data->outputfile, app_data->filename, result_uri, &error)) {
@@ -176,16 +198,32 @@ int main(int argc, char *argv[]) {
                 g_print ("failed\n");
             }
         }
-        soup_uri_free (result_uri);
     } else {
        g_warning ("Failed to submit result, status: %d Message: %s\n", ret, server_msg->reason_phrase);
     }
+    g_object_unref(server_msg);
+    soup_session_abort(session);
+    g_object_unref(session);
 
 cleanup:
+    if (server != NULL) {
+        g_free(server);
+    }
+    if (result_msg != NULL) {
+        g_free(result_msg);
+    }
+    g_option_context_free(context);
+    g_hash_table_destroy(data_table);
+    if (result_uri != NULL) {
+        soup_uri_free (result_uri);
+    }
+    restraint_free_appdata(app_data);
     if (error) {
+        int retcode = error->code;
         g_printerr("%s [%s, %d]\n", error->message,
                 g_quark_to_string(error->domain), error->code);
-        return error->code;
+        g_clear_error(&error);
+        return retcode;
     } else {
         return EXIT_SUCCESS;
     }
