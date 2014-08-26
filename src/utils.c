@@ -59,6 +59,8 @@ parse_time_string(gchar *time_string, GError **error)
                          RESTRAINT_PARSE_ERROR_BAD_SYNTAX,
                          "Unrecognised time unit '%c'", time_unit);
         }
+    } else if (read == 1) {
+        max_time = max_time;
     } else {
         g_set_error (error, RESTRAINT_ERROR,
                      RESTRAINT_PARSE_ERROR_BAD_SYNTAX,

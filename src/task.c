@@ -761,15 +761,16 @@ task_handler (gpointer user_data)
       }
       if (task->metadata == NULL) {
           task->state = TASK_COMPLETE;
-      }
+      } else {
 
-      // If task->remaining_time is not set then set it from metadata
-      if (task->remaining_time == -1) {
-          task->remaining_time = task->metadata->max_time;
-      }
-      // If task->name is NULL then take name from metadata
-      if (task->name == NULL) {
-          task->name = task->metadata->name;
+          // If task->remaining_time is not set then set it from metadata
+          if (task->remaining_time == -1) {
+              task->remaining_time = task->metadata->max_time;
+          }
+          // If task->name is NULL then take name from metadata
+          if (task->name == NULL) {
+              task->name = task->metadata->name;
+          }
       }
 
       g_free (testinfo_file);
