@@ -55,6 +55,34 @@ restraint_client_stream_error(void) {
 
 xmlXPathObjectPtr get_node_set (xmlDocPtr doc, xmlChar *xpath);
 
+static void restraint_free_task_id(xmlChar *id, gpointer value,
+	gpointer user_data)
+{
+    xmlFree(id);
+}
+
+static void restraint_free_app_data(AppData *app_data)
+{
+    g_clear_error(&app_data->error);
+    g_free(app_data->run_dir);
+    g_free((gchar*)app_data->address);
+    soup_uri_free(app_data->remote_uri);
+    if (app_data->tasks != NULL) {
+	g_hash_table_foreach(app_data->tasks, (GHFunc)&restraint_free_task_id,
+			     NULL);
+	g_hash_table_destroy(app_data->tasks);
+    }
+
+    if (app_data->result_states_to != NULL) {
+	g_hash_table_destroy(app_data->result_states_to);
+    }
+    g_string_free(app_data->body, TRUE);
+    if (app_data->loop != NULL) {
+	g_main_loop_unref(app_data->loop);
+    }
+    g_slice_free(AppData, app_data);
+}
+
 static void
 recipe_callback (SoupServer *server, SoupMessage *remote_msg,
                  const char *path, GHashTable *query,
@@ -187,6 +215,7 @@ record_result (xmlNodePtr results_node_ptr,
             g_print ("**            %s\n", message);
         }
     }
+    g_free(result_id_str);
     return result_id;
 }
 
@@ -270,6 +299,8 @@ task_callback (SoupServer *server, SoupMessage *remote_msg,
             xmlSetProp (task_node_ptr, (xmlChar *)"result", (xmlChar *) result);
         if (result_to_id (result, app_data->result_states_to) > result_to_id (recipe_result, app_data->result_states_to))
             xmlSetProp (app_data->recipe_node_ptr, (xmlChar *)"result", (xmlChar *) result);
+        g_free(recipe_result);
+        g_free(task_result);
 
         // set result Location
         gchar *result_url = g_strdup_printf ("%srecipes/%s/tasks/%s/results/%d",
@@ -279,6 +310,7 @@ task_callback (SoupServer *server, SoupMessage *remote_msg,
                                              result_id);
         soup_message_headers_append (remote_msg->response_headers, "Location", result_url);
         soup_message_set_status (remote_msg, SOUP_STATUS_CREATED);
+        g_free(result_url);
     } else if (g_str_has_suffix (path, "/status")) {
         gchar *status = g_hash_table_lookup (table, "status");
         gchar *message = g_hash_table_lookup (table, "message");
@@ -308,6 +340,7 @@ task_callback (SoupServer *server, SoupMessage *remote_msg,
         // If recipe status is not already "Aborted" then record push task status to recipe.
         if (g_strcmp0 (recipe_status, "Aborted") != 0) 
             xmlSetProp (app_data->recipe_node_ptr, (xmlChar *)"status", (xmlChar *) status);
+        g_free(recipe_status);
 
         // Write out the current version of the results xml.
         gchar *filename = g_build_filename (app_data->run_dir, "job.xml", NULL);
@@ -320,6 +353,7 @@ task_callback (SoupServer *server, SoupMessage *remote_msg,
                              app_data->loop,
                              NULL);
 
+        g_free(filename);
         soup_message_set_status (remote_msg, SOUP_STATUS_NO_CONTENT);
     } else if (g_strrstr (path, "/logs/") != NULL) {
         goffset start;
@@ -351,13 +385,13 @@ task_callback (SoupServer *server, SoupMessage *remote_msg,
                 soup_message_set_status_full (remote_msg,
                                               SOUP_STATUS_BAD_REQUEST,
                                               "Content length does not match range length");
-                return;
+                goto logs_cleanup;
             }
             if (total_length > 0 && total_length < end ) {
                 soup_message_set_status_full (remote_msg,
                                               SOUP_STATUS_BAD_REQUEST,
                                               "Total length is smaller than range end");
-                return;
+                goto logs_cleanup;
             }
             if (total_length > 0) {
                 truncate ((const char *)filename, total_length);
@@ -390,13 +424,16 @@ task_callback (SoupServer *server, SoupMessage *remote_msg,
                 write (STDOUT_FILENO, body->data, body->length);
             }
         }
+logs_cleanup:
         g_free (short_path);
+        g_free (logs_xpath);
         g_free (log_path);
         g_free (filename);
         soup_buffer_free (body);
         soup_message_set_status (remote_msg, SOUP_STATUS_NO_CONTENT);
     }
 
+    g_hash_table_destroy(table);
 cleanup:
     g_free (task_id);
     g_free (recipe_id);
@@ -408,7 +445,7 @@ get_doc (char *docname)
 {
     xmlDocPtr doc;
     doc = xmlReadFile (docname, NULL, XML_PARSE_NOBLANKS);
-	
+
     if (doc == NULL ) {
         fprintf(stderr,"Document not parsed successfully. \n");
         return NULL;
@@ -486,6 +523,8 @@ copy_task_nodes (xmlNodeSetPtr nodeset, xmlDocPtr orig_xml_doc, xmlDocPtr dst_xm
         xmlSetProp (task_node_ptr, (xmlChar *) "id", (xmlChar *) new_id);
         xmlSetProp (task_node_ptr, (xmlChar *) "status", (xmlChar *) "New");
         xmlSetProp (task_node_ptr, (xmlChar *) "result", (xmlChar *) "None");
+        g_free(new_id);
+        g_free(name);
     }
 }
 
@@ -577,8 +616,10 @@ recipe_read_closed (GObject *source, GAsyncResult *res, gpointer user_data)
     if (g_strrstr (app_data->body->str, "* WARNING **:") != 0) {
         g_main_loop_quit (app_data->loop);
     }
-    
+
     g_string_free (app_data->body, TRUE);
+    app_data->body = g_string_new (NULL);
+
     g_input_stream_close_finish (stream, res, &error);
     g_object_unref (stream);
 }
@@ -638,6 +679,7 @@ run_recipe_sent (GObject *source, GAsyncResult *res, gpointer user_data)
     g_input_stream_read_async (stream, buf, sizeof (buf),
                                G_PRIORITY_DEFAULT, NULL,
                                recipe_read_data, app_data);
+    g_object_unref(request);
 }
 
 static gboolean
@@ -664,6 +706,8 @@ run_recipe_handler (gpointer user_data)
                               SOUP_MEMORY_TAKE, form_data, strlen (form_data));
 
     soup_request_send_async (request, NULL, run_recipe_sent, app_data);
+    g_hash_table_destroy(data_table);
+    g_free(recipe_url);
     return FALSE;
 }
 
@@ -693,6 +737,7 @@ new_recipe (xmlDocPtr xml_doc_ptr, gint recipe_id)
     xmlSetProp (recipe_node_ptr, (xmlChar *)"id", (xmlChar *) new_id);
     xmlSetProp (recipe_node_ptr, (xmlChar *)"status", (xmlChar *) "New");
     xmlSetProp (recipe_node_ptr, (xmlChar *)"result", (xmlChar *) "None");
+    g_free(new_id);
     return recipe_node_ptr;
 }
 
@@ -724,6 +769,8 @@ copy_job_as_template (gchar *job)
     gchar *base = remove_ext (basename, '.', 0);
     run_dir = find_next_dir (base, &recipe_id);
     g_print ("Using %s for job run\n", run_dir);
+    g_free(basename);
+    g_free(base);
 
     // Create new job based on template job.
     xmlDocPtr new_xml_doc_ptr = new_job ();
@@ -770,6 +817,7 @@ parse_new_job (AppData *app_data)
     xmlChar *recipe_id = xmlGetNoNsProp(app_data->recipe_node_ptr, (xmlChar *)"id");
     app_data->recipe_id = (gint) g_ascii_strtoll ((gchar *)recipe_id, NULL, 0);
     g_free (recipe_id);
+    xmlXPathFreeObject (recipe_node_ptrs);
 
     // If the port number was recorded use it.
     xmlChar *port = xmlGetNoNsProp(app_data->recipe_node_ptr, (xmlChar *)"port");
@@ -875,6 +923,12 @@ pretty_results (gchar* run_dir)
     }
 
 cleanup:
+    if (results_filename != NULL)
+        g_free (results_filename);
+    if (jobxml != NULL)
+        g_free (jobxml);
+    if (bootstrap != NULL)
+        g_free (bootstrap);
     if (contents != NULL)
         g_free (contents);
     if (cmdline != NULL)
@@ -891,8 +945,7 @@ int main(int argc, char *argv[]) {
     SoupAddress *addr;
     SoupAddressFamily address_family;
 
-    gchar *remote = "http://localhost:8081"; // Replace with a unix socket proxy so no network is required
-                                             // when run from localhost.
+    gchar *remote = NULL;
     gchar *job = NULL;
     gboolean ipv6 = FALSE;
 
@@ -930,6 +983,11 @@ int main(int argc, char *argv[]) {
 
     gboolean parse_succeeded = g_option_context_parse(context, &argc, &argv, &app_data->error);
     g_option_context_free(context);
+
+    if (remote == NULL) {
+	remote = g_strdup("http://localhost:8081"); // Replace with a unix socket proxy so no network is required
+						    // when run from localhost.
+    }
 
     // Setup soup session to talk to restraintd
     app_data->remote_uri = soup_uri_new (remote);
@@ -971,6 +1029,7 @@ int main(int argc, char *argv[]) {
 
     // ask restraintd what ip address we connected with.
     SoupURI *control_uri = soup_uri_new_with_base (app_data->remote_uri, "address");
+    g_object_unref(address);
     SoupMessage *address_msg = soup_message_new_from_uri("GET", control_uri);
     soup_uri_free (control_uri);
     soup_session_send_message (session, address_msg);
@@ -988,6 +1047,7 @@ int main(int argc, char *argv[]) {
                                      SOUP_ADDRESS_ANY_PORT);
     }
     server = soup_server_new (SOUP_SERVER_INTERFACE, addr, NULL);
+    g_object_unref(addr);
     app_data->port = soup_server_get_port (server);
     if (!server) {
         g_printerr ("Unable to bind to server port %d\n", app_data->port);
@@ -1040,13 +1100,21 @@ int main(int argc, char *argv[]) {
 
     // convert job.xml to index.html
     pretty_results(app_data->run_dir);
+    g_object_unref(server);
 
 cleanup:
+    g_object_unref(session);
+    g_free(remote);
+    if (job != NULL) {
+	g_free(job);
+    }
     if (app_data->error) {
         g_printerr("%s [%s, %d]\n", app_data->error->message,
                 g_quark_to_string(app_data->error->domain), app_data->error->code);
+	restraint_free_app_data(app_data);
         return app_data->error->code;
     } else {
+	restraint_free_app_data(app_data);
         return EXIT_SUCCESS;
     }
 }
