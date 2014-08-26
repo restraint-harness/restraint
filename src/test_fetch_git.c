@@ -43,7 +43,7 @@ fetch_finish_callback (GError *error, gpointer user_data)
 {
     RunData *run_data = (RunData *) user_data;
     if (error)
-        run_data->error = g_error_copy (error);
+        g_propagate_error (&run_data->error, error);
     g_main_loop_quit (run_data->loop);
     g_main_loop_unref (run_data->loop);
 }
