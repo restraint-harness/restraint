@@ -48,7 +48,9 @@ callback_outputfile (const gchar *option_name, const gchar *value,
 {
     AppData *app_data = (AppData *) user_data;
 
+    g_free(app_data->filename);
     app_data->filename = g_filename_display_basename (value);
+    g_free(app_data->outputfile);
     app_data->outputfile = g_strdup (value);
     return TRUE;
 }
@@ -68,9 +70,8 @@ static void restraint_free_appdata(AppData *app_data)
 int main(int argc, char *argv[]) {
 
     AppData *app_data = g_slice_new0 (AppData);
-    gchar filename[] = "resultoutputfile.log";
-    app_data->filename = g_strdup(filename);
-    app_data->outputfile = getenv("OUTPUTFILE");
+    app_data->filename = g_strdup("resultoutputfile.log");
+    app_data->outputfile = g_strdup(getenv("OUTPUTFILE"));
     app_data->disable_plugin = g_ptr_array_new_with_free_func (g_free);
 
     GError *error = NULL;
@@ -191,7 +192,7 @@ int main(int argc, char *argv[]) {
         if (app_data->outputfile != NULL &&
             g_file_test (app_data->outputfile, G_FILE_TEST_EXISTS))
         {
-            g_print ("Uploading %s ", filename);
+            g_print ("Uploading %s ", app_data->filename);
             if (upload_file (session, app_data->outputfile, app_data->filename, result_uri, &error)) {
                 g_print ("done\n");
             } else {
