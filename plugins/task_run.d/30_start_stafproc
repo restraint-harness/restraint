@@ -1,0 +1,24 @@
+#!/bin/sh
+
+echo "*** Running Plugin: $0"
+
+# Don't run from PLUGINS
+if [ -z "$RSTRNT_NOPLUGINS" ]; then
+    if [ -e "/opt/staf/STAFEnv.sh" ]; then
+        . /opt/staf/STAFEnv.sh start
+        echo "**** Staf is installed"
+        echo "**** Pinging STAFProc"
+        staf local ping ping
+        if [ $? -eq 21 ]; then
+            echo "**** Starting STAFProc"
+            (setsid nohup /opt/staf/bin/STAFProc &)
+            # If we rebooted we need to re-post all the previous events
+            if [ -e "/var/lib/restraint/staf_sem_post_event" ]; then
+                for event in $(cat /var/lib/restraint/staf_sem_post_event); do
+                    staf local sem post event $event
+                done
+            fi
+        fi
+    fi
+fi
+exec "$@"

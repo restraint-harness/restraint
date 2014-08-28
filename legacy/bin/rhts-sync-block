@@ -1,0 +1,114 @@
+#!/bin/sh
+
+command="$0 $*"
+params="$(getopt -o s:r:t:R: -l state:,any,timeout: --name "$(basename -- "$0")" -- "$@")"
+
+function usage ()
+{
+    cat <<EOF
+Usage:
+        $0 -s <STATE> [-s <STATE>] [OPTION...] <MACHINE> [<MACHINE>] .. [<MACHINE>]
+
+Sets the state for the local machine.  Used for simple multi-host testing.
+
+Help Options:
+ -h, --help     Show help options
+
+Application Options:
+ -s, --state=STATE      Blocks on the current state
+ -t, --testorder=ORDER  override the task/test order
+     --any		If any machine matches exit
+     --timeout=TIMEOUT	Set a timeout
+EOF
+
+    exit 1
+}
+
+eval set -- "$params"
+unset params
+
+basename=$(basename -- $0)
+if [ "$basename" = "rhts-sync-block" ]; then
+    XTRA="${TASKORDER}"
+fi
+
+staf=$(which staf)
+if [ -z "$staf" ]; then
+    echo "staf binary missing! - $0 won't work!"
+    exit 1
+fi
+
+any=0
+states=""
+while true
+do
+    case $1 in
+        -s|--state)
+            shift
+            states="$states ${XTRA}_$1"
+            shift
+            ;;
+        --any)
+            shift
+            any=1
+            ;;
+        --timeout)
+            shift
+            timeout=$(date +%s --date "+$1 seconds")
+            shift
+            ;;
+        -t|--testorder)
+            shift
+            shift
+            ;;
+        --)
+            shift
+            break
+            ;;
+        *)
+            usage
+            ;;
+    esac
+done
+
+if [ -z "$*" ]; then
+    usage
+fi
+
+echo $command
+
+while true
+do
+    fail=0
+    for machine in $@; do
+        for state in $states; do
+            output=$(staf $machine sem wait event ${state} TIMEOUT 10s 2>&1)
+            rc=$?
+            if [ $rc -eq 0 ]; then
+                if [ $any -eq 1 ]; then
+                    break 3
+                fi
+                break
+            fi
+        done
+        if [ $rc -ne 0 ]; then
+            fail=1
+            if [ -n "$timeout" ]; then
+                time=$(date +%s)
+                if [ "$timeout" -le "$time" ]; then
+                    echo "$0: timeout $timeout exceeded"
+                    break 2
+                fi
+            fi
+            # If we get any error besides the timeout we sleep for a minute
+            if [ $rc -ne 37 ]; then
+		echo $output
+                sleep 60
+            fi
+        fi
+    done
+    if [ $fail -eq 0 ]; then
+        break
+    fi
+done
+exit $rc

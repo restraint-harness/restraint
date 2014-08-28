@@ -20,6 +20,7 @@ install:
 	install -m0755 task_run.d/15_beakerlib $(DESTDIR)/usr/share/restraint/plugins/task_run.d
 	install -m0755 task_run.d/20_unconfined $(DESTDIR)/usr/share/restraint/plugins/task_run.d
 	install -m0755 task_run.d/25_environment $(DESTDIR)/usr/share/restraint/plugins/task_run.d
+	install -m0755 task_run.d/30_start_stafproc $(DESTDIR)/usr/share/restraint/plugins/task_run.d
 
 .PHONY: clean
 clean:

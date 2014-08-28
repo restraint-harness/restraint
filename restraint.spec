@@ -108,6 +108,8 @@ ln -s rstrnt-report-result $RPM_BUILD_ROOT/usr/bin/rhts-report-result
 ln -s rstrnt-backup $RPM_BUILD_ROOT/usr/bin/rhts-backup
 ln -s rstrnt-restore $RPM_BUILD_ROOT/usr/bin/rhts-restore
 ln -s rstrnt-reboot $RPM_BUILD_ROOT/usr/bin/rhts-reboot
+ln -s rhts-sync-set $RPM_BUILD_ROOT/usr/bin/rhts-recipe-sync-set
+ln -s rhts-sync-block $RPM_BUILD_ROOT/usr/bin/rhts-recipe-sync-block
 mkdir -p $RPM_BUILD_ROOT/mnt/scratchspace
 mkdir -p $RPM_BUILD_ROOT/mnt/testarea
 
@@ -227,6 +229,10 @@ fi
 %attr(0755, root, root)%{_bindir}/rhts-restore
 %attr(0755, root, root)%{_bindir}/rhts-restore
 %attr(0755, root, root)%{_bindir}/rhts-lint
+%attr(0755, root, root)%{_bindir}/rhts-sync-set
+%attr(0755, root, root)%{_bindir}/rhts-sync-block
+%attr(0755, root, root)%{_bindir}/rhts-recipe-sync-set
+%attr(0755, root, root)%{_bindir}/rhts-recipe-sync-block
 %{_datadir}/rhts/lib/rhts-make.include
 /mnt/scratchspace
 %attr(1777,root,root)/mnt/testarea
