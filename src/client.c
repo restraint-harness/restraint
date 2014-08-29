@@ -944,6 +944,9 @@ static gboolean add_recipe_host(const gchar *option_name, const gchar *value,
                                 gpointer data, GError **error) {
     AppData *app_data = (AppData*)data;
     gchar **args;
+    gchar *remote;
+    gboolean result = TRUE;
+    SoupURI *remote_uri;
 
     args = g_strsplit(value, "=", 2);
     if (g_strv_length(args) != 2) {
@@ -953,9 +956,28 @@ static gboolean add_recipe_host(const gchar *option_name, const gchar *value,
         return FALSE;
     }
 
-    g_hash_table_insert(app_data->recipe_hosts, args[0], args[1]);
+    if (g_strrstr(args[1], ":") == NULL) {
+        remote = g_strdup_printf("http://%s:%d", args[1], DEFAULT_PORT);
+    } else {
+        remote = g_strdup_printf("http://%s", args[1]);
+    }
+
+    remote_uri = soup_uri_new(remote);
+    if (remote_uri == NULL) {
+        g_set_error(error, G_OPTION_ERROR, G_OPTION_ERROR_FAILED,
+            "Wrong URI format: %s.", remote);
+        result = FALSE;
+        g_free(args[0]);
+        goto cleanup;
+    }
+
+    g_hash_table_insert(app_data->recipe_hosts, args[0], remote_uri);
+
+cleanup:
+    g_free(remote);
+    g_free(args[1]);
     g_free(args);
-    return TRUE;
+    return result;
 }
 
 int main(int argc, char *argv[]) {
@@ -973,7 +995,7 @@ int main(int argc, char *argv[]) {
 
     init_result_hash (app_data);
     app_data->recipe_hosts = g_hash_table_new_full(g_str_hash, g_str_equal,
-            g_free, g_free);
+            g_free, (GDestroyNotify)soup_uri_free);
 
     GOptionEntry entries[] = {
         {"remote", 's', 0, G_OPTION_ARG_STRING, &remote,

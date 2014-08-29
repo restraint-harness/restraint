@@ -16,6 +16,7 @@
 */
 
 #define READ_BUFFER_SIZE 131072
+#define DEFAULT_PORT 8081
 
 typedef struct {
     GError *error;
