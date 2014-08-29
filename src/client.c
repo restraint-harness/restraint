@@ -56,7 +56,7 @@ restraint_client_stream_error(void) {
 xmlXPathObjectPtr get_node_set (xmlDocPtr doc, xmlChar *xpath);
 
 static void restraint_free_task_id(xmlChar *id, gpointer value,
-	gpointer user_data)
+    gpointer user_data)
 {
     xmlFree(id);
 }
@@ -68,17 +68,18 @@ static void restraint_free_app_data(AppData *app_data)
     g_free((gchar*)app_data->address);
     soup_uri_free(app_data->remote_uri);
     if (app_data->tasks != NULL) {
-	g_hash_table_foreach(app_data->tasks, (GHFunc)&restraint_free_task_id,
-			     NULL);
-	g_hash_table_destroy(app_data->tasks);
+        g_hash_table_foreach(app_data->tasks, (GHFunc)&restraint_free_task_id,
+            NULL);
+        g_hash_table_destroy(app_data->tasks);
     }
 
     if (app_data->result_states_to != NULL) {
-	g_hash_table_destroy(app_data->result_states_to);
+        g_hash_table_destroy(app_data->result_states_to);
     }
+    g_hash_table_destroy(app_data->recipe_hosts);
     g_string_free(app_data->body, TRUE);
     if (app_data->loop != NULL) {
-	g_main_loop_unref(app_data->loop);
+        g_main_loop_unref(app_data->loop);
     }
     g_slice_free(AppData, app_data);
 }
@@ -843,7 +844,7 @@ parse_new_job (AppData *app_data)
 
 static gboolean
 callback_parse_verbose (const gchar *option_name, const gchar *value,
-		 gpointer user_data, GError **error)
+        gpointer user_data, GError **error)
 {
     AppData *app_data = (AppData *) user_data;
     app_data->verbose++;
@@ -939,6 +940,24 @@ cleanup:
         g_free (std_err);
 }
 
+static gboolean add_recipe_host(const gchar *option_name, const gchar *value,
+                                gpointer data, GError **error) {
+    AppData *app_data = (AppData*)data;
+    gchar **args;
+
+    args = g_strsplit(value, "=", 2);
+    if (g_strv_length(args) != 2) {
+        g_set_error(error, G_OPTION_ERROR, G_OPTION_ERROR_FAILED,
+            "Option format not recognized: '%s'. Try --help.", value);
+        g_strfreev(args);
+        return FALSE;
+    }
+
+    g_hash_table_insert(app_data->recipe_hosts, args[0], args[1]);
+    g_free(args);
+    return TRUE;
+}
+
 int main(int argc, char *argv[]) {
 
     SoupServer *server;
@@ -953,6 +972,8 @@ int main(int argc, char *argv[]) {
     app_data->body = g_string_new (NULL);
 
     init_result_hash (app_data);
+    app_data->recipe_hosts = g_hash_table_new_full(g_str_hash, g_str_equal,
+            g_free, g_free);
 
     GOptionEntry entries[] = {
         {"remote", 's', 0, G_OPTION_ARG_STRING, &remote,
@@ -965,8 +986,12 @@ int main(int argc, char *argv[]) {
             "Run job from file", "FILE" },
         { "run", 'r', 0, G_OPTION_ARG_STRING, &app_data->run_dir,
             "Continue interrupted job from DIR", "DIR" },
-        { "verbose", 'v', G_OPTION_FLAG_NO_ARG, G_OPTION_ARG_CALLBACK, callback_parse_verbose,
-            "Increase verbosity, up to three times.", NULL },
+        { "host", 't', 0, G_OPTION_ARG_CALLBACK, &add_recipe_host,
+            "Set host for a recipe with specific witeboard.",
+            "<witeboard>=<host>[:<port>]" },
+        { "verbose", 'v', G_OPTION_FLAG_NO_ARG, G_OPTION_ARG_CALLBACK,
+            callback_parse_verbose, "Increase verbosity, up to three times.",
+            NULL },
         { NULL }
     };
     GOptionGroup *option_group = g_option_group_new ("main",
@@ -985,8 +1010,8 @@ int main(int argc, char *argv[]) {
     g_option_context_free(context);
 
     if (remote == NULL) {
-	remote = g_strdup("http://localhost:8081"); // Replace with a unix socket proxy so no network is required
-						    // when run from localhost.
+        remote = g_strdup("http://localhost:8081"); // Replace with a unix socket proxy so no network is required
+                                                    // when run from localhost.
     }
 
     // Setup soup session to talk to restraintd
@@ -1029,7 +1054,6 @@ int main(int argc, char *argv[]) {
 
     // ask restraintd what ip address we connected with.
     SoupURI *control_uri = soup_uri_new_with_base (app_data->remote_uri, "address");
-    g_object_unref(address);
     SoupMessage *address_msg = soup_message_new_from_uri("GET", control_uri);
     soup_uri_free (control_uri);
     soup_session_send_message (session, address_msg);
@@ -1103,18 +1127,21 @@ int main(int argc, char *argv[]) {
     g_object_unref(server);
 
 cleanup:
+    g_object_unref(address);
     g_object_unref(session);
     g_free(remote);
     if (job != NULL) {
-	g_free(job);
+        g_free(job);
     }
     if (app_data->error) {
+        int retcode = app_data->error->code;
         g_printerr("%s [%s, %d]\n", app_data->error->message,
-                g_quark_to_string(app_data->error->domain), app_data->error->code);
-	restraint_free_app_data(app_data);
-        return app_data->error->code;
+                g_quark_to_string(app_data->error->domain),
+                app_data->error->code);
+        restraint_free_app_data(app_data);
+        return retcode;
     } else {
-	restraint_free_app_data(app_data);
+        restraint_free_app_data(app_data);
         return EXIT_SUCCESS;
     }
 }

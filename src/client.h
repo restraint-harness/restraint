@@ -26,6 +26,7 @@ typedef struct {
     xmlNodePtr recipe_node_ptr;
     GHashTable *tasks;
     GHashTable *result_states_to;
+    GHashTable *recipe_hosts;
     SoupURI *remote_uri;
     gint recipe_id;
     gint verbose;
