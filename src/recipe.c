@@ -62,7 +62,21 @@ static gchar *get_attribute(xmlNode *node, void *attribute) {
     return result;
 }
 
-static xmlNode *find_recipe(xmlNode *recipe_set) {
+static xmlNode *find_recipe(xmlNode *recipe_set, const gchar *recipe_id) {
+    xmlNode *child = recipe_set->children;
+    while (child != NULL) {
+        if (child->type == XML_ELEMENT_NODE &&
+                g_strcmp0((gchar *)child->name, "recipe") == 0) {
+            xmlChar *id = xmlGetNoNsProp(child, (xmlChar *)"id");
+            if (g_strcmp0(recipe_id, (gchar*)id) == 0) {
+                xmlFree(id);
+                return child;
+            }
+            xmlFree(id);
+        }
+        child = child->next;
+    }
+
     xmlNode *recipe = first_child_with_name(recipe_set, "recipe");
     if (recipe) {
         xmlChar *id = xmlGetNoNsProp(recipe, (xmlChar *)"id");
@@ -363,6 +377,7 @@ recipe_parse (xmlDoc *doc, SoupURI *recipe_uri, GError **error)
     g_return_val_if_fail(recipe_uri != NULL, NULL);
     g_return_val_if_fail(error == NULL || *error == NULL, NULL);
 
+    gchar **spath;
     GError *tmp_error = NULL;
     gint i = 0;
     Recipe *result = g_slice_new0(Recipe);
@@ -377,7 +392,12 @@ recipe_parse (xmlDoc *doc, SoupURI *recipe_uri, GError **error)
         unrecognised("<recipeSet/> element not found");
         goto error;
     }
-    xmlNode *recipe = find_recipe(recipeset);
+
+    // FIXME: This is so unreliable, we should track recipe id in the server
+    // somehow
+    spath = g_strsplit(soup_uri_get_path(recipe_uri), "/", 0);
+    xmlNode *recipe = find_recipe(recipeset, spath[2]);
+    g_strfreev(spath);
     if (recipe == NULL) {
         unrecognised("<recipe/> element not found");
         goto error;
