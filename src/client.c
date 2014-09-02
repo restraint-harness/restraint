@@ -647,17 +647,30 @@ find_next_dir (gchar *basename, gint *recipe_id)
     return file;
 }
 
+static void abort_recipe(RecipeData *recipe_data)
+{
+    GHashTableIter iter;
+    xmlNodePtr task_node;
+
+    xmlSetProp(recipe_data->recipe_node_ptr, (xmlChar*)"status",
+               (xmlChar*)"Aborted");
+
+    g_hash_table_iter_init(&iter, recipe_data->tasks);
+    while (g_hash_table_iter_next(&iter, NULL, (gpointer *)&task_node)) {
+        xmlSetProp(task_node, (xmlChar*)"status", (xmlChar*)"Aborted");
+    }
+}
+
 static void
 recipe_read_closed (GObject *source, GAsyncResult *res, gpointer user_data)
 {
     RecipeData *recipe_data = (RecipeData*)user_data;
-    AppData *app_data = recipe_data->app_data;
     GInputStream *stream = G_INPUT_STREAM (source);
     GError *error = NULL;
 
     g_print("%s", recipe_data->body->str);
     if (g_strrstr(recipe_data->body->str, "* WARNING **:") != 0) {
-        g_main_loop_quit (app_data->loop);
+        abort_recipe(recipe_data);
     }
 
     g_string_free(recipe_data->body, TRUE);
@@ -671,7 +684,6 @@ static void
 recipe_read_data (GObject *source, GAsyncResult *res, gpointer user_data)
 {
     RecipeData *recipe_data = (RecipeData*)user_data;
-    AppData *app_data = recipe_data->app_data;
     GInputStream *stream = G_INPUT_STREAM (source);
     GError *error = NULL;
     gsize nread;
@@ -683,7 +695,7 @@ recipe_read_data (GObject *source, GAsyncResult *res, gpointer user_data)
         g_clear_error (&error);
         g_input_stream_close (stream, NULL, NULL);
         g_object_unref (stream);
-        g_main_loop_quit (app_data->loop);
+        abort_recipe(recipe_data);
         return;
     } else if (nread == 0) {
         g_input_stream_close_async(stream,
@@ -702,7 +714,6 @@ static void
 run_recipe_sent (GObject *source, GAsyncResult *res, gpointer user_data)
 {
     RecipeData *recipe_data = (RecipeData*)user_data;
-    AppData *app_data = recipe_data->app_data;
     SoupRequest *request = SOUP_REQUEST (source);
     GInputStream *stream;
     GError *error = NULL;
@@ -711,7 +722,7 @@ run_recipe_sent (GObject *source, GAsyncResult *res, gpointer user_data)
             SOUP_REQUEST_HTTP(request));
     if (!SOUP_STATUS_IS_SUCCESSFUL (remote_msg->status_code)) {
         g_printerr ("* WARNING **: %s\n", remote_msg->reason_phrase);
-        g_main_loop_quit (app_data->loop);
+        abort_recipe(recipe_data);
         return;
     }
 
@@ -719,7 +730,7 @@ run_recipe_sent (GObject *source, GAsyncResult *res, gpointer user_data)
     if (!stream) {
         g_printerr ("* WARNING **: %s\n", error->message);
         g_clear_error (&error);
-        g_main_loop_quit (app_data->loop);
+        abort_recipe(recipe_data);
         return;
     }
     g_input_stream_read_async (stream, buf, sizeof (buf),
