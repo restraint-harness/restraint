@@ -63,7 +63,9 @@ static void restraint_free_recipe_data(RecipeData *recipe_data)
     }
     soup_uri_free(recipe_data->remote_uri);
     g_string_free(recipe_data->body, TRUE);
-    g_object_unref(recipe_data->server);
+    if (recipe_data->server != NULL) {
+        g_object_unref(recipe_data->server);
+    }
     g_slice_free(RecipeData, recipe_data);
 }
 
@@ -854,6 +856,15 @@ copy_job_as_template (gchar *job)
     return run_dir;
 }
 
+static gboolean remove_extra_recipes(gchar *wboard, RecipeData *recipe_data,
+                                     GSList *wboards)
+{
+    if (g_slist_find_custom(wboards, wboard, (GCompareFunc)g_strcmp0) == NULL) {
+        return TRUE;
+    }
+    return FALSE;
+}
+
 static void
 parse_new_job (AppData *app_data)
 {
@@ -879,6 +890,7 @@ parse_new_job (AppData *app_data)
         return;
     }
 
+    GSList *wboards = g_slist_alloc();
     for (gint i = 0; i < recipe_node_ptrs->nodesetval->nodeNr; i++) {
         xmlNodePtr node = recipe_node_ptrs->nodesetval->nodeTab[i];
         xmlChar *recipe_id = xmlGetNoNsProp(node, (xmlChar *)"id");
@@ -887,6 +899,8 @@ parse_new_job (AppData *app_data)
         if (wboard == NULL) {
             wboard = (xmlChar*)g_strdup_printf("default%s", recipe_id);
         }
+
+        wboards = g_slist_append(wboards, g_strdup((gchar*)wboard));
         RecipeData *recipe_data = g_hash_table_lookup(app_data->recipes,
                                                       wboard);
         if (recipe_data == NULL) {
@@ -932,6 +946,10 @@ parse_new_job (AppData *app_data)
         parse_task_nodes(task_nodes->nodesetval, recipe_data->tasks);
         xmlXPathFreeObject (task_nodes);
     }
+    g_hash_table_foreach_remove(app_data->recipes,
+                                (GHRFunc)&remove_extra_recipes,
+                                wboards);
+    g_slist_free_full(wboards, g_free);
     xmlXPathFreeObject (recipe_node_ptrs);
     g_free (filename);
 }
