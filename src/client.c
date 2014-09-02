@@ -136,9 +136,9 @@ tasks_finished (GHashTable *recipes)
     gboolean finished = TRUE;
 
     g_hash_table_iter_init(&riter, recipes);
-    while (g_hash_table_iter_next (&riter, NULL, (gpointer *)&recipe_data)) {
+    while (g_hash_table_iter_next(&riter, NULL, (gpointer *)&recipe_data)) {
         g_hash_table_iter_init(&titer, recipe_data->tasks);
-        while (g_hash_table_iter_next (&titer, &key, &value)) {
+        while (g_hash_table_iter_next(&titer, &key, &value)) {
             gchar *status = (gchar *)xmlGetNoNsProp(value,
                                                     (xmlChar*)"status");
             finished &= (strcmp (status, "Completed") == 0 || strcmp(status,
@@ -772,7 +772,7 @@ new_job ()
 
 static xmlNodePtr
 new_recipe (xmlDocPtr xml_doc_ptr, gint recipe_id,
-            xmlNodePtr recipe_set_node_ptr, xmlChar *wboard)
+            xmlNodePtr recipe_set_node_ptr, const xmlChar *wboard)
 {
     xmlNodePtr recipe_node_ptr = xmlNewTextChild (recipe_set_node_ptr,
                                        NULL,
@@ -784,6 +784,11 @@ new_recipe (xmlDocPtr xml_doc_ptr, gint recipe_id,
     xmlSetProp (recipe_node_ptr, (xmlChar *)"result", (xmlChar *) "None");
     if (wboard != NULL) {
         xmlSetProp(recipe_node_ptr, (xmlChar *)"whiteboard", wboard);
+    } else {
+        xmlChar *tmp_wboard = (xmlChar*)g_strdup_printf("default%s",
+                                                        new_id);
+        xmlSetProp(recipe_node_ptr, (xmlChar *)"whiteboard", tmp_wboard);
+        xmlFree(tmp_wboard);
     }
     g_free(new_id);
     return recipe_node_ptr;
