@@ -893,7 +893,8 @@ parse_new_job (AppData *app_data)
             recipe_data->remote_uri = remote_uri;
             recipe_data->body = g_string_new (NULL);
             recipe_data->app_data = app_data;
-            g_hash_table_insert(app_data->recipes, wboard, recipe_data);
+            g_hash_table_insert(app_data->recipes, g_strdup((gchar*)wboard),
+                                recipe_data);
             g_free(remote);
         }
         xmlFree(wboard);
