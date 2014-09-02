@@ -1109,7 +1109,7 @@ static void recipe_init(gchar *wboard, RecipeData *recipe_data,
     soup_session_send_message (session, address_msg);
     if (!SOUP_STATUS_IS_SUCCESSFUL(address_msg->status_code)) {
         g_printerr ("%s\n", address_msg->reason_phrase);
-        return;
+        exit(1);
     }
 
     if (recipe_data->port) {
@@ -1128,7 +1128,7 @@ static void recipe_init(gchar *wboard, RecipeData *recipe_data,
     recipe_data->port = soup_server_get_port(recipe_data->server);
     if (!recipe_data->server) {
         g_printerr ("Unable to bind to server port %d\n", recipe_data->port);
-        return;
+        exit(1);
     }
 
     g_object_unref(addr);
