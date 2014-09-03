@@ -387,14 +387,15 @@ task_callback (SoupServer *server, SoupMessage *remote_msg,
         goffset end;
         goffset total_length;
         gchar *short_path = NULL;
-        gchar *log_path = g_strjoinv ("/", &entries[4]);
+        gchar *log_path = g_strjoinv ("/", &entries[1]);
         gchar *filename = g_strdup_printf("%s/%s", app_data->run_dir,
                                           log_path);
 
         gchar *logs_xpath = NULL;
         if (g_strcmp0 (entries[5], "logs") == 0) {
-            logs_xpath = g_strdup_printf("//task[contains(@id,'%s')]/logs",
-                                         task_id);
+            logs_xpath = g_strdup_printf(
+                "//recipe[contains(@id,'%s')]/task[contains(@id,'%s')]/logs",
+                recipe_id, task_id);
             short_path = g_strjoinv ("/", &entries[6]);
         } else {
             logs_xpath = g_strdup_printf("//result[contains(@id,'%s')]/logs",
@@ -429,7 +430,8 @@ task_callback (SoupServer *server, SoupMessage *remote_msg,
             if (start == 0) {
                 // Record log in xml
                 xmlXPathObjectPtr logs_node_ptrs = get_node_set(
-                        app_data->xml_doc, NULL, (xmlChar *)logs_xpath);
+                        app_data->xml_doc, recipe_data->recipe_node_ptr,
+                        (xmlChar*)logs_xpath);
                 if (logs_node_ptrs) {
                     record_log(logs_node_ptrs->nodesetval->nodeTab[0],
                                log_path, short_path);
@@ -441,7 +443,7 @@ task_callback (SoupServer *server, SoupMessage *remote_msg,
             truncate ((const char *)filename, body->length);
             // Record log in xml
             xmlXPathObjectPtr logs_node_ptrs = get_node_set(app_data->xml_doc,
-                    NULL, (xmlChar *)logs_xpath);
+                    recipe_data->recipe_node_ptr, (xmlChar *)logs_xpath);
             if (logs_node_ptrs) {
                 record_log (logs_node_ptrs->nodesetval->nodeTab[0], log_path,
                             short_path);
