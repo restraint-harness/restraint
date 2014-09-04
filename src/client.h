@@ -21,14 +21,11 @@
 struct _AppData;
 
 typedef struct {
-    gchar *address;
     xmlNodePtr recipe_node_ptr;
     GHashTable *tasks;
     gint recipe_id;
     SoupURI *remote_uri;
     SoupMessage *remote_msg;
-    guint port;
-    SoupServer *server;
     struct _AppData *app_data;
     GString *body;
 } RecipeData;
@@ -43,5 +40,7 @@ typedef struct _AppData {
     GHashTable *recipes;
     gint verbose;
     guint port;
+    SoupServer *server;
     SoupAddressFamily address_family;
+    SoupURI *addr_get_uri;
 } AppData;

@@ -38,10 +38,6 @@
 static SoupSession *session;
 gchar buf[1024];
 
-// Select first recipe #FIXME - would be nice to support guest recipes too!
-xmlChar *task_xpath = (xmlChar *) "/job/recipeSet/recipe[1]/task";
-xmlChar *recipe_xpath = (xmlChar *) "/job/recipeSet/recipe[1]";
-
 #define RESTRAINT_CLIENT_ERROR restraint_client_error()
 GQuark
 restraint_client_error(void) {
@@ -57,15 +53,11 @@ xmlXPathObjectPtr get_node_set(xmlDocPtr doc, xmlNodePtr node, xmlChar *xpath);
 
 static void restraint_free_recipe_data(RecipeData *recipe_data)
 {
-    g_free(recipe_data->address);
     if (recipe_data->tasks != NULL) {
         g_hash_table_destroy(recipe_data->tasks);
     }
     soup_uri_free(recipe_data->remote_uri);
     g_string_free(recipe_data->body, TRUE);
-    if (recipe_data->server != NULL) {
-        g_object_unref(recipe_data->server);
-    }
     g_slice_free(RecipeData, recipe_data);
 }
 
@@ -77,6 +69,10 @@ static void restraint_free_app_data(AppData *app_data)
 
     if (app_data->result_states_to != NULL) {
         g_hash_table_destroy(app_data->result_states_to);
+    }
+    if (app_data->server != NULL) {
+        soup_server_quit(app_data->server);
+        g_object_unref(app_data->server);
     }
     g_hash_table_destroy(app_data->recipes);
     if (app_data->loop != NULL) {
@@ -322,7 +318,7 @@ task_callback (SoupServer *server, SoupMessage *remote_msg,
 
         // set result Location
         gchar *result_url = g_strdup_printf("%srecipes/%s/tasks/%s/results/%d",
-                                            recipe_data->address,
+                                            app_data->address,
                                             recipe_id,
                                             task_id,
                                             result_id);
@@ -725,7 +721,7 @@ run_recipe_sent (GObject *source, GAsyncResult *res, gpointer user_data)
     if (!SOUP_STATUS_IS_SUCCESSFUL (remote_msg->status_code)) {
         g_printerr ("* WARNING **: %s\n", remote_msg->reason_phrase);
         abort_recipe(recipe_data);
-        return;
+        goto cleanup;
     }
 
     stream = soup_request_send_finish (request, res, &error);
@@ -733,11 +729,12 @@ run_recipe_sent (GObject *source, GAsyncResult *res, gpointer user_data)
         g_printerr ("* WARNING **: %s\n", error->message);
         g_clear_error (&error);
         abort_recipe(recipe_data);
-        return;
+        goto cleanup;
     }
     g_input_stream_read_async (stream, buf, sizeof (buf),
                                G_PRIORITY_DEFAULT, NULL,
                                recipe_read_data, recipe_data);
+cleanup:
     g_object_unref(request);
 }
 
@@ -745,6 +742,7 @@ static gboolean
 run_recipe_handler (gpointer user_data)
 {
     RecipeData *recipe_data = (RecipeData*)user_data;
+    AppData *app_data = recipe_data->app_data;
     GHashTable *data_table = NULL;
     gchar *form_data;
     // Tell restraintd to run our recipe
@@ -760,7 +758,7 @@ run_recipe_handler (gpointer user_data)
 
     data_table = g_hash_table_new (NULL, NULL);
 
-    gchar *recipe_url = g_strdup_printf ("%srecipes/%d/", recipe_data->address,
+    gchar *recipe_url = g_strdup_printf ("%srecipes/%d/", app_data->address,
                                          recipe_data->recipe_id);
     g_hash_table_insert (data_table, "recipe", recipe_url);
     form_data = soup_form_encode_hash (data_table);
@@ -935,10 +933,8 @@ parse_new_job (AppData *app_data)
                                                         NULL, 0);
         g_free (recipe_id);
 
-        // If the port number was recorded use it.
-        xmlChar *port = xmlGetNoNsProp(node, (xmlChar *)"port");
-        if (port) {
-            recipe_data->port = (gint)g_ascii_strtoll((gchar *)port, NULL, 0);
+        if (app_data->addr_get_uri == NULL) {
+            app_data->addr_get_uri = recipe_data->remote_uri;
         }
 
         // find task nodes
@@ -1111,81 +1107,29 @@ cleanup:
     return result;
 }
 
-static void recipe_init(gchar *wboard, RecipeData *recipe_data,
-                        AppData *app_data)
+static void recipe_add_handlers(gchar *wboard, RecipeData *recipe_data,
+                                AppData *app_data)
 {
-    SoupURI *control_uri = soup_uri_new_with_base(recipe_data->remote_uri,
-                                                  "address");
-    SoupMessage *address_msg = soup_message_new_from_uri("GET", control_uri);
-    SoupAddress *addr;
-    soup_uri_free (control_uri);
-    soup_session_send_message (session, address_msg);
-    if (!SOUP_STATUS_IS_SUCCESSFUL(address_msg->status_code)) {
-        g_printerr ("%s\n", address_msg->reason_phrase);
-        exit(1);
-    }
-
-    if (recipe_data->port) {
-        addr = soup_address_new_any(app_data->address_family,
-                                    recipe_data->port);
-    } else if (app_data->port) {
-        addr = soup_address_new_any(app_data->address_family,
-                                    app_data->port);
-    } else {
-        addr = soup_address_new_any(app_data->address_family,
-                                    SOUP_ADDRESS_ANY_PORT);
-    }
-
-    recipe_data->server = soup_server_new(SOUP_SERVER_INTERFACE, addr, NULL);
-
-    recipe_data->port = soup_server_get_port(recipe_data->server);
-    if (!recipe_data->server) {
-        g_printerr ("Unable to bind to server port %d\n", recipe_data->port);
-        exit(1);
-    }
-
-    g_object_unref(addr);
-
-    // Construct the url where we will serve from.
-    gchar *host = g_strdup(soup_message_headers_get_one(
-                           address_msg->response_headers, "Address"));
-    SoupURI *proxy_uri = soup_uri_new(NULL);
-    soup_uri_set_scheme(proxy_uri, "http");
-    soup_uri_set_host(proxy_uri, host);
-    soup_uri_set_port(proxy_uri, recipe_data->port);
-    soup_uri_set_path(proxy_uri, "/");
-    recipe_data->address = soup_uri_to_string(proxy_uri, FALSE);
-    soup_uri_free(proxy_uri);
-    g_free(host);
-    g_object_unref(address_msg);
-
-    // Record the port with the job.xml
-    gchar *port_str = g_strdup_printf ("%d", recipe_data->port);
-    xmlSetProp(recipe_data->recipe_node_ptr, (xmlChar *)"port",
-               (xmlChar *)port_str);
-    g_free(port_str);
-    gchar *filename = g_build_filename(app_data->run_dir, "job.xml", NULL);
-    put_doc(app_data->xml_doc, filename);
-    g_free(filename);
-
     gchar *recipe_path = g_strdup_printf("/recipes/%d",
                                          recipe_data->recipe_id);
-    soup_server_add_handler(recipe_data->server, recipe_path, recipe_callback,
+    soup_server_add_handler(app_data->server, recipe_path, recipe_callback,
                             app_data, NULL);
     g_free(recipe_path);
     gchar *task_path = g_strdup_printf ("/recipes/%d/tasks",
                                         recipe_data->recipe_id);
-    soup_server_add_handler(recipe_data->server, task_path, task_callback,
+    soup_server_add_handler(app_data->server, task_path, task_callback,
                             recipe_data, NULL);
     g_free(task_path);
-    soup_server_run_async(recipe_data->server);
+}
 
+static void recipe_init(gchar *wboard, RecipeData *recipe_data,
+                        gpointer *user_data)
+{
     // Request to run the recipe.
     g_idle_add_full(G_PRIORITY_LOW,
                     run_recipe_handler,
                     recipe_data,
                     NULL);
-
 }
 
 int main(int argc, char *argv[]) {
@@ -1265,7 +1209,68 @@ int main(int argc, char *argv[]) {
         goto cleanup;
     }
 
-    g_hash_table_foreach(app_data->recipes, (GHFunc)&recipe_init, app_data);
+    SoupURI *control_uri = soup_uri_new_with_base(app_data->addr_get_uri,
+                                                  "address");
+    SoupMessage *address_msg = soup_message_new_from_uri("GET", control_uri);
+    soup_uri_free (control_uri);
+    soup_session_send_message (session, address_msg);
+    if (!SOUP_STATUS_IS_SUCCESSFUL(address_msg->status_code)) {
+        g_printerr ("%s\n", address_msg->reason_phrase);
+        goto cleanup;
+    }
+
+
+    SoupAddress *addr;
+    if (app_data->port) {
+        addr = soup_address_new_any(app_data->address_family,
+                                    app_data->port);
+    } else {
+        addr = soup_address_new_any(app_data->address_family,
+                                    SOUP_ADDRESS_ANY_PORT);
+    }
+
+    app_data->server = soup_server_new(SOUP_SERVER_INTERFACE, addr, NULL);
+
+    app_data->port = soup_server_get_port(app_data->server);
+    if (!app_data->server) {
+        g_printerr ("Unable to bind to server port %d\n", app_data->port);
+        goto cleanup;
+    }
+
+    g_object_unref(addr);
+
+    // Construct the url where we will serve from.
+    gchar *host = g_strdup(soup_message_headers_get_one(
+                           address_msg->response_headers, "Address"));
+    SoupURI *proxy_uri = soup_uri_new(NULL);
+    soup_uri_set_scheme(proxy_uri, "http");
+    soup_uri_set_host(proxy_uri, host);
+    soup_uri_set_port(proxy_uri, app_data->port);
+    soup_uri_set_path(proxy_uri, "/");
+    app_data->address = soup_uri_to_string(proxy_uri, FALSE);
+    soup_uri_free(proxy_uri);
+    g_free(host);
+    g_object_unref(address_msg);
+
+    // Record the port with the job.xml
+    gchar *port_str = g_strdup_printf ("%d", app_data->port);
+    xmlXPathObjectPtr job_nodes = get_node_set(app_data->xml_doc, NULL,
+            (xmlChar*)"/job");
+    xmlSetProp(job_nodes->nodesetval->nodeTab[0], (xmlChar*)"port",
+               (xmlChar*)port_str);
+    g_free(port_str);
+    gchar *filename = g_build_filename(app_data->run_dir, "job.xml", NULL);
+    put_doc(app_data->xml_doc, filename);
+    g_free(filename);
+    xmlXPathFreeObject (job_nodes);
+
+
+    g_hash_table_foreach(app_data->recipes, (GHFunc)&recipe_add_handlers,
+                         app_data);
+
+    soup_server_run_async(app_data->server);
+
+    g_hash_table_foreach(app_data->recipes, (GHFunc)&recipe_init, NULL);
 
     // Create and enter the main loop
     app_data->loop = g_main_loop_new(NULL, FALSE);
