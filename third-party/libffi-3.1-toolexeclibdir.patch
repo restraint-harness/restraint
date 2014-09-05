@@ -1,0 +1,42 @@
+diff --git a/configure b/configure
+index a05785e..838cd2f 100755
+--- a/configure
++++ b/configure
+@@ -18792,11 +18792,11 @@ if test "x$GCC" = "xyes"; then
+     toolexecdir='$(libdir)/gcc-lib/$(target_alias)'
+     toolexeclibdir='$(libdir)'
+   fi
+-  multi_os_directory=`$CC $CFLAGS -print-multi-os-directory`
+-  case $multi_os_directory in
+-    .) ;; # Avoid trailing /.
+-    ../*) toolexeclibdir=$toolexeclibdir/$multi_os_directory ;;
+-  esac
++#  multi_os_directory=`$CC $CFLAGS -print-multi-os-directory`
++#  case $multi_os_directory in
++#    .) ;; # Avoid trailing /.
++#    ../*) toolexeclibdir=$toolexeclibdir/$multi_os_directory ;;
++#  esac
+
+ else
+   toolexeclibdir='$(libdir)'
+diff --git a/configure.ac b/configure.ac
+index d3b8b99..a303ae4 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -596,11 +596,11 @@ if test "x$GCC" = "xyes"; then
+     toolexecdir='$(libdir)/gcc-lib/$(target_alias)'
+     toolexeclibdir='$(libdir)'
+   fi
+-  multi_os_directory=`$CC $CFLAGS -print-multi-os-directory`
+-  case $multi_os_directory in
+-    .) ;; # Avoid trailing /.
+-    ../*) toolexeclibdir=$toolexeclibdir/$multi_os_directory ;;
+-  esac
++#  multi_os_directory=`$CC $CFLAGS -print-multi-os-directory`
++#  case $multi_os_directory in
++#    .) ;; # Avoid trailing /.
++#    ../*) toolexeclibdir=$toolexeclibdir/$multi_os_directory ;;
++#  esac
+   AC_SUBST(toolexecdir)
+ else
+   toolexeclibdir='$(libdir)'
