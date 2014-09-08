@@ -559,6 +559,11 @@ copy_task_nodes(xmlNodeSetPtr nodeset, xmlDocPtr orig_xml_doc,
 
         xmlChar *name = xmlGetNoNsProp (nodeset->nodeTab[i], (xmlChar*)"name");
         xmlSetProp (task_node_ptr, (xmlChar *) "name", name);
+        xmlChar *role = xmlGetNoNsProp(nodeset->nodeTab[i], (xmlChar*)"role");
+        if (role != NULL) {
+            xmlSetProp (task_node_ptr, (xmlChar*)"role", (xmlChar*)role);
+            xmlFree(role);
+        }
         new_id = g_strdup_printf ("%d", i + 1);
         xmlSetProp (task_node_ptr, (xmlChar *) "id", (xmlChar *) new_id);
         xmlSetProp (task_node_ptr, (xmlChar *) "status", (xmlChar *) "New");
