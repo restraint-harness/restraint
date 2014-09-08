@@ -1185,15 +1185,15 @@ int main(int argc, char *argv[]) {
 
     session = soup_session_new_with_options("local-address", address, NULL);
 
-    if (job) {
-        // if template job is passed in use it to generate our job
-        app_data->run_dir = copy_job_as_template (job);
-    }
-
     if (app_data->run_dir && app_data->port) {
         g_printerr ("You can't specify both run_dir and port\n");
         g_printerr ("Try %s --help\n", argv[0]);
         goto cleanup;
+    }
+
+    if (job) {
+        // if template job is passed in use it to generate our job
+        app_data->run_dir = copy_job_as_template (job);
     }
     if (!parse_succeeded || !app_data->run_dir) {
         g_printerr("Try %s --help\n", argv[0]);
