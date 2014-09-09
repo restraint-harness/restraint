@@ -833,6 +833,23 @@ static void make_r_params_node(gchar *role, GSList *hostlist,
     g_free(hostarr);
 }
 
+static RecipeData *new_recipe_data(AppData *app_data, gchar *recipe_id)
+{
+    gchar *remote = g_strdup_printf("http://localhost:%d",
+                                    DEFAULT_PORT);
+    SoupURI *remote_uri = soup_uri_new(remote);
+
+    RecipeData *recipe_data = g_slice_new0(RecipeData);
+    recipe_data->remote_uri = remote_uri;
+    recipe_data->body = g_string_new(NULL);
+    recipe_data->app_data = app_data;
+    g_hash_table_insert(app_data->recipes, g_strdup((gchar*)recipe_id),
+                        recipe_data);
+    g_free(remote);
+
+    return recipe_data;
+}
+
 static gchar *copy_job_as_template(gchar *job, AppData *app_data)
 {
     guint recipe_id = 1;
@@ -888,6 +905,10 @@ static gchar *copy_job_as_template(gchar *job, AppData *app_data)
 
             RecipeData *recipe_data = g_hash_table_lookup(app_data->recipes,
                                                           id);
+            if (recipe_data == NULL) {
+                recipe_data = new_recipe_data(app_data, (gchar*)id);
+            }
+
             for (guint j = 0; j < task_nodes->nodesetval->nodeNr; j++) {
                 xmlNodePtr tnode = task_nodes->nodesetval->nodeTab[j];
                 xmlChar *role = xmlGetNoNsProp(tnode, (xmlChar*)"role");
@@ -997,17 +1018,7 @@ parse_new_job (AppData *app_data)
         RecipeData *recipe_data = g_hash_table_lookup(app_data->recipes,
                                                       recipe_id);
         if (recipe_data == NULL) {
-            gchar *remote = g_strdup_printf("http://localhost:%d",
-                                            DEFAULT_PORT);
-            SoupURI *remote_uri = soup_uri_new(remote);
-
-            recipe_data = g_slice_new0(RecipeData);
-            recipe_data->remote_uri = remote_uri;
-            recipe_data->body = g_string_new (NULL);
-            recipe_data->app_data = app_data;
-            g_hash_table_insert(app_data->recipes, g_strdup((gchar*)recipe_id),
-                                recipe_data);
-            g_free(remote);
+            recipe_data = new_recipe_data(app_data, (gchar*)recipe_id);
         }
         recipe_data->recipe_node_ptr = node;
         recipe_data->recipe_id = (gint)g_ascii_strtoll((gchar *)recipe_id,
@@ -1171,20 +1182,16 @@ static gboolean add_recipe_host(const gchar *option_name, const gchar *value,
         g_set_error(error, G_OPTION_ERROR, G_OPTION_ERROR_FAILED,
             "Wrong URI format: %s.", remote);
         result = FALSE;
-        g_free(args[0]);
         goto cleanup;
     }
 
-    RecipeData *recipe_data = g_slice_new0(RecipeData);
-    recipe_data->body = g_string_new(NULL);
+    RecipeData *recipe_data = new_recipe_data(app_data, args[0]);
+    soup_uri_free(recipe_data->remote_uri);
     recipe_data->remote_uri = remote_uri;
-    recipe_data->app_data = app_data;
-    g_hash_table_insert(app_data->recipes, args[0], recipe_data);
 
 cleanup:
     g_free(remote);
-    g_free(args[1]);
-    g_free(args);
+    g_strfreev(args);
     return result;
 }
 
