@@ -633,14 +633,14 @@ remove_ext (char* mystr, char dot, char sep)
 }
 
 static gchar *
-find_next_dir (gchar *basename, guint *recipe_id)
+find_next_dir (gchar *basename)
 {
-    *recipe_id = 1;
-    gchar *file = g_strdup_printf ("./%s.%02d", basename, *recipe_id);
+    guint recipe_id = 1;
+    gchar *file = g_strdup_printf ("./%s.%02d", basename, recipe_id);
     while (g_file_test (file, G_FILE_TEST_EXISTS)) {
-        *recipe_id += 1;
+        recipe_id += 1;
         g_free (file);
-        file = g_strdup_printf ("./%s.%02d", basename, *recipe_id);
+        file = g_strdup_printf ("./%s.%02d", basename, recipe_id);
     }
     gint ret = g_mkdir_with_parents (file, 0755 /* drwxr-xr-x */);
     if (ret != 0) {
@@ -835,7 +835,7 @@ static void make_r_params_node(gchar *role, GSList *hostlist,
 
 static gchar *copy_job_as_template(gchar *job, AppData *app_data)
 {
-    guint recipe_id;
+    guint recipe_id = 1;
     gchar *run_dir = NULL;
 
     // get xmldoc
@@ -853,7 +853,7 @@ static gchar *copy_job_as_template(gchar *job, AppData *app_data)
     // Find next result dir job.0, job.1, etc..
     gchar *basename = g_path_get_basename (job);
     gchar *base = remove_ext (basename, '.', 0);
-    run_dir = find_next_dir (base, &recipe_id);
+    run_dir = find_next_dir(base);
     g_print ("Using %s for job run\n", run_dir);
     g_free(basename);
     g_free(base);
