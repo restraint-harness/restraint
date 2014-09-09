@@ -1,0 +1,10 @@
+policy_module(restraint, 1.0)
+
+gen_require(`
+    type unconfined_t;
+    type unconfined_service_t;
+    type unconfined_exec_t;
+')
+allow unconfined_service_t unconfined_exec_t:file entrypoint;
+allow unconfined_service_t unconfined_t:process transition;
+type_transition unconfined_service_t unconfined_exec_t:process unconfined_t;

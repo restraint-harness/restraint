@@ -45,7 +45,10 @@ function _runcon_unconfined_cmd() {
 
 function runcon_unconfined() {
   local runcon_cmd=$(_runcon_unconfined_cmd)
-  if $runcon_cmd -- true; then
+  if runcon | grep -q ":unconfined_r:unconfined_t:"; then
+    # Already in the desired context
+    exec "$@"
+  elif $runcon_cmd -- true; then
     # Run command with SELinux context of the root
     exec $runcon_cmd -- "$@"
   else

@@ -2,8 +2,10 @@
 # Got Systemd?
 %if 0%{?fedora} >= 18 || 0%{?rhel} >= 7
 %global with_systemd 1
+%global with_selinux_policy 1
 %else
 %global with_systemd 0
+%global with_selinux_policy 0
 %endif
 
 Name:		restraint
@@ -37,6 +39,10 @@ Requires(preun): chkconfig
 # This is for /sbin/service
 Requires(preun): initscripts
 Requires(postun): initscripts
+%endif
+%if %{with_selinux_policy}
+BuildRequires: selinux-policy-devel
+Requires: selinux-policy >= %{_selinux_policy_version}
 %endif
 
 #if not static build
@@ -91,6 +97,9 @@ popd
 pushd src
 PKG_CONFIG_PATH=../third-party/tree/lib/pkgconfig make STATIC=1
 popd
+%if %{with_selinux_policy}
+make -C selinux -f %{_datadir}/selinux/devel/Makefile
+%endif
 
 %install
 %{__rm} -rf %{buildroot}
@@ -99,6 +108,9 @@ pushd third-party
 make clean
 popd
 make DESTDIR=%{buildroot} install
+%if %{with_selinux_policy}
+install -p -m 644 -D selinux/restraint.pp $RPM_BUILD_ROOT%{_datadir}/selinux/packages/%{name}/restraint.pp
+%endif
 
 # Legacy support.
 ln -s rhts-environment.sh $RPM_BUILD_ROOT/usr/bin/rhts_environment.sh
@@ -142,6 +154,9 @@ if [ "$1" -le "1" ] ; then # First install
 %else
 chkconfig --level 345 restraintd on
 %endif
+%if %{with_selinux_policy}
+semodule -i %{_datadir}/selinux/packages/%{name}/restraint.pp || :
+%endif
 fi
 
 %post rhts
@@ -158,6 +173,9 @@ if [ "$1" -lt "1" ] ; then # Final removal
 %else
 chkconfig --del restraintd || :
 %endif
+%if %{with_selinux_policy}
+semodule -r restraint || :
+%endif
 fi
 
 %preun rhts
@@ -173,6 +191,9 @@ if [ "$1" -ge "1" ] ; then # Upgrade
 %systemd_postun_with_restart %{_services_restart}
 %else
 service restraintd condrestart >/dev/null 2>&1 || :
+%endif
+%if %{with_selinux_policy}
+semodule -i %{_datadir}/selinux/packages/%{name}/restraint.pp || :
 %endif
 fi
 
@@ -208,6 +229,9 @@ fi
 /usr/share/%{name}/plugins/report_result.d
 /usr/share/%{name}/plugins/task_run.d
 /var/lib/%{name}
+%if %{with_selinux_policy}
+%{_datadir}/selinux/packages/%{name}/restraint.pp
+%endif
 
 %files client
 %attr(0755, root, root)%{_bindir}/%{name}
