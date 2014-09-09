@@ -633,7 +633,7 @@ remove_ext (char* mystr, char dot, char sep)
 }
 
 static gchar *
-find_next_dir (gchar *basename, gint *recipe_id)
+find_next_dir (gchar *basename, guint *recipe_id)
 {
     *recipe_id = 1;
     gchar *file = g_strdup_printf ("./%s.%02d", basename, *recipe_id);
@@ -789,24 +789,19 @@ new_job ()
 }
 
 static xmlNodePtr
-new_recipe (xmlDocPtr xml_doc_ptr, gint recipe_id,
+new_recipe (xmlDocPtr xml_doc_ptr, guint recipe_id,
             xmlNodePtr recipe_set_node_ptr, const xmlChar *wboard)
 {
     xmlNodePtr recipe_node_ptr = xmlNewTextChild (recipe_set_node_ptr,
                                        NULL,
                                        (xmlChar *) "recipe",
                                        NULL);
-    gchar *new_id = g_strdup_printf ("%d", recipe_id);
+    gchar *new_id = g_strdup_printf ("%u", recipe_id);
     xmlSetProp (recipe_node_ptr, (xmlChar *)"id", (xmlChar *) new_id);
     xmlSetProp (recipe_node_ptr, (xmlChar *)"status", (xmlChar *) "New");
     xmlSetProp (recipe_node_ptr, (xmlChar *)"result", (xmlChar *) "None");
     if (wboard != NULL) {
         xmlSetProp(recipe_node_ptr, (xmlChar *)"whiteboard", wboard);
-    } else {
-        xmlChar *tmp_wboard = (xmlChar*)g_strdup_printf("default%s",
-                                                        new_id);
-        xmlSetProp(recipe_node_ptr, (xmlChar *)"whiteboard", tmp_wboard);
-        xmlFree(tmp_wboard);
     }
     g_free(new_id);
     return recipe_node_ptr;
@@ -815,7 +810,7 @@ new_recipe (xmlDocPtr xml_doc_ptr, gint recipe_id,
 static gchar *
 copy_job_as_template (gchar *job)
 {
-    gint recipe_id;
+    guint recipe_id;
     gchar *run_dir = NULL;
 
     // get xmldoc
@@ -843,9 +838,13 @@ copy_job_as_template (gchar *job)
                                                      (xmlChar *) "recipeSet",
                                                      NULL);
 
-    for (gint i = 0; i < recipe_nodes->nodesetval->nodeNr; i++) {
+    for (guint i = 0; i < recipe_nodes->nodesetval->nodeNr; i++) {
         xmlNodePtr node = recipe_nodes->nodesetval->nodeTab[i];
         xmlChar *wboard = xmlGetNoNsProp(node, (xmlChar*)"whiteboard");
+        xmlChar *id = xmlGetNoNsProp(node, (xmlChar*)"id");
+        if (id != NULL) {
+            recipe_id = (guint)g_ascii_strtoull((gchar*)id, NULL, 0);
+        }
         xmlNodePtr new_recipe_ptr = new_recipe(new_xml_doc_ptr, recipe_id++,
                                                recipe_set_node_ptr, wboard);
 
@@ -872,10 +871,10 @@ copy_job_as_template (gchar *job)
     return run_dir;
 }
 
-static gboolean remove_extra_recipes(gchar *wboard, RecipeData *recipe_data,
-                                     GSList *wboards)
+static gboolean remove_extra_recipes(gchar *id, RecipeData *recipe_data,
+                                     GSList *idlist)
 {
-    if (g_slist_find_custom(wboards, wboard, (GCompareFunc)g_strcmp0) == NULL) {
+    if (g_slist_find_custom(idlist, id, (GCompareFunc)g_strcmp0) == NULL) {
         return TRUE;
     }
     return FALSE;
@@ -906,19 +905,14 @@ parse_new_job (AppData *app_data)
         return;
     }
 
-    GSList *wboards = g_slist_alloc();
+    GSList *idlist = g_slist_alloc();
     for (gint i = 0; i < recipe_node_ptrs->nodesetval->nodeNr; i++) {
         xmlNodePtr node = recipe_node_ptrs->nodesetval->nodeTab[i];
         xmlChar *recipe_id = xmlGetNoNsProp(node, (xmlChar *)"id");
-        xmlChar *wboard = xmlGetNoNsProp(node, (xmlChar*)"whiteboard");
 
-        if (wboard == NULL) {
-            wboard = (xmlChar*)g_strdup_printf("default%s", recipe_id);
-        }
-
-        wboards = g_slist_append(wboards, g_strdup((gchar*)wboard));
+        idlist = g_slist_append(idlist, g_strdup((gchar*)recipe_id));
         RecipeData *recipe_data = g_hash_table_lookup(app_data->recipes,
-                                                      wboard);
+                                                      recipe_id);
         if (recipe_data == NULL) {
             gchar *remote = g_strdup_printf("http://localhost:%d",
                                             DEFAULT_PORT);
@@ -928,11 +922,10 @@ parse_new_job (AppData *app_data)
             recipe_data->remote_uri = remote_uri;
             recipe_data->body = g_string_new (NULL);
             recipe_data->app_data = app_data;
-            g_hash_table_insert(app_data->recipes, g_strdup((gchar*)wboard),
+            g_hash_table_insert(app_data->recipes, g_strdup((gchar*)recipe_id),
                                 recipe_data);
             g_free(remote);
         }
-        xmlFree(wboard);
         recipe_data->recipe_node_ptr = node;
         recipe_data->recipe_id = (gint)g_ascii_strtoll((gchar *)recipe_id,
                                                         NULL, 0);
@@ -962,8 +955,8 @@ parse_new_job (AppData *app_data)
     }
     g_hash_table_foreach_remove(app_data->recipes,
                                 (GHRFunc)&remove_extra_recipes,
-                                wboards);
-    g_slist_free_full(wboards, g_free);
+                                idlist);
+    g_slist_free_full(idlist, g_free);
     xmlXPathFreeObject (recipe_node_ptrs);
     g_free (filename);
 }
@@ -1100,7 +1093,7 @@ static gboolean add_recipe_host(const gchar *option_name, const gchar *value,
     }
 
     RecipeData *recipe_data = g_slice_new0(RecipeData);
-    recipe_data->body = g_string_new (NULL);
+    recipe_data->body = g_string_new(NULL);
     recipe_data->remote_uri = remote_uri;
     recipe_data->app_data = app_data;
     g_hash_table_insert(app_data->recipes, args[0], recipe_data);
@@ -1112,7 +1105,7 @@ cleanup:
     return result;
 }
 
-static void recipe_add_handlers(gchar *wboard, RecipeData *recipe_data,
+static void recipe_add_handlers(gchar *id, RecipeData *recipe_data,
                                 AppData *app_data)
 {
     gchar *recipe_path = g_strdup_printf("/recipes/%d",
@@ -1127,7 +1120,7 @@ static void recipe_add_handlers(gchar *wboard, RecipeData *recipe_data,
     g_free(task_path);
 }
 
-static void recipe_init(gchar *wboard, RecipeData *recipe_data,
+static void recipe_init(gchar *id, RecipeData *recipe_data,
                         gpointer *user_data)
 {
     // Request to run the recipe.

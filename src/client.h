@@ -23,7 +23,7 @@ struct _AppData;
 typedef struct {
     xmlNodePtr recipe_node_ptr;
     GHashTable *tasks;
-    gint recipe_id;
+    guint recipe_id;
     SoupURI *remote_uri;
     SoupMessage *remote_msg;
     struct _AppData *app_data;
