@@ -652,6 +652,7 @@ find_next_dir (gchar *basename, guint *recipe_id)
 
 static void abort_recipe(RecipeData *recipe_data)
 {
+    AppData *app_data = recipe_data->app_data;
     GHashTableIter iter;
     xmlNodePtr task_node;
 
@@ -662,6 +663,12 @@ static void abort_recipe(RecipeData *recipe_data)
     while (g_hash_table_iter_next(&iter, NULL, (gpointer *)&task_node)) {
         xmlSetProp(task_node, (xmlChar*)"status", (xmlChar*)"Aborted");
     }
+
+    if (tasks_finished(app_data->recipes))
+        g_idle_add_full (G_PRIORITY_LOW,
+                         quit_loop_handler,
+                         app_data->loop,
+                         NULL);
 }
 
 static void
