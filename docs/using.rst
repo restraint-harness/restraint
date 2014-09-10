@@ -51,7 +51,7 @@ You still need a job xml file which tells restraint what tasks should be run.  H
  <?xml version="1.0"?>
  <job>
    <recipeSet>
-     <recipe>
+     <recipe id="1">
        <task name="/kernel/performance/fs_mark">
          <fetch url="git://fedorapeople.org/home/fedora/bpeck/public_git/tests.git?master#kernel/performance/fs_mark"/>
        </task>
@@ -78,13 +78,13 @@ package installed on the machine you will be running the restraint command from
 
 Here is an example::
 
- % restraint --remote http://addressOfMyTestSystem.example.com:8081 --job /path/to/job.xml
+ % restraint --host 1=addressOfMyTestSystem.example.com:8081 --job /path/to/job.xml
 
 This will connect to restraintd running on addressOfMyTestSystem.example.com and tell it to run the recipe
-from this machine.  Also remember that the tasks which are referenced inside of the recipe
+with id="1" from this machine.  Also remember that the tasks which are referenced inside of the recipe
 need to be accessible as well. Here is the output::
 
- restraint --remote http://addressOfRemoteSystem:8081/ --job simple_job.xml -v
+ restraint --host 1=addressOfRemoteSystem:8081 --job simple_job.xml -v
  Using ./simple_job.07 for job run
  * Fetching recipe: http://192.168.1.198:8000/recipes/07/
  * Parsing recipe
@@ -122,7 +122,7 @@ First step is to run the following workflow to reserve a system in beaker::
 
  <job><whiteboard>restraint reservesys</whiteboard>
   <recipeSet>
-   <recipe ks_meta="harness=restraint">
+   <recipe ks_meta="harness=restraint" id="1">
     <distroRequires>
      <and>
       <distro_name op="=" value="Fedora-20"/>
@@ -148,7 +148,7 @@ the system.  You can extend it using extendtesttime.sh on the system.  Finally I
 instance of restraintd on port 8082 which you can then connect to with the restraint client running
 on your developer machine.::
 
- % restraint --remote http://FQDN.example.com:8082/ --job simple_job.xml
+ % restraint --host 1=FQDN.example.com:8082 --job simple_job.xml
 
 If the task you are developing doesn't work as expected you can make changes and try again.  Just
 remember to push your changes to git, the system under test will pull from the git url you put in your

@@ -16,20 +16,31 @@
 */
 
 #define READ_BUFFER_SIZE 131072
+#define DEFAULT_PORT 8081
+
+struct _AppData;
 
 typedef struct {
+    xmlNodePtr recipe_node_ptr;
+    GHashTable *tasks;
+    guint recipe_id;
+    SoupURI *remote_uri;
+    SoupMessage *remote_msg;
+    struct _AppData *app_data;
+    GString *body;
+} RecipeData;
+
+typedef struct _AppData {
     GError *error;
     GMainLoop *loop;
     xmlDocPtr xml_doc;
     gchar *run_dir;
     const gchar *address;
-    xmlNodePtr recipe_node_ptr;
-    GHashTable *tasks;
     GHashTable *result_states_to;
-    SoupURI *remote_uri;
-    gint recipe_id;
+    GHashTable *recipes;
     gint verbose;
-    GString *body;
-    SoupMessage *remote_msg;
     guint port;
+    SoupServer *server;
+    SoupAddressFamily address_family;
+    SoupURI *addr_get_uri;
 } AppData;

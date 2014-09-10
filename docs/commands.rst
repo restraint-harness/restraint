@@ -64,11 +64,12 @@ Used for stand alone execution
 
 Use the restraint command to run a job on a remote test machine running
 restraintd.  You can run them on the same machine but it is not recommended
-since some tasks reboot the system.  
+since some tasks reboot the system. Hosts are tied to recipe ids inside job
+xml.
 
 ::
 
- restraint --remote http://addressOfMyTestSystem.example.com:8081 --job /path/to/simple_job.xml
+ restraint --host 1=addressOfMyTestSystem.example.com:8081 --job /path/to/simple_job.xml
 
 Restraint will look for the next available directory to store the results in.
 In the above example it will see if the directory simple_job.01 exists.  If

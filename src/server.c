@@ -388,7 +388,7 @@ int main(int argc, char *argv[]) {
   AppData *app_data = g_slice_new0(AppData);
   gint port = 8081;
   app_data->config_file = NULL;
-  gchar *config_port = "config.conf";
+  gchar *config_port = g_strdup("config.conf");
   SoupServer *soup_server_ipv4 = NULL;
   SoupServer *soup_server_ipv6 = NULL;
   GError *error = NULL;
@@ -411,6 +411,7 @@ int main(int argc, char *argv[]) {
 
   // port option passed in.
   if (port != 8081) {
+      g_free(config_port);
       config_port = g_strdup_printf ("config_%d.conf", port);
   }
   app_data->restraint_url = g_strdup_printf ("http://localhost:%d", port);
@@ -520,6 +521,7 @@ int main(int argc, char *argv[]) {
   }
 
   restraint_free_app_data(app_data);
+  g_free(config_port);
 
   g_main_loop_unref(loop);
 
