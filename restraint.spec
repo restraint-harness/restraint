@@ -9,7 +9,7 @@
 %endif
 
 Name:		restraint
-Version:	0.1.16
+Version:	0.1.17
 Release:	1%{?dist}
 Summary:	Simple test harness which can be used with beaker
 
@@ -269,6 +269,93 @@ fi
 %{__rm} -rf %{buildroot}
 
 %changelog
+* Wed Sep 10 2014 Bill Peck <bpeck@redhat.com> 0.1.17-1
+- Include an xslt template which will convert job.xml to junit.xml
+  (bpeck@redhat.com)
+- Bug: 1077115, fix blatently stole from beah fix (bpeck@redhat.com)
+- If staf is installed then start it (bpeck@redhat.com)
+- RecipeData init while copying xml template. (asavkov@redhat.com)
+- Untie recipe_id from rundir_id. (asavkov@redhat.com)
+- Documentation update. (asavkov@redhat.com)
+- Creating task/params in copy_job_as_template(). (asavkov@redhat.com)
+- Quitting loop on last aborted task. (asavkov@redhat.com)
+- Switched to ids instead of wboards (asavkov@redhat.com)
+- copying "role" attr in copy_task_nodes() (asavkov@redhat.com)
+- "port" option fixed (asavkov@redhat.com)
+- restraint client use a single "server" (asavkov@redhat.com)
+- Log paths in job.xml fix (asavkov@redhat.com)
+- Fixed premature quit on a problem with a single recipe. (asavkov@redhat.com)
+- exit if failed to init recipe (asavkov@redhat.com)
+- Cleaning up extra whiteboards. (asavkov@redhat.com)
+- Default wboard value for recipes with undefined wb. (asavkov@redhat.com)
+- parse_new_job() wboard memleak fix (asavkov@redhat.com)
+- Initial mh support for restraint client. (asavkov@redhat.com)
+- restraintd: config_port memleak fix (asavkov@redhat.com)
+- Make find_recipe() return specific recipe. (asavkov@redhat.com)
+- Storing actual uri in recipe_hosts hash table. (asavkov@redhat.com)
+- Added host cmd line option to restraint client. (asavkov@redhat.com)
+- Merge pull request #12 from jstancek/ppc64le_v1 (bill@pecknet.com)
+- cmd_result tried to free a pointer returned by getenv in case when outputfile
+  is supplied by env variable. filename and outputfilename vars are now freed
+  in callback_outputfile prior to another allocation. (bpeck@redhat.com)
+- Fix segfault if task->metadata is NULL also fix parse_time_string to allow
+  for raw seconds to be passed in. (bpeck@redhat.com)
+- fix test_fetch_git to propagate error (bpeck@redhat.com)
+- Bunch of cmd_result fixes. (asavkov@redhat.com)
+- Bunch of cmd_log fixes. (asavkov@redhat.com)
+- Bunch of cmd_watchdog fixes. (asavkov@redhat.com)
+- Proper cleanup of parsed arguments. (asavkov@redhat.com)
+- Proper freeing of restraint client's AppData (asavkov@redhat.com)
+- Fixed xmlXPathObjectPtr leak in parse_new_job() (asavkov@redhat.com)
+- client.c multiple ghashtable memleaks fixed. (asavkov@redhat.com)
+- client.c multiple gobject memleaks fixed. (asavkov@redhat.com)
+- client.c multiple string memleaks fixed. (asavkov@redhat.com)
+- Move unref to after if statement since on error reqh will be none
+  (bpeck@redhat.com)
+- Update skipped tests when thttpd is not installed (bpeck@redhat.com)
+- Fix memory leaks in test_dependency test case (bpeck@redhat.com)
+- Merge pull request #8 from sm00th/memleaks (bill@pecknet.com)
+- Fixed premature g_clear_error() (asavkov@redhat.com)
+- Fixed infinite loop in task_handler() (bpeck@redhat.com)
+- Freeing task metadata on task free. (asavkov@redhat.com)
+- Added libsoup valgrind suppressions. (asavkov@redhat.com)
+- Freeing task_run_data in task_finish_plugin_callback() (asavkov@redhat.com)
+- Freeing server_data in plugin_finish_callback() (asavkov@redhat.com)
+- Fixed string leak in server_recipe_callback() (asavkov@redhat.com)
+- Fixed iochannel leak in process_run() (asavkov@redhat.com)
+- Fixed string leak in message_complete() (asavkov@redhat.com)
+- config.c error leak fix (asavkov@redhat.com)
+- fixed GHashTable leak in server_control_callback() (asavkov@redhat.com)
+- freeing temp string in restraint_task_watchdog() (asavkov@redhat.com)
+- recipe_handler() proper cleanup in RECIPE_RUNNING state (asavkov@redhat.com)
+- restraintd server graceful exit on termination. (asavkov@redhat.com)
+- Rework install_dependencies to make it so we can unit test it.
+  (bpeck@redhat.com)
+- restructure of metadata values (bpeck@redhat.com)
+- xmlparser free order fix in recipe_handler() (asavkov@redhat.com)
+- g_string memleak fix in recipe_handler and task_handler (asavkov@redhat.com)
+- add support for ppc64le (jstancek@redhat.com)
+- test_packages is covered under test_process (bpeck@redhat.com)
+- refactored async calls to be more like async calls. :-) (bpeck@redhat.com)
+- rework fetch_git code to be independent and use callbacks for logic.
+  (bpeck@redhat.com)
+- Update Authors file (bpeck@redhat.com)
+- Update TODO (bpeck@redhat.com)
+- fix memory leaks (bpeck@redhat.com)
+- fix uploading of result logs (bpeck@redhat.com)
+- minor cleanup.  we don't have to worry about initializing localwatchdog since
+  it's set in process_finish_callback and if we fail to fork it will get
+  asseted on success. (bpeck@redhat.com)
+- fix check target in Makefiles (bpeck@redhat.com)
+- Added local watchdog pass/fail to test_process.c
+  (jbieren@dhcp47-171.desklab.eng.bos.redhat.com)
+- Added test_process (bpeck@redhat.com)
+- Allow beaker lab controller and recipe variables to be overridden via cmdline
+  (bpeck@redhat.com)
+- Change rstrnt-report-result to use filename when -o is used.
+  (bpeck@redhat.com)
+- Updates using restraint docs. (bpeck@redhat.com)
+
 * Tue Jun 03 2014 Bill Peck <bpeck@redhat.com> 0.1.16-1
 - client package doesn't need the daemon to be installed. (bpeck@redhat.com)
 - fix possible memory leak when trying to open both ipv4 and ipv6 sockets
