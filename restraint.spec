@@ -235,6 +235,7 @@ fi
 
 %files client
 %attr(0755, root, root)%{_bindir}/%{name}
+/usr/share/%{name}/client/job2junit.xml
 /usr/share/%{name}/client/job2html.xml
 /usr/share/%{name}/client/bootstrap/LICENSE
 /usr/share/%{name}/client/bootstrap/README

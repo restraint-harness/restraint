@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<xsl:stylesheet version = "1.0"
+                xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+                xmlns:exsl="http://exslt.org/common"
+                extension-element-prefixes="exsl">
+
+ <xsl:output method="xml" indent="yes" cdata-section-elements="system-out error failure" />
+
+ <xsl:template match="/">
+   <xsl:apply-templates select="job/recipeSet/recipe"/>
+ </xsl:template>
+
+ <xsl:template match="job/recipeSet/recipe">
+  <testsuite>
+   <xsl:attribute name="id"><xsl:value-of select="@id"/></xsl:attribute>
+   <xsl:attribute name="name"><xsl:value-of select="@whiteboard"/></xsl:attribute>
+   <xsl:attribute name="tests"><xsl:value-of select="count(task) + count(task/results/result)"/></xsl:attribute>
+   <xsl:attribute name="failures"><xsl:value-of select="count(task[@status='Aborted'])"/></xsl:attribute>
+   <xsl:attribute name="errors"><xsl:value-of select="count(task[@result='FAIL']) + count(task/results/result[@result='FAIL'])"/></xsl:attribute>
+   <xsl:apply-templates select="task"/>
+  </testsuite>
+ </xsl:template>
+ 
+ <xsl:template match="task">
+    <xsl:variable name="classname" select="@name" />
+    <testcase classname="{$classname}">
+     <xsl:attribute name="name"><xsl:value-of select="@name"/></xsl:attribute>
+     <xsl:attribute name="status"><xsl:value-of select="@status"/></xsl:attribute>
+    <system-out>
+     <xsl:call-template name="logs"/>
+    </system-out>
+    </testcase>
+    <xsl:call-template name="results"/>
+ </xsl:template>
+
+ <xsl:template name="results">
+    <xsl:variable name="classname" select="@name" />
+    <xsl:variable name="status" select="@status"/>
+    <xsl:variable name="last" select="(results/result)[last()]"/>
+    <xsl:for-each select="results/result">
+     <xsl:variable name="name" select="substring-after(@path, $classname)"/>
+     <testcase classname="{$classname}">
+      <xsl:if test="$name = ''">
+       <xsl:attribute name="name"><xsl:value-of select="@path"/></xsl:attribute>
+      </xsl:if>
+      <xsl:if test="$name != ''">
+       <xsl:attribute name="name"><xsl:value-of select="$name"/></xsl:attribute>
+      </xsl:if>
+      <!--<xsl:attribute name="status"><xsl:value-of select="@score"/></xsl:attribute>-->
+
+      <!-- The last entry is the result of the Abort -->
+      <xsl:choose>
+       <xsl:when test="current() = $last">
+        <xsl:choose>
+         <xsl:when test="$status = 'Aborted'">
+          <failure type="{$status}">
+           <xsl:attribute name="message">
+            <xsl:value-of select="message"/>
+           </xsl:attribute>
+           <xsl:call-template name="logs"/>
+          </failure>
+         </xsl:when>
+         <xsl:when test="@result = 'FAIL' or @result = 'WARN'">
+          <error>
+           <xsl:attribute name="message">
+            <xsl:value-of select="message"/>
+           </xsl:attribute>
+            <xsl:call-template name="logs"/>
+          </error>
+         </xsl:when>
+         <xsl:otherwise>
+          <system-out>
+           <xsl:call-template name="logs"/>
+          </system-out>
+         </xsl:otherwise>
+        </xsl:choose>
+       </xsl:when>
+       <xsl:otherwise>
+        <xsl:choose>
+         <xsl:when test="@result = 'FAIL' or @result = 'WARN'">
+          <error>
+           <xsl:attribute name="message">
+            <xsl:value-of select="message"/>
+           </xsl:attribute>
+            <xsl:call-template name="logs"/>
+          </error>
+         </xsl:when>
+         <xsl:otherwise>
+          <system-out>
+           <xsl:call-template name="logs"/>
+          </system-out>
+         </xsl:otherwise>
+        </xsl:choose>
+       </xsl:otherwise>
+      </xsl:choose>
+     </testcase>
+    </xsl:for-each>
+ </xsl:template>
+
+ <xsl:template name="logs">
+  Logs:
+  <xsl:for-each select="logs/log">
+    <xsl:value-of select="@path"/>
+  </xsl:for-each>
+ </xsl:template>
+</xsl:stylesheet>
