@@ -1240,7 +1240,7 @@ int main(int argc, char *argv[]) {
         { "run", 'r', 0, G_OPTION_ARG_STRING, &app_data->run_dir,
             "Continue interrupted job from DIR", "DIR" },
         { "host", 't', 0, G_OPTION_ARG_CALLBACK, &add_recipe_host,
-            "Set host for a recipe with specific witeboard.",
+            "Set host for a recipe with specific id.",
             "<recipe_id>=<host>[:<port>]" },
         { "verbose", 'v', G_OPTION_FLAG_NO_ARG, G_OPTION_ARG_CALLBACK,
             callback_parse_verbose, "Increase verbosity, up to three times.",
