@@ -41,7 +41,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'restraint'
-copyright = u'2014, Bill Peck, Dan Callaghan, Jeff Bastian'
+copyright = u'2014, Bill Peck, Dan Callaghan, Jeff Bastian, Artem Savkov'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
