@@ -797,7 +797,8 @@ new_job ()
 
 static xmlNodePtr
 new_recipe (xmlDocPtr xml_doc_ptr, guint recipe_id,
-            xmlNodePtr recipe_set_node_ptr, const xmlChar *wboard)
+            xmlNodePtr recipe_set_node_ptr, const xmlChar *wboard,
+            const xmlChar *role)
 {
     xmlNodePtr recipe_node_ptr = xmlNewTextChild (recipe_set_node_ptr,
                                        NULL,
@@ -809,6 +810,9 @@ new_recipe (xmlDocPtr xml_doc_ptr, guint recipe_id,
     xmlSetProp (recipe_node_ptr, (xmlChar *)"result", (xmlChar *) "None");
     if (wboard != NULL) {
         xmlSetProp(recipe_node_ptr, (xmlChar *)"whiteboard", wboard);
+    }
+    if (role != NULL) {
+        xmlSetProp(recipe_node_ptr, (xmlChar *)"role", role);
     }
     g_free(new_id);
     return recipe_node_ptr;
@@ -872,6 +876,34 @@ static RecipeData *new_recipe_data(AppData *app_data, gchar *recipe_id)
     return recipe_data;
 }
 
+static guint get_node_role(xmlNodePtr node, GHashTable *roletable,
+                         RecipeData *recipe_data)
+{
+    xmlChar *role = xmlGetNoNsProp(node, (xmlChar*)"role");
+
+    if (role != NULL) {
+        gchar *host = (gchar*)soup_uri_get_host(recipe_data->remote_uri);
+        GSList *hostlist = g_hash_table_lookup(roletable, role);
+        if (hostlist == NULL) {
+            hostlist = g_slist_prepend(hostlist, host);
+            g_hash_table_insert(roletable, g_strdup((gchar*)role),
+                                hostlist);
+        } else {
+            if (g_slist_find_custom(hostlist, host,
+                        (GCompareFunc)g_strcmp0) == NULL) {
+                GSList *tmp_list = g_slist_copy(hostlist);
+                tmp_list = g_slist_prepend(tmp_list, host);
+                g_hash_table_replace(roletable,
+                                     g_strdup((gchar*)role),
+                                     tmp_list);
+            }
+        }
+        xmlFree(role);
+        return 1;
+    }
+    return 0;
+}
+
 static gchar *copy_job_as_template(gchar *job, AppData *app_data)
 {
     guint recipe_id = 1;
@@ -910,13 +942,21 @@ static gchar *copy_job_as_template(gchar *job, AppData *app_data)
         xmlNodePtr node = recipe_nodes->nodesetval->nodeTab[i];
         xmlChar *wboard = xmlGetNoNsProp(node, (xmlChar*)"whiteboard");
         xmlChar *id = xmlGetNoNsProp(node, (xmlChar*)"id");
+        xmlChar *role = xmlGetNoNsProp(node, (xmlChar*)"role");
+        RecipeData *recipe_data = g_hash_table_lookup(app_data->recipes,
+                                                      id);
+        if (recipe_data == NULL) {
+            recipe_data = new_recipe_data(app_data, (gchar*)id);
+        }
+
+        guint recipe_role = get_node_role(node, roletable, recipe_data);
         if (id != NULL) {
             recipe_id = (guint)g_ascii_strtoull((gchar*)id, NULL, 0);
         } else {
             id = (xmlChar*)g_strdup_printf ("%u", recipe_id);
         }
         xmlNodePtr new_recipe_ptr = new_recipe(new_xml_doc_ptr, recipe_id++,
-                                               recipe_set_node_ptr, wboard);
+                                       recipe_set_node_ptr, wboard, role);
 
         // find task nodes
         xmlXPathObjectPtr task_nodes = get_node_set(template_xml_doc_ptr,
@@ -925,39 +965,16 @@ static gchar *copy_job_as_template(gchar *job, AppData *app_data)
             copy_task_nodes(task_nodes->nodesetval, template_xml_doc_ptr,
                             new_xml_doc_ptr, new_recipe_ptr);
 
-            RecipeData *recipe_data = g_hash_table_lookup(app_data->recipes,
-                                                          id);
-            if (recipe_data == NULL) {
-                recipe_data = new_recipe_data(app_data, (gchar*)id);
-            }
-
             for (guint j = 0; j < task_nodes->nodesetval->nodeNr; j++) {
                 xmlNodePtr tnode = task_nodes->nodesetval->nodeTab[j];
-                xmlChar *role = xmlGetNoNsProp(tnode, (xmlChar*)"role");
-                if (role != NULL) {
-                    gchar *host = (gchar*)soup_uri_get_host(
-                            recipe_data->remote_uri);
-                    GSList *hostlist = g_hash_table_lookup(roletable, role);
-                    if (hostlist == NULL) {
-                        hostlist = g_slist_prepend(hostlist, host);
-                        g_hash_table_insert(roletable, g_strdup((gchar*)role),
-                                            hostlist);
-                    } else {
-                        if (g_slist_find_custom(hostlist, host,
-                                    (GCompareFunc)g_strcmp0) == NULL) {
-                            GSList *tmp_list = g_slist_copy(hostlist);
-                            tmp_list = g_slist_prepend(tmp_list, host);
-                            g_hash_table_replace(roletable,
-                                                 g_strdup((gchar*)role),
-                                                 tmp_list);
-                        }
-                    }
-                    xmlFree(role);
+                if (recipe_role == 0) {
+                    get_node_role(tnode, roletable, recipe_data);
                 }
             }
         }
 
         xmlXPathFreeObject(task_nodes);
+        xmlFree(role);
         xmlFree(wboard);
         xmlFree(id);
     }
