@@ -122,5 +122,5 @@ For SysV init based systems use the following commands::
  Enable the service for next reboot
  # chkconfig --level 345 restraintd on
  Start the service now
- # service restraind start
+ # service restraintd start
 
