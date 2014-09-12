@@ -10,7 +10,7 @@
 
 Name:		restraint
 Version:	0.1.17
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Simple test harness which can be used with beaker
 
 Group:		Applications/Internet
@@ -269,6 +269,12 @@ fi
 %{__rm} -rf %{buildroot}
 
 %changelog
+* Fri Sep 12 2014 Bill Peck <bpeck@redhat.com> 0.1.17-2
+- Update Authors (bpeck@redhat.com)
+- Recipe roles in client. (asavkov@redhat.com)
+- Fix duplicate task/params in client. (asavkov@redhat.com)
+- fix restraint client help (bpeck@redhat.com)
+
 * Wed Sep 10 2014 Bill Peck <bpeck@redhat.com> 0.1.17-1
 - Include an xslt template which will convert job.xml to junit.xml
   (bpeck@redhat.com)
