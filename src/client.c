@@ -797,7 +797,8 @@ new_job ()
 
 static xmlNodePtr
 new_recipe (xmlDocPtr xml_doc_ptr, guint recipe_id,
-            xmlNodePtr recipe_set_node_ptr, const xmlChar *wboard)
+            xmlNodePtr recipe_set_node_ptr, const xmlChar *wboard,
+            const xmlChar *role)
 {
     xmlNodePtr recipe_node_ptr = xmlNewTextChild (recipe_set_node_ptr,
                                        NULL,
@@ -810,23 +811,48 @@ new_recipe (xmlDocPtr xml_doc_ptr, guint recipe_id,
     if (wboard != NULL) {
         xmlSetProp(recipe_node_ptr, (xmlChar *)"whiteboard", wboard);
     }
+    if (role != NULL) {
+        xmlSetProp(recipe_node_ptr, (xmlChar *)"role", role);
+    }
     g_free(new_id);
     return recipe_node_ptr;
 }
 
-static void make_r_params_node(gchar *role, GSList *hostlist,
-        xmlNodePtr r_params)
+static void add_r_params(gchar *role, GSList *hostlist,
+                         xmlNodePtr r_params)
 {
     gchar *hoststr = NULL;
     gchar **hostarr = g_new0(gchar *, g_slist_length(hostlist) + 1);
     gchar **p = hostarr;
-    xmlNodePtr param = xmlNewChild(r_params, NULL, (xmlChar*)"param", NULL);
-    xmlSetProp(param, (xmlChar*)"name", (xmlChar*)role);
+    xmlNodePtr param = NULL;
 
     for (GSList *host = hostlist; host != NULL; host = g_slist_next(host)) {
         *p++ = host->data;
     }
     hoststr = g_strjoinv(" ", hostarr);
+
+    xmlNode *child = r_params->children;
+    while (child != NULL) {
+        if (child->type == XML_ELEMENT_NODE &&
+                g_strcmp0((gchar *)child->name, "param") == 0) {
+            xmlChar *name = xmlGetNoNsProp(child, (xmlChar*)"name");
+            if (g_strcmp0((gchar*)name, role) == 0) {
+                param = child;
+            }
+
+            xmlFree(name);
+            if (param != NULL) {
+                break;
+            }
+        }
+        child = child->next;
+    }
+
+    if (param == NULL) {
+        param = xmlNewChild(r_params, NULL, (xmlChar*)"param",
+                                       NULL);
+    }
+    xmlSetProp(param, (xmlChar*)"name", (xmlChar*)role);
     xmlSetProp(param, (xmlChar*)"value", (xmlChar*)hoststr);
 
     g_free(hoststr);
@@ -848,6 +874,34 @@ static RecipeData *new_recipe_data(AppData *app_data, gchar *recipe_id)
     g_free(remote);
 
     return recipe_data;
+}
+
+static guint get_node_role(xmlNodePtr node, GHashTable *roletable,
+                         RecipeData *recipe_data)
+{
+    xmlChar *role = xmlGetNoNsProp(node, (xmlChar*)"role");
+
+    if (role != NULL) {
+        gchar *host = (gchar*)soup_uri_get_host(recipe_data->remote_uri);
+        GSList *hostlist = g_hash_table_lookup(roletable, role);
+        if (hostlist == NULL) {
+            hostlist = g_slist_prepend(hostlist, host);
+            g_hash_table_insert(roletable, g_strdup((gchar*)role),
+                                hostlist);
+        } else {
+            if (g_slist_find_custom(hostlist, host,
+                        (GCompareFunc)g_strcmp0) == NULL) {
+                GSList *tmp_list = g_slist_copy(hostlist);
+                tmp_list = g_slist_prepend(tmp_list, host);
+                g_hash_table_replace(roletable,
+                                     g_strdup((gchar*)role),
+                                     tmp_list);
+            }
+        }
+        xmlFree(role);
+        return 1;
+    }
+    return 0;
 }
 
 static gchar *copy_job_as_template(gchar *job, AppData *app_data)
@@ -888,13 +942,21 @@ static gchar *copy_job_as_template(gchar *job, AppData *app_data)
         xmlNodePtr node = recipe_nodes->nodesetval->nodeTab[i];
         xmlChar *wboard = xmlGetNoNsProp(node, (xmlChar*)"whiteboard");
         xmlChar *id = xmlGetNoNsProp(node, (xmlChar*)"id");
+        xmlChar *role = xmlGetNoNsProp(node, (xmlChar*)"role");
+        RecipeData *recipe_data = g_hash_table_lookup(app_data->recipes,
+                                                      id);
+        if (recipe_data == NULL) {
+            recipe_data = new_recipe_data(app_data, (gchar*)id);
+        }
+
+        guint recipe_role = get_node_role(node, roletable, recipe_data);
         if (id != NULL) {
             recipe_id = (guint)g_ascii_strtoull((gchar*)id, NULL, 0);
         } else {
             id = (xmlChar*)g_strdup_printf ("%u", recipe_id);
         }
         xmlNodePtr new_recipe_ptr = new_recipe(new_xml_doc_ptr, recipe_id++,
-                                               recipe_set_node_ptr, wboard);
+                                       recipe_set_node_ptr, wboard, role);
 
         // find task nodes
         xmlXPathObjectPtr task_nodes = get_node_set(template_xml_doc_ptr,
@@ -903,46 +965,23 @@ static gchar *copy_job_as_template(gchar *job, AppData *app_data)
             copy_task_nodes(task_nodes->nodesetval, template_xml_doc_ptr,
                             new_xml_doc_ptr, new_recipe_ptr);
 
-            RecipeData *recipe_data = g_hash_table_lookup(app_data->recipes,
-                                                          id);
-            if (recipe_data == NULL) {
-                recipe_data = new_recipe_data(app_data, (gchar*)id);
-            }
-
             for (guint j = 0; j < task_nodes->nodesetval->nodeNr; j++) {
                 xmlNodePtr tnode = task_nodes->nodesetval->nodeTab[j];
-                xmlChar *role = xmlGetNoNsProp(tnode, (xmlChar*)"role");
-                if (role != NULL) {
-                    gchar *host = (gchar*)soup_uri_get_host(
-                            recipe_data->remote_uri);
-                    GSList *hostlist = g_hash_table_lookup(roletable, role);
-                    if (hostlist == NULL) {
-                        hostlist = g_slist_prepend(hostlist, host);
-                        g_hash_table_insert(roletable, g_strdup((gchar*)role),
-                                            hostlist);
-                    } else {
-                        if (g_slist_find_custom(hostlist, host,
-                                    (GCompareFunc)g_strcmp0) == NULL) {
-                            GSList *tmp_list = g_slist_copy(hostlist);
-                            tmp_list = g_slist_prepend(tmp_list, host);
-                            g_hash_table_replace(roletable,
-                                                 g_strdup((gchar*)role),
-                                                 tmp_list);
-                        }
-                    }
-                    xmlFree(role);
+                if (recipe_role == 0) {
+                    get_node_role(tnode, roletable, recipe_data);
                 }
             }
         }
 
         xmlXPathFreeObject(task_nodes);
+        xmlFree(role);
         xmlFree(wboard);
         xmlFree(id);
     }
 
     xmlNodePtr r_params = xmlNewDocNode(new_xml_doc_ptr, NULL,
                                         (xmlChar*)"params", NULL);
-    g_hash_table_foreach(roletable, (GHFunc)make_r_params_node, r_params);
+    g_hash_table_foreach(roletable, (GHFunc)add_r_params, r_params);
 
     xmlXPathFreeObject(recipe_nodes);
     recipe_nodes = get_node_set(new_xml_doc_ptr, NULL,
@@ -954,8 +993,15 @@ static gchar *copy_job_as_template(gchar *job, AppData *app_data)
                 rnode, (xmlChar*)"task");
         if (task_nodes) {
             for (guint j = 0; j < task_nodes->nodesetval->nodeNr; j++) {
-                xmlAddChild(task_nodes->nodesetval->nodeTab[j],
-                            xmlCopyNode(r_params, 1));
+                xmlNodePtr tnode = task_nodes->nodesetval->nodeTab[j];
+                xmlNodePtr t_params = first_child_with_name(tnode, "params",
+                                                            FALSE);
+                if (t_params == NULL) {
+                    xmlAddChild(tnode, xmlCopyNode(r_params, 1));
+                } else {
+                    g_hash_table_foreach(roletable, (GHFunc)add_r_params,
+                                         t_params);
+                }
             }
         }
         xmlXPathFreeObject(task_nodes);
