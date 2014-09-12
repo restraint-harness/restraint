@@ -814,19 +814,41 @@ new_recipe (xmlDocPtr xml_doc_ptr, guint recipe_id,
     return recipe_node_ptr;
 }
 
-static void make_r_params_node(gchar *role, GSList *hostlist,
-        xmlNodePtr r_params)
+static void add_r_params(gchar *role, GSList *hostlist,
+                         xmlNodePtr r_params)
 {
     gchar *hoststr = NULL;
     gchar **hostarr = g_new0(gchar *, g_slist_length(hostlist) + 1);
     gchar **p = hostarr;
-    xmlNodePtr param = xmlNewChild(r_params, NULL, (xmlChar*)"param", NULL);
-    xmlSetProp(param, (xmlChar*)"name", (xmlChar*)role);
+    xmlNodePtr param = NULL;
 
     for (GSList *host = hostlist; host != NULL; host = g_slist_next(host)) {
         *p++ = host->data;
     }
     hoststr = g_strjoinv(" ", hostarr);
+
+    xmlNode *child = r_params->children;
+    while (child != NULL) {
+        if (child->type == XML_ELEMENT_NODE &&
+                g_strcmp0((gchar *)child->name, "param") == 0) {
+            xmlChar *name = xmlGetNoNsProp(child, (xmlChar*)"name");
+            if (g_strcmp0((gchar*)name, role) == 0) {
+                param = child;
+            }
+
+            xmlFree(name);
+            if (param != NULL) {
+                break;
+            }
+        }
+        child = child->next;
+    }
+
+    if (param == NULL) {
+        param = xmlNewChild(r_params, NULL, (xmlChar*)"param",
+                                       NULL);
+    }
+    xmlSetProp(param, (xmlChar*)"name", (xmlChar*)role);
     xmlSetProp(param, (xmlChar*)"value", (xmlChar*)hoststr);
 
     g_free(hoststr);
@@ -942,7 +964,7 @@ static gchar *copy_job_as_template(gchar *job, AppData *app_data)
 
     xmlNodePtr r_params = xmlNewDocNode(new_xml_doc_ptr, NULL,
                                         (xmlChar*)"params", NULL);
-    g_hash_table_foreach(roletable, (GHFunc)make_r_params_node, r_params);
+    g_hash_table_foreach(roletable, (GHFunc)add_r_params, r_params);
 
     xmlXPathFreeObject(recipe_nodes);
     recipe_nodes = get_node_set(new_xml_doc_ptr, NULL,
@@ -954,8 +976,15 @@ static gchar *copy_job_as_template(gchar *job, AppData *app_data)
                 rnode, (xmlChar*)"task");
         if (task_nodes) {
             for (guint j = 0; j < task_nodes->nodesetval->nodeNr; j++) {
-                xmlAddChild(task_nodes->nodesetval->nodeTab[j],
-                            xmlCopyNode(r_params, 1));
+                xmlNodePtr tnode = task_nodes->nodesetval->nodeTab[j];
+                xmlNodePtr t_params = first_child_with_name(tnode, "params",
+                                                            FALSE);
+                if (t_params == NULL) {
+                    xmlAddChild(tnode, xmlCopyNode(r_params, 1));
+                } else {
+                    g_hash_table_foreach(roletable, (GHFunc)add_r_params,
+                                         t_params);
+                }
             }
         }
         xmlXPathFreeObject(task_nodes);
