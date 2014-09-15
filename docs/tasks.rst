@@ -72,7 +72,7 @@ multiple packages with ;
 no_localwatchdog
 ~~~~~~~~~~~~~~~~
 
-Normally resatraint will setup a localwatchdog which will attempt to recover from a hung task 
+Normally restraint will setup a localwatchdog which will attempt to recover from a hung task 
 before the external watchdog (if running under beaker) triggers.  But you can tell restraint to
 not setup a localwatchdog monitor by including this key with a value of true. Only true or false are
 valid values.
