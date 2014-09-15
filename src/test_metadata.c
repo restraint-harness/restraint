@@ -137,6 +137,10 @@ static void test_metadata_dependencies(void) {
     dependency = g_slist_nth_data(metadata->dependencies, 11);
     g_assert_cmpstr(dependency, ==, "lib-virt");
 
+    filename = "test-data/parse_metadata/dependencies/metadata-no-deps";
+    metadata = restraint_parse_metadata(filename, osmajor, &error);
+    g_assert_no_error (error);
+
     restraint_metadata_free (metadata);
 }
 

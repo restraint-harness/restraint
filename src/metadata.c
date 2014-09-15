@@ -118,11 +118,15 @@ restraint_parse_metadata (gchar *filename,
                                                             &length,
                                                             &tmp_error);
     gchar **dependency = dependencies;
-    while (*dependency) {
+    if (dependency) {
+      while (*dependency) {
         metadata->dependencies = g_slist_prepend (metadata->dependencies, g_strdup(*dependency));
         dependency++;
+      }
+      g_strfreev (dependencies);
     }
-    g_strfreev (dependencies);
+    else
+      metadata->dependencies = NULL;
 
     if (tmp_error && tmp_error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND) {
         g_propagate_error(error, tmp_error);
