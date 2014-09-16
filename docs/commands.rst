@@ -158,6 +158,16 @@ be easily navigated with a browser to investigate results and logs.
 ::
 
  xsltproc job2html.xml simple_job.07/job.xml > simple_job.07/index.html
+ 
+job2junit.xml
+-------------
+an xslt template to convert the stand alone job.xml into junit results.
+
+Here is an example to covert a job run xml into junit results.
+
+::
+
+ xsltproc job2junit.xml simple_job.07/job.xml > simple_job.07/junit.xml
 
 Legacy RHTS Commands
 --------------------
