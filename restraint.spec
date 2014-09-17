@@ -10,7 +10,7 @@
 
 Name:		restraint
 Version:	0.1.17
-Release:	2%{?dist}
+Release:	3%{?dist}
 Summary:	Simple test harness which can be used with beaker
 
 Group:		Applications/Internet
@@ -269,6 +269,15 @@ fi
 %{__rm} -rf %{buildroot}
 
 %changelog
+* Wed Sep 17 2014 Bill Peck <bpeck@redhat.com> 0.1.17-3
+- Fixed client segfault on xml without recipe ids. (asavkov@redhat.com)
+- Fix typo in restraint word (gsr@redhat.com)
+- Handle no dependencies in metadata correctly (asaha@redhat.com)
+- Minor fix in the install from sources doc (asaha@redhat.com)
+- Fix typo in service start command. (gsr@redhat.com)
+- Restraint command to convert the stand alone job.xml to junit results.
+  (gsr@redhat.com)
+
 * Fri Sep 12 2014 Bill Peck <bpeck@redhat.com> 0.1.17-2
 - Update Authors (bpeck@redhat.com)
 - Recipe roles in client. (asavkov@redhat.com)
