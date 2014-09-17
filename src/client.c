@@ -943,6 +943,13 @@ static gchar *copy_job_as_template(gchar *job, AppData *app_data)
         xmlChar *wboard = xmlGetNoNsProp(node, (xmlChar*)"whiteboard");
         xmlChar *id = xmlGetNoNsProp(node, (xmlChar*)"id");
         xmlChar *role = xmlGetNoNsProp(node, (xmlChar*)"role");
+
+        if (id != NULL) {
+            recipe_id = (guint)g_ascii_strtoull((gchar*)id, NULL, 0);
+        } else {
+            id = (xmlChar*)g_strdup_printf ("%u", recipe_id);
+        }
+
         RecipeData *recipe_data = g_hash_table_lookup(app_data->recipes,
                                                       id);
         if (recipe_data == NULL) {
@@ -950,11 +957,6 @@ static gchar *copy_job_as_template(gchar *job, AppData *app_data)
         }
 
         guint recipe_role = get_node_role(node, roletable, recipe_data);
-        if (id != NULL) {
-            recipe_id = (guint)g_ascii_strtoull((gchar*)id, NULL, 0);
-        } else {
-            id = (xmlChar*)g_strdup_printf ("%u", recipe_id);
-        }
         xmlNodePtr new_recipe_ptr = new_recipe(new_xml_doc_ptr, recipe_id++,
                                        recipe_set_node_ptr, wboard, role);
 
