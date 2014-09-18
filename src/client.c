@@ -1351,7 +1351,10 @@ int main(int argc, char *argv[]) {
     soup_uri_free (control_uri);
     soup_session_send_message (session, address_msg);
     if (!SOUP_STATUS_IS_SUCCESSFUL(address_msg->status_code)) {
-        g_printerr ("%s\n", address_msg->reason_phrase);
+        g_set_error(&app_data->error, RESTRAINT_CLIENT_ERROR,
+                    address_msg->status_code,
+                    "Failed to determine own addr: %s.",
+                    address_msg->reason_phrase);
         goto cleanup;
     }
 
