@@ -81,13 +81,16 @@ restraint_task_fetch(AppData *app_data) {
 
     switch (task->fetch_method) {
         case TASK_FETCH_UNPACK:
-            if (g_strcmp0(soup_uri_get_scheme(task->fetch.url), "git") == 0) {
+        {
+            const char *scheme = soup_uri_get_scheme(task->fetch.url);
+            if (g_strcmp0(scheme, "git") == 0) {
                 restraint_fetch_git (task->fetch.url,
                                      task->path,
                                      archive_entry_callback,
                                      fetch_finish_callback,
                                      app_data);
-            } else if (g_strcmp0(soup_uri_get_scheme(task->fetch.url), "http") == 0) {
+            } else if (g_strcmp0(scheme, "http") == 0 ||
+                       g_strcmp0(scheme, "https") == 0 ) {
                 restraint_fetch_http (task->fetch.url,
                                       task->path,
                                       archive_entry_callback,
@@ -101,6 +104,7 @@ restraint_task_fetch(AppData *app_data) {
                 return;
             }
             break;
+        }
         case TASK_FETCH_INSTALL_PACKAGE:
             ;
             gchar *command = g_strdup_printf ("yum -y install %s", task->fetch.package_name);
