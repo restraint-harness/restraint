@@ -98,7 +98,6 @@ restraint_task_fetch(AppData *app_data) {
                              RESTRAINT_TASK_RUNNER_SCHEMA_ERROR,
                              "Unimplemented schema method %s", soup_uri_get_scheme(task->fetch.url));
                 fetch_finish_callback (error, app_data);
-                g_clear_error (&error);
                 return;
             }
             break;
@@ -120,7 +119,6 @@ restraint_task_fetch(AppData *app_data) {
                          RESTRAINT_TASK_RUNNER_FETCH_ERROR,
                          "Unknown fetch method");
             fetch_finish_callback (error, app_data);
-            g_clear_error (&error);
             g_return_if_reached();
     }
 }
