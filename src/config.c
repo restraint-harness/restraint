@@ -162,6 +162,22 @@ restraint_config_get_string (gchar *config_file, gchar *section, gchar *key, GEr
 }
 
 void
+restraint_config_trunc (gchar *config_file, GError **error)
+{
+    g_return_if_fail(config_file != NULL);
+
+    GError *tmp_error = NULL;
+
+    gchar *dirname = g_path_get_dirname (config_file);
+    g_mkdir_with_parents (dirname, 0755 /* drwxr-xr-x */);
+    g_free (dirname);
+
+    if (!g_file_set_contents (config_file, "", -1,  &tmp_error)) {
+        g_propagate_error (error, tmp_error);
+    }
+}
+
+void
 restraint_config_set (gchar *config_file, gchar *section, gchar *key, GError **error, GType type, ...)
 {
     g_return_if_fail(config_file != NULL);

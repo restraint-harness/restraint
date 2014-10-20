@@ -20,3 +20,4 @@ guint64 restraint_config_get_uint64 (gchar *config_file, gchar *section, gchar *
 gboolean restraint_config_get_boolean (gchar *config_file, gchar *section, gchar *key, GError **error);
 gchar *restraint_config_get_string (gchar *config_file, gchar *section, gchar *key, GError **error);
 void restraint_config_set (gchar *config_file, gchar *section, gchar *key, GError **error, GType type, ...);
+void restraint_config_trunc (gchar *config_file, GError **error);
