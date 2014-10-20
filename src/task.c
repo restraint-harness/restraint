@@ -561,7 +561,7 @@ void restraint_task_free(Task *task) {
 
 gboolean
 restraint_next_task (AppData *app_data, TaskSetupState task_state) {
-    Task *task = app_data->tasks->data;
+    Task *task = NULL;
 
     while ((app_data->tasks = g_list_next (app_data->tasks)) != NULL) {
         task = (Task *) app_data->tasks->data;
