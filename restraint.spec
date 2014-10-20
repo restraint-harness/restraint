@@ -152,7 +152,7 @@ if [ "$1" -le "1" ] ; then # First install
 # Enable restraintd by default
 /bin/systemctl enable restraintd.service >/dev/null 2>&1 || :
 %else
-chkconfig --level 345 restraintd on
+chkconfig --add restraintd
 %endif
 %if %{with_selinux_policy}
 semodule -i %{_datadir}/selinux/packages/%{name}/restraint.pp || :
