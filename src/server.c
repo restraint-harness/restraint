@@ -76,7 +76,7 @@ static void restraint_free_app_data(AppData *app_data)
 void connections_write (AppData *app_data, gchar *msg_data, gsize msg_len)
 {
     // Active parsed task?  Send the output to taskout.log via REST
-    if (app_data->tasks) {
+    if (app_data->tasks && ! g_cancellable_is_cancelled(app_data->cancellable)) {
         Task *task = (Task *) app_data->tasks->data;
         SoupURI *task_output_uri = soup_uri_new_with_base (task->task_uri, "logs/taskoutput.log");
         SoupMessage *server_msg = soup_message_new_from_uri ("PUT", task_output_uri);
@@ -247,6 +247,7 @@ server_msg_complete (SoupSession *session, SoupMessage *server_msg, gpointer use
                          0,
                          server_io_callback,
                          plugin_finish_callback,
+                         app_data->cancellable,
                          server_data);
             g_free (command);
         }
@@ -386,6 +387,7 @@ void term(int signum) {
 
 int main(int argc, char *argv[]) {
   AppData *app_data = g_slice_new0(AppData);
+  app_data->cancellable = g_cancellable_new ();
   gint port = 8081;
   app_data->config_file = NULL;
   gchar *config_port = g_strdup("config.conf");

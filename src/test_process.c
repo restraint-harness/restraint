@@ -51,6 +51,7 @@ static void test_process_success(void) {
                  0,
                  NULL,
                  process_finish_callback,
+                 NULL,
                  run_data);
 
     // run event loop while process is running.
@@ -76,6 +77,7 @@ static void test_process_failure(void) {
                  0,
                  NULL,
                  process_finish_callback,
+                 NULL,
                  run_data);
 
     // run event loop while process is running.
@@ -103,6 +105,7 @@ static void test_watchdog_success(void) {
                  maximumtime,
                  NULL,
                  process_finish_callback,
+                 NULL,
                  run_data);
     
     // run event loop while process is running.
@@ -132,6 +135,7 @@ static void test_watchdog_failure(void) {
                  maximumtime,
                  NULL,
                  process_finish_callback,
+                 NULL,
                  run_data);
     
     // run event loop while process is running.

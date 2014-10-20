@@ -33,6 +33,7 @@ typedef struct {
   GError *error;
   gchar *config_file;
   gchar *restraint_url;
+  GCancellable *cancellable;
 } AppData;
 
 typedef struct {

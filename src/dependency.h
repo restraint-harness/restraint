@@ -26,9 +26,10 @@ typedef struct {
     gboolean ignore_failed_install;
     GIOFunc io_callback;
     DependencyCallback finish_cb;
+    GCancellable *cancellable;
     gpointer user_data;
 } DependencyData;
 
 void restraint_install_dependencies (GSList *dependencies, gboolean ignore_failed_install,
                                      GIOFunc io_callback, DependencyCallback finish_cb,
-                                     gpointer user_data);
+                                     GCancellable *cancellable, gpointer user_data);
