@@ -34,9 +34,30 @@ SoupSession *soup_session;
 GMainLoop *loop;
 
 static void
-copy_header (const char *name, const char *value, gpointer dest_headers)
+copy_header (SoupURI *uri, const char *name, const char *value, gpointer dest_headers)
 {
+    SoupURI *old_uri = NULL;
+    SoupURI *new_uri = NULL;
+    gchar *just_path = NULL;
+    gchar *new_val = NULL;
+
+    if (g_strcmp0 (name, "Location") == 0) {
+        // convert value to URI
+        old_uri = soup_uri_new_with_base (uri, value);
+        // Get just the path and query
+        just_path = soup_uri_to_string (old_uri, TRUE);
+        // generate new uri with base plus path
+        new_uri = soup_uri_new_with_base (uri, just_path);
+        // convert to full url string
+        new_val = soup_uri_to_string (new_uri, FALSE);
+        soup_message_headers_append (dest_headers, name, new_val);
+        g_free (new_val);
+        g_free (just_path);
+        soup_uri_free (old_uri);
+        soup_uri_free (new_uri);
+    } else {
         soup_message_headers_append (dest_headers, name, value);
+    }
 }
 
 /**
@@ -191,11 +212,15 @@ server_msg_complete (SoupSession *session, SoupMessage *server_msg, gpointer use
     Task *task = app_data->tasks->data;
     GHashTable *table;
     gboolean no_plugins = FALSE;
+    SoupMessageHeadersIter iter;
+    const gchar *name, *value;
 
     //SOUP_STATUS_IS_SUCCESSFUL(server_msg->status_code
 
-    soup_message_headers_foreach (server_msg->response_headers, copy_header,
-                                  client_msg->response_headers);
+    soup_message_headers_iter_init (&iter, server_msg->response_headers);
+    while (soup_message_headers_iter_next (&iter, &name, &value))
+        copy_header (soup_message_get_uri (client_msg), name, value, client_msg->response_headers);
+
     if (server_msg->response_body->length) {
       SoupBuffer *request = soup_message_body_flatten (server_msg->response_body);
       soup_message_body_append_buffer (client_msg->response_body, request);
@@ -272,6 +297,8 @@ server_recipe_callback (SoupServer *server, SoupMessage *client_msg,
     AppData *app_data = (AppData *) data;
     SoupMessage *server_msg;
     SoupURI *server_uri;
+    SoupMessageHeadersIter iter;
+    const gchar *name, *value;
 
     ServerData *server_data = g_slice_new0 (ServerData);
     server_data->path = path;
@@ -306,8 +333,11 @@ server_recipe_callback (SoupServer *server, SoupMessage *client_msg,
     }
 
     soup_uri_free (server_uri);
-    soup_message_headers_foreach (client_msg->request_headers, copy_header,
-                                  server_msg->request_headers);
+
+    soup_message_headers_iter_init (&iter, client_msg->request_headers);
+    while (soup_message_headers_iter_next (&iter, &name, &value))
+        copy_header (soup_message_get_uri (server_msg), name, value, server_msg->request_headers);
+
     if (client_msg->request_body->length) {
       SoupBuffer *request = soup_message_body_flatten (client_msg->request_body);
       soup_message_body_append_buffer (server_msg->request_body, request);
