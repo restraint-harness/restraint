@@ -25,11 +25,10 @@
 #include "task.h"
 #include "errors.h"
 #include "config.h"
-#include "server.h"
 #include "process.h"
 #include "message.h"
+#include "server.h"
 
-#define MAX_RETRIES 5
 SoupSession *soup_session;
 GMainLoop *loop;
 
@@ -112,7 +111,12 @@ void connections_write (AppData *app_data, gchar *msg_data, gsize msg_len)
         soup_message_headers_append (server_msg->request_headers, "log-level", "2");
         soup_message_set_request (server_msg, "text/plain", SOUP_MEMORY_COPY, msg_data, msg_len);
 
-        restraint_queue_message (soup_session, server_msg, NULL, NULL);
+        app_data->queue_message (soup_session,
+                                 server_msg,
+                                 app_data->message_data,
+                                 NULL,
+                                 app_data->cancellable,
+                                 NULL);
 
         // Update config file with new taskout.log offset.
         restraint_config_set (app_data->config_file, task->task_id,
@@ -343,7 +347,16 @@ server_recipe_callback (SoupServer *server, SoupMessage *client_msg,
       soup_message_body_append_buffer (server_msg->request_body, request);
       soup_buffer_free (request);
     }
-    restraint_queue_message (soup_session, server_msg, server_msg_complete, server_data);
+
+    // Depending on how the recipe was started this will either issue a new connection back
+    // to the uri that started the recipe or it will use the existing client connection
+    // back to the restraint client.
+    app_data->queue_message (soup_session,
+                             server_msg,
+                             app_data->message_data,
+                             server_msg_complete,
+                             app_data->cancellable,
+                             server_data);
     soup_server_pause_message (server, client_msg);
 }
 
@@ -462,6 +475,7 @@ int main(int argc, char *argv[]) {
   if (app_data->recipe_url) {
     ServerData *server_data = g_slice_new0 (ServerData);
     server_data->app_data = app_data;
+    app_data->queue_message = (QueueMessage) restraint_queue_message;
     app_data->state = RECIPE_FETCH;
     app_data->recipe_handler_id = g_idle_add_full(G_PRIORITY_DEFAULT_IDLE,
                                                   recipe_handler,

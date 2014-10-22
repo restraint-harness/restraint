@@ -15,9 +15,20 @@
     along with Restraint.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-typedef void (*MessageFinishCallback)	(SoupSession *session,
+#ifndef _RESTRAINT_MESSAGE_H
+#define _RESTRAINT_MESSAGE_H
+
+typedef void (*MessageFinishCallback)   (SoupSession *session,
                                          SoupMessage *msg,
-                                         gpointer	user_data);
+                                         gpointer user_data);
+
+typedef void (*QueueMessage)	(SoupSession	*session,
+				 SoupMessage	*message,
+				 gpointer	message_data,
+				 MessageFinishCallback	callback,
+				 GCancellable   *cancellable,
+				 gpointer	user_data);
+typedef void (*CloseMessage)	(gpointer	message_data);
 
 typedef struct {
     // Session to use
@@ -34,5 +45,8 @@ typedef struct {
 
 void restraint_queue_message (SoupSession *session,
                               SoupMessage *msg,
+                              gpointer msg_data,
                               MessageFinishCallback finish_callback,
+                              GCancellable *cancellable,
                               gpointer user_data);
+#endif

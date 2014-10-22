@@ -498,7 +498,12 @@ restraint_task_status (Task *task, AppData *app_data, gchar *status, GError *rea
     soup_message_set_request(server_msg, "application/x-www-form-urlencoded",
             SOUP_MEMORY_TAKE, data, strlen(data));
 
-    restraint_queue_message(soup_session, server_msg, task_message_complete, app_data);
+    app_data->queue_message(soup_session,
+                            server_msg,
+                            app_data->message_data,
+                            task_message_complete,
+                            app_data->cancellable,
+                            app_data);
 }
 
 void
@@ -525,7 +530,12 @@ restraint_task_watchdog (Task *task, AppData *app_data, guint64 seconds)
     soup_message_set_request(server_msg, "application/x-www-form-urlencoded",
             SOUP_MEMORY_TAKE, data, strlen(data));
 
-    restraint_queue_message(soup_session, server_msg, task_message_complete, app_data);
+    app_data->queue_message(soup_session,
+                            server_msg,
+                            app_data->message_data,
+                            task_message_complete,
+                            app_data->cancellable,
+                            app_data);
 
     g_free(seconds_char);
 }

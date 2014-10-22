@@ -23,6 +23,7 @@
 #include <libsoup/soup.h>
 #include <pty.h>
 #include "recipe.h"
+#include "message.h"
 #include "server.h"
 #include "metadata.h"
 

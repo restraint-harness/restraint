@@ -17,7 +17,6 @@
 
 #include <glib.h>
 #include "recipe.h"
-#include "server.h"
 
 typedef void (*DependencyCallback)   (gpointer user_data, GError *error);
 

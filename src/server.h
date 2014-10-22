@@ -34,6 +34,9 @@ typedef struct {
   gchar *config_file;
   gchar *restraint_url;
   GCancellable *cancellable;
+  QueueMessage queue_message;
+  CloseMessage close_message;
+  gpointer message_data;
 } AppData;
 
 typedef struct {

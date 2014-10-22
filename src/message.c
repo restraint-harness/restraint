@@ -92,8 +92,12 @@ message_handler (gpointer data)
 }
 
 void
-restraint_queue_message (SoupSession *session, SoupMessage *msg,
-                     MessageFinishCallback finish_callback, gpointer user_data)
+restraint_queue_message (SoupSession *session,
+                         SoupMessage *msg,
+                         gpointer msg_data,
+                         MessageFinishCallback finish_callback,
+                         GCancellable *cancellable,
+                         gpointer user_data)
 {
     //g_print ("restraint_queue_message->enter\n");
     MessageData *message_data;
