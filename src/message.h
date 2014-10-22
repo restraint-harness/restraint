@@ -31,6 +31,13 @@ typedef void (*QueueMessage)	(SoupSession	*session,
 typedef void (*CloseMessage)	(gpointer	message_data);
 
 typedef struct {
+    const gchar *path;
+    SoupMessage *client_msg;
+    SoupServer *server;
+    gpointer user_data;
+} ClientData;
+
+typedef struct {
     // Session to use
     SoupSession *session;
     // message to send
@@ -49,4 +56,13 @@ void restraint_queue_message (SoupSession *session,
                               MessageFinishCallback finish_callback,
                               GCancellable *cancellable,
                               gpointer user_data);
+
+void restraint_append_message (SoupSession *session,
+                               SoupMessage *msg,
+                               gpointer msg_data,
+                               MessageFinishCallback finish_callback,
+                               GCancellable *cancellable,
+                               gpointer user_data);
+
+void restraint_close_message (gpointer msg_data);
 #endif
