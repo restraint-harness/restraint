@@ -37,14 +37,9 @@ typedef struct {
   QueueMessage queue_message;
   CloseMessage close_message;
   gpointer message_data;
+  guint finished_handler_id;
+  guint io_handler_id;
 } AppData;
-
-typedef struct {
-    const gchar *path;
-    AppData *app_data;
-    SoupMessage *client_msg;
-    SoupServer *server;
-} ServerData;
 
 void connections_write (AppData *app_data, gchar *msg_data, gsize msg_len);
 #endif
