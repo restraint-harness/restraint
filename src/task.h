@@ -28,7 +28,7 @@
 #include "metadata.h"
 
 #define DEFAULT_MAX_TIME 10 * 60 // default amount of time before local watchdog kills process
-#define HEARTBEAT 5 * 60 // heartbeat every 5 minutes
+#define HEARTBEAT 1 * 60 // heartbeat every 1 minute
 #define DEFAULT_ENTRY_POINT "make run"
 #define ENV_PREFIX "RSTRNT_"
 #define EWD_TIME 5 * 60 // amount of time to add to local watchdog for externl watchdog
