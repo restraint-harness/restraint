@@ -30,7 +30,7 @@ rstrnt-report-log: cmd_log.o upload.o utils.o errors.o
 rstrnt-adjust-watchdog: cmd_watchdog.o utils.o errors.o
 	$(CC) $(LDFLAFS) -o $@ $^ $(LIBS)
 
-restraint: client.o
+restraint: client.o multipart.o errors.o
 	$(CC) $(LDFLAFS) -o $@ $^ $(LIBS)
 
 restraintd: server.o recipe.o task.o fetch.o fetch_git.o fetch_http.o param.o role.o metadata.o process.o message.o dependency.o utils.o config.o errors.o
@@ -46,6 +46,7 @@ server.o: recipe.h task.h server.h
 expect_http.o: expect_http.h
 role.o: role.h
 client.o: client.h
+multipart.o: multipart.h
 process.o: process.h
 message.o: message.h
 dependency.o: dependency.h
