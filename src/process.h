@@ -15,6 +15,8 @@
     along with Restraint.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <gio/gio.h>
+
 typedef void (*ProcessFinishCallback)	(gint		pid_result,
 					 gboolean	localwatchdog,
 					 gpointer	user_data,
@@ -59,6 +61,8 @@ typedef struct {
     ProcessFinishCallback finish_callback;
     gpointer user_data;
     GError *error;
+    GCancellable *cancellable;
+    gulong cancel_handler;
 } ProcessData;
 
 void
@@ -68,6 +72,7 @@ process_run (const gchar *command,
                       guint64 max_time,
                       GIOFunc io_callback,
                       ProcessFinishCallback finish_callback,
+                      GCancellable *cancellable,
                       gpointer user_data);
 //gboolean process_io_callback (GIOChannel *io, GIOCondition condition, gpointer user_data);
 void process_pid_callback (GPid pid, gint status, gpointer user_data);

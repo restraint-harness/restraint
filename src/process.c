@@ -30,9 +30,14 @@ GQuark restraint_process_error (void)
     return g_quark_from_static_string("restraint-process-error-quark");
 }
 
+static void
+process_cancelled_cb (GCancellable *cancellable, gpointer user_data);
+
 void
 process_free (ProcessData *process_data)
 {
+    g_cancellable_disconnect (process_data->cancellable,
+                              process_data->cancel_handler);
     g_return_if_fail (process_data != NULL);
     g_clear_error (&process_data->error);
     g_strfreev (process_data->command);
@@ -70,6 +75,7 @@ process_run (const gchar *command,
              guint64 max_time,
              GIOFunc io_callback,
              ProcessFinishCallback finish_callback,
+             GCancellable *cancellable,
              gpointer user_data)
 {
     ProcessData *process_data;
@@ -88,6 +94,7 @@ process_run (const gchar *command,
     process_data->finish_callback = finish_callback;
     process_data->user_data = user_data;
     process_data->io = NULL;
+    process_data->cancellable = cancellable;
 
     process_data->pid = forkpty (&process_data->fd, NULL, NULL, &win);
     if (process_data->pid < 0) {
@@ -123,6 +130,14 @@ process_run (const gchar *command,
         }
     }
     /* Parent process. */
+
+    // If we get the cancel signal kill any running process
+    if (process_data->cancellable) {
+        process_data->cancel_handler = g_cancellable_connect (process_data->cancellable,
+                                                              G_CALLBACK(process_cancelled_cb),
+                                                              process_data,
+                                                              NULL);
+    }
 
     // close file descriptors on exec.  Should prevent leaking fd's to child processes.
     fcntl (process_data->fd, F_SETFD, FD_CLOEXEC);
@@ -222,4 +237,10 @@ process_timeout_callback (gpointer user_data)
     process_data->timeout_handler_id = 0;
 
     return FALSE;
+}
+
+static void
+process_cancelled_cb (GCancellable *cancellable, gpointer user_data)
+{
+    process_timeout_callback (user_data);
 }

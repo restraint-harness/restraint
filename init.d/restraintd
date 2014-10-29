@@ -2,7 +2,7 @@
 #
 # restraintd:	Start the restraint Harness server
 #
-# chkconfig:	- 98 10
+# chkconfig:	2345 98 10
 # description:	The restraint Harness server.
 
 # Source function library.
@@ -14,16 +14,14 @@ if [ -f /etc/sysconfig/$prog ]; then
     . /etc/sysconfig/$prog
 fi
 
-PIDFILE=/var/run/${prog}.pid
 LOCKFILE=/var/lock/subsys/$prog
 
 start() {
     check_beaker
     echo -n $"Starting $prog: "
-    daemon "(( $prog 3>&1 1>&2 2>&3 ) | tee /dev/console ) >> /var/log/restraintd.log 2>&1 &" 'echo $!' ">$PIDFILE"
+    daemon "(( $prog 3>&1 1>&2 2>&3 ) | tee /dev/console ) >> /var/log/restraintd.log 2>&1 &"
     RETVAL=$?
     echo
-    echo "$prog running as process `cat $PIDFILE`"
     if test $RETVAL = 0; then
         touch $LOCKFILE
     fi
@@ -32,11 +30,9 @@ start() {
 
 stop() {
     echo -n $"Stopping $prog: "
-    if ! killproc /usr/bin/restraintd; then
-        kill `cat $PIDFILE`
-    else
-        true
-    fi
+    for pid in $(pidof restraintd); do
+        kill $pid
+    done
     RETVAL=$?
     echo
     rm -f $LOCKFILE

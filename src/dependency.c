@@ -33,6 +33,8 @@ dependency_callback (gint pid_result, gboolean localwatchdog, gpointer user_data
 {
     DependencyData *dependency_data = (DependencyData *) user_data;
 
+    g_cancellable_set_error_if_cancelled (dependency_data->cancellable, &error);
+
     if (error) {
         dependency_data->finish_cb (dependency_data->user_data, error);
         g_slice_free (DependencyData, dependency_data);
@@ -74,6 +76,7 @@ dependency_handler (gpointer user_data)
                      0,
                      dependency_io_callback,
                      dependency_callback,
+                     dependency_data->cancellable,
                      dependency_data);
         g_free (command);
     } else {
@@ -90,6 +93,7 @@ restraint_install_dependencies (GSList *dependencies,
                                 gboolean ignore_failed_install,
                                 GIOFunc io_callback,
                                 DependencyCallback finish_cb,
+                                GCancellable *cancellable,
                                 gpointer user_data)
 {
     DependencyData *dependency_data;
@@ -99,6 +103,7 @@ restraint_install_dependencies (GSList *dependencies,
     dependency_data->ignore_failed_install = ignore_failed_install;
     dependency_data->io_callback = io_callback;
     dependency_data->finish_cb = finish_cb;
+    dependency_data->cancellable = cancellable;
 
     dependency_handler (dependency_data);
 }

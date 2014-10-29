@@ -17,12 +17,31 @@
 
 #include <glib.h>
 #include <libsoup/soup.h>
+#include <time.h>
 #include "message.h"
 
 static GQueue *message_queue = NULL;
 static gboolean queue_active = FALSE;
 
 static gboolean message_handler (gpointer data);
+
+static gboolean
+message_finish (gpointer user_data)
+{
+    MessageData *message_data = (MessageData *) user_data;
+    message_data->finish_callback (message_data->session,
+                                   message_data->msg,
+                                   message_data->user_data);
+    g_object_unref (message_data->msg);
+    return FALSE;
+}
+
+static void
+message_destroy (gpointer user_data)
+{
+    MessageData *message_data = (MessageData *) user_data;
+    g_slice_free (MessageData, message_data);
+}
 
 static void
 message_complete (SoupSession *sesison, SoupMessage *msg, gpointer user_data)
@@ -92,8 +111,12 @@ message_handler (gpointer data)
 }
 
 void
-restraint_queue_message (SoupSession *session, SoupMessage *msg,
-                     MessageFinishCallback finish_callback, gpointer user_data)
+restraint_queue_message (SoupSession *session,
+                         SoupMessage *msg,
+                         gpointer msg_data,
+                         MessageFinishCallback finish_callback,
+                         GCancellable *cancellable,
+                         gpointer user_data)
 {
     //g_print ("restraint_queue_message->enter\n");
     MessageData *message_data;
@@ -102,6 +125,16 @@ restraint_queue_message (SoupSession *session, SoupMessage *msg,
     message_data->session = session;
     message_data->user_data = user_data;
     message_data->finish_callback = finish_callback;
+
+    if (g_cancellable_is_cancelled (cancellable)) {
+        if (finish_callback) {
+            g_idle_add_full (G_PRIORITY_DEFAULT_IDLE,
+                             message_finish,
+                             message_data,
+                             message_destroy);
+        }
+        return;
+    }
 
     // Initialize the queue if needed
     if (!message_queue) {
@@ -121,4 +154,98 @@ restraint_queue_message (SoupSession *session, SoupMessage *msg,
         queue_active = TRUE;
     }
     //g_print ("restraint_queue_message->exit\n");
+}
+
+static void
+append_header (const char *name, const char *value, gpointer user_data)
+{
+    GString *body = (GString *) user_data;
+    g_string_append_printf (body, "%s: %s\n", name, value);
+}
+
+void
+restraint_close_message (gpointer msg_data)
+{
+    ClientData *client_data = (ClientData *) msg_data;
+    g_print ("[%p] Closing client\n", client_data->client_msg);
+    soup_message_body_append (client_data->client_msg->response_body,
+                              SOUP_MEMORY_STATIC,
+                              "\r\n--cut-here--\r\n",
+                              16);
+    soup_message_body_complete (client_data->client_msg->response_body);
+    soup_server_unpause_message (client_data->server, client_data->client_msg);
+}
+
+void
+restraint_append_message (SoupSession *session,
+                          SoupMessage *msg,
+                          gpointer msg_data,
+                          MessageFinishCallback finish_callback,
+                          GCancellable *cancellable,
+                          gpointer user_data)
+{
+    ClientData *client_data = (ClientData *) msg_data;
+    time_t result;
+    result = time(NULL);
+    static time_t transaction_id = 0;
+    // calculate the transaction id. base it off of epoch
+    // incase the host reboots we shouldn't collide
+    if (transaction_id == 0) {
+        transaction_id = result;
+    }
+    GString *body = g_string_new("\r\n--cut-here\n");
+    MessageData *message_data;
+    message_data = g_slice_new0 (MessageData);
+    message_data->msg = msg;
+    message_data->user_data = user_data;
+    message_data->finish_callback = finish_callback;
+
+    if (!g_cancellable_is_cancelled (cancellable)) {
+
+        SoupURI *uri = soup_message_get_uri (msg);
+        soup_message_headers_foreach (msg->request_headers, append_header,
+                                      body);
+        // if we are doing a POST transaction
+        // increment transaction_id and add it to headers
+        // populate Location header in msg->reponse_headers
+        const gchar *path = soup_uri_get_path (uri);
+        if (g_strcmp0 (msg->method, "POST") == 0) {
+            g_string_append_printf (body,
+                                    "transaction-id: %jd\n", (intmax_t) transaction_id);
+            gchar *location_url = g_strdup_printf ("%s%jd", path, (intmax_t) transaction_id);
+            soup_message_headers_append (msg->response_headers, "Location", location_url);
+            g_free (location_url);
+            transaction_id++;
+        }
+        soup_message_set_status (msg, SOUP_STATUS_OK);
+        g_string_append_printf (body,
+                                "rstrnt-path: %s\n"
+                                "rstrnt-method: %s\n"
+                                "Content-Length: %d\r\n\r\n",
+                                path,
+                                msg->method,
+                                (guint) msg->request_body->length);
+        SoupBuffer *request = soup_message_body_flatten (msg->request_body);
+        body = g_string_append_len (body, request->data,
+                                          request->length);
+        soup_buffer_free (request);
+
+        soup_message_body_append (client_data->client_msg->response_body,
+                                  SOUP_MEMORY_TAKE,
+                                  body->str, body->len);
+    
+        g_string_free (body, FALSE);
+    
+        soup_server_unpause_message (client_data->server, client_data->client_msg);
+    
+    }
+    if (finish_callback) {
+        g_idle_add_full (G_PRIORITY_DEFAULT_IDLE,
+                         message_finish,
+                         message_data,
+                         message_destroy);
+    } else {
+        g_object_unref (msg);
+        message_destroy (message_data);
+    }
 }

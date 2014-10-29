@@ -15,8 +15,8 @@
     along with Restraint.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#define READ_BUFFER_SIZE 131072
 #define DEFAULT_PORT 8081
+#define DEFAULT_DELAY 60
 
 struct _AppData;
 
@@ -35,7 +35,6 @@ typedef struct _AppData {
     GMainLoop *loop;
     xmlDocPtr xml_doc;
     gchar *run_dir;
-    const gchar *address;
     GHashTable *result_states_to;
     GHashTable *recipes;
     gint verbose;
@@ -43,4 +42,6 @@ typedef struct _AppData {
     SoupServer *server;
     SoupAddressFamily address_family;
     SoupURI *addr_get_uri;
+    GCancellable *cancellable;
+    gboolean started;
 } AppData;

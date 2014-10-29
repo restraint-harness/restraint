@@ -114,7 +114,7 @@ restraint_task_fetch(AppData *app_data) {
             task_run_data->pass_state = TASK_GEN_TESTINFO;
             task_run_data->fail_state = TASK_COMPLETE;
             process_run ((const gchar *)command, NULL, NULL, 0, task_io_callback, task_handler_callback,
-                         task_run_data);
+                         app_data->cancellable, task_run_data);
             g_free (command);
             break;
         default:
@@ -252,6 +252,7 @@ task_finish_callback (gint pid_result, gboolean localwatchdog, gpointer user_dat
                  0,
                  task_io_callback,
                  task_finish_plugins_callback,
+                 app_data->cancellable,
                  task_run_data);
     g_free (command);
 }
@@ -367,12 +368,13 @@ task_run (AppData *app_data)
         entry_point = g_strdup_printf ("%s %s", TASK_PLUGIN_SCRIPT, DEFAULT_ENTRY_POINT);
     }
     process_run ((const gchar *) entry_point,
-                      (const gchar **)task->env->pdata,
-                      task->path,
-                      task->remaining_time,
-                      task_io_callback,
-                      task_finish_callback,
-                      task_run_data);
+                 (const gchar **)task->env->pdata,
+                 task->path,
+                 task->remaining_time,
+                 task_io_callback,
+                 task_finish_callback,
+                 app_data->cancellable,
+                 task_run_data);
 
     g_free (entry_point);
 
@@ -498,7 +500,12 @@ restraint_task_status (Task *task, AppData *app_data, gchar *status, GError *rea
     soup_message_set_request(server_msg, "application/x-www-form-urlencoded",
             SOUP_MEMORY_TAKE, data, strlen(data));
 
-    restraint_queue_message(soup_session, server_msg, task_message_complete, app_data);
+    app_data->queue_message(soup_session,
+                            server_msg,
+                            app_data->message_data,
+                            task_message_complete,
+                            app_data->cancellable,
+                            app_data);
 }
 
 void
@@ -525,7 +532,12 @@ restraint_task_watchdog (Task *task, AppData *app_data, guint64 seconds)
     soup_message_set_request(server_msg, "application/x-www-form-urlencoded",
             SOUP_MEMORY_TAKE, data, strlen(data));
 
-    restraint_queue_message(soup_session, server_msg, task_message_complete, app_data);
+    app_data->queue_message(soup_session,
+                            server_msg,
+                            app_data->message_data,
+                            task_message_complete,
+                            app_data->cancellable,
+                            app_data);
 
     g_free(seconds_char);
 }
@@ -563,7 +575,7 @@ void restraint_task_free(Task *task) {
 
 gboolean
 restraint_next_task (AppData *app_data, TaskSetupState task_state) {
-    Task *task = app_data->tasks->data;
+    Task *task = NULL;
 
     while ((app_data->tasks = g_list_next (app_data->tasks)) != NULL) {
         task = (Task *) app_data->tasks->data;
@@ -572,12 +584,10 @@ restraint_next_task (AppData *app_data, TaskSetupState task_state) {
     }
 
     // No more tasks, let the recipe_handler know we are done.
-    ServerData *server_data = g_slice_new0 (ServerData);
-    server_data->app_data = app_data;
     app_data->state = RECIPE_COMPLETE;
     app_data->recipe_handler_id = g_idle_add_full(G_PRIORITY_DEFAULT_IDLE,
                                                   recipe_handler,
-                                                  server_data,
+                                                  app_data,
                                                   recipe_handler_finish);
     return FALSE;
 }
@@ -683,7 +693,7 @@ task_handler (gpointer user_data)
     case TASK_IDLE:
       // Read in previous state..
       if (parse_task_config (app_data->config_file, task, &task->error)) {
-          if (task->finished) {
+          if (task->finished || g_cancellable_is_cancelled (app_data->cancellable)) {
               // If the task is finished skip to the next task.
               task->state = TASK_NEXT;
           } else if (task->localwatchdog) {
@@ -736,6 +746,7 @@ task_handler (gpointer user_data)
                        0,
                        task_io_callback,
                        task_handler_callback,
+                       app_data->cancellable,
                        task_run_data);
 
           g_string_printf(message, "** Generating testinfo.desc\n");
@@ -804,8 +815,12 @@ task_handler (gpointer user_data)
           g_string_printf(message, "** Installing dependencies\n");
           TaskRunData *task_run_data = g_slice_new0(TaskRunData);
           task_run_data->app_data = app_data;
-          restraint_install_dependencies (task->metadata->dependencies, task->rhts_compat,
-                                          task_io_callback, dependency_finish_cb, task_run_data);
+          restraint_install_dependencies (task->metadata->dependencies,
+                                          task->rhts_compat,
+                                          task_io_callback,
+                                          dependency_finish_cb,
+                                          app_data->cancellable,
+                                          task_run_data);
           result=FALSE;
       }
       task->state = TASK_RUN;
@@ -816,21 +831,25 @@ task_handler (gpointer user_data)
       //       io_handler
       //       timeout_handler
       //       heartbeat_handler
-      g_string_printf(message, "** Running task: %s [%s]\n", task->task_id, task->name);
-      task_run (app_data);
-      result=FALSE;
-      task->started = TRUE;
-      restraint_config_set (app_data->config_file,
-                            task->task_id,
-                            "started", NULL,
-                            G_TYPE_BOOLEAN,
-                            task->started);
-      // Update reboots count
-      restraint_config_set (app_data->config_file,
-                            task->task_id,
-                            "reboots", NULL,
-                            G_TYPE_UINT64,
-                            task->reboots + 1);
+      if (g_cancellable_is_cancelled (app_data->cancellable)) {
+          task->state = TASK_COMPLETE;
+      } else {
+          g_string_printf(message, "** Running task: %s [%s]\n", task->task_id, task->name);
+          task_run (app_data);
+          result=FALSE;
+          task->started = TRUE;
+          restraint_config_set (app_data->config_file,
+                                task->task_id,
+                                "started", NULL,
+                                G_TYPE_BOOLEAN,
+                                task->started);
+          // Update reboots count
+          restraint_config_set (app_data->config_file,
+                                task->task_id,
+                                "reboots", NULL,
+                                G_TYPE_UINT64,
+                                task->reboots + 1);
+      }
       break;
     case TASK_COMPLETE:
       // Set task finished

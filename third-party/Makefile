@@ -7,7 +7,7 @@ LIBXML2 = libxml2-2.9.1
 CURL = curl-7.29.0
 LIBARCHIVE = libarchive-3.1.2
 XZ = xz-5.0.4
-LIBSOUP = libsoup-2.42.2
+LIBSOUP = libsoup-2.42.3
 SQLITE = sqlite-autoconf-3080002
 INTLTOOL = intltool-0.35.5
 

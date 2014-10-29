@@ -93,6 +93,7 @@ static void test_dependencies_success (void)
                                     FALSE,
                                     dependency_io_cb,
                                     dependency_finish_cb,
+                                    NULL,
                                     run_data);
 
     // run event loop while process is running.
@@ -124,6 +125,7 @@ static void test_dependencies_fail (void)
                                     FALSE,
                                     dependency_io_cb,
                                     dependency_finish_cb,
+                                    NULL,
                                     run_data);
 
     // run event loop while process is running.
@@ -155,6 +157,7 @@ static void test_dependencies_ignore_fail (void)
                                     TRUE,
                                     dependency_io_cb,
                                     dependency_finish_cb,
+                                    NULL,
                                     run_data);
 
     // run event loop while process is running.

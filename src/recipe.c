@@ -242,7 +242,6 @@ check_param_max_time (Param *param, Task *task)
 
 static Task *parse_task(xmlNode *task_node, SoupURI *recipe_uri, GError **error) {
     g_return_val_if_fail(task_node != NULL, NULL);
-    g_return_val_if_fail(recipe_uri != NULL, NULL);
     g_return_val_if_fail(error == NULL || *error == NULL, NULL);
     GError *tmp_error = NULL;
 
@@ -374,10 +373,10 @@ static Recipe *
 recipe_parse (xmlDoc *doc, SoupURI *recipe_uri, GError **error)
 {
     g_return_val_if_fail(doc != NULL, NULL);
-    g_return_val_if_fail(recipe_uri != NULL, NULL);
     g_return_val_if_fail(error == NULL || *error == NULL, NULL);
 
-    gchar **spath;
+    gchar **spath = NULL;
+    gchar *recipe_id = NULL;
     GError *tmp_error = NULL;
     gint i = 0;
     Recipe *result = g_slice_new0(Recipe);
@@ -395,8 +394,11 @@ recipe_parse (xmlDoc *doc, SoupURI *recipe_uri, GError **error)
 
     // FIXME: This is so unreliable, we should track recipe id in the server
     // somehow
-    spath = g_strsplit(soup_uri_get_path(recipe_uri), "/", 0);
-    xmlNode *recipe = find_recipe(recipeset, spath[2]);
+    if (recipe_uri) {
+        spath = g_strsplit(soup_uri_get_path(recipe_uri), "/", 0);
+        recipe_id = spath[2];
+    }
+    xmlNode *recipe = find_recipe(recipeset, recipe_id);
     g_strfreev(spath);
     if (recipe == NULL) {
         unrecognised("<recipe/> element not found");
@@ -407,6 +409,12 @@ recipe_parse (xmlDoc *doc, SoupURI *recipe_uri, GError **error)
     result->job_id = get_attribute(recipe, "job_id");
     result->recipe_set_id = get_attribute(recipe, "recipe_set_id");
     result->recipe_id = get_attribute(recipe, "id");
+    // Hack to make soup_uri_new happy.
+    if (! recipe_uri) {
+        gchar *recipe_url = g_strdup_printf ("http://localhost/recipes/%s/", result->recipe_id);
+        recipe_uri = soup_uri_new (recipe_url);
+        g_free (recipe_url);
+    }
     result->osarch = get_attribute(recipe, "arch");
     result->osdistro = get_attribute(recipe, "distro");
     result->osmajor = get_attribute(recipe, "family");
@@ -532,46 +540,38 @@ read_finish (GObject *source, GAsyncResult *result, gpointer user_data)
 }
 
 void
-restraint_recipe_parse_xml (GObject *source, GAsyncResult *res, gpointer user_data)
+restraint_recipe_parse_stream (GInputStream *stream, gpointer user_data)
 {
     AppData *app_data = (AppData *) user_data;
-    GInputStream *stream;
-
-    stream = soup_request_send_finish (SOUP_REQUEST (source), res, &app_data->error);
     if (!stream) {
         app_data->state = RECIPE_COMPLETE;
         return;
     }
-
     g_input_stream_read_async (stream,
                                buf,
                                buf_size,
                                G_PRIORITY_DEFAULT,
                                /* cancellable */ NULL,
                                read_finish, user_data);
-
-
     return;
 }
 
 void
-recipe_handler_finish (gpointer user_data)
+restraint_recipe_parse_request (GObject *source, GAsyncResult *res, gpointer user_data)
 {
-    ServerData *server_data = (ServerData *) user_data;
+    AppData *app_data = (AppData *) user_data;
+    GInputStream *stream;
 
-    if (server_data->client_msg) {
-        soup_message_body_complete (server_data->client_msg->response_body);
-        soup_server_unpause_message (server_data->server, server_data->client_msg);
-    }
-    g_slice_free (ServerData, server_data);
+    stream = soup_request_send_finish (SOUP_REQUEST (source), res, &app_data->error);
+    restraint_recipe_parse_stream (stream, user_data);
+    return;
 }
 
 gboolean
 recipe_handler (gpointer user_data)
 {
-    ServerData *server_data = (ServerData *) user_data;
-    AppData *app_data = server_data->app_data;
-    SoupURI *recipe_uri;
+    AppData *app_data = (AppData *) user_data;
+    SoupURI *recipe_uri = NULL;
     SoupRequest *request;
     GString *message = g_string_new(NULL);
     gboolean result = TRUE;
@@ -585,13 +585,17 @@ recipe_handler (gpointer user_data)
             if (app_data->error) {
                 app_data->state = RECIPE_COMPLETE;
             } else {
-                soup_request_send_async(request, /* cancellable */ NULL, restraint_recipe_parse_xml, app_data);
+                soup_request_send_async(request,
+                                        /* cancellable */ NULL,
+                                        restraint_recipe_parse_request,
+                                        app_data);
             }
             g_object_unref (request);
             break;
         case RECIPE_PARSE:
             g_string_printf(message, "* Parsing recipe\n");
-            recipe_uri = soup_uri_new(app_data->recipe_url);
+            if (app_data->recipe_url)
+                recipe_uri = soup_uri_new(app_data->recipe_url);
             app_data->recipe = recipe_parse(ctxt->myDoc, recipe_uri, &app_data->error);
             xmlFreeDoc(ctxt->myDoc);
             xmlFreeParserCtxt(ctxt);
@@ -604,12 +608,14 @@ recipe_handler (gpointer user_data)
             }
             break;
         case RECIPE_RUN:
-            restraint_config_set (app_data->config_file,
-                                  "restraint",
-                                  "recipe_url",
-                                  NULL,
-                                  G_TYPE_STRING,
-                                  app_data->recipe_url);
+            if (app_data->recipe_url) {
+                restraint_config_set (app_data->config_file,
+                                      "restraint",
+                                      "recipe_url",
+                                      NULL,
+                                      G_TYPE_STRING,
+                                      app_data->recipe_url);
+            }
             app_data->task_handler_id = g_idle_add_full(G_PRIORITY_DEFAULT_IDLE,
                                                         task_handler,
                                                         app_data,
@@ -627,6 +633,9 @@ recipe_handler (gpointer user_data)
                 app_data->error = NULL;
             } else {
                 g_string_printf(message, "* Finished recipe\n");
+                if (app_data->close_message) {
+                    app_data->close_message (app_data->message_data);
+                }
             }
             // free current recipe
             if (app_data->recipe) {
@@ -636,15 +645,12 @@ recipe_handler (gpointer user_data)
               app_data->recipe_url = NULL;
             }
 
-            restraint_config_set (app_data->config_file,
-                                  "restraint",
-                                  "recipe_url",
-                                  NULL,
-                                  -1);
+            restraint_config_trunc (app_data->config_file, NULL);
 
             // We are done. remove ourselves so we can run another recipe.
             app_data->state = RECIPE_IDLE;
             result = FALSE;
+            g_cancellable_reset (app_data->cancellable);
             break;
         default:
             break;
@@ -653,13 +659,6 @@ recipe_handler (gpointer user_data)
     // write message out to stderr
     if (message->len) {
       write (STDERR_FILENO, message->str, message->len);
-      if (server_data->client_msg) {
-          // Append message to client_msg->body
-          soup_message_body_append (server_data->client_msg->response_body,
-                                    SOUP_MEMORY_COPY,
-                                    message->str,
-                                    message->len);
-      }
     }
 
     g_string_free(message, TRUE);
