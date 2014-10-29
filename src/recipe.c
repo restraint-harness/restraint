@@ -629,8 +629,6 @@ recipe_handler (gpointer user_data)
         case RECIPE_COMPLETE:
             if (app_data->error) {
                 g_string_printf(message, "* WARNING **:%s\n", app_data->error->message);
-                g_error_free(app_data->error);
-                app_data->error = NULL;
             } else {
                 g_string_printf(message, "* Finished recipe\n");
                 if (app_data->close_message) {

@@ -189,6 +189,7 @@ recipe_handler_finish (gpointer user_data)
         }
         soup_server_unpause_message (client_data->server, client_data->client_msg);
     }
+    g_clear_error (&app_data->error);
     //g_slice_free (ClientData, client_data);
 }
 
