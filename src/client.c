@@ -382,13 +382,6 @@ task_callback (const char *method,
                                            NULL);
         put_doc (app_data->xml_doc, filename);
 
-        // If all tasks are finished then quit.
-        if (tasks_finished(app_data->recipes))
-            g_idle_add_full (G_PRIORITY_LOW,
-                             quit_loop_handler,
-                             app_data->loop,
-                             NULL);
-
         g_free(filename);
     } else if (g_strrstr (path, "/logs/") != NULL) {
         goffset start;
@@ -673,6 +666,7 @@ recipe_finish(RecipeData *recipe_data)
                        (xmlChar*)"Aborted");
             xmlSetProp(task_node, (xmlChar*)"status", (xmlChar*)"Aborted");
         }
+        xmlFree(status);
     }
 
     if (tasks_finished(app_data->recipes))
@@ -1285,7 +1279,9 @@ int main(int argc, char *argv[]) {
     pretty_results(app_data->run_dir);
 
 cleanup:
+    soup_session_abort(session);
     g_object_unref(session);
+    g_object_unref(address);
     if (job != NULL) {
         g_free(job);
     }

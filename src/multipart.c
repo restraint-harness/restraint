@@ -65,7 +65,6 @@ read_cb (GObject *source, GAsyncResult *async_result, gpointer user_data)
     MultiPartData *multipart_data = (MultiPartData *) user_data;
     SoupMultipartInputStream *multipart = SOUP_MULTIPART_INPUT_STREAM (multipart_data->multipart);
     gssize bytes_read;
-    SoupBuffer *soup_buffer;
 
     bytes_read = g_input_stream_read_finish (in, async_result, &multipart_data->error);
 
@@ -77,9 +76,11 @@ read_cb (GObject *source, GAsyncResult *async_result, gpointer user_data)
                                     close_cb,
                                     user_data);
         if (multipart_data->callback) {
+            SoupBuffer *soup_buffer;
             //g_print ("callback\n");
-            soup_buffer = soup_buffer_new_take ((guchar *) multipart_data->buffer->str,
-                                                multipart_data->buffer->len);
+            soup_buffer = soup_buffer_new(SOUP_MEMORY_TEMPORARY,
+                                (guchar *) multipart_data->buffer->str,
+                                multipart_data->buffer->len);
             multipart_data->callback (multipart_data->method,
                                       multipart_data->path,
                                       multipart_data->cancellable,
@@ -87,6 +88,7 @@ read_cb (GObject *source, GAsyncResult *async_result, gpointer user_data)
                                       multipart_data->headers,
                                       soup_buffer,
                                       multipart_data->user_data);
+            soup_buffer_free(soup_buffer);
         }
         g_string_free (multipart_data->buffer, TRUE);
         if (multipart_data->error) {
@@ -188,11 +190,13 @@ request_sent_cb (GObject *source, GAsyncResult *async_result, gpointer user_data
                                                  async_result,
                                                  &multipart_data->error);
     if (multipart_data->error) {
+        g_object_unref(request);
         multipart_destroy (multipart_data);
         return;
     }
 
     SoupMessage *message = soup_request_http_get_message (SOUP_REQUEST_HTTP (request));
+    g_object_unref(request);
 
     if (message->status_code != SOUP_STATUS_OK) {
         g_set_error_literal(&multipart_data->error,
@@ -227,7 +231,7 @@ multipart_request_send_async (SoupRequest *request,
     multipart_data->destroy = destroy;
     multipart_data->user_data = user_data;
     multipart_data->cancellable = cancellable;
-    multipart_data->buffer = g_string_sized_new(READ_BUFFER_SIZE);
+    multipart_data->buffer = NULL;
 
     soup_request_send_async(request, cancellable, request_sent_cb, multipart_data);
 }
