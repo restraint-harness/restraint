@@ -190,7 +190,11 @@ recipe_handler_finish (gpointer user_data)
         soup_server_unpause_message (client_data->server, client_data->client_msg);
     }
     g_clear_error (&app_data->error);
-    //g_slice_free (ClientData, client_data);
+    if (app_data->state != RECIPE_RUNNING) {
+      g_io_channel_unref(app_data->io_chan);
+      g_slice_free(ClientData, client_data);
+      app_data->message_data = NULL;
+    }
 }
 
 void
@@ -420,8 +424,8 @@ server_control_callback (SoupServer *server, SoupMessage *client_msg,
     // the client going away until we try to write to it
     SoupSocket *socket = soup_client_context_get_socket (context);
     gint fd = soup_socket_get_fd (socket);
-    GIOChannel *io = g_io_channel_unix_new (fd);
-    app_data->io_handler_id = g_io_add_watch (io,
+    app_data->io_chan = g_io_channel_unix_new(fd);
+    app_data->io_handler_id = g_io_add_watch (app_data->io_chan,
                     G_IO_IN,
                     client_cb,
                     app_data);

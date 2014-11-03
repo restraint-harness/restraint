@@ -39,6 +39,7 @@ typedef struct {
   gpointer message_data;
   guint finished_handler_id;
   guint io_handler_id;
+  GIOChannel *io_chan;
 } AppData;
 
 void connections_write (AppData *app_data, gchar *msg_data, gsize msg_len);
