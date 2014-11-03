@@ -4,6 +4,7 @@
 #
 PLUGIN=$(basename $0)
 
+. /usr/share/restraint/plugins/helpers
+
 # Should we report a warn if this doesn't succeed?
-echo -n "**** "
-rstrnt-restore
+rstrnt_info "**** "$(rstrnt-restore)

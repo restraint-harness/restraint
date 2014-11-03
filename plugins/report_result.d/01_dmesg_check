@@ -1,9 +1,11 @@
 #!/bin/sh
 
+. /usr/share/restraint/plugins/helpers
+
 PLUGIN=$(basename $0)
 
 if [ -z "$RSTRNT_RESULT_URL" ]; then
-    echo "RSTRNT_RESULT_URL is not defined!"
+    rstrnt_crit "RSTRNT_RESULT_URL is not defined!"
     exit 1
 fi
 

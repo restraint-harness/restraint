@@ -4,7 +4,9 @@
 # If the following variables aren't defined try and guess them from the system
 #
 
-echo "*** Running Plugin: $0"
+. /usr/share/restraint/plugins/helpers
+
+rstrnt_info "*** Running Plugin: $0"
 
 if [ -z "$HOSTNAME" ]; then
    HOSTNAME=$(hostname)

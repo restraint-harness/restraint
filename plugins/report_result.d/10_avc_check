@@ -1,25 +1,25 @@
 #!/bin/sh
 
+. /usr/share/restraint/plugins/helpers
+
 AVC_FILE=/var/lib/restraint/avc_since
 PLUGIN=$(basename $0)
 
 if [ -z "$RSTRNT_RESULT_URL" ]; then
-    echo "RSTRNT_RESULT_URL is not defined!"
+    rstrnt_crit "RSTRNT_RESULT_URL is not defined!"
     exit 1
 fi
 
 if [ -x /usr/sbin/selinuxenabled ] && ! selinuxenabled; then
-   echo "selinux disabled, no avc check.."
+   rstrnt_info "selinux disabled, no avc check.."
    exit
 fi
 
 TMPDIR=$(mktemp -d)
-set -x
 # report selinux status
-sestatus
+sestatus >$TMPDIR/avc.log
 # report selinux policy rpm
-rpm -q selinux-policy
-set +x
+rpm -q selinux-policy >>$TMPDIR/avc.log
 
 if [ -e "$AVC_FILE" ]; then
     SECONDS=$(stat -c%Y $AVC_FILE)
@@ -28,10 +28,12 @@ if [ -e "$AVC_FILE" ]; then
     AVC_SINCE=$(LC_ALL=en_US.UTF-8 date "+-ts %m/%d/%Y %H:%M:%S" --date="@$SECONDS")
 fi
 
-ausearch -m AVC -m USER_AVC -m SELINUX_ERR -sv no $AVC_SINCE >$TMPDIR/avc.log
+ausearch -m AVC -m USER_AVC -m SELINUX_ERR -sv no $AVC_SINCE >>$TMPDIR/avc.log
 RC=$?
 if [ $RC == 0 ]; then
     rstrnt-report-result --no-plugins -o $TMPDIR/avc.log $TEST/$PLUGIN FAIL $RC
+else
+    rstrnt-report-result --no-plugins -o $TMPDIR/avc.log $TEST/$PLUGIN PASS $RC
 fi
 
 rm -rf $TMPDIR

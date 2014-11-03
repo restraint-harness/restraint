@@ -1,0 +1,32 @@
+#Default logging to warn, error and crit
+RSTRNT_LOGGING=${RSTRNT_LOGGING:-3}
+
+function rstrnt_debug() {
+    if [ 5 -le 0$RSTRNT_LOGGING ]; then
+        echo "**** -- DEBUG: $@"
+    fi
+}
+
+function rstrnt_info() {
+    if [ 4 -le 0$RSTRNT_LOGGING ]; then
+        echo "**** -- INFO: $@"
+    fi
+}
+
+function rstrnt_warn() {
+    if [ 3 -le 0$RSTRNT_LOGGING ]; then
+        echo "**** -- WARNING: $@"
+    fi
+}
+
+function rstrnt_error() {
+    if [ 2 -le 0$RSTRNT_LOGGING ]; then
+        echo "**** -- ERROR: $@"
+    fi
+}
+
+function rstrnt_crit() {
+    if [ 1 -le 0$RSTRNT_LOGGING ]; then
+        echo "**** -- CRITICAL: $@"
+    fi
+}

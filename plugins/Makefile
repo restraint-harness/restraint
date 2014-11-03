@@ -10,6 +10,7 @@ install:
 	install -m0755 -d $(DESTDIR)/usr/share/restraint/plugins/task_run.d
 	install -m0755 run_plugins $(DESTDIR)/usr/share/restraint/plugins
 	install -m0755 run_task_plugins $(DESTDIR)/usr/share/restraint/plugins
+	install -m0755 helpers $(DESTDIR)/usr/share/restraint/plugins
 	install -m0755 report_result.d/01_dmesg_check $(DESTDIR)/usr/share/restraint/plugins/report_result.d
 	install -m0755 report_result.d/10_avc_check $(DESTDIR)/usr/share/restraint/plugins/report_result.d
 	install -m0755 report_result.d/20_avc_clear $(DESTDIR)/usr/share/restraint/plugins/report_result.d

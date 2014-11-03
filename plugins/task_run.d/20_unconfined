@@ -1,6 +1,8 @@
 #!/bin/bash
 
-echo "*** Running Plugin: $0"
+. /usr/share/restraint/plugins/helpers
+
+rstrnt_info "*** Running Plugin: $0"
 
 _is_rhfamily() {
   local family=$1
@@ -13,9 +15,9 @@ _is_rhfamily() {
   else
     local the_ver="$(rpm -q --qf="%{VERSION}" $the_rpms | sed "s/^\([0-9]\+\)[^0-9]\+.*$/\1/")"
     if [[ "$op" == "show" ]]; then
-      echo "Family: $family"
-      echo "Version: $the_ver"
-      echo "Rpms: $the_rpms"
+      rstrnt_debug "Family: $family"
+      rstrnt_debug "Version: $the_ver"
+      rstrnt_debug "Rpms: $the_rpms"
     elif [[ -n "$op" && -n "$ver" ]]; then
       eval "[[ $the_ver $op $ver ]]"
     else
@@ -52,13 +54,15 @@ function runcon_unconfined() {
     # Run command with SELinux context of the root
     exec $runcon_cmd -- "$@"
   else
-    echo "**** -- WARNING: '$runcon_cmd -- true' failed. Running in default context!"
+    rstrnt_info "'$runcon_cmd -- true' failed. Running in default context."
     exec "$@"
   fi
 }
 
 if selinuxenabled; then
-  echo "**** -- INFO: selinux enabled: trying to switch context..."
+  if [ 4 -le 0$RSTRNT_DEBUG ]; then
+      rstrnt_info "selinux enabled: trying to switch context..."
+  fi
   runcon_unconfined "$@"
 else
   exec "$@"

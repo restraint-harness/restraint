@@ -1,5 +1,7 @@
 #!/bin/bash -l
 
-echo "*** Running Plugin: $0"
+. /usr/share/restraint/plugins/helpers
+
+rstrnt_info "*** Running Plugin: $0"
 
 exec "$@"

@@ -224,6 +224,7 @@ fi
 /usr/share/%{name}
 /usr/share/%{name}/plugins/run_plugins
 /usr/share/%{name}/plugins/run_task_plugins
+/usr/share/%{name}/plugins/helpers
 /usr/share/%{name}/plugins/localwatchdog.d
 /usr/share/%{name}/plugins/completed.d
 /usr/share/%{name}/plugins/report_result.d
