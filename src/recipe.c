@@ -30,9 +30,6 @@
 #include "utils.h"
 #include "config.h"
 
-// XXX make this configurable
-#define TASK_LOCATION "/mnt/tests"
-
 xmlParserCtxt *ctxt = NULL;
 
 const size_t buf_size = 4096;

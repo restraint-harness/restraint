@@ -22,6 +22,9 @@
 #include <glib.h>
 #include <libsoup/soup.h>
 
+// XXX make this configurable
+#define TASK_LOCATION "/mnt/tests"
+
 typedef enum {
     RECIPE_IDLE,
     RECIPE_FETCH,

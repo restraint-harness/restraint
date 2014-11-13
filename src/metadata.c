@@ -38,6 +38,7 @@ restraint_metadata_free (MetaData *metadata)
         g_free(metadata->name);
         g_free(metadata->entry_point);
         g_slist_free_full (metadata->dependencies, g_free);
+        g_slist_free_full (metadata->repodeps, g_free);
         g_slice_free (MetaData, metadata);
     }
 }
@@ -128,6 +129,23 @@ restraint_parse_metadata (gchar *filename,
     else
       metadata->dependencies = NULL;
 
+    gchar **repodeps = g_key_file_get_locale_string_list(keyfile,
+                                                         "restraint",
+                                                         "repoRequires",
+                                                         locale,
+                                                         &length,
+                                                         &tmp_error);
+    gchar **repodep = repodeps;
+    if (repodep) {
+      while (*repodep) {
+        metadata->repodeps = g_slist_prepend (metadata->repodeps, g_strdup(*repodep));
+        repodep++;
+      }
+      g_strfreev (repodeps);
+    }
+    else
+      metadata->repodeps = NULL;
+
     if (tmp_error && tmp_error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND) {
         g_propagate_error(error, tmp_error);
         goto error;
@@ -190,6 +208,12 @@ static void parse_line(MetaData *metadata,
         }
         // We only want to free the array not the values that it's pointing to
         g_strfreev (dependencies);
+    } else  if (g_strcmp0("RHTSREQUIRES", key) == 0) {
+        if (g_ascii_strncasecmp("test(", value, 5) == 0) {
+            const char *tname_start = value + 5;
+            metadata->repodeps = g_slist_prepend(metadata->repodeps,
+                g_strndup(tname_start, strlen(tname_start) - 1));
+        }
     }
     g_free(key);
     g_free(value);
@@ -200,7 +224,7 @@ static void flush_parse_buffer(MetaData *metadata, GString *parse_buffer, GError
     g_return_if_fail(error == NULL || *error == NULL);
 
     GError *tmp_error = NULL;
-    
+
     if (parse_buffer->len > 0) {
         parse_line(metadata, parse_buffer->str, parse_buffer->len, &tmp_error);
         g_string_erase(parse_buffer, 0, -1);

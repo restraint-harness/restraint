@@ -24,6 +24,8 @@ typedef struct {
     gchar *entry_point;
     /* List of dependencies */
     GSList *dependencies;
+    /* List of repository dependencies */
+    GSList *repodeps;
     /* maximum time task is allowed to run before being killed */
     gint64 max_time;
     /* The task can request that no localwatchdog be used. Used for reservesys task */
