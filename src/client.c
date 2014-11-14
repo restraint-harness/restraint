@@ -705,6 +705,8 @@ run_recipe_handler (gpointer user_data)
                               SOUP_MEMORY_COPY, (const char *) buf, size);
     xmlFree (buf);
 
+    // turn off message body accumulating
+    soup_message_body_set_accumulate (recipe_data->remote_msg->response_body, FALSE);
     multipart_request_send_async (request, /* cancellable */ NULL, task_callback, remote_hup, recipe_data);
 
     return FALSE;
