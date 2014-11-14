@@ -170,9 +170,12 @@ static uint32_t
 get_path_prefix_len(Task *task)
 {
   uint32_t result = 0;
-  gchar *strend = g_strrstr(task->name, task->fetch.url->fragment);
-  if (strend != NULL) {
-    result = strend - task->name;
+  const char *fragment = soup_uri_get_fragment(task->fetch.url);
+  if (fragment != NULL) {
+      gchar *strend = g_strrstr(task->name, fragment);
+      if (strend != NULL) {
+        result = strend - task->name;
+      }
   }
   return result;
 }

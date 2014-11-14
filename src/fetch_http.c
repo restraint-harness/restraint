@@ -152,9 +152,9 @@ http_archive_read_callback (gpointer user_data)
 
     const gchar *fragment = soup_uri_get_fragment(fetch_data->url);
     const gchar *entry_path = archive_entry_pathname(entry);
-    if (g_strrstr(entry_path, fragment) != NULL &&
+    if (fragment == NULL || (g_strrstr(entry_path, fragment) != NULL &&
             !(fragment[strlen(fragment)] != '/' && strlen(entry_path) ==
-                strlen(fragment) + 1)
+                strlen(fragment) + 1))
             ) {
         // Update pathname
         gchar *basename = g_path_get_basename(entry_path);
