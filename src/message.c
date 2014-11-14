@@ -193,7 +193,7 @@ restraint_append_message (SoupSession *session,
     if (transaction_id == 0) {
         transaction_id = result;
     }
-    GString *body = g_string_new("\r\n--cut-here\n");
+    GString *body = g_string_new("");
     MessageData *message_data;
     message_data = g_slice_new0 (MessageData);
     message_data->msg = msg;
@@ -228,6 +228,9 @@ restraint_append_message (SoupSession *session,
         SoupBuffer *request = soup_message_body_flatten (msg->request_body);
         body = g_string_append_len (body, request->data,
                                           request->length);
+        g_string_append_printf (body,
+                           "\r\n--cut-here\n");
+
         soup_buffer_free (request);
 
         soup_message_body_append (client_data->client_msg->response_body,

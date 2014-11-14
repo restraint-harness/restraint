@@ -187,14 +187,12 @@ recipe_handler_finish (gpointer user_data)
         } else {
             soup_message_set_status (client_data->client_msg, SOUP_STATUS_OK);
         }
+        soup_message_body_append (client_data->client_msg->response_body,
+                                  SOUP_MEMORY_STATIC,
+                                  "\r\n--cut-here\n", 13);
         soup_server_unpause_message (client_data->server, client_data->client_msg);
     }
     g_clear_error (&app_data->error);
-    if (app_data->state != RECIPE_RUNNING) {
-      g_io_channel_unref(app_data->io_chan);
-      g_slice_free(ClientData, client_data);
-      app_data->message_data = NULL;
-    }
 }
 
 void
@@ -368,6 +366,7 @@ static void
 client_disconnected (SoupMessage *client_msg, gpointer data)
 {
     AppData *app_data = (AppData *) data;
+    ClientData *client_data = (ClientData *) app_data->message_data;
 
     g_print ("[%p] Client disconnected\n", client_msg);
     if (app_data->finished_handler_id != 0) {
@@ -378,6 +377,9 @@ client_disconnected (SoupMessage *client_msg, gpointer data)
         g_source_remove (app_data->io_handler_id);
         app_data->io_handler_id = 0;
     }
+    g_io_channel_unref(app_data->io_chan);
+    app_data->message_data = NULL;
+    g_slice_free(ClientData, client_data);
     //g_object_unref (client_msg);
 }
 
@@ -430,6 +432,7 @@ server_control_callback (SoupServer *server, SoupMessage *client_msg,
                     client_cb,
                     app_data);
 
+    soup_message_body_set_accumulate (client_msg->response_body, FALSE);
     // Record our client data..
     ClientData *client_data = g_slice_new0 (ClientData);
     client_data->path = path;
