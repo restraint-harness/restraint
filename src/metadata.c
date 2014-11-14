@@ -129,6 +129,12 @@ restraint_parse_metadata (gchar *filename,
     else
       metadata->dependencies = NULL;
 
+    if (tmp_error && tmp_error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND) {
+        g_propagate_error(error, tmp_error);
+        goto error;
+    }
+    g_clear_error (&tmp_error);
+
     gchar **repodeps = g_key_file_get_locale_string_list(keyfile,
                                                          "restraint",
                                                          "repoRequires",
