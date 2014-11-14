@@ -20,6 +20,7 @@
 #include "process.h"
 #include "fetch.h"
 #include "fetch_git.h"
+#include "fetch_http.h"
 
 typedef struct {
     SoupURI *url;
@@ -132,8 +133,13 @@ restraint_fetch_repodeps(DependencyData *dependency_data)
                                           soup_uri_get_path(rd_data->url),
                                           soup_uri_get_fragment(rd_data->url),
                                           NULL);
-        restraint_fetch_git(rd_data->url, rd_data->path, NULL,
-                            fetch_repodeps_finish_callback, rd_data);
+        if (g_strcmp0(soup_uri_get_scheme(rd_data->url), "git") == 0) {
+            restraint_fetch_git(rd_data->url, rd_data->path, NULL,
+                                fetch_repodeps_finish_callback, rd_data);
+        } else {
+            restraint_fetch_http(rd_data->url, rd_data->path, NULL,
+                                fetch_repodeps_finish_callback, rd_data);
+        }
     } else {
         dependency_data->state = DEPENDENCY_RPM;
         dependency_handler(dependency_data);

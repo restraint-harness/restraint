@@ -150,17 +150,26 @@ http_archive_read_callback (gpointer user_data)
                                             fetch_data->user_data);
     }
 
-    // Update pathname
-    newPath = g_build_filename (fetch_data->base_path, archive_entry_pathname( entry ), NULL);
-    archive_entry_set_pathname( entry, newPath );
-    g_free(newPath);
+    const gchar *fragment = soup_uri_get_fragment(fetch_data->url);
+    const gchar *entry_path = archive_entry_pathname(entry);
+    if (g_strrstr(entry_path, fragment) != NULL &&
+            !(fragment[strlen(fragment)] != '/' && strlen(entry_path) ==
+                strlen(fragment) + 1)
+            ) {
+        // Update pathname
+        gchar *basename = g_path_get_basename(entry_path);
+        newPath = g_build_filename(fetch_data->base_path, basename, NULL);
+        archive_entry_set_pathname( entry, newPath );
+        g_free(newPath);
+        g_free(basename);
 
-    r = archive_read_extract2(fetch_data->a, entry, fetch_data->ext);
-    if (r != ARCHIVE_OK) {
-        g_set_error(&fetch_data->error, RESTRAINT_FETCH_LIBARCHIVE_ERROR, r,
-                "archive_read_extract2 failed: %s", archive_error_string(fetch_data->ext));
-        g_idle_add (archive_finish_callback, fetch_data);
-        return FALSE;
+        r = archive_read_extract2(fetch_data->a, entry, fetch_data->ext);
+        if (r != ARCHIVE_OK) {
+            g_set_error(&fetch_data->error, RESTRAINT_FETCH_LIBARCHIVE_ERROR, r,
+                    "archive_read_extract2 failed: %s", archive_error_string(fetch_data->ext));
+            g_idle_add (archive_finish_callback, fetch_data);
+            return FALSE;
+        }
     }
     return TRUE;
 }
