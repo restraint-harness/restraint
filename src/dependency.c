@@ -123,11 +123,16 @@ restraint_fetch_repodeps(DependencyData *dependency_data)
 {
     if (dependency_data->repodeps != NULL) {
         RepoDepData *rd_data = g_slice_new0(RepoDepData);
+        uint32_t pplen = dependency_data->path_prefix_len;
         rd_data->dependency_data = dependency_data;
         rd_data->url = soup_uri_copy(dependency_data->fetch_url);
+        if (*dependency_data->main_task_name == '/' &&
+            *(char*)dependency_data->repodeps->data != '/') {
+          pplen -= 1;
+        }
         soup_uri_set_fragment(rd_data->url,
                               (char *)dependency_data->repodeps->data +
-                              dependency_data->path_prefix_len);
+                              pplen);
         rd_data->path = g_build_filename(TASK_LOCATION,
                                           soup_uri_get_host(rd_data->url),
                                           soup_uri_get_path(rd_data->url),
@@ -194,6 +199,7 @@ restraint_install_dependencies (Task *task,
     dependency_data->repodeps = task->metadata->repodeps;
     dependency_data->fetch_url = task->fetch.url;
     dependency_data->path_prefix_len = get_path_prefix_len(task);
+    dependency_data->main_task_name = task->name;
     dependency_data->ignore_failed_install = task->rhts_compat;
     dependency_data->io_callback = io_callback;
     dependency_data->finish_cb = finish_cb;
