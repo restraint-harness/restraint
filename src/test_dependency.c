@@ -89,8 +89,15 @@ static void test_dependencies_success (void)
     run_data->loop = g_main_loop_new (NULL, TRUE);
     run_data->output = g_string_new (NULL);
 
-    restraint_install_dependencies (dependencies,
-                                    FALSE,
+    Task *task = g_slice_new0(Task);
+    task->metadata = g_slice_new(MetaData);
+    task->metadata->dependencies = dependencies;
+    task->metadata->repodeps = NULL;
+    task->fetch.url = soup_uri_new("git://localhost/repo1?master#restraint/sanity/fetch_git");
+    task->rhts_compat = FALSE;
+    task->name = "restraint/sanity/fetch_git";
+
+    restraint_install_dependencies (task,
                                     dependency_io_cb,
                                     dependency_finish_cb,
                                     NULL,
@@ -106,6 +113,10 @@ static void test_dependencies_success (void)
     g_string_free (run_data->output, TRUE);
     g_slice_free (RunData, run_data);
     g_slist_free (dependencies);
+
+    soup_uri_free(task->fetch.url);
+    g_slice_free(MetaData, task->metadata);
+    g_slice_free(Task, task);
 }
 
 static void test_dependencies_fail (void)
@@ -121,8 +132,15 @@ static void test_dependencies_fail (void)
     run_data->loop = g_main_loop_new (NULL, TRUE);
     run_data->output = g_string_new (NULL);
 
-    restraint_install_dependencies (dependencies,
-                                    FALSE,
+    Task *task = g_slice_new0(Task);
+    task->metadata = g_slice_new(MetaData);
+    task->metadata->dependencies = dependencies;
+    task->metadata->repodeps = NULL;
+    task->fetch.url = soup_uri_new("git://localhost/repo1?master#restraint/sanity/fetch_git");
+    task->rhts_compat = FALSE;
+    task->name = "restraint/sanity/fetch_git";
+
+    restraint_install_dependencies (task,
                                     dependency_io_cb,
                                     dependency_finish_cb,
                                     NULL,
@@ -138,6 +156,10 @@ static void test_dependencies_fail (void)
     g_string_free (run_data->output, TRUE);
     g_slice_free (RunData, run_data);
     g_slist_free (dependencies);
+
+    soup_uri_free(task->fetch.url);
+    g_slice_free(MetaData, task->metadata);
+    g_slice_free(Task, task);
 }
 
 static void test_dependencies_ignore_fail (void)
@@ -153,8 +175,15 @@ static void test_dependencies_ignore_fail (void)
     run_data->loop = g_main_loop_new (NULL, TRUE);
     run_data->output = g_string_new (NULL);
 
-    restraint_install_dependencies (dependencies,
-                                    TRUE,
+    Task *task = g_slice_new0(Task);
+    task->metadata = g_slice_new(MetaData);
+    task->metadata->dependencies = dependencies;
+    task->metadata->repodeps = NULL;
+    task->fetch.url = soup_uri_new("git://localhost/repo1?master#restraint/sanity/fetch_git");
+    task->rhts_compat = TRUE;
+    task->name = "restraint/sanity/fetch_git";
+
+    restraint_install_dependencies (task,
                                     dependency_io_cb,
                                     dependency_finish_cb,
                                     NULL,
@@ -170,6 +199,10 @@ static void test_dependencies_ignore_fail (void)
     g_string_free (run_data->output, TRUE);
     g_slice_free (RunData, run_data);
     g_slist_free (dependencies);
+
+    soup_uri_free(task->fetch.url);
+    g_slice_free(MetaData, task->metadata);
+    g_slice_free(Task, task);
 }
 
 int main(int argc, char *argv[]) {
