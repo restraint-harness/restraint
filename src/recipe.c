@@ -237,7 +237,7 @@ check_param_max_time (Param *param, Task *task)
     }
 }
 
-static Task *parse_task(xmlNode *task_node, SoupURI *recipe_uri, GError **error) {
+static Task *parse_task(xmlNode *task_node, Recipe *recipe, GError **error) {
     g_return_val_if_fail(task_node != NULL, NULL);
     g_return_val_if_fail(error == NULL || *error == NULL, NULL);
     GError *tmp_error = NULL;
@@ -245,6 +245,7 @@ static Task *parse_task(xmlNode *task_node, SoupURI *recipe_uri, GError **error)
     Task *task = restraint_task_new();
     g_return_val_if_fail(task != NULL, NULL);
 
+    task->recipe = recipe;
     xmlChar *task_name = xmlGetNoNsProp(task_node, (xmlChar *)"name");
     task->name = g_strdup((gchar *)task_name);
     xmlFree (task_name);
@@ -258,7 +259,7 @@ static Task *parse_task(xmlNode *task_node, SoupURI *recipe_uri, GError **error)
     xmlFree(task_id);
 
     gchar *suffix = g_strconcat("tasks/", task->task_id, "/", NULL);
-    task->task_uri = soup_uri_new_with_base(recipe_uri, suffix);
+    task->task_uri = soup_uri_new_with_base(recipe->recipe_uri, suffix);
     g_free(suffix);
 
     xmlNode *fetch = first_child_with_name(task_node, "fetch");
@@ -272,7 +273,7 @@ static Task *parse_task(xmlNode *task_node, SoupURI *recipe_uri, GError **error)
         }
         task->fetch.url = soup_uri_new((char *)url);
         xmlFree(url);
-        task->path = g_build_filename(TASK_LOCATION,
+        task->path = g_build_filename(task->recipe->base_path,
                 soup_uri_get_host(task->fetch.url),
                 soup_uri_get_path(task->fetch.url),
                 soup_uri_get_fragment(task->fetch.url),
@@ -418,13 +419,14 @@ recipe_parse (xmlDoc *doc, SoupURI *recipe_uri, GError **error)
     result->osvariant = get_attribute(recipe, "variant");
     result->owner = get_attribute(job, "owner");
     result->recipe_uri = recipe_uri;
+    result->base_path = TASK_LOCATION;
 
     GList *tasks = NULL;
     xmlNode *child = recipe->children;
     while (child != NULL) {
         if (child->type == XML_ELEMENT_NODE &&
                 g_strcmp0((gchar *)child->name, "task") == 0) {
-            Task *task = parse_task(child, recipe_uri, &tmp_error);
+            Task *task = parse_task(child, result, &tmp_error);
             if (task == NULL) {
                 g_propagate_error(error, tmp_error);
                 goto error;

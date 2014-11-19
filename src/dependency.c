@@ -133,11 +133,11 @@ restraint_fetch_repodeps(DependencyData *dependency_data)
         soup_uri_set_fragment(rd_data->url,
                               (char *)dependency_data->repodeps->data +
                               pplen);
-        rd_data->path = g_build_filename(TASK_LOCATION,
-                                          soup_uri_get_host(rd_data->url),
-                                          soup_uri_get_path(rd_data->url),
-                                          soup_uri_get_fragment(rd_data->url),
-                                          NULL);
+        rd_data->path = g_build_filename(dependency_data->base_path,
+                                         soup_uri_get_host(rd_data->url),
+                                         soup_uri_get_path(rd_data->url),
+                                         soup_uri_get_fragment(rd_data->url),
+                                         NULL);
         if (g_strcmp0(soup_uri_get_scheme(rd_data->url), "git") == 0) {
             restraint_fetch_git(rd_data->url, rd_data->path, NULL,
                                 fetch_repodeps_finish_callback, rd_data);
@@ -200,6 +200,7 @@ restraint_install_dependencies (Task *task,
     dependency_data->fetch_url = task->fetch.url;
     dependency_data->path_prefix_len = get_path_prefix_len(task);
     dependency_data->main_task_name = task->name;
+    dependency_data->base_path = task->recipe->base_path;
     dependency_data->ignore_failed_install = task->rhts_compat;
     dependency_data->io_callback = io_callback;
     dependency_data->finish_cb = finish_cb;

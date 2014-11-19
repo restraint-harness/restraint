@@ -33,6 +33,7 @@ typedef struct {
     SoupURI *fetch_url;
     uint32_t path_prefix_len;
     const gchar *main_task_name;
+    const gchar *base_path;
     gboolean ignore_failed_install;
     GIOFunc io_callback;
     DependencyCallback finish_cb;

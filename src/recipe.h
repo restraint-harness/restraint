@@ -45,6 +45,7 @@ typedef struct {
     gchar *osvariant;
     gchar *osarch;
     gchar *owner;
+    gchar *base_path;
     GList *tasks; // list of Task *
     GList *params; // list of Params
     GList *roles; // list of Roles
