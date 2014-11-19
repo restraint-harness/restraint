@@ -35,6 +35,7 @@
 #include <fcntl.h>
 #include "client.h"
 #include "multipart.h"
+#include "errors.h"
 
 static SoupSession *session;
 gchar buf[1024];
@@ -667,6 +668,13 @@ recipe_finish(RecipeData *recipe_data)
             xmlSetProp(task_node, (xmlChar*)"status", (xmlChar*)"Aborted");
         }
         xmlFree(status);
+        xmlChar *result = xmlGetNoNsProp (task_node, (xmlChar *)"result");
+        if (g_strcmp0 ((gchar *) result, "PASS") != 0 && !app_data->error) {
+            g_set_error (&app_data->error, RESTRAINT_ERROR,
+                         RESTRAINT_TASK_RUNNER_RESULT_ERROR,
+                         "One or more tasks failed");
+        }
+        xmlFree(result);
     }
 
     if (tasks_finished(app_data->recipes))
@@ -698,7 +706,7 @@ run_recipe_handler (gpointer user_data)
     xmlDocDumpMemory (app_data->xml_doc, &buf, &size);
 
     full_url = soup_uri_to_string (recipe_data->remote_uri, FALSE);
-    g_print ("Connecting to %s\n", full_url);
+    g_print ("Connecting to %s for recipe id:%d\n", full_url, recipe_data->recipe_id);
     g_free (full_url);
     soup_message_set_request (recipe_data->remote_msg,
                               "text/xml",
@@ -789,18 +797,11 @@ static void add_r_params(gchar *role, GSList *hostlist,
 
 static RecipeData *new_recipe_data(AppData *app_data, gchar *recipe_id)
 {
-    gchar *remote = g_strdup_printf("http://localhost:%d",
-                                    DEFAULT_PORT);
-    SoupURI *remote_uri = soup_uri_new(remote);
-
     RecipeData *recipe_data = g_slice_new0(RecipeData);
-    recipe_data->remote_uri = remote_uri;
     recipe_data->body = g_string_new(NULL);
     recipe_data->app_data = app_data;
     g_hash_table_insert(app_data->recipes, g_strdup((gchar*)recipe_id),
                         recipe_data);
-    g_free(remote);
-
     return recipe_data;
 }
 
@@ -881,7 +882,9 @@ static gchar *copy_job_as_template(gchar *job, AppData *app_data)
         RecipeData *recipe_data = g_hash_table_lookup(app_data->recipes,
                                                       id);
         if (recipe_data == NULL) {
-            recipe_data = new_recipe_data(app_data, (gchar*)id);
+            g_printerr ("Unable to find matching host for recipe id:%s did you pass --host on the cmd line?\n", id);
+            xmlFreeDoc(template_xml_doc_ptr);
+            return NULL;
         }
 
         guint recipe_role = get_node_role(node, roletable, recipe_data);
@@ -994,7 +997,12 @@ parse_new_job (AppData *app_data)
         RecipeData *recipe_data = g_hash_table_lookup(app_data->recipes,
                                                       recipe_id);
         if (recipe_data == NULL) {
-            recipe_data = new_recipe_data(app_data, (gchar*)recipe_id);
+            g_printerr ("Unable to find matching recipe id:%s in job.\n", recipe_id);
+            g_free (filename);
+            g_free (recipe_id);
+            xmlXPathFreeObject (recipe_node_ptrs);
+            xmlFreeDoc(app_data->xml_doc);
+            return;
         }
         recipe_data->recipe_node_ptr = node;
         recipe_data->recipe_id = (gint)g_ascii_strtoll((gchar *)recipe_id,
@@ -1162,7 +1170,6 @@ static gboolean add_recipe_host(const gchar *option_name, const gchar *value,
     }
 
     RecipeData *recipe_data = new_recipe_data(app_data, args[0]);
-    soup_uri_free(recipe_data->remote_uri);
     recipe_data->remote_uri = remote_uri;
 
 cleanup:
