@@ -31,7 +31,7 @@
 #define HEARTBEAT 1 * 60 // heartbeat every 1 minute
 #define DEFAULT_ENTRY_POINT "make run"
 #define ENV_PREFIX "RSTRNT_"
-#define EWD_TIME 5 * 60 // amount of time to add to local watchdog for externl watchdog
+#define EWD_TIME 30 * 60 // amount of time to add to local watchdog for externl watchdog
 
 typedef enum {
     TASK_IDLE,
