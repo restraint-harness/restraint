@@ -37,6 +37,7 @@ typedef struct {
     ArchiveEntryCallback archive_entry_callback;
     gpointer user_data;
     GError *error;
+    uint32_t extracted_cnt;
 } FetchData;
 
 #define RESTRAINT_FETCH_ERROR restraint_fetch_error ()
