@@ -197,15 +197,24 @@ restraint_install_dependencies (Task *task,
     dependency_data->user_data = user_data;
     dependency_data->dependencies = task->metadata->dependencies;
     dependency_data->repodeps = task->metadata->repodeps;
-    dependency_data->fetch_url = task->fetch.url;
-    dependency_data->path_prefix_len = get_path_prefix_len(task);
     dependency_data->main_task_name = task->name;
     dependency_data->base_path = task->recipe->base_path;
     dependency_data->ignore_failed_install = task->rhts_compat;
     dependency_data->io_callback = io_callback;
     dependency_data->finish_cb = finish_cb;
     dependency_data->cancellable = cancellable;
-    dependency_data->state = DEPENDENCY_REPO;
-
+    switch (task->fetch_method) {
+        case TASK_FETCH_UNPACK:
+            dependency_data->fetch_url = task->fetch.url;
+            dependency_data->path_prefix_len = get_path_prefix_len(task);
+            dependency_data->state = DEPENDENCY_REPO;
+            break;
+        case TASK_FETCH_INSTALL_PACKAGE:
+            dependency_data->state = DEPENDENCY_RPM;
+            break;
+        default:
+            dependency_data->state = DEPENDENCY_DONE;
+            break;
+    }
     dependency_handler (dependency_data);
 }

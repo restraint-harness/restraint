@@ -192,7 +192,7 @@ myopen(FetchData *fetch_data, GError **error)
     g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
 
     gsize len;
-    gint offset = 0;
+    gint path_offset = 0, fragment_offset = 0;
     GError *tmp_error = NULL;
 
     fetch_data->client = g_socket_client_new();
@@ -214,12 +214,17 @@ myopen(FetchData *fetch_data, GError **error)
     // git-upload-pack
     // git ls-remote git://git2.engineering.redhat.com/users/bpeck/tests.git
     // git-upload-pack /users/bpeck/tests.git.host=git2.engineering.redhat.com.
+
+    // path can't start with /~
     if (g_str_has_prefix (fetch_data->url->path + 1, "~"))
-        offset = 1;
+        path_offset = 1;
+    // git archive paths can't start with a slash
+    if (g_str_has_prefix (fetch_data->url->fragment, "/"))
+        fragment_offset = 1;
 
     gboolean write_succeeded = packet_write(fetch_data->ostream, &tmp_error,
                  "git-upload-archive %s\0host=%s side-band side-band-64k\0",
-                 fetch_data->url->path + offset, fetch_data->url->host);
+                 fetch_data->url->path + path_offset, fetch_data->url->host);
     if (!write_succeeded) {
         g_propagate_prefixed_error(error, tmp_error,
                 "While writing to %s: ", fetch_data->url->host);
@@ -227,7 +232,7 @@ myopen(FetchData *fetch_data, GError **error)
     }
     write_succeeded = packet_write(fetch_data->ostream, &tmp_error, "argument %s:%s\0",
                            fetch_data->url->query == NULL ? GIT_BRANCH : fetch_data->url->query, 
-                           fetch_data->url->fragment == NULL ? "" : fetch_data->url->fragment);
+                           fetch_data->url->fragment == NULL ? "" : fetch_data->url->fragment + fragment_offset);
     if (!write_succeeded) {
         g_propagate_prefixed_error(error, tmp_error,
                 "While writing to %s: ", fetch_data->url->host);

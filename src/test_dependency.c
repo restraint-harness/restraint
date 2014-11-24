@@ -75,8 +75,10 @@ dependency_finish_cb (gpointer user_data, GError *error)
     RunData *run_data = (RunData *) user_data;
     if (error)
         run_data->error = g_error_copy (error);
-    g_main_loop_quit (run_data->loop);
-    g_main_loop_unref (run_data->loop);
+    if (run_data->loop) {
+        g_main_loop_quit (run_data->loop);
+        g_main_loop_unref (run_data->loop);
+    }
 }
 
 static void test_dependencies_success (void)
@@ -93,6 +95,7 @@ static void test_dependencies_success (void)
     run_data->output = g_string_new (NULL);
 
     Task *task = g_slice_new0(Task);
+    task->fetch_method = TASK_FETCH_UNPACK;
     task->metadata = g_slice_new(MetaData);
     task->metadata->dependencies = dependencies;
     task->metadata->repodeps = NULL;
@@ -141,6 +144,7 @@ static void test_dependencies_fail (void)
     run_data->output = g_string_new (NULL);
 
     Task *task = g_slice_new0(Task);
+    task->fetch_method = TASK_FETCH_UNPACK;
     task->metadata = g_slice_new(MetaData);
     task->metadata->dependencies = dependencies;
     task->metadata->repodeps = NULL;
@@ -189,6 +193,7 @@ static void test_dependencies_ignore_fail (void)
     run_data->output = g_string_new (NULL);
 
     Task *task = g_slice_new0(Task);
+    task->fetch_method = TASK_FETCH_UNPACK;
     task->metadata = g_slice_new(MetaData);
     task->metadata->dependencies = dependencies;
     task->metadata->repodeps = NULL;
@@ -233,6 +238,7 @@ static void test_git_repodeps_success (void)
     run_data->loop = g_main_loop_new (NULL, TRUE);
 
     Task *task = g_slice_new0(Task);
+    task->fetch_method = TASK_FETCH_UNPACK;
     task->metadata = g_slice_new(MetaData);
     task->metadata->dependencies = NULL;
     task->metadata->repodeps = repodeps;
@@ -304,6 +310,7 @@ static void test_git_repodeps_fail (void)
     run_data->loop = g_main_loop_new (NULL, TRUE);
 
     Task *task = g_slice_new0(Task);
+    task->fetch_method = TASK_FETCH_UNPACK;
     task->metadata = g_slice_new(MetaData);
     task->metadata->dependencies = NULL;
     task->metadata->repodeps = repodeps;
@@ -345,6 +352,7 @@ static void test_http_repodeps_success (void)
     run_data->loop = g_main_loop_new (NULL, TRUE);
 
     Task *task = g_slice_new0(Task);
+    task->fetch_method = TASK_FETCH_UNPACK;
     task->metadata = g_slice_new(MetaData);
     task->metadata->dependencies = NULL;
     task->metadata->repodeps = repodeps;
@@ -416,6 +424,7 @@ static void test_http_repodeps_fail (void)
     run_data->loop = g_main_loop_new (NULL, TRUE);
 
     Task *task = g_slice_new0(Task);
+    task->fetch_method = TASK_FETCH_UNPACK;
     task->metadata = g_slice_new(MetaData);
     task->metadata->dependencies = NULL;
     task->metadata->repodeps = repodeps;
