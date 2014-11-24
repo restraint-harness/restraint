@@ -22,6 +22,9 @@
 #include <glib.h>
 #include <libsoup/soup.h>
 
+// XXX make this configurable
+#define TASK_LOCATION "/mnt/tests"
+
 typedef enum {
     RECIPE_IDLE,
     RECIPE_FETCH,
@@ -42,6 +45,7 @@ typedef struct {
     gchar *osvariant;
     gchar *osarch;
     gchar *owner;
+    gchar *base_path;
     GList *tasks; // list of Task *
     GList *params; // list of Params
     GList *roles; // list of Roles

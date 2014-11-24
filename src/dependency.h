@@ -17,18 +17,32 @@
 
 #include <glib.h>
 #include "recipe.h"
+#include "task.h"
 
 typedef void (*DependencyCallback)   (gpointer user_data, GError *error);
 
+typedef enum {
+    DEPENDENCY_REPO,
+    DEPENDENCY_RPM,
+    DEPENDENCY_DONE
+} DependencyState;
+
 typedef struct {
     GSList *dependencies;
+    GSList *repodeps;
+    SoupURI *fetch_url;
+    uint32_t path_prefix_len;
+    const gchar *main_task_name;
+    const gchar *base_path;
     gboolean ignore_failed_install;
     GIOFunc io_callback;
     DependencyCallback finish_cb;
     GCancellable *cancellable;
+    DependencyState state;
     gpointer user_data;
 } DependencyData;
 
-void restraint_install_dependencies (GSList *dependencies, gboolean ignore_failed_install,
-                                     GIOFunc io_callback, DependencyCallback finish_cb,
-                                     GCancellable *cancellable, gpointer user_data);
+void restraint_install_dependencies (Task *task, GIOFunc io_callback,
+                                     DependencyCallback finish_cb,
+                                     GCancellable *cancellable,
+                                     gpointer user_data);

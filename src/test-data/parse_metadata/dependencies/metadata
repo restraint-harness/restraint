@@ -13,4 +13,4 @@ entry_point=make run
 dependencies=lib-virt;httpd;postgresql;nfs-utils;net-tools;net-snmp;ethereal;wireshark;tcpdump;rusers;bzip2;gcc
 dependencies[RedHatEnterpriseLinuxServer5]=apache;mysql
 max_time=2d
-repoRequires=restraint/sanity/common
+repoRequires=restraint/sanity/common;kernel/include

@@ -71,7 +71,7 @@ test_process: process.o
 test_process.o: process.h
 
 TEST_PROGS += test_dependency
-test_dependency: dependency.o errors.o process.o
+test_dependency: dependency.o errors.o process.o fetch.o fetch_http.o fetch_git.o
 test_dependency.o: dependency.h errors.h process.h
 
 #TEST_PROGS += test_task

@@ -22,3 +22,5 @@ Type:         Regression
 Type:         Tier1
 Type:         KernelTier1
 License:      GPL v2
+RhtsRequires: test(/kernel/include)
+RhtsRequires: test(/kernel/common)

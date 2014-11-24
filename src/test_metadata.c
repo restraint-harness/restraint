@@ -45,6 +45,24 @@ static void test_testinfo_dependencies(void) {
     restraint_metadata_free (metadata);
 }
 
+static void test_testinfo_repodeps(void) {
+    GError *error = NULL;
+    MetaData *metadata = g_slice_new0 (MetaData);
+    gchar *dependency;
+
+    gchar *filename = "test-data/parse_testinfo/dependencies/requires/testinfo.desc";
+
+    metadata = restraint_parse_testinfo (filename, &error);
+
+    g_assert_no_error (error);
+    dependency = g_slist_nth_data(metadata->repodeps, 0);
+    g_assert_cmpstr(dependency, ==, "/kernel/common");
+    dependency = g_slist_nth_data(metadata->repodeps, 1);
+    g_assert_cmpstr(dependency, ==, "/kernel/include");
+
+    restraint_metadata_free (metadata);
+}
+
 static void test_testinfo_testtime_day(void) {
     GError *error = NULL;
     MetaData *metadata = g_slice_new0 (MetaData);
@@ -144,6 +162,29 @@ static void test_metadata_dependencies(void) {
     restraint_metadata_free (metadata);
 }
 
+static void test_metadata_repodeps(void) {
+    GError *error = NULL;
+    MetaData *metadata = g_slice_new0 (MetaData);
+
+    gchar *filename = "test-data/parse_metadata/dependencies/metadata";
+    gchar *osmajor = "RedHatEnterpriseLinux6";
+    gchar *dependency;
+
+    metadata = restraint_parse_metadata(filename, osmajor, &error);
+
+    g_assert_no_error (error);
+    dependency = g_slist_nth_data(metadata->repodeps, 0);
+    g_assert_cmpstr(dependency, ==, "kernel/include");
+    dependency = g_slist_nth_data(metadata->repodeps, 1);
+    g_assert_cmpstr(dependency, ==, "restraint/sanity/common");
+
+    filename = "test-data/parse_metadata/dependencies/metadata-no-deps";
+    metadata = restraint_parse_metadata(filename, osmajor, &error);
+    g_assert_no_error (error);
+
+    restraint_metadata_free (metadata);
+}
+
 static void test_metadata_testtime_day(void) {
     GError *error = NULL;
     MetaData *metadata = g_slice_new0 (MetaData);
@@ -222,11 +263,13 @@ int main(int argc, char *argv[]) {
     g_test_add_func("/testindo.desc/testtime/minute", test_testinfo_testtime_minute);
     g_test_add_func("/testindo.desc/testtime/second", test_testinfo_testtime_second);
     g_test_add_func("/testinfo.desc/dependencies", test_testinfo_dependencies);
+    g_test_add_func("/testinfo.desc/repodeps", test_testinfo_repodeps);
     g_test_add_func("/metadata/testtime/day", test_metadata_testtime_day);
     g_test_add_func("/metadata/testtime/hour", test_metadata_testtime_hour);
     g_test_add_func("/metadata/testtime/invalid", test_metadata_testtime_invalid);
     g_test_add_func("/metadata/testtime/minute", test_metadata_testtime_minute);
     g_test_add_func("/metadata/testtime/second", test_metadata_testtime_second);
     g_test_add_func("/metadata/dependencies", test_metadata_dependencies);
+    g_test_add_func("/metadata/repodeps", test_metadata_repodeps);
     return g_test_run();
 }

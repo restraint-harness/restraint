@@ -815,9 +815,7 @@ task_handler (gpointer user_data)
           g_string_printf(message, "** Installing dependencies\n");
           TaskRunData *task_run_data = g_slice_new0(TaskRunData);
           task_run_data->app_data = app_data;
-          restraint_install_dependencies (task->metadata->dependencies,
-                                          task->rhts_compat,
-                                          task_io_callback,
+          restraint_install_dependencies (task, task_io_callback,
                                           dependency_finish_cb,
                                           app_data->cancellable,
                                           task_run_data);
