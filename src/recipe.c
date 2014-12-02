@@ -630,7 +630,7 @@ recipe_handler (gpointer user_data)
                 g_string_printf(message, "* WARNING **:%s\n", app_data->error->message);
             } else {
                 g_string_printf(message, "* Finished recipe\n");
-                if (app_data->close_message) {
+                if (app_data->close_message && app_data->message_data) {
                     app_data->close_message (app_data->message_data);
                 }
             }
