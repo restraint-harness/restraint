@@ -833,6 +833,24 @@ static guint get_node_role(xmlNodePtr node, GHashTable *roletable,
     return 0;
 }
 
+static GSList *get_recipe_members(GHashTable *roletable)
+{
+    GSList *allhosts = NULL;
+    GList *rolehosts = g_hash_table_get_values(roletable);
+    for (GList *rolehost = rolehosts; rolehost != NULL;
+            rolehost = g_list_next(rolehost)) {
+        for (GSList *host = (GSList*)rolehost->data; host != NULL;
+                host = g_slist_next(host)) {
+            if (g_slist_find_custom(allhosts, host->data,
+                        (GCompareFunc)g_strcmp0) == NULL) {
+                allhosts = g_slist_prepend(allhosts, host->data);
+            }
+        }
+    }
+    g_list_free(rolehosts);
+    return allhosts;
+}
+
 static gchar *copy_job_as_template(gchar *job, AppData *app_data)
 {
     guint recipe_id = 1;
@@ -915,6 +933,8 @@ static gchar *copy_job_as_template(gchar *job, AppData *app_data)
     xmlNodePtr r_params = xmlNewDocNode(new_xml_doc_ptr, NULL,
                                         (xmlChar*)"params", NULL);
     g_hash_table_foreach(roletable, (GHFunc)add_r_params, r_params);
+    GSList *recipemembers = get_recipe_members(roletable);
+    add_r_params("RECIPE_MEMBERS", recipemembers, r_params);
 
     xmlXPathFreeObject(recipe_nodes);
     recipe_nodes = get_node_set(new_xml_doc_ptr, NULL,
@@ -934,12 +954,14 @@ static gchar *copy_job_as_template(gchar *job, AppData *app_data)
                 } else {
                     g_hash_table_foreach(roletable, (GHFunc)add_r_params,
                                          t_params);
+                    add_r_params("RECIPE_MEMBERS", recipemembers, t_params);
                 }
             }
         }
         xmlXPathFreeObject(task_nodes);
     }
 
+    g_slist_free(recipemembers);
     g_hash_table_destroy(roletable);
     xmlFreeNode(r_params);
 
