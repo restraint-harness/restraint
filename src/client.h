@@ -20,6 +20,14 @@
 
 struct _AppData;
 
+typedef void (*RegexCallback) (const char *method,
+                               const char *path,
+                               GCancellable *cancellable,
+                               GError *error,
+                               SoupMessageHeaders *headers,
+                               SoupBuffer *body,
+                               gpointer user_data);
+
 typedef struct {
     xmlNodePtr recipe_node_ptr;
     GHashTable *tasks;
@@ -29,6 +37,11 @@ typedef struct {
     struct _AppData *app_data;
     GString *body;
 } RecipeData;
+
+typedef struct {
+    regex_t regex;
+    RegexCallback callback;
+} RegexData;
 
 typedef struct _AppData {
     GError *error;
@@ -43,4 +56,5 @@ typedef struct _AppData {
     SoupURI *addr_get_uri;
     GCancellable *cancellable;
     gboolean started;
+    GSList *regexes;
 } AppData;
