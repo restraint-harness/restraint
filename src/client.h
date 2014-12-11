@@ -36,6 +36,8 @@ typedef struct {
     SoupMessage *remote_msg;
     struct _AppData *app_data;
     GString *body;
+    GCancellable *cancellable;
+    guint timeout_handler_id;
 } RecipeData;
 
 typedef struct {

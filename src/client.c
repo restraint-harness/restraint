@@ -24,6 +24,8 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
+#define __STDC_FORMAT_MACROS
+#include <inttypes.h>
 #include <libsoup/soup.h>
 #include <libxml/parser.h>
 #include <libxml/xpath.h>
@@ -247,7 +249,8 @@ remote_hup (GError *error,
     SoupURI *continue_uri = NULL;
 
     // If we get an error on the first connction then we simply abort
-    if (app_data->started && ! tasks_finished(app_data->recipes)) {
+    if (app_data->started && ! tasks_finished(app_data->recipes)
+                          && ! g_cancellable_is_cancelled(recipe_data->cancellable)) {
         if (error) {
             g_printerr ("%s [%s, %d]\n", error->message,
                         g_quark_to_string (error->domain), error->code);
@@ -256,7 +259,7 @@ remote_hup (GError *error,
         soup_uri_free (recipe_data->remote_uri);
         recipe_data->remote_uri = continue_uri;
         full_url = soup_uri_to_string (recipe_data->remote_uri, FALSE);
-        g_print ("Delaying %d seconds before trying to connect %s ..\n", DEFAULT_DELAY, full_url);
+        g_print ("Disconnected.. delaying %d seconds.\n", DEFAULT_DELAY);
         g_free (full_url);
         // Try and re-connect to the other host
         g_timeout_add_seconds_full (G_PRIORITY_DEFAULT,
@@ -265,7 +268,7 @@ remote_hup (GError *error,
                                     recipe_data,
                                     NULL);
     } else {
-        if (error) {
+        if (! app_data->error && error) {
             app_data->error = g_error_copy (error);
         }
         recipe_finish (recipe_data);
@@ -337,6 +340,48 @@ cleanup:
     g_free (task_id);
     g_free (recipe_id);
     g_strfreev (entries);
+}
+
+gboolean
+watchdog_timeout_cb (gpointer user_data)
+{
+    RecipeData *recipe_data = (RecipeData*) user_data;
+    AppData *app_data = recipe_data->app_data;
+    if (! app_data->error) {
+        g_set_error (&app_data->error, RESTRAINT_ERROR,
+                     RESTRAINT_TASK_RUNNER_WATCHDOG_ERROR,
+                     "Recipe %d exceeded lab watchdog timer",
+                     recipe_data->recipe_id);
+    }
+    g_cancellable_cancel (recipe_data->cancellable);
+    return FALSE;
+}
+
+void
+watchdog_cb (const char *method,
+             const char *path,
+             GCancellable *cancellable,
+             GError *error,
+             SoupMessageHeaders *headers,
+             SoupBuffer *body,
+             gpointer user_data)
+{
+    RecipeData *recipe_data = (RecipeData*) user_data;
+    GHashTable *table;
+
+    table = soup_form_decode (body->data);
+    gchar *seconds_string = g_hash_table_lookup (table, "seconds");
+    guint64 max_time = 0;
+    sscanf (seconds_string, "%" SCNu64, &max_time);
+    g_hash_table_destroy(table);
+    if (recipe_data->timeout_handler_id != 0) {
+        g_source_remove (recipe_data->timeout_handler_id);
+    }
+    recipe_data->timeout_handler_id = g_timeout_add_seconds_full (G_PRIORITY_DEFAULT,
+                                                                  max_time,
+                                                                  watchdog_timeout_cb,
+                                                                  recipe_data,
+                                                                  NULL);
 }
 
 void
@@ -789,7 +834,8 @@ recipe_finish(RecipeData *recipe_data)
     g_hash_table_iter_init(&iter, recipe_data->tasks);
     while (g_hash_table_iter_next(&iter, NULL, (gpointer *)&task_node)) {
         xmlChar *status = xmlGetNoNsProp(task_node, (xmlChar*)"status");
-        if (g_strcmp0((gchar *) status, "New") == 0) {
+        if (g_strcmp0((gchar *) status, "New") == 0 ||
+            g_strcmp0((gchar *) status, "Running") == 0) {
             xmlSetProp(recipe_data->recipe_node_ptr, (xmlChar*)"status",
                        (xmlChar*)"Aborted");
             xmlSetProp(task_node, (xmlChar*)"status", (xmlChar*)"Aborted");
@@ -842,7 +888,7 @@ run_recipe_handler (gpointer user_data)
 
     // turn off message body accumulating
     soup_message_body_set_accumulate (recipe_data->remote_msg->response_body, FALSE);
-    multipart_request_send_async (request, /* cancellable */ NULL, message_cb, remote_hup, recipe_data);
+    multipart_request_send_async (request, recipe_data->cancellable, message_cb, remote_hup, recipe_data);
 
     return FALSE;
 }
@@ -927,6 +973,14 @@ static RecipeData *new_recipe_data(AppData *app_data, gchar *recipe_id)
     RecipeData *recipe_data = g_slice_new0(RecipeData);
     recipe_data->body = g_string_new(NULL);
     recipe_data->app_data = app_data;
+    recipe_data->cancellable = g_cancellable_new();
+    // Prime the watchdog handler, give us 5 minutes to get things
+    // going.
+    recipe_data->timeout_handler_id = g_timeout_add_seconds_full (G_PRIORITY_DEFAULT,
+                                                                  300,
+                                                                  watchdog_timeout_cb,
+                                                                  recipe_data,
+                                                                  NULL);
     g_hash_table_insert(app_data->recipes, g_strdup((gchar*)recipe_id),
                         recipe_data);
     return recipe_data;
@@ -1427,6 +1481,9 @@ int main(int argc, char *argv[]) {
     app_data->regexes = register_path (app_data->regexes,
                                        "/recipes/[[:digit:]]+/tasks/[[:digit:]]+/results/$",
                                        tasks_results_cb);
+    app_data->regexes = register_path (app_data->regexes,
+                                       "/recipes/[[:digit:]]+/watchdog$",
+                                       watchdog_cb);
     app_data->regexes = register_path (app_data->regexes,
                                        "/recipes/[[:digit:]]+/tasks/[[:digit:]]+/logs/",
                                        tasks_logs_cb);
