@@ -16,6 +16,7 @@
 */
 
 #include <glib.h>
+#include <stdint.h>
 #include "recipe.h"
 #include "task.h"
 
