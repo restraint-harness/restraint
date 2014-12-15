@@ -62,6 +62,10 @@ each task listed in the recipe until done.
 Summary:	Allow unmodified rhts tests to run under restraint
 Group:		Applications/Internet
 Requires:	restraint = %{version}
+Requires:       make
+Requires:       hostname
+Requires:       coreutils
+Requires:       libselinux-utils
 Provides:	rhts-test-env
 Obsoletes:	rhts-test-env
 
