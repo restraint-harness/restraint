@@ -15,8 +15,7 @@
     along with Restraint.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#define _POSIX_C_SOURCE 200809L
-#define _BSD_SOURCE
+#define _XOPEN_SOURCE 500
 
 #include <glib.h>
 #include <glib/gstdio.h>
