@@ -7,7 +7,7 @@ LIBXML2 = libxml2-2.9.1
 CURL = curl-7.29.0
 LIBARCHIVE = libarchive-3.1.2
 XZ = xz-5.0.4
-LIBSOUP = libsoup-2.42.3
+LIBSOUP = libsoup-2.48.1
 SQLITE = sqlite-autoconf-3080002
 INTLTOOL = intltool-0.35.5
 
@@ -143,7 +143,7 @@ $(INTLTOOL).tar.gz:
 
 TAR_BALLS += $(LIBSOUP).tar.xz
 $(LIBSOUP).tar.xz:
-	curl -O http://ftp.gnome.org/pub/GNOME/sources/libsoup/2.42/$@
+	curl -O http://ftp.gnome.org/pub/GNOME/sources/libsoup/2.48/$@
 
 tarballs: $(TAR_BALLS)
 
@@ -189,7 +189,6 @@ $(LIBARCHIVE)/.patches-done:
 $(LIBSOUP)/.patches-done:
 	patch -d$(LIBSOUP) -p1 <libsoup-no-pkgconfig-version-check.patch
 	patch -d$(LIBSOUP) -p1 <libsoup-perl580.patch
-	patch -d$(LIBSOUP) -p1 <libsoup_add_ppc64le.patch
 	touch $@
 
 $(LIBXML2)/.patches-done:

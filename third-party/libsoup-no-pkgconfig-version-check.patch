@@ -1,7 +1,6 @@
-diff -ur libsoup-2.38.1/configure libsoup-2.38.1.patched/configure
---- libsoup-2.38.1/configure	2012-04-16 16:08:02.000000000 -0400
-+++ libsoup-2.38.1.patched/configure	2013-02-19 09:52:32.000000000 -0500
-@@ -11853,19 +11853,6 @@
+--- libsoup-2.48.1.orig/configure	2014-12-07 10:00:41.000000000 -0500
++++ libsoup-2.48.1/configure	2015-01-06 08:37:28.623525413 -0500
+@@ -11986,19 +11986,6 @@
  fi
  
  fi
@@ -21,16 +20,17 @@ diff -ur libsoup-2.38.1/configure libsoup-2.38.1.patched/configure
  
    no_glib=""
  
-@@ -13254,11 +13241,7 @@
+@@ -13939,12 +13926,7 @@
  
  if test "$GCC" = "yes" -a "$set_more_warnings" != "no"; then
  	CFLAGS="$CFLAGS \
 -		-Wall -Wstrict-prototypes -Werror=missing-prototypes \
 -		-Werror=implicit-function-declaration \
 -		-Werror=pointer-arith -Werror=init-self -Werror=format=2 \
+-		-Wno-format-zero-length \
 -		-Werror=missing-include-dirs -Werror=aggregate-return \
 -		-Werror=declaration-after-statement"
-+		-Wall -Wstrict-prototypes"
++		-Wall -Wstrict-prototypes -Wno-format-zero-length"
  fi
  
  

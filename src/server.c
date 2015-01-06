@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <fcntl.h>
+#include <sys/socket.h>
 #include "recipe.h"
 #include "task.h"
 #include "errors.h"
@@ -424,8 +425,8 @@ server_control_callback (SoupServer *server, SoupMessage *client_msg,
     // Monitor the socket, if the client disconnects
     // it sets G_IO_IN, without this we won't notice
     // the client going away until we try to write to it
-    SoupSocket *socket = soup_client_context_get_socket (context);
-    gint fd = soup_socket_get_fd (socket);
+    GSocket *socket = soup_client_context_get_gsocket (context);
+    gint fd = g_socket_get_fd (socket);
     app_data->io_chan = g_io_channel_unix_new(fd);
     app_data->io_handler_id = g_io_add_watch (app_data->io_chan,
                     G_IO_IN,
@@ -502,8 +503,7 @@ int main(int argc, char *argv[]) {
   gint port = 8081;
   app_data->config_file = NULL;
   gchar *config_port = g_strdup("config.conf");
-  SoupServer *soup_server_ipv4 = NULL;
-  SoupServer *soup_server_ipv6 = NULL;
+  SoupServer *soup_server = NULL;
   GError *error = NULL;
 
   GOptionEntry entries [] = {
@@ -552,62 +552,20 @@ int main(int argc, char *argv[]) {
   soup_session = soup_session_new();
   soup_session_add_feature_by_type (soup_session, SOUP_TYPE_CONTENT_SNIFFER);
 
-  SoupAddress *addr_ipv6 = soup_address_new_any (SOUP_ADDRESS_FAMILY_IPV6,
-                                                 port);
-  soup_server_ipv6 = soup_server_new (SOUP_SERVER_INTERFACE, addr_ipv6, NULL);
-  g_object_unref (addr_ipv6);
+  // Define a soup server
+  soup_server = soup_server_new(SOUP_SERVER_SERVER_HEADER, "restraint ", NULL);
 
-  // IPv6
-  guint ipv6_only = 1, len = sizeof (ipv6_only);
+  // Add the handlers
+  soup_server_add_handler (soup_server, "/run",
+                           server_control_callback, app_data, NULL);
+  soup_server_add_handler (soup_server, "/continue",
+                           server_control_callback, app_data, NULL);
+  soup_server_add_handler (soup_server, "/recipes",
+                           server_recipe_callback, app_data, NULL);
 
-  if (soup_server_ipv6) {
-      // get the socket file descriptor
-      gint socket_fd = soup_socket_get_fd (soup_server_get_listener (soup_server_ipv6));
-      // current libsoup defaults to GSocket defaults, this means we could
-      // get a dual ipv4/ipv6 socket.  We need to check and only open an ipv4
-      // socket if not.
-      if (getsockopt (socket_fd, IPPROTO_IPV6, IPV6_V6ONLY,
-                      (gpointer)&ipv6_only, (gpointer)&len) == -1) {
-          g_printerr ("Can't determine if IPV6_V6ONLY is set!\n");
-      }
-
-      // close soup_server socket on exec
-      fcntl (socket_fd, F_SETFD, FD_CLOEXEC);
-
-      // Add the handlers
-      soup_server_add_handler (soup_server_ipv6, "/run",
-                               server_control_callback, app_data, NULL);
-      soup_server_add_handler (soup_server_ipv6, "/continue",
-                               server_control_callback, app_data, NULL);
-      soup_server_add_handler (soup_server_ipv6, "/recipes",
-                               server_recipe_callback, app_data, NULL);
-      // Run the server
-      soup_server_run_async (soup_server_ipv6);
-  }
-
-  // IPv4
-  if (ipv6_only == 1) {
-      SoupAddress *addr_ipv4 = soup_address_new_any (SOUP_ADDRESS_FAMILY_IPV4,
-                                                     port);
-      soup_server_ipv4 = soup_server_new (SOUP_SERVER_INTERFACE, addr_ipv4, NULL);
-      g_object_unref (addr_ipv4);
-
-      // close soup_server socket on exec
-      gint socket_fd = soup_socket_get_fd (soup_server_get_listener (soup_server_ipv4));
-      fcntl (socket_fd, F_SETFD, FD_CLOEXEC);
-
-      // Add the handlers
-      soup_server_add_handler (soup_server_ipv4, "/run",
-                               server_control_callback, app_data, NULL);
-      soup_server_add_handler (soup_server_ipv4, "/continue",
-                               server_control_callback, app_data, NULL);
-      soup_server_add_handler (soup_server_ipv4, "/recipes",
-                               server_recipe_callback, app_data, NULL);
-      // Run the server
-      soup_server_run_async (soup_server_ipv4);
-  }
-
-  if (!soup_server_ipv4 && !soup_server_ipv6) {
+  // Tell our soup server to listen on any interface
+  // This includes ipv4 and ipv6 if available.
+  if (! soup_server_listen_all (soup_server, port, 0, NULL)) {
       g_printerr ("Unable to bind to server port %d\n", port);
       exit (1);
   }
@@ -625,12 +583,9 @@ int main(int argc, char *argv[]) {
   soup_session_remove_feature_by_type (soup_session, SOUP_TYPE_CONTENT_SNIFFER);
   g_object_unref(soup_session);
 
-  soup_server_disconnect(soup_server_ipv6);
-  g_object_unref(soup_server_ipv6);
-  if (ipv6_only == 1) {
-    soup_server_disconnect(soup_server_ipv4);
-    g_object_unref(soup_server_ipv4);
-  }
+  // no longer need to call soup_server_quit as disconnect does it all.
+  soup_server_disconnect(soup_server);
+  g_object_unref(soup_server);
 
   restraint_free_app_data(app_data);
   g_free(config_port);

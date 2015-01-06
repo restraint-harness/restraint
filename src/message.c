@@ -18,6 +18,7 @@
 #include <glib.h>
 #include <libsoup/soup.h>
 #include <time.h>
+#include <stdint.h>
 #include "message.h"
 
 static GQueue *message_queue = NULL;
