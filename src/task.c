@@ -585,6 +585,7 @@ restraint_next_task (AppData *app_data, TaskSetupState task_state) {
 
     // No more tasks, let the recipe_handler know we are done.
     app_data->state = RECIPE_COMPLETE;
+    app_data->aborted = ABORTED_NONE;
     app_data->recipe_handler_id = g_idle_add_full(G_PRIORITY_DEFAULT_IDLE,
                                                   recipe_handler,
                                                   app_data,
@@ -693,9 +694,11 @@ task_handler (gpointer user_data)
     case TASK_IDLE:
       // Read in previous state..
       if (parse_task_config (app_data->config_file, task, &task->error)) {
-          if (task->finished || g_cancellable_is_cancelled (app_data->cancellable)) {
+          if (task->finished) {
               // If the task is finished skip to the next task.
               task->state = TASK_NEXT;
+          } else if (g_cancellable_is_cancelled (app_data->cancellable)) {
+              task->state = TASK_COMPLETE;
           } else if (task->localwatchdog) {
               // If the task is not finished but localwatchdog expired.
               g_string_printf(message, "** Localwatchdog task: %s [%s]\n", task->task_id, task->path);
@@ -851,6 +854,14 @@ task_handler (gpointer user_data)
       break;
     case TASK_COMPLETE:
       // Set task finished
+      if (g_cancellable_is_cancelled(app_data->cancellable) &&
+          app_data->aborted != ABORTED_NONE) {
+        g_clear_error(&task->error);
+        g_set_error(&task->error, RESTRAINT_ERROR,
+                    RESTRAINT_TASK_RUNNER_ABORTED,
+                    "Aborted by rstrnt-abort");
+      }
+
       if (task->error) {
           g_string_printf(message, "** ERROR: %s\n** Completed Task : %s\n",
                          task->error->message, task->task_id);
@@ -860,6 +871,7 @@ task_handler (gpointer user_data)
       task->state = TASK_COMPLETED;
       break;
     case TASK_COMPLETED:
+    {
       // Some step along the way failed.
       if (task->error) {
         restraint_task_status(task, app_data, "Aborted", task->error);
@@ -870,8 +882,15 @@ task_handler (gpointer user_data)
       // Rmeove the entire [task] section from the config.
       restraint_config_set (app_data->config_file, task->task_id, NULL, NULL, -1);
       task->state = TASK_NEXT;
+
+      if (g_cancellable_is_cancelled(app_data->cancellable) &&
+          app_data->aborted == ABORTED_TASK) {
+          app_data->aborted = ABORTED_NONE;
+        g_cancellable_reset(app_data->cancellable);
+      }
       result = FALSE;
       break;
+    }
     case TASK_NEXT:
       // Get the next task and run it.
       result = restraint_next_task (app_data, TASK_IDLE);

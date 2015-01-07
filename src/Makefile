@@ -19,7 +19,7 @@ else
 endif
 
 .PHONY: all
-all: restraint restraintd rstrnt-report-result rstrnt-report-log rstrnt-adjust-watchdog
+all: restraint restraintd rstrnt-report-result rstrnt-report-log rstrnt-adjust-watchdog rstrnt-abort
 
 rstrnt-report-result: cmd_result.o upload.o utils.o errors.o
 	$(CC) $(LDFLAFS) -o $@ $^ $(LIBS)
@@ -28,6 +28,9 @@ rstrnt-report-log: cmd_log.o upload.o utils.o errors.o
 	$(CC) $(LDFLAFS) -o $@ $^ $(LIBS)
 
 rstrnt-adjust-watchdog: cmd_watchdog.o utils.o errors.o
+	$(CC) $(LDFLAFS) -o $@ $^ $(LIBS)
+
+rstrnt-abort: cmd_abort.o utils.o errors.o
 	$(CC) $(LDFLAFS) -o $@ $^ $(LIBS)
 
 restraint: client.o multipart.o errors.o
@@ -105,8 +108,10 @@ install: all
 	install -m0755 rstrnt-report-result $(DESTDIR)/usr/bin
 	install -m0755 rstrnt-report-log $(DESTDIR)/usr/bin
 	install -m0755 rstrnt-adjust-watchdog $(DESTDIR)/usr/bin
+	install -m0755 rstrnt-abort $(DESTDIR)/usr/bin
 
 .PHONY: clean
 clean:
 	rm -f restraint restraintd rstrnt-report-result \
-              rstrnt-report-log rstrnt-adjust-watchdog $(TEST_PROGS) *.o
+              rstrnt-report-log rstrnt-adjust-watchdog rstrnt-abort \
+	      $(TEST_PROGS) *.o

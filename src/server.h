@@ -23,6 +23,12 @@
 #define TASK_PLUGIN_SCRIPT "/usr/share/restraint/plugins/run_task_plugins"
 #define PLUGIN_DIR "/usr/share/restraint/plugins"
 
+typedef enum {
+  ABORTED_NONE,
+  ABORTED_RECIPE,
+  ABORTED_TASK,
+} StateAborted;
+
 typedef struct {
   RecipeSetupState state;
   guint recipe_handler_id;
@@ -40,6 +46,7 @@ typedef struct {
   guint finished_handler_id;
   guint io_handler_id;
   GIOChannel *io_chan;
+  StateAborted aborted;
 } AppData;
 
 void connections_write (AppData *app_data, gchar *msg_data, gsize msg_len);

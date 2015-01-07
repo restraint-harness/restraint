@@ -35,6 +35,9 @@
 /src/rstrnt-report-result
 /src/rstrnt-report-log
 /src/rstrnt-adjust-watchdog
+/src/rstrnt-abort
 /src/*.o
 rel-eng/lib/*.pyc
 /docs/_build
+tags
+cscope.out

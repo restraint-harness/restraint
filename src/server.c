@@ -315,6 +315,7 @@ server_recipe_callback (SoupServer *server, SoupMessage *client_msg,
 
     if (app_data->state == RECIPE_IDLE) {
         soup_message_set_status_full (client_msg, SOUP_STATUS_BAD_REQUEST, "No Recipe Running");
+        g_slice_free (ClientData, client_data);
         return;
     }
     // FIXME - make sure we have valid tasks first
@@ -334,8 +335,61 @@ server_recipe_callback (SoupServer *server, SoupMessage *client_msg,
         // This does *not* update the localwatchdog.
         server_uri = soup_uri_new_with_base (task->recipe->recipe_uri, "watchdog");
         server_msg = soup_message_new_from_uri ("POST", server_uri);
+    } else if (g_str_has_suffix(path, "status")) {
+        gchar **splitpath = g_strsplit(path, "/", -1);
+        guint pathlen = g_strv_length(splitpath);
+        gchar *type = *(splitpath + pathlen - 3);
+        gchar *recipe_id = NULL;
+        gchar *task_id = NULL;
+
+        // Currently supporting only "Aborted" status
+        if (!g_str_has_suffix(client_msg->request_body->data, "Aborted")) {
+          soup_message_set_status_full(client_msg, SOUP_STATUS_BAD_REQUEST,
+                                       "Unknown status");
+          goto status_cleanup;
+        }
+
+        if (g_strcmp0(type, "recipes") == 0) {
+          recipe_id = *(splitpath + pathlen - 2);
+        } else if (g_strcmp0(type, "tasks") == 0) {
+          task_id = *(splitpath + pathlen - 2);
+          recipe_id = *(splitpath + pathlen - 4);
+        } else {
+          soup_message_set_status_full(client_msg, SOUP_STATUS_BAD_REQUEST,
+                                       "Malformed status url");
+          goto status_cleanup;
+        }
+
+        if (recipe_id != NULL && g_strcmp0(recipe_id,
+                                 app_data->recipe->recipe_id) != 0) {
+          soup_message_set_status_full(client_msg, SOUP_STATUS_BAD_REQUEST,
+                                       "Wrong recipe id");
+          goto status_cleanup;
+        }
+
+        if (task_id != NULL && g_strcmp0(task_id, task->task_id) != 0) {
+          soup_message_set_status_full(client_msg, SOUP_STATUS_BAD_REQUEST,
+                                       "Wrong task id");
+          goto status_cleanup;
+        }
+
+        if (task_id != NULL && recipe_id != NULL) {
+          app_data->aborted = ABORTED_TASK;
+          g_cancellable_cancel(app_data->cancellable);
+          soup_message_set_status (client_msg, SOUP_STATUS_OK);
+        } else if (recipe_id != NULL) {
+          app_data->aborted = ABORTED_RECIPE;
+          g_cancellable_cancel(app_data->cancellable);
+          soup_message_set_status (client_msg, SOUP_STATUS_OK);
+        }
+
+status_cleanup:
+        g_strfreev(splitpath);
+        g_slice_free (ClientData, client_data);
+        return;
     } else {
         soup_message_set_status_full (client_msg, SOUP_STATUS_BAD_REQUEST, "No Match, Invalid request");
+        g_slice_free (ClientData, client_data);
         return;
     }
 
@@ -395,6 +449,7 @@ client_cb (GIOChannel *io, GIOCondition condition, gpointer user_data)
     g_cancellable_cancel (app_data->cancellable);
     // We exit FALSE so update app_data->io_handler to know we are gone.
     app_data->io_handler_id = 0;
+    app_data->aborted = ABORTED_NONE;
     client_disconnected (client_data->client_msg, app_data);
     return FALSE;
 }
@@ -500,6 +555,7 @@ on_signal_term (gpointer user_data)
 int main(int argc, char *argv[]) {
   AppData *app_data = g_slice_new0(AppData);
   app_data->cancellable = g_cancellable_new ();
+  app_data->aborted = ABORTED_NONE;
   gint port = 8081;
   app_data->config_file = NULL;
   gchar *config_port = g_strdup("config.conf");

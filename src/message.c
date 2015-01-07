@@ -194,15 +194,14 @@ restraint_append_message (SoupSession *session,
     if (transaction_id == 0) {
         transaction_id = result;
     }
-    GString *body = g_string_new("");
     MessageData *message_data;
     message_data = g_slice_new0 (MessageData);
     message_data->msg = msg;
     message_data->user_data = user_data;
     message_data->finish_callback = finish_callback;
 
-    if (!g_cancellable_is_cancelled (cancellable)) {
-
+    if (client_data != NULL) {
+        GString *body = g_string_new("");
         SoupURI *uri = soup_message_get_uri (msg);
         soup_message_headers_foreach (msg->request_headers, append_header,
                                       body);
@@ -237,12 +236,12 @@ restraint_append_message (SoupSession *session,
         soup_message_body_append (client_data->client_msg->response_body,
                                   SOUP_MEMORY_TAKE,
                                   body->str, body->len);
-    
+
         g_string_free (body, FALSE);
-    
+
         soup_server_unpause_message (client_data->server, client_data->client_msg);
-    
     }
+
     if (finish_callback) {
         g_idle_add_full (G_PRIORITY_DEFAULT_IDLE,
                          message_finish,
