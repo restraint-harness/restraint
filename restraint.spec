@@ -126,6 +126,7 @@ ln -s rstrnt-restore $RPM_BUILD_ROOT/usr/bin/rhts-restore
 ln -s rstrnt-reboot $RPM_BUILD_ROOT/usr/bin/rhts-reboot
 ln -s rhts-sync-set $RPM_BUILD_ROOT/usr/bin/rhts-recipe-sync-set
 ln -s rhts-sync-block $RPM_BUILD_ROOT/usr/bin/rhts-recipe-sync-block
+ln -s rstrnt-abort $RPM_BUILD_ROOT/usr/bin/rhts-abort
 mkdir -p $RPM_BUILD_ROOT/mnt/scratchspace
 mkdir -p $RPM_BUILD_ROOT/mnt/testarea
 
@@ -225,6 +226,7 @@ fi
 %attr(0755, root, root)%{_bindir}/rstrnt-reboot
 %attr(0755, root, root)%{_bindir}/check_beaker
 %attr(0755, root, root)%{_bindir}/rstrnt-adjust-watchdog
+%attr(0755, root, root)%{_bindir}/rstrnt-abort
 /usr/share/%{name}
 /usr/share/%{name}/plugins/run_plugins
 /usr/share/%{name}/plugins/run_task_plugins
@@ -263,6 +265,7 @@ fi
 %attr(0755, root, root)%{_bindir}/rhts-sync-block
 %attr(0755, root, root)%{_bindir}/rhts-recipe-sync-set
 %attr(0755, root, root)%{_bindir}/rhts-recipe-sync-block
+%attr(0755, root, root)%{_bindir}/rhts-abort
 %{_datadir}/rhts/lib/rhts-make.include
 /mnt/scratchspace
 %attr(1777,root,root)/mnt/testarea

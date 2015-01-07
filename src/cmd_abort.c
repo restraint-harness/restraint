@@ -36,10 +36,13 @@ int main(int argc, char *argv[]) {
     gchar *prefix = NULL;
     gchar *server_recipe_key = NULL;
     gchar *server_recipe = NULL;
+    gchar *type = NULL;
 
     GOptionEntry entries[] = {
         {"server", 's', 0, G_OPTION_ARG_STRING, &server,
             "Server to connect to", "URL" },
+        {"type", 't', G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_STRING, &type,
+            "deprecated option", NULL},
         { NULL }
     };
     GOptionContext *context = g_option_context_new(NULL);

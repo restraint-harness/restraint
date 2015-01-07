@@ -127,16 +127,6 @@ restraint_queue_message (SoupSession *session,
     message_data->user_data = user_data;
     message_data->finish_callback = finish_callback;
 
-    if (g_cancellable_is_cancelled (cancellable)) {
-        if (finish_callback) {
-            g_idle_add_full (G_PRIORITY_DEFAULT_IDLE,
-                             message_finish,
-                             message_data,
-                             message_destroy);
-        }
-        return;
-    }
-
     // Initialize the queue if needed
     if (!message_queue) {
         message_queue = g_queue_new ();
