@@ -63,7 +63,7 @@ Summary:	Allow unmodified rhts tests to run under restraint
 Group:		Applications/Internet
 Requires:	restraint = %{version}
 Requires:       make
-Requires:       hostname
+Requires:       /bin/hostname
 Requires:       coreutils
 Requires:       libselinux-utils
 Provides:	rhts-test-env
