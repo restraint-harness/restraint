@@ -39,7 +39,6 @@ typedef struct _AppData {
     GHashTable *recipes;
     gint verbose;
     guint port;
-    SoupServer *server;
     SoupAddressFamily address_family;
     SoupURI *addr_get_uri;
     GCancellable *cancellable;

@@ -61,10 +61,6 @@ static void restraint_free_app_data(AppData *app_data)
     if (app_data->result_states_to != NULL) {
         g_hash_table_destroy(app_data->result_states_to);
     }
-    if (app_data->server != NULL) {
-        soup_server_quit(app_data->server);
-        g_object_unref(app_data->server);
-    }
     g_hash_table_destroy(app_data->recipes);
     if (app_data->loop != NULL) {
         g_main_loop_unref(app_data->loop);
