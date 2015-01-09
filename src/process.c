@@ -222,6 +222,13 @@ process_timeout_callback (gpointer user_data)
 {
     ProcessData *process_data = (ProcessData *) user_data;
 
+    process_data->timeout_handler_id = 0;
+
+    // If pid == 0 then we are already dead
+    if (process_data->pid == 0) {
+        return FALSE;
+    }
+
     // Kill process pid
     if (kill (process_data->pid, SIGKILL) == 0) {
         process_data->localwatchdog = TRUE;
@@ -233,8 +240,6 @@ process_timeout_callback (gpointer user_data)
             process_data->pid_handler_id = 0;
         }
     }
-
-    process_data->timeout_handler_id = 0;
 
     return FALSE;
 }

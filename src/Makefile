@@ -67,7 +67,7 @@ test_fetch_http: fetch.o fetch_http.o
 test_fetch_http.o: fetch_http.h
 
 TEST_PROGS += test_process
-test_process: process.o
+test_process: process.o errors.o
 test_process.o: process.h
 
 TEST_PROGS += test_dependency
