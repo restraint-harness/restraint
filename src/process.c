@@ -50,7 +50,10 @@ process_io_finish (gpointer user_data)
     ProcessData *process_data = (ProcessData *) user_data;
 
     // close the pty
-    close (process_data->fd);
+    if (process_data->fd != -1 ) {
+        close (process_data->fd);
+        process_data->fd = -1;
+    }
 
     // io handler is no longer active
     process_data->io_handler_id = 0;
@@ -163,7 +166,7 @@ process_run (const gchar *command,
         process_data->io = io;
         process_data->io_handler_id = g_io_add_watch_full (io,
                                                    G_PRIORITY_DEFAULT,
-                                                   G_IO_IN | G_IO_HUP,
+                                                   G_IO_IN | G_IO_HUP | G_IO_NVAL,
                                                    process_io_cb,
                                                    process_data,
                                                    process_io_finish);
@@ -183,6 +186,10 @@ process_pid_callback (GPid pid, gint status, gpointer user_data)
 
     process_data->pid_result = status;
     process_data->pid = 0;
+    if (process_data->fd != -1 ) {
+        close (process_data->fd);
+        process_data->fd = -1;
+    }
     if (process_data->finish_handler_id == 0) {
         process_data->finish_handler_id = g_idle_add (process_pid_finish, process_data);
     }
