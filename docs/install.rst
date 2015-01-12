@@ -66,9 +66,10 @@ If you need to run legacy RHTS tests install the -rhts sub-package on the system
 Building from Source
 --------------------
 
-Source code is located at https://github.com/p3ck/restraint.
-
-restraint can be built and linked dynamically or statically. To build it dynamically you will need the following packages installed (Minimum versions are listed):
+Source code is located at
+https://git.beaker-project.org/cgit/restraint/. restraint can be built 
+and linked dynamically or statically. To build it dynamically you will
+need the following packages installed (Minimum versions are listed):
 
  - zlib-1.2.8
  - bzip2-1.0.6
@@ -77,13 +78,13 @@ restraint can be built and linked dynamically or statically. To build it dynamic
  - libxml2-2.9.0
  - libarchive-3.1.2
  - xz-5.0.4
- - libsoup-2.42.2
+ - libsoup-2.48.1
  - sqlite-autoconf-3080002
  - intltool-0.35.5
 
 Clone from git::
 
- % git clone https://github.com/p3ck/restraint.git
+ % git clone git://git.beaker-project.org/restraint
 
 Build restraint::
 
