@@ -38,6 +38,8 @@ If you need RHTS compatibility and/or beakerlib you can add it here as well::
 
  bkr <WORKFLOW> --ks-meta="harness='restraint-rhts beakerlib'" --repo http://bpeck.fedorapeople.org/restraint/fc19/
 
+.. _standalone:
+
 Running Standalone
 -------------------
 

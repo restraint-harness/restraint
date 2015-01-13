@@ -46,6 +46,7 @@ Contents:
    variables
    plugins
    using
+   develop
    todo
 
 Additional Information
