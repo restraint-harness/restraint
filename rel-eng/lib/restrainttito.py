@@ -19,7 +19,6 @@ class RestraintBuilder(Builder):
         self.sources.append(full_path)
         self.artifacts.append(full_path)
 
-	run_command("cp %s/third-party/*tar* %s/third-party/" % (self.start_dir, self.rpmbuild_gitcopy));
         run_command("pushd %s/third-party && make tarballs && popd" % self.rpmbuild_gitcopy)
         run_command("pushd %s && tar zcf %s %s && popd" % (self.rpmbuild_sourcedir,
                                                            self.tgz_filename, self._get_tgz_name_and_ver()))
