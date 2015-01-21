@@ -47,6 +47,13 @@ Requires: selinux-policy >= %{_selinux_policy_version}
 
 #if not static build
 BuildRequires:	zlib-devel
+BuildRequires:  glib2-devel
+BuildRequires:  libsoup-devel
+BuildRequires:  make
+BuildRequires:  libarchive-devel
+BuildRequires:  libxml2-devel
+BuildRequires:  tar
+
 # If static build...
 %if 0%{?rhel}%{?fedora} >= 6
 BuildRequires:	libselinux-static
