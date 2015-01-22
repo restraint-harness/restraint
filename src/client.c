@@ -252,8 +252,8 @@ remote_hup (GError *error,
     if (app_data->started && ! tasks_finished(app_data->recipes)
                           && ! g_cancellable_is_cancelled(recipe_data->cancellable)) {
         if (error) {
-            g_printerr ("%s [%s, %d]\n", error->message,
-                        g_quark_to_string (error->domain), error->code);
+            g_print ("%s [%s, %d]\n", error->message,
+                     g_quark_to_string (error->domain), error->code);
         }
         continue_uri = soup_uri_new_with_base (recipe_data->remote_uri, "/continue");
         soup_uri_free (recipe_data->remote_uri);
