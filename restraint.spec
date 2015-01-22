@@ -1,3 +1,4 @@
+%{!?_without_static:%global with_static 1}
 
 # Got Systemd?
 %if 0%{?fedora} >= 18 || 0%{?rhel} >= 7
@@ -46,19 +47,19 @@ Requires: selinux-policy >= %{_selinux_policy_version}
 %endif
 
 #if not static build
-BuildRequires:	zlib-devel
-BuildRequires:  glib2-devel
-BuildRequires:  libsoup-devel
+%{?without_static:BuildRequires:	zlib-devel}
+%{?without_static:BuildRequires:  glib2-devel}
+%{?without_static:BuildRequires:  libsoup-devel}
+%{?without_static:BuildRequires:  libarchive-devel}
+%{?without_static:BuildRequires:  libxml2-devel}
 BuildRequires:  make
-BuildRequires:  libarchive-devel
-BuildRequires:  libxml2-devel
 BuildRequires:  tar
 
 # If static build...
 %if 0%{?rhel}%{?fedora} >= 6
-BuildRequires:	libselinux-static
-BuildRequires:	openssl-static
-BuildRequires:	glibc-static
+%{?with_static:BuildRequires:	libselinux-static}
+%{?with_static:BuildRequires:	openssl-static}
+%{?with_static:BuildRequires:	glibc-static}
 %endif
 
 %description
@@ -102,11 +103,13 @@ export CFLAGS="-mminimal-toc"
 %endif
 %endif
 
+%if 0%{?with_static:1}
 pushd third-party
 make
 popd
+%endif
 pushd src
-PKG_CONFIG_PATH=../third-party/tree/lib/pkgconfig make STATIC=1
+PKG_CONFIG_PATH=../third-party/tree/lib/pkgconfig make %{?with_static:STATIC=1}
 popd
 %if %{with_selinux_policy}
 make -C selinux -f %{_datadir}/selinux/devel/Makefile
@@ -115,9 +118,11 @@ make -C selinux -f %{_datadir}/selinux/devel/Makefile
 %install
 %{__rm} -rf %{buildroot}
 
+%if 0%{?with_static:1}
 pushd third-party
 make clean
 popd
+%endif
 make DESTDIR=%{buildroot} install
 %if %{with_selinux_policy}
 install -p -m 644 -D selinux/restraint.pp $RPM_BUILD_ROOT%{_datadir}/selinux/packages/%{name}/restraint.pp
