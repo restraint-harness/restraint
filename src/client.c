@@ -555,7 +555,7 @@ tasks_logs_cb (const char *method,
 //                    "Total length is smaller than range end");
             goto logs_cleanup;
         }
-        if (total_length > 0) {
+        if (total_length > 0 && access( filename, F_OK ) != -1 ) {
             int result = truncate ((const char *)filename, total_length);
             g_warn_if_fail(result == 0);
         }
@@ -572,8 +572,10 @@ tasks_logs_cb (const char *method,
         }
         update_chunk (filename, body->data, body->length, start);
     } else {
-        int result = truncate ((const char *)filename, body->length);
-        g_warn_if_fail(result == 0);
+        if (access( filename, F_OK ) != -1 ) {
+            int result = truncate ((const char *)filename, body->length);
+            g_warn_if_fail(result == 0);
+        }
         // Record log in xml
         xmlXPathObjectPtr logs_node_ptrs = get_node_set(app_data->xml_doc,
                 recipe_data->recipe_node_ptr, (xmlChar *)logs_xpath);
