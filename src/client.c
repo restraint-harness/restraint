@@ -87,7 +87,8 @@ update_chunk (gchar *filename, const gchar *data, gsize size, goffset offset)
 {
     gint fd = g_open(filename, O_WRONLY | O_CREAT, 0644);
     lseek (fd, offset, SEEK_SET);
-    write (fd, data, size);
+    ssize_t written = write (fd, data, size);
+    g_warn_if_fail(written == size);
     g_close (fd, NULL);
 }
 
@@ -539,7 +540,8 @@ tasks_logs_cb (const char *method,
             goto logs_cleanup;
         }
         if (total_length > 0) {
-            truncate ((const char *)filename, total_length);
+            int result = truncate ((const char *)filename, total_length);
+            g_warn_if_fail(result == 0);
         }
         if (start == 0) {
             // Record log in xml
@@ -554,7 +556,8 @@ tasks_logs_cb (const char *method,
         }
         update_chunk (filename, body->data, body->length, start);
     } else {
-        truncate ((const char *)filename, body->length);
+        int result = truncate ((const char *)filename, body->length);
+        g_warn_if_fail(result == 0);
         // Record log in xml
         xmlXPathObjectPtr logs_node_ptrs = get_node_set(app_data->xml_doc,
                 recipe_data->recipe_node_ptr, (xmlChar *)logs_xpath);
@@ -569,7 +572,8 @@ tasks_logs_cb (const char *method,
     if (log_level_char) {
         gint log_level = g_ascii_strtoll (log_level_char, NULL, 0);
         if (app_data->verbose >= log_level) {
-            write (STDOUT_FILENO, body->data, body->length);
+            ssize_t written = write (STDOUT_FILENO, body->data, body->length);
+            g_warn_if_fail(written == body->length);
         }
     }
 logs_cleanup:
@@ -1265,7 +1269,7 @@ pretty_results (gchar* run_dir)
     gchar* std_err = NULL;
     gint exitstat;
     GError *gerror = NULL;
-    gchar* results_filename;
+    gchar* results_filename = NULL;
     gint results_fd;
     gssize results_len;
     gboolean success = FALSE;

@@ -655,7 +655,7 @@ recipe_handler (gpointer user_data)
 
     // write message out to stderr
     if (message->len) {
-      write (STDERR_FILENO, message->str, message->len);
+      fwrite(message->str, sizeof(gchar), message->len, stderr);
     }
 
     g_string_free(message, TRUE);
