@@ -323,6 +323,12 @@ archive_finish_callback (gpointer user_data)
 {
     FetchData *fetch_data = (FetchData *) user_data;
     gint free_result;
+
+    if (fetch_data == NULL) {
+        g_warning("%s: fetch_data is NULL", __func__);
+        return FALSE;
+    }
+
     if (fetch_data->ext != NULL) {
         free_result = archive_write_free(fetch_data->ext);
         if (free_result != ARCHIVE_OK)

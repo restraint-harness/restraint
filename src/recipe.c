@@ -486,8 +486,8 @@ read_finish (GObject *source, GAsyncResult *result, gpointer user_data)
         // Finished Reading
         g_input_stream_close (stream, NULL, NULL);
         g_object_unref(stream);
-        xmlParserErrors result = xmlParseChunk(ctxt, buf, 0, /* terminator */ 1);
-        if (result != XML_ERR_OK) {
+        xmlParserErrors xmlresult = xmlParseChunk(ctxt, buf, 0, /* terminator */ 1);
+        if (xmlresult != XML_ERR_OK) {
             xmlError *xmlerr = xmlCtxtGetLastError(ctxt);
             g_set_error_literal(&app_data->error, RESTRAINT_RECIPE_PARSE_ERROR,
                     RESTRAINT_RECIPE_PARSE_ERROR_BAD_SYNTAX,
@@ -511,9 +511,9 @@ read_finish (GObject *source, GAsyncResult *result, gpointer user_data)
                 return;
             }
         } else {
-            xmlParserErrors result = xmlParseChunk(ctxt, buf, size,
+            xmlParserErrors xmlresult = xmlParseChunk(ctxt, buf, size,
                     /* terminator */ 0);
-            if (result != XML_ERR_OK) {
+            if (xmlresult != XML_ERR_OK) {
                 xmlError *xmlerr = xmlCtxtGetLastError(ctxt);
                 g_set_error_literal(&app_data->error, RESTRAINT_RECIPE_PARSE_ERROR,
                         RESTRAINT_RECIPE_PARSE_ERROR_BAD_SYNTAX,

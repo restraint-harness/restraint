@@ -178,11 +178,12 @@ restraint_config_trunc (gchar *config_file, GError **error)
 }
 
 void
-restraint_config_set (gchar *config_file, gchar *section, gchar *key, GError **error, GType type, ...)
+restraint_config_set (gchar *config_file, gchar *section, gchar *key,
+                      GError **gerror, GType type, ...)
 {
     g_return_if_fail(config_file != NULL);
     g_return_if_fail(section != NULL);
-    g_return_if_fail(error == NULL || *error == NULL);
+    g_return_if_fail(gerror == NULL || *gerror == NULL);
     va_list args;
     GValue value;
 
@@ -248,12 +249,12 @@ restraint_config_set (gchar *config_file, gchar *section, gchar *key, GError **e
 
     s_data = g_key_file_to_data (keyfile, &length, &tmp_error);
     if (!s_data) {
-        g_propagate_error (error, tmp_error);
+        g_propagate_error (gerror, tmp_error);
         goto error;
     }
 
     if (!g_file_set_contents (config_file, s_data, length,  &tmp_error)) {
-        g_propagate_error (error, tmp_error);
+        g_propagate_error (gerror, tmp_error);
         goto error;
     }
 

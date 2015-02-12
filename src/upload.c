@@ -61,9 +61,8 @@ upload_chunk (SoupSession *session,
             g_object_unref (server_msg);
             return -1;
         }
-        g_object_unref (server_msg);
     }
-    return 0; 
+    return 0;
 }
 
 gboolean

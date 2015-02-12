@@ -22,19 +22,19 @@ endif
 all: restraint restraintd rstrnt-report-result rstrnt-report-log rstrnt-adjust-watchdog rstrnt-abort
 
 rstrnt-report-result: cmd_result.o upload.o utils.o errors.o
-	$(CC) $(LDFLAFS) -o $@ $^ $(LIBS)
+	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 rstrnt-report-log: cmd_log.o upload.o utils.o errors.o
-	$(CC) $(LDFLAFS) -o $@ $^ $(LIBS)
+	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 rstrnt-adjust-watchdog: cmd_watchdog.o utils.o errors.o
-	$(CC) $(LDFLAFS) -o $@ $^ $(LIBS)
+	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 rstrnt-abort: cmd_abort.o utils.o errors.o
-	$(CC) $(LDFLAFS) -o $@ $^ $(LIBS)
+	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 restraint: client.o multipart.o errors.o
-	$(CC) $(LDFLAFS) -o $@ $^ $(LIBS)
+	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 restraintd: server.o recipe.o task.o fetch.o fetch_git.o fetch_http.o param.o role.o metadata.o process.o message.o dependency.o utils.o config.o errors.o
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)

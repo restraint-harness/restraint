@@ -137,12 +137,12 @@ server_io_callback (GIOChannel *io, GIOCondition condition, gpointer user_data) 
     AppData *app_data = (AppData *) client_data->user_data;
     GError *tmp_error = NULL;
 
-    gchar buf[131072];
+    gchar buf[10000];
     gsize bytes_read;
 
     if (condition & G_IO_IN) {
         //switch (g_io_channel_read_line_string(io, s, NULL, &tmp_error)) {
-        switch (g_io_channel_read_chars(io, buf, 131072, &bytes_read, &tmp_error)) {
+        switch (g_io_channel_read_chars(io, buf, 10000, &bytes_read, &tmp_error)) {
           case G_IO_STATUS_NORMAL:
             fwrite(buf, sizeof(gchar), bytes_read, stdout);
             /* Push data to our connections.. */

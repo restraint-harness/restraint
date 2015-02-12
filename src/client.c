@@ -86,10 +86,22 @@ static void
 update_chunk (gchar *filename, const gchar *data, gsize size, goffset offset)
 {
     gint fd = g_open(filename, O_WRONLY | O_CREAT, 0644);
-    lseek (fd, offset, SEEK_SET);
-    ssize_t written = write (fd, data, size);
-    g_warn_if_fail(written == size);
-    g_close (fd, NULL);
+    if (fd < 0) {
+        g_warning("Failed to open %s: %s", filename, strerror(errno));
+        return;
+    }
+
+    if (lseek (fd, offset, SEEK_SET) < 0) {
+        g_warning("Failed to seek %s to %" PRId64 ": %s", filename, offset,
+                   strerror(errno));
+    } else {
+        ssize_t written = write (fd, data, size);
+        g_warn_if_fail(written == size);
+    }
+
+    if (g_close(fd, NULL) < 0) {
+        g_warning("Failed to close %s: %s", filename, strerror(errno));
+    }
 }
 
 static void
@@ -214,6 +226,10 @@ static void
 put_doc (xmlDocPtr xml_doc, gchar *filename)
 {
     FILE *outxml = fopen(filename, "w");
+    if (outxml == NULL) {
+        g_warning("Failed to open %s: %s", filename, strerror(errno));
+        return;
+    }
     xmlDocFormatDump (outxml, xml_doc, 1);
     fclose (outxml);
 }
@@ -1087,6 +1103,7 @@ static gchar *copy_job_as_template(gchar *job, AppData *app_data)
         if (recipe_data == NULL) {
             g_printerr ("Unable to find matching host for recipe id:%s did you pass --host on the cmd line?\n", id);
             xmlFreeDoc(template_xml_doc_ptr);
+            g_hash_table_destroy(roletable);
             return NULL;
         }
 
@@ -1207,6 +1224,7 @@ parse_new_job (AppData *app_data)
             g_printerr ("Unable to find matching recipe id:%s in job.\n", recipe_id);
             g_free (filename);
             g_free (recipe_id);
+            g_slist_free_full(idlist, g_free);
             xmlXPathFreeObject (recipe_node_ptrs);
             xmlFreeDoc(app_data->xml_doc);
             return;
@@ -1226,6 +1244,7 @@ parse_new_job (AppData *app_data)
         if (!task_nodes) {
             g_printerr ("No <task> element(s) in %s\n", filename);
             g_free (filename);
+            g_slist_free_full(idlist, g_free);
             xmlXPathFreeObject (recipe_node_ptrs);
             xmlXPathFreeObject (task_nodes);
             xmlFreeDoc(app_data->xml_doc);
@@ -1303,7 +1322,6 @@ pretty_results (gchar* run_dir)
     if (!g_spawn_command_line_sync(cmdline, &std_out, &std_err, &exitstat,
                                    &gerror)) {
         g_printerr("cannot spawn '%s': %s\n", cmdline, gerror->message);
-        g_error_free(gerror);
         goto cleanup;
     }
     if (exitstat != 0) {
@@ -1322,7 +1340,6 @@ pretty_results (gchar* run_dir)
     results_len = write(results_fd, std_out, length);
     if(!g_close(results_fd, &gerror)) {
         g_printerr("cannot close %s: %s\n", results_filename, gerror->message);
-        g_error_free(gerror);
         goto cleanup;
     }
     if (results_len != length) {
@@ -1330,6 +1347,8 @@ pretty_results (gchar* run_dir)
     }
 
 cleanup:
+    if (gerror != NULL)
+        g_error_free(gerror);
     if (results_filename != NULL)
         g_free (results_filename);
     if (jobxml != NULL)

@@ -120,9 +120,9 @@ process_run (const gchar *command,
             environ = (gchar **) envp;
 
         // Print the command being executed.
-        gchar *command = g_strjoinv (" ", (gchar **) process_data->command);
-        g_print ("%s\n", command);
-        g_free (command);
+        gchar *pcommand = g_strjoinv (" ", (gchar **) process_data->command);
+        g_print ("%s\n", pcommand);
+        g_free (pcommand);
 
         /* Spawn the command */
         if (execvp (*process_data->command, (gchar **) process_data->command) == -1) {
@@ -143,7 +143,9 @@ process_run (const gchar *command,
     }
 
     // close file descriptors on exec.  Should prevent leaking fd's to child processes.
-    fcntl (process_data->fd, F_SETFD, FD_CLOEXEC);
+    if (fcntl (process_data->fd, F_SETFD, FD_CLOEXEC) < 0) {
+        g_warning("Failed to set close on exec");
+    }
 
     // Localwatchdog handler
     if (process_data->max_time != 0) {
