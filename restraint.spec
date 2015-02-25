@@ -10,8 +10,8 @@
 %endif
 
 Name:		restraint
-Version:	0.1.17
-Release:	3%{?dist}
+Version:	0.1.18
+Release:	1%{?dist}
 Summary:	Simple test harness which can be used with beaker
 
 Group:		Applications/Internet
@@ -289,6 +289,84 @@ fi
 %{__rm} -rf %{buildroot}
 
 %changelog
+* Wed Feb 25 2015 Bill Peck <bpeck@redhat.com> 0.1.18-1
+- Clear previous beakerlib run (bpeck@redhat.com)
+- previous fix showed an error where we call truncate when no file exists.
+  (bpeck@redhat.com)
+- Multiple fixes for errors found by covscan. (asavkov@redhat.com)
+- fix warnings about unused return values from write(2) and truncate(2)
+  (dcallagh@redhat.com)
+- fixes for compiling --without-static, default is still to build with static
+  enabled. (bpeck@redhat.com)
+- Don't print non-errors to stderr since this confuses some scripts that wrap
+  restraint (bpeck@redhat.com)
+- Add a developer guide (asaha@redhat.com)
+- Fix BuildRequires for non-static builds (asaha@redhat.com)
+- Add watchdog handler to restraint client (bpeck@redhat.com)
+- Implement methods for registering different callbacks based on path.
+  (bpeck@redhat.com)
+- tito: Do not attempt to copy existing tarballs (asaha@redhat.com)
+- Minor fixes to make it work. (bpeck@redhat.com)
+- Flattened commit of rstrnt-abort (bpeck@redhat.com)
+- Fix process.c to close fd when the process finsihes if not already closed.
+  (bpeck@redhat.com)
+- Unit test to check if running a program into the background will cause us to
+  hang. (bpeck@redhat.com)
+- Client code doesn't use soup_server any more. (bpeck@redhat.com)
+- Update to libsoup-2.48.1 (bpeck@redhat.com)
+- Misc. fixes to the install doc (asaha@redhat.com)
+- fix Requires for hostname (bpeck@redhat.com)
+- Remove #define _BSD_SOURCE and #define _POSIX_C_SOURCE 200809L
+  (bpeck@redhat.com)
+- Remove main.c since it's not used any more. (bpeck@redhat.com)
+- Issue #25: Add dependencies on external commands for restraint-rhts
+  (asaha@redhat.com)
+- Include stdint.h for uint32_t (asaha@redhat.com)
+- Introduce RSTRNT_LOGGING variable to control debugging in plugins.
+  (bpeck@redhat.com)
+- RECIPE_MEMBERS param support. (asavkov@redhat.com)
+- Fix segfault on server when client disconnects (bpeck@redhat.com)
+- update restraint client. (bpeck@redhat.com)
+- Fix repodeps code to not try and process none fetch method tasks.
+  (bpeck@redhat.com)
+- Move external watchdog from 5 minutes to 30 minutes (bpeck@redhat.com)
+- 'Fragment' http tests added. (asavkov@redhat.com)
+- repodeps tests in test_dependency (asavkov@redhat.com)
+- http_fetch: report error on failed fragment extract (asavkov@redhat.com)
+- base_path added to Recipe struct. (asavkov@redhat.com)
+- Dependency test fix. (asavkov@redhat.com)
+- Metadata test update (asavkov@redhat.com)
+- Adjusting path_prefix_len for leading slash inconsistencies.
+  (asavkov@redhat.com)
+- turn off message accumulating in multipart messages (bpeck@redhat.com)
+- fix boundary printing in multipart messages turn off message accumulating in
+  multipart messages free client data in client disconnect method.
+  (bpeck@redhat.com)
+- Properly handling g_key_file* errors. (asavkov@redhat.com)
+- Returning support for nonfragment http urls. (asavkov@redhat.com)
+- repoRequires http[s] support (asavkov@redhat.com)
+- Adding support for repoDeps metadata option. (asavkov@redhat.com)
+- server post multipart fixes (asavkov@redhat.com)
+- client post multipart fixes (asavkov@redhat.com)
+- Clear error in recipe_handler_finish (bpeck@redhat.com)
+- Update restraint client to use new streaming support (bpeck@redhat.com)
+- Support for streaming data back to client (bpeck@redhat.com)
+- Change the heartbeat from 5 minutes to 1 minute (bpeck@redhat.com)
+- Implement restraint_append_message. (bpeck@redhat.com)
+- Don't call restraint_queue_message directly. (bpeck@redhat.com)
+- fix copy_header to update Location base (bpeck@redhat.com)
+- Allow a recipe to be cancelled. (bpeck@redhat.com)
+- set to task to NULL. (bpeck@redhat.com)
+- Update ignore list to latest third-party packages (bpeck@redhat.com)
+- new restraint_config_trunc to clear the configuration (bpeck@redhat.com)
+- Bump to newer version of libsoup which includes some important fixes.
+  (bpeck@redhat.com)
+- Include the run levels and add the service instead (bpeck@redhat.com)
+- make selinux policy optional. (bpeck@redhat.com)
+- restraintd: https support (asavkov@redhat.com)
+- restraintd: fetch_http premature error cleanup fix (asavkov@redhat.com)
+- Fix for issue#15. Client retcode on failed get_addr. (asavkov@redhat.com)
+
 * Wed Sep 17 2014 Bill Peck <bpeck@redhat.com> 0.1.17-3
 - Fixed client segfault on xml without recipe ids. (asavkov@redhat.com)
 - Fix typo in restraint word (gsr@redhat.com)
