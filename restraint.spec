@@ -239,7 +239,6 @@ fi
 %attr(0755, root, root)%{_bindir}/check_beaker
 %attr(0755, root, root)%{_bindir}/rstrnt-adjust-watchdog
 %attr(0755, root, root)%{_bindir}/rstrnt-abort
-/usr/share/%{name}
 /usr/share/%{name}/plugins/run_plugins
 /usr/share/%{name}/plugins/run_task_plugins
 /usr/share/%{name}/plugins/helpers
