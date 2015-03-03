@@ -647,6 +647,10 @@ recipe_handler (gpointer user_data)
             // We are done. remove ourselves so we can run another recipe.
             app_data->state = RECIPE_IDLE;
             result = FALSE;
+            if (app_data->io_handler_id != 0) {
+                g_source_remove (app_data->io_handler_id);
+                app_data->io_handler_id = 0;
+            }
             g_cancellable_reset (app_data->cancellable);
             break;
         default:
