@@ -214,12 +214,9 @@ static void parse_line(MetaData *metadata,
         }
         // We only want to free the array not the values that it's pointing to
         g_strfreev (dependencies);
-    } else  if (g_strcmp0("RHTSREQUIRES", key) == 0) {
-        if (g_ascii_strncasecmp("test(", value, 5) == 0) {
-            const char *tname_start = value + 5;
-            metadata->repodeps = g_slist_prepend(metadata->repodeps,
-                g_strndup(tname_start, strlen(tname_start) - 1));
-        }
+    } else  if (g_strcmp0("REPOREQUIRES", key) == 0) {
+        metadata->repodeps = g_slist_prepend(metadata->repodeps,
+                                             g_strndup(value, strlen(value)));
     }
     g_free(key);
     g_free(value);
