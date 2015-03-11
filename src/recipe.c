@@ -20,6 +20,7 @@
 #include <gio/gio.h>
 #include <libxml/tree.h>
 #include <libxml/parser.h>
+#include <libxml/xpath.h>
 
 #include "recipe.h"
 #include "param.h"
@@ -29,6 +30,7 @@
 #include "metadata.h"
 #include "utils.h"
 #include "config.h"
+#include "xml.h"
 
 xmlParserCtxt *ctxt = NULL;
 
@@ -37,17 +39,6 @@ gchar buf[4096];
 
 GQuark restraint_recipe_parse_error_quark(void) {
     return g_quark_from_static_string("restraint-recipe-parse-error-quark");
-}
-
-static xmlNode *first_child_with_name(xmlNode *parent, const gchar *name) {
-    xmlNode *child = parent->children;
-    while (child != NULL) {
-        if (child->type == XML_ELEMENT_NODE &&
-                g_strcmp0((gchar *)child->name, name) == 0)
-            return child;
-        child = child->next;
-    }
-    return NULL;
 }
 
 static gchar *get_attribute(xmlNode *node, void *attribute) {
@@ -59,36 +50,21 @@ static gchar *get_attribute(xmlNode *node, void *attribute) {
     return result;
 }
 
-static xmlNode *find_recipe(xmlNode *recipe_set, const gchar *recipe_id) {
-    xmlNode *child = recipe_set->children;
-    while (child != NULL) {
-        if (child->type == XML_ELEMENT_NODE &&
-                g_strcmp0((gchar *)child->name, "recipe") == 0) {
-            xmlChar *id = xmlGetNoNsProp(child, (xmlChar *)"id");
-            if (g_strcmp0(recipe_id, (gchar*)id) == 0) {
-                xmlFree(id);
-                return child;
-            }
-            xmlFree(id);
-        }
-        child = child->next;
-    }
+static xmlNodePtr find_recipe(xmlDocPtr doc) {
+    xmlXPathObjectPtr recipe_nodes;
+    xmlNodePtr result = NULL;
 
-    xmlNode *recipe = first_child_with_name(recipe_set, "recipe");
-    if (recipe) {
-        xmlChar *id = xmlGetNoNsProp(recipe, (xmlChar *)"id");
-        if (id) {
-            xmlFree (id);
-            return recipe;
-        }
-        xmlNode *guest_recipe = first_child_with_name(recipe, "guestrecipe");
-        if (guest_recipe) {
-            xmlChar *id = xmlGetNoNsProp(guest_recipe, (xmlChar *)"id");
-            if (id) {
-                xmlFree (id);
-                return guest_recipe;
-            }
-        }
+    recipe_nodes = get_node_set (doc, NULL, (xmlChar *)"//recipe[@id]");
+    if (recipe_nodes) {
+        result = recipe_nodes->nodesetval->nodeTab[0];
+        xmlXPathFreeObject (recipe_nodes);
+        return result;
+    }
+    recipe_nodes = get_node_set (doc, NULL, (xmlChar *)"//guestrecipe");
+    if (recipe_nodes) {
+        result = recipe_nodes->nodesetval->nodeTab[0];
+        xmlXPathFreeObject (recipe_nodes);
+        return result;
     }
     return NULL;
 }
@@ -262,7 +238,7 @@ static Task *parse_task(xmlNode *task_node, Recipe *recipe, GError **error) {
     task->task_uri = soup_uri_new_with_base(recipe->recipe_uri, suffix);
     g_free(suffix);
 
-    xmlNode *fetch = first_child_with_name(task_node, "fetch");
+    xmlNode *fetch = first_child_with_name(task_node, "fetch", FALSE);
     if (fetch != NULL) {
         task->fetch_method = TASK_FETCH_UNPACK;
         xmlChar *url = xmlGetNoNsProp(fetch, (xmlChar *)"url");
@@ -280,7 +256,7 @@ static Task *parse_task(xmlNode *task_node, Recipe *recipe, GError **error) {
                 NULL);
     } else {
         task->fetch_method = TASK_FETCH_INSTALL_PACKAGE;
-        xmlNode *rpm = first_child_with_name(task_node, "rpm");
+        xmlNode *rpm = first_child_with_name(task_node, "rpm", FALSE);
         if (rpm == NULL) {
             unrecognised("Task %s has neither 'url' attribute nor 'rpm' element",
                     task->task_id);
@@ -304,7 +280,7 @@ static Task *parse_task(xmlNode *task_node, Recipe *recipe, GError **error) {
         xmlFree(rpm_path);
     }
 
-    xmlNode *params_node = first_child_with_name(task_node, "params");
+    xmlNode *params_node = first_child_with_name(task_node, "params", FALSE);
     if (params_node != NULL) {
         task->params = parse_params(params_node, &tmp_error);
         /* params could be empty, but if parsing causes an error then fail */
@@ -317,7 +293,7 @@ static Task *parse_task(xmlNode *task_node, Recipe *recipe, GError **error) {
         g_list_foreach (task->params, (GFunc) check_param_max_time, task);
     }
 
-    xmlNode *roles_node = first_child_with_name(task_node, "roles");
+    xmlNode *roles_node = first_child_with_name(task_node, "roles", FALSE);
     if (roles_node != NULL) {
         task->roles = parse_roles(roles_node, &tmp_error);
         /* roles could be empty, but if parsing causes an error then fail */
@@ -373,36 +349,21 @@ recipe_parse (xmlDoc *doc, SoupURI *recipe_uri, GError **error)
     g_return_val_if_fail(doc != NULL, NULL);
     g_return_val_if_fail(error == NULL || *error == NULL, NULL);
 
-    gchar **spath = NULL;
-    gchar *recipe_id = NULL;
     GError *tmp_error = NULL;
     gint i = 0;
     Recipe *result = g_slice_new0(Recipe);
 
     xmlNode *job = xmlDocGetRootElement(doc);
-    if (job == NULL || g_strcmp0((gchar *)job->name, "job") != 0) {
-        unrecognised("<job/> element not found");
-        goto error;
-    }
-    xmlNode *recipeset = first_child_with_name(job, "recipeSet");
-    if (recipeset == NULL) {
-        unrecognised("<recipeSet/> element not found");
+    if (job == NULL) {
+        unrecognised("Invalid XML Document");
         goto error;
     }
 
-    // FIXME: This is so unreliable, we should track recipe id in the server
-    // somehow
-    if (recipe_uri) {
-        spath = g_strsplit(soup_uri_get_path(recipe_uri), "/", 0);
-        recipe_id = spath[2];
-    }
-    xmlNode *recipe = find_recipe(recipeset, recipe_id);
-    g_strfreev(spath);
+    xmlNodePtr recipe = find_recipe(doc);
     if (recipe == NULL) {
         unrecognised("<recipe/> element not found");
         goto error;
     }
-    // XXX guestrecipe?
 
     result->job_id = get_attribute(recipe, "job_id");
     result->recipe_set_id = get_attribute(recipe, "recipe_set_id");

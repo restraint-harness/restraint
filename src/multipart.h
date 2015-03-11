@@ -17,6 +17,7 @@ typedef struct {
     GError *error;
     SoupMessageHeaders *headers;
     GString *buffer;
+    gchar read_buffer[READ_BUFFER_SIZE];
     MultiPartCallback callback;
     MultiPartDestroy destroy;
     gpointer user_data;

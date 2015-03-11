@@ -3,8 +3,6 @@
 #include "multipart.h"
 #include "errors.h"
 
-gchar buffer[READ_BUFFER_SIZE];
-
 static void next_part_cb (GObject *source, GAsyncResult *async_result, gpointer user_data);
 
 static void
@@ -106,9 +104,9 @@ read_cb (GObject *source, GAsyncResult *async_result, gpointer user_data)
                                                      user_data);
         return;
     }
-    multipart_data->buffer = g_string_append_len (multipart_data->buffer, buffer, bytes_read);
+    multipart_data->buffer = g_string_append_len (multipart_data->buffer, multipart_data->read_buffer, bytes_read);
     g_input_stream_read_async (in,
-                               buffer,
+                               multipart_data->read_buffer,
                                READ_BUFFER_SIZE,
                                G_PRIORITY_DEFAULT,
                                multipart_data->cancellable,
@@ -163,7 +161,7 @@ next_part_cb (GObject *source, GAsyncResult *async_result, gpointer user_data)
     multipart_data->buffer = g_string_sized_new(READ_BUFFER_SIZE);
 
     g_input_stream_read_async (in,
-                               buffer,
+                               multipart_data->read_buffer,
                                READ_BUFFER_SIZE,
                                G_PRIORITY_DEFAULT,
                                multipart_data->cancellable,

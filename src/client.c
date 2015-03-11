@@ -38,13 +38,12 @@
 #include "client.h"
 #include "multipart.h"
 #include "errors.h"
+#include "xml.h"
 
 static SoupSession *session;
-gchar buf[1024];
 
 static void recipe_finish(RecipeData *recipe_data);
 static gboolean run_recipe_handler (gpointer user_data);
-xmlXPathObjectPtr get_node_set(xmlDocPtr doc, xmlNodePtr node, xmlChar *xpath);
 
 static void restraint_free_recipe_data(RecipeData *recipe_data)
 {
@@ -232,28 +231,6 @@ put_doc (xmlDocPtr xml_doc, gchar *filename)
     }
     xmlDocFormatDump (outxml, xml_doc, 1);
     fclose (outxml);
-}
-
-static xmlNodePtr
-first_child_with_name(xmlNodePtr parent_ptr, const gchar *name,
-                      gboolean create)
-{
-    xmlNodePtr results_node_ptr = NULL;
-    xmlNode *child = parent_ptr->children;
-    while (child != NULL) {
-        if (child->type == XML_ELEMENT_NODE &&
-                g_strcmp0((gchar *)child->name, name) == 0)
-            return child;
-        child = child->next;
-    }
-    // If requested create if not found
-    if (create) {
-        results_node_ptr = xmlNewTextChild (parent_ptr,
-                                            NULL,
-                                            (xmlChar *) name,
-                                            NULL);
-    }
-    return results_node_ptr;
 }
 
 void
@@ -526,12 +503,14 @@ tasks_logs_cb (const char *method,
     gchar *logs_xpath = NULL;
     if (g_strcmp0 (entries[5], "logs") == 0) {
         logs_xpath = g_strdup_printf(
-            "//recipe[contains(@id,'%s')]/task[contains(@id,'%s')]/logs",
+            "//recipe[@id='%s']/task[@id='%s']/logs",
             recipe_id, task_id);
         short_path = g_strjoinv ("/", &entries[6]);
     } else {
-        logs_xpath = g_strdup_printf("//result[contains(@id,'%s')]/logs",
-                                     entries[6]);
+        // We shouldn't have to specify recipe and task id since we
+        // are searching from recipe node.
+        logs_xpath = g_strdup_printf("//recipe[@id='%s']/task[@id='%s']/results/result[@id='%s']/logs",
+                                     recipe_id, task_id, entries[6]);
         short_path = g_strjoinv ("/", &entries[8]);
     }
 
@@ -679,36 +658,6 @@ get_doc (char *docname)
     }
 
     return doc;
-}
-
-xmlXPathObjectPtr
-get_node_set (xmlDocPtr doc, xmlNodePtr node, xmlChar *xpath)
-{
-    xmlXPathContextPtr context;
-    xmlXPathObjectPtr result;
-
-    context = xmlXPathNewContext(doc);
-    if (context == NULL) {
-        printf("Error in xmlXPathNewContext\n");
-        return NULL;
-    }
-
-    if (node == NULL) {
-        result = xmlXPathEvalExpression(xpath, context);
-    } else {
-        result = xmlXPathNodeEval(node, xpath, context);
-    }
-    xmlXPathFreeContext(context);
-    if (result == NULL) {
-        printf("Error in xmlXPathEvalExpression\n");
-        return NULL;
-    }
-    if(xmlXPathNodeSetIsEmpty(result->nodesetval)){
-        xmlXPathFreeObject(result);
-        printf("No result\n");
-        return NULL;
-    }
-    return result;
 }
 
 static void
@@ -894,19 +843,17 @@ run_recipe_handler (gpointer user_data)
     recipe_data->remote_msg = soup_request_http_get_message(
             SOUP_REQUEST_HTTP(request));
 
-    xmlChar *buf = NULL;
-    gint size;
-
     // return the xml doc
-    xmlDocDumpMemory (app_data->xml_doc, &buf, &size);
+    xmlBufferPtr buffer = xmlBufferCreate();
+    gint size = xmlNodeDump(buffer, app_data->xml_doc, recipe_data->recipe_node_ptr, 0, 1);
 
     full_url = soup_uri_to_string (recipe_data->remote_uri, FALSE);
     g_print ("Connecting to %s for recipe id:%d\n", full_url, recipe_data->recipe_id);
     g_free (full_url);
     soup_message_set_request (recipe_data->remote_msg,
                               "text/xml",
-                              SOUP_MEMORY_COPY, (const char *) buf, size);
-    xmlFree (buf);
+                              SOUP_MEMORY_COPY, (const char *) buffer->content, size);
+    xmlBufferFree (buffer);
 
     // turn off message body accumulating
     soup_message_body_set_accumulate (recipe_data->remote_msg->response_body, FALSE);

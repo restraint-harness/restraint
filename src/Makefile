@@ -33,10 +33,10 @@ rstrnt-adjust-watchdog: cmd_watchdog.o utils.o errors.o
 rstrnt-abort: cmd_abort.o utils.o errors.o
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
-restraint: client.o multipart.o errors.o
+restraint: client.o multipart.o errors.o xml.o
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
-restraintd: server.o recipe.o task.o fetch.o fetch_git.o fetch_http.o param.o role.o metadata.o process.o message.o dependency.o utils.o config.o errors.o
+restraintd: server.o recipe.o task.o fetch.o fetch_git.o fetch_http.o param.o role.o metadata.o process.o message.o dependency.o utils.o config.o errors.o xml.o
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 fetch_git.o: fetch.h fetch_git.h
@@ -56,6 +56,7 @@ dependency.o: dependency.h
 utils.o: utils.h
 config.o: config.h
 errors.o: errors.h
+xml.o: xml.h
 
 TEST_PROGS =
 test_%: test_%.o
