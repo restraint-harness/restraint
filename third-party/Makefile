@@ -107,7 +107,7 @@ $(LIBFFI).tar.gz:
 
 TAR_BALLS += $(GLIB).tar.xz
 $(GLIB).tar.xz:
-	curl -O http://ftp.gnome.org/pub/gnome/sources/glib/2.38/$@
+	curl -L -O http://ftp.gnome.org/pub/gnome/sources/glib/2.38/$@
 
 TAR_BALLS += $(ZLIB).tar.gz
 $(ZLIB).tar.gz:
@@ -139,11 +139,11 @@ $(SQLITE).tar.gz:
 
 TAR_BALLS += $(INTLTOOL).tar.gz
 $(INTLTOOL).tar.gz:
-	curl -O http://ftp.gnome.org/pub/gnome/sources/intltool/0.35/$@
+	curl -L -O http://ftp.gnome.org/pub/gnome/sources/intltool/0.35/$@
 
 TAR_BALLS += $(LIBSOUP).tar.xz
 $(LIBSOUP).tar.xz:
-	curl -O http://ftp.gnome.org/pub/GNOME/sources/libsoup/2.48/$@
+	curl -L -O http://ftp.gnome.org/pub/GNOME/sources/libsoup/2.48/$@
 
 tarballs: $(TAR_BALLS)
 
