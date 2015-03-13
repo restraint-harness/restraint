@@ -121,24 +121,20 @@ init_result_hash (AppData *app_data)
 }
 
 static gboolean
-tasks_finished (GHashTable *recipes)
+tasks_finished (xmlDocPtr doc, xmlNodePtr node, xmlChar *path)
 {
-    RecipeData *recipe_data;
-    GHashTableIter riter, titer;
-    gpointer key, value;
     gboolean finished = TRUE;
 
-    g_hash_table_iter_init(&riter, recipes);
-    while (g_hash_table_iter_next(&riter, NULL, (gpointer *)&recipe_data)) {
-        g_hash_table_iter_init(&titer, recipe_data->tasks);
-        while (g_hash_table_iter_next(&titer, &key, &value)) {
-            gchar *status = (gchar *)xmlGetNoNsProp(value,
-                                                    (xmlChar*)"status");
-            finished &= (strcmp (status, "Completed") == 0 || strcmp(status,
-                         "Aborted") == 0);
-            g_free (status);
-        }
+    xmlXPathObjectPtr task_nodes = get_node_set (doc, node, path);
+    for (guint i = 0; i < task_nodes->nodesetval->nodeNr; i++) {
+        xmlNodePtr task_node = task_nodes->nodesetval->nodeTab[i];
+        gchar *status = (gchar *)xmlGetNoNsProp(task_node,
+                                                (xmlChar *)"status");
+        finished &= (strcmp (status, "Completed") == 0 || strcmp(status,
+                     "Aborted") == 0);
+        g_free (status);
     }
+    xmlXPathFreeObject (task_nodes);
     return finished;
 }
 
@@ -242,8 +238,8 @@ remote_hup (GError *error,
     gchar *full_url = NULL;
     SoupURI *continue_uri = NULL;
 
-    // If we get an error on the first connction then we simply abort
-    if (app_data->started && ! tasks_finished(app_data->recipes)
+    // If we get an error on the first connection then we simply abort
+    if (app_data->started && ! tasks_finished(app_data->xml_doc, recipe_data->recipe_node_ptr, (xmlChar *)"task")
                           && ! g_cancellable_is_cancelled(recipe_data->cancellable)) {
         if (error) {
             g_print ("%s [%s, %d]\n", error->message,
@@ -821,7 +817,7 @@ recipe_finish(RecipeData *recipe_data)
         xmlFree(result);
     }
 
-    if (tasks_finished(app_data->recipes))
+    if (tasks_finished(app_data->xml_doc, NULL, (xmlChar *) "//task"))
         g_idle_add_full (G_PRIORITY_LOW,
                          quit_loop_handler,
                          app_data->loop,
@@ -1440,7 +1436,7 @@ int main(int argc, char *argv[]) {
     parse_new_job (app_data);
 
     // If all tasks are finished then quit.
-    if (tasks_finished(app_data->recipes)) {
+    if (tasks_finished(app_data->xml_doc, NULL, (xmlChar *) "//task")) {
         g_printerr ("All tasks are finished\n");
         goto cleanup;
     }
