@@ -146,6 +146,7 @@ $(LIBSOUP).tar.xz:
 	curl -L -O http://ftp.gnome.org/pub/GNOME/sources/libsoup/2.48/$@
 
 tarballs: $(TAR_BALLS)
+	printf '%s\n' $(TAR_BALLS) >$@
 
 %: %.tar.gz
 	tar -xzf $<

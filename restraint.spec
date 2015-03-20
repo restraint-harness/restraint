@@ -19,6 +19,21 @@ License:	GPLv3+ and MIT
 URL:		https://github.com/p3ck/%{name}
 Source0:	https://github.com/p3ck/%{name}/%{name}-%{version}.tar.gz
 
+%if %{?with_static:1}
+# Sources for bundled, statically linked libraries
+Source101:      libffi-3.1.tar.gz
+Source102:      glib-2.38.0.tar.xz
+Source103:      zlib-1.2.8.tar.gz
+Source104:      bzip2-1.0.6.tar.gz
+Source105:      libxml2-2.9.1.tar.gz
+Source106:      curl-7.29.0.tar.bz2
+Source107:      libarchive-3.1.2.tar.gz
+Source108:      xz-5.0.4.tar.gz
+Source109:      sqlite-autoconf-3080002.tar.gz
+Source110:      intltool-0.35.5.tar.gz
+Source111:      libsoup-2.48.1.tar.xz
+%endif
+
 BuildRoot:	%(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 BuildRequires:	pkgconfig
 BuildRequires:	gettext
@@ -91,7 +106,9 @@ restAPI allowing all results and logs to be recorded from the test machine.
 
 %prep
 %setup -q
-
+%if %{?with_static:1}
+cp %{sources} third-party/
+%endif
 
 %build
 %ifarch i386
