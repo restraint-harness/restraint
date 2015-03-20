@@ -10,8 +10,10 @@ if [ -z "$RSTRNT_NOPLUGINS" ]; then
         . /opt/staf/STAFEnv.sh start
         rstrnt_debug "**** Staf is installed"
         rstrnt_debug "**** Pinging STAFProc"
-        rstrnt_debug $(staf local ping ping)
-        if [ $? -eq 21 ]; then
+        OUTPUT=$(staf local ping ping)
+        rc=$?
+        rstrnt_debug $OUTPUT
+        if [ $rc -eq 21 ]; then
             rstrnt_info "**** Starting STAFProc"
             (setsid nohup /opt/staf/bin/STAFProc &) 2>/dev/null
             # If we rebooted we need to re-post all the previous events
