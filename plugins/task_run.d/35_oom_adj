@@ -1,0 +1,18 @@
+#!/bin/bash
+
+#
+# restraint has oom_adj set to -1000 so we are last to be
+# oomkilled, but we want tasks run under us to be considered
+# normally for oomkill if needed
+#
+. /usr/share/restraint/plugins/helpers
+
+rstrnt_info "*** Running Plugin: $0"
+
+# Adjust oomkiller to normal for tasks we run
+# Don't run from PLUGINS since we want reports and logs to go through too
+if [ -z "$RSTRNT_NOPLUGINS" ]; then
+    echo 0 >/proc/$$/oom_score_adj
+fi
+
+exec "$@"

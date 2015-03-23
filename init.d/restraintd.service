@@ -9,6 +9,7 @@ StandardError=syslog+console
 ExecStartPre=/usr/bin/check_beaker
 ExecStart=/usr/bin/restraintd
 KillMode=process
+OOMScoreAdjust=-1000
 
 [Install]
 WantedBy=multi-user.target
