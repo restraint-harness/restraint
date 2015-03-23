@@ -103,7 +103,7 @@ tree/lib/pkgconfig/libarchive.pc: $(LIBARCHIVE) $(LIBARCHIVE)/.patches-done \
 
 TAR_BALLS = $(LIBFFI).tar.gz
 $(LIBFFI).tar.gz:
-	curl -O ftp://sourceware.org/pub/libffi/$@
+	curl -O http://mirrors.kernel.org/sourceware/libffi/$@
 
 TAR_BALLS += $(GLIB).tar.xz
 $(GLIB).tar.xz:
@@ -119,7 +119,7 @@ $(BZIP2).tar.gz:
 
 TAR_BALLS += $(LIBXML2).tar.gz
 $(LIBXML2).tar.gz:
-	curl -O ftp://xmlsoft.org/libxml2/$@
+	curl -O http://xmlsoft.org/sources/$@
 
 TAR_BALLS += $(CURL).tar.bz2
 $(CURL).tar.bz2:
@@ -146,6 +146,7 @@ $(LIBSOUP).tar.xz:
 	curl -L -O http://ftp.gnome.org/pub/GNOME/sources/libsoup/2.48/$@
 
 tarballs: $(TAR_BALLS)
+	printf '%s\n' $(TAR_BALLS) >$@
 
 %: %.tar.gz
 	tar -xzf $<
