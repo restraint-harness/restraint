@@ -107,7 +107,7 @@ restAPI allowing all results and logs to be recorded from the test machine.
 %prep
 %setup -q
 %if %{?with_static:1}
-cp %{sources} third-party/
+cp %{_sourcedir}/*.tar.* third-party/
 %endif
 
 %build
