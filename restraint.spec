@@ -89,8 +89,7 @@ Requires:       make
 Requires:       /bin/hostname
 Requires:       coreutils
 Requires:       libselinux-utils
-Provides:	rhts-test-env
-Obsoletes:	rhts-test-env
+Conflicts:      rhts-test-env
 
 %description rhts
 Legacy package to allow older rhts tests to run under restraint
