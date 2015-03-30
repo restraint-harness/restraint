@@ -134,11 +134,6 @@ make -C selinux -f %{_datadir}/selinux/devel/Makefile
 %install
 %{__rm} -rf %{buildroot}
 
-%if 0%{?with_static:1}
-pushd third-party
-make clean
-popd
-%endif
 make DESTDIR=%{buildroot} install
 %if %{with_selinux_policy}
 install -p -m 644 -D selinux/restraint.pp $RPM_BUILD_ROOT%{_datadir}/selinux/packages/%{name}/restraint.pp
