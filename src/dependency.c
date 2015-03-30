@@ -123,16 +123,10 @@ restraint_fetch_repodeps(DependencyData *dependency_data)
 {
     if (dependency_data->repodeps != NULL) {
         RepoDepData *rd_data = g_slice_new0(RepoDepData);
-        uint32_t pplen = dependency_data->path_prefix_len;
         rd_data->dependency_data = dependency_data;
         rd_data->url = soup_uri_copy(dependency_data->fetch_url);
-        if (*dependency_data->main_task_name == '/' &&
-            *(char*)dependency_data->repodeps->data != '/') {
-          pplen -= 1;
-        }
         soup_uri_set_fragment(rd_data->url,
-                              (char *)dependency_data->repodeps->data +
-                              pplen);
+                              (char *)dependency_data->repodeps->data);
         rd_data->path = g_build_filename(dependency_data->base_path,
                                          soup_uri_get_host(rd_data->url),
                                          soup_uri_get_path(rd_data->url),
@@ -171,20 +165,6 @@ dependency_handler (gpointer user_data)
     }
 }
 
-static uint32_t
-get_path_prefix_len(Task *task)
-{
-  uint32_t result = 0;
-  const char *fragment = soup_uri_get_fragment(task->fetch.url);
-  if (fragment != NULL) {
-      gchar *strend = g_strrstr(task->name, fragment);
-      if (strend != NULL) {
-        result = strend - task->name;
-      }
-  }
-  return result;
-}
-
 void
 restraint_install_dependencies (Task *task,
                                 GIOFunc io_callback,
@@ -206,7 +186,6 @@ restraint_install_dependencies (Task *task,
     switch (task->fetch_method) {
         case TASK_FETCH_UNPACK:
             dependency_data->fetch_url = task->fetch.url;
-            dependency_data->path_prefix_len = get_path_prefix_len(task);
             dependency_data->state = DEPENDENCY_REPO;
             break;
         case TASK_FETCH_INSTALL_PACKAGE:
