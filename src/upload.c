@@ -44,7 +44,7 @@ upload_chunk (SoupSession *session,
     }
     if (bytes_read > 0) {
         server_msg = soup_message_new_from_uri ("PUT", result_log_uri);
-        range = g_strdup_printf ("bytes %zu-%zu/%" PRIu64,
+        range = g_strdup_printf ("bytes %" G_GSSIZE_FORMAT "-%" G_GSSIZE_FORMAT "/%" G_GUINT64_FORMAT,
                                  offset,
                                  offset + bytes_read - 1,
                                  filesize);

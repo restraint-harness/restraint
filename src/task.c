@@ -421,8 +421,8 @@ static void build_env(AppData *app_data, Task *task) {
         array_add (env, NULL, "TESTNAME", task->name);
         array_add (env, NULL, "TESTPATH", task->path);
         array_add (env, NULL, "TESTID", task->task_id);
-        g_ptr_array_add(env, g_strdup_printf("MAXTIME=%" PRIu64, task->remaining_time));
-        g_ptr_array_add(env, g_strdup_printf("REBOOTCOUNT=%" PRIu64, task->reboots));
+        g_ptr_array_add(env, g_strdup_printf("MAXTIME=%" G_GINT64_FORMAT, task->remaining_time));
+        g_ptr_array_add(env, g_strdup_printf("REBOOTCOUNT=%" G_GUINT64_FORMAT, task->reboots));
         g_ptr_array_add(env, g_strdup_printf("TASKORDER=%d", task->order));
     }
     g_ptr_array_add(env, g_strdup_printf("HARNESS_PREFIX=%s", ENV_PREFIX));
@@ -440,8 +440,8 @@ static void build_env(AppData *app_data, Task *task) {
     array_add (env, prefix, "OSARCH", task->recipe->osarch);
     array_add (env, prefix, "TASKNAME", task->name);
     array_add (env, prefix, "TASKPATH", task->path);
-    g_ptr_array_add(env, g_strdup_printf("%sMAXTIME=%" PRIu64, prefix, task->remaining_time));
-    g_ptr_array_add(env, g_strdup_printf("%sREBOOTCOUNT=%" PRIu64, prefix, task->reboots));
+    g_ptr_array_add(env, g_strdup_printf("%sMAXTIME=%" G_GINT64_FORMAT, prefix, task->remaining_time));
+    g_ptr_array_add(env, g_strdup_printf("%sREBOOTCOUNT=%" G_GUINT64_FORMAT, prefix, task->reboots));
     //g_ptr_array_add(env, g_strdup_printf("%sLAB_CONTROLLER=", prefix));
     g_ptr_array_add(env, g_strdup_printf("%sTASKORDER=%d", prefix, task->order));
     // HOME, LANG and TERM can be overriden by user by passing it as recipe or task params.
@@ -526,7 +526,7 @@ restraint_task_watchdog (Task *task, AppData *app_data, guint64 seconds)
     g_return_if_fail(server_msg != NULL);
 
     // Add EWD_TIME to seconds and use that for the external watchdog.
-    seconds_char = g_strdup_printf("%" PRIu64, seconds);
+    seconds_char = g_strdup_printf("%" G_GUINT64_FORMAT, seconds);
     data = soup_form_encode("seconds", seconds_char, NULL);
 
     soup_message_set_request(server_msg, "application/x-www-form-urlencoded",
@@ -804,7 +804,7 @@ task_handler (gpointer user_data)
     case TASK_WATCHDOG:
       // Setup external watchdog
       if (!task->started) {
-          g_string_printf(message, "** Updating external watchdog: %" PRIu64 " seconds\n", task->remaining_time + EWD_TIME);
+          g_string_printf(message, "** Updating external watchdog: %" G_GINT64_FORMAT " seconds\n", task->remaining_time + EWD_TIME);
           restraint_task_watchdog (task, app_data, task->remaining_time + EWD_TIME);
           result=FALSE;
       }

@@ -105,7 +105,8 @@ void connections_write (AppData *app_data, gchar *msg_data, gsize msg_len)
         soup_uri_free (task_output_uri);
         g_return_if_fail (server_msg != NULL);
 
-        gchar *range = g_strdup_printf ("bytes %zu-%zu/*", task->offset, task->offset + msg_len - 1);
+        gchar *range = g_strdup_printf ("bytes %" G_GSSIZE_FORMAT "-%" G_GSSIZE_FORMAT "/*",
+                task->offset, task->offset + msg_len - 1);
         task->offset = task->offset + msg_len;
         soup_message_headers_append (server_msg->request_headers, "Content-Range", range);
         g_free (range);

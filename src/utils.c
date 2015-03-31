@@ -43,7 +43,7 @@ parse_time_string(gchar *time_string, GError **error)
      */
     gchar time_unit;
     guint64 max_time = 0;
-    gint read = sscanf(time_string, "%" SCNu64 " %c", &max_time, &time_unit);
+    gint read = sscanf(time_string, "%" G_GUINT64_FORMAT " %c", &max_time, &time_unit);
     if (read == 2) {
         time_unit = g_ascii_toupper(time_unit);
         if (time_unit == 'D')

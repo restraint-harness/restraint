@@ -94,7 +94,7 @@ int main(int argc, char *argv[]) {
     }
     session = soup_session_new_with_options("timeout", 3600, NULL);
     SoupMessage *server_msg = soup_message_new_from_uri ("POST", watchdog_uri);
-    form_seconds = g_strdup_printf ("%" PRIu64, seconds);
+    form_seconds = g_strdup_printf ("%" G_GUINT64_FORMAT, seconds);
     g_hash_table_insert (data_table, "seconds", form_seconds);
     form_data = soup_form_encode_hash (data_table);
     g_free (form_seconds);

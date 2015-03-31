@@ -91,7 +91,7 @@ update_chunk (gchar *filename, const gchar *data, gsize size, goffset offset)
     }
 
     if (lseek (fd, offset, SEEK_SET) < 0) {
-        g_warning("Failed to seek %s to %" PRId64 ": %s", filename, offset,
+        g_warning("Failed to seek %s to %" G_GOFFSET_FORMAT ": %s", filename, offset,
                    strerror(errno));
     } else {
         ssize_t written = write (fd, data, size);
@@ -362,7 +362,7 @@ watchdog_cb (const char *method,
     table = soup_form_decode (body->data);
     gchar *seconds_string = g_hash_table_lookup (table, "seconds");
     guint64 max_time = 0;
-    sscanf (seconds_string, "%" SCNu64, &max_time);
+    max_time = g_ascii_strtoull(seconds_string, NULL, 10); // XXX check errno
     g_hash_table_destroy(table);
     if (recipe_data->timeout_handler_id != 0) {
         g_source_remove (recipe_data->timeout_handler_id);
