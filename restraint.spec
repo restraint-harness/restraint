@@ -89,7 +89,13 @@ Requires:       make
 Requires:       /bin/hostname
 Requires:       coreutils
 Requires:       libselinux-utils
-Conflicts:      rhts-test-env
+# All RHTS-format task RPMs have an unversioned requirement on rhts-test-env.
+# Therefore restraint-rhts provides a very low version of rhts-test-env so that
+# if restraint-rhts is already installed, the dependency is satisfied without
+# pulling in the real rhts-test-env, *but* if restraint-rhts is *not* already
+# installed yum will prefer the real rhts-test-env. We want yum to pick the
+# real rhts-test-env on traditional recipes using beah.
+Provides:       rhts-test-env = 0
 
 %description rhts
 Legacy package to allow older rhts tests to run under restraint
