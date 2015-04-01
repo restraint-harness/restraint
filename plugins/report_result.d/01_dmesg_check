@@ -25,7 +25,7 @@ if [ -s "$DMESG_FILE" ]; then
 fi
 
 # Check for errors
-cat $DMESG_FILE | grep -E "$FAILURESTRINGS" | grep -v -E "$FALSESTRINGS" > $OUTPUTFILE
+cat $DMESG_FILE | grep -C 5 -P '^(?:(?!'"$FALSESTRINGS"').)*('"$FAILURESTRINGS"')' > $OUTPUTFILE
 if [ -s "$OUTPUTFILE" ]; then
     OUTPUTFILE=$OUTPUTFILE rstrnt-report-result --no-plugins $TEST/$PLUGIN FAIL 0
 fi
