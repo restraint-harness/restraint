@@ -107,7 +107,7 @@ restraint_task_fetch(AppData *app_data) {
         }
         case TASK_FETCH_INSTALL_PACKAGE:
             ;
-            gchar *command = g_strdup_printf ("yum -y install %s", task->fetch.package_name);
+            gchar *command = g_strdup_printf ("rstrnt-package install %s", task->fetch.package_name);
             // Use appropriate package install command
             TaskRunData *task_run_data = g_slice_new0(TaskRunData);
             task_run_data->app_data = app_data;
