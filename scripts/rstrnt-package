@@ -1,0 +1,68 @@
+#!/bin/bash
+#
+# Copyright (c) 2010,2012,2013,2015 Red Hat, Inc.
+#
+# This program is free software: you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation, either version 2 of
+# the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be
+# useful, but WITHOUT ANY WARRANTY; without even the implied
+# warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+# PURPOSE. See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see http://www.gnu.org/licenses/.
+
+PATH=/sbin:/usr/sbin:$PATH
+
+# If /etc/os-release exists use $ID to determine
+# OS specific package commands
+if [ -f "/etc/os-release" ]; then
+    . /etc/os-release
+    if [ -f "/usr/share/restraint/pkg_commands.${ID}" ]; then
+    . /usr/share/restraint/pkg_commands.${ID}
+    fi
+fi
+
+operation=$1
+package=$2
+
+# First use variables provided via xml.
+# Second try os specific variables in /usr/share/restraint/pkg_commands.$ID
+# Finally use these defaults if none of the above is defined.
+pkg_cmd=${RSTRNT_PKG_CMD:-yum}
+pkg_args=${RSTRNT_PKG_ARGS:--y}
+pkg_install=${RSTRNT_PKG_INSTALL:-install}
+pkg_remove=${RSTRNT_PKG_REMOVE:-remove}
+retry=${RSTRNT_PKG_RETRIES:-5}
+delay=${RSTRNT_PKG_DELAY:-1}
+
+_pkg_cmd() {
+    opr=$1
+    success=1
+    try=0
+    while [ $try -lt $retry ]; do
+        $pkg_cmd $pkg_args $opr $package
+        if [ $? -eq 0 ]; then
+            success=0
+            break
+        fi
+        sleep $delay
+        let try+=1
+    done
+    return $success
+}
+
+if [ "$operation" = "install" ]; then
+    _pkg_cmd $pkg_install
+    RC=$?
+elif [ "$operation" = "remove" ]; then
+    _pkg_cmd $pkg_remove
+    RC=$?
+else
+   >&2 echo "Unrecognized operation $operation"
+   RC=2
+fi
+exit $RC

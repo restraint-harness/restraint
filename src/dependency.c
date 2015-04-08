@@ -70,13 +70,11 @@ dependency_rpm(DependencyData *dependency_data)
     GError *error = NULL;
     if (dependency_data->dependencies) {
         gchar *package_name = dependency_data->dependencies->data;
-        // FIXME: use a generic shell wrapper to abstract away
-        // different system install comamnds, yum, apt-get, up2date, etc..
         gchar *command;
         if (g_str_has_prefix (package_name, "-") == TRUE) {
-            command = g_strdup_printf ("yum -y remove %s", &package_name[1]);
+            command = g_strdup_printf ("rstrnt-package remove %s", &package_name[1]);
         } else {
-            command = g_strdup_printf ("yum -y install %s", package_name);
+            command = g_strdup_printf ("rstrnt-package install %s", package_name);
         }
 
         process_run ((const gchar *)command,
