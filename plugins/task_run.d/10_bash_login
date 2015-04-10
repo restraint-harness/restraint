@@ -4,4 +4,4 @@
 
 rstrnt_info "*** Running Plugin: $0"
 
-exec "$@"
+setsid "$@"
