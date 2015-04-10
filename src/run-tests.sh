@@ -2,7 +2,8 @@
 
 set -ex
 
-export PATH="$PWD/test-dummies:$PATH"
+export PATH="$PWD/test-dummies:$PWD/../scripts:$PATH"
+export RSTRNT_PKG_RETRIES=1
 export MALLOC_CHECK_=2
 export G_DEBUG="fatal_warnings fatal_criticals"
 export G_SLICE="debug-blocks"
