@@ -1,0 +1,9 @@
+Ready-for-Checks+1: Bill Peck <bpeck@redhat.com>
+Code-Review+1: Artem Savkov <asavkov@redhat.com>
+Code-Review+2: Bill Peck <bpeck@redhat.com>
+Verified+1: Bill Peck <bpeck@redhat.com>
+Submitted-by: Bill Peck <bpeck@redhat.com>
+Submitted-at: Fri, 10 Apr 2015 13:00:05 +0000
+Reviewed-on: http://gerrit.beaker-project.org/4124
+Project: restraint
+Branch: refs/heads/master
