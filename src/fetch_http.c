@@ -87,6 +87,7 @@ myclose(struct archive *a, void *client_data)
     g_input_stream_close(fetch_data->istream,
                       NULL,
                       &error);
+    g_object_unref(fetch_data->istream);
     if (error != NULL) {
         archive_set_error(fetch_data->a, error->code, "%s", error->message);
         return ARCHIVE_FATAL;
