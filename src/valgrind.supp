@@ -55,6 +55,14 @@
     ...
     fun:get_session_address_dbus_launch
 }
+{
+    gdbus socket
+    Memcheck:Leak
+    ...
+    fun:g_socket_create_source
+    ...
+    fun:gdbus_shared_thread_func
+}
 
 # gio (some heavy hammers here, because gio likes global junk)
 {
@@ -95,6 +103,15 @@
    fun:dl_main
    fun:_dl_sysdep_start
    fun:_dl_start
+}
+
+# C++ exceptions (used by libproxy)
+{
+    C++ exceptions
+    Memcheck:Leak
+    ...
+    fun:__cxa_get_globals
+    fun:__cxa_throw
 }
 
 {
