@@ -61,7 +61,6 @@ dependency_callback (gint pid_result, gboolean localwatchdog, gpointer user_data
         dependency_data->dependencies = dependency_data->dependencies->next;
         dependency_handler (dependency_data);
     }
-    g_clear_error (&error);
 }
 
 static void
@@ -113,7 +112,6 @@ fetch_repodeps_finish_callback(GError *error, gpointer user_data)
         dependency_data->repodeps = g_slist_next(dependency_data->repodeps);
         restraint_fetch_repodeps(dependency_data);
     }
-    g_clear_error (&error);
 }
 
 static void

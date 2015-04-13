@@ -343,10 +343,11 @@ archive_finish_callback (gpointer user_data)
     if (fetch_data->finish_callback) {
         fetch_data->finish_callback (fetch_data->error,
                                      fetch_data->user_data);
+    } else {
+        g_clear_error(&fetch_data->error);
     }
 
-    if (fetch_data != NULL)
-        g_slice_free(FetchData, fetch_data);
+    g_slice_free(FetchData, fetch_data);
     return FALSE;
 }
 

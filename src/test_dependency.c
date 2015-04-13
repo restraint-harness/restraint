@@ -74,7 +74,7 @@ dependency_finish_cb (gpointer user_data, GError *error)
 {
     RunData *run_data = (RunData *) user_data;
     if (error)
-        run_data->error = g_error_copy (error);
+        g_propagate_error(&run_data->error, error);
     if (run_data->loop) {
         g_main_loop_quit (run_data->loop);
         g_main_loop_unref (run_data->loop);

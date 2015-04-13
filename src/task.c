@@ -264,7 +264,7 @@ void dependency_finish_cb (gpointer user_data, GError *error)
     Task *task = app_data->tasks->data;
 
     if (error) {
-        task->error = g_error_copy (error);
+        g_propagate_error(&task->error, error);
         task->state = TASK_COMPLETE;
     } else {
         task->state = TASK_RUN;
