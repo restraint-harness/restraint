@@ -241,7 +241,7 @@ fi
 %files
 %defattr(-,root,root,-)
 %if %{with_systemd}
-%attr(0755, root, root)%{_unitdir}/%{name}d.service
+%attr(0644, root, root)%{_unitdir}/%{name}d.service
 %exclude %{_sysconfdir}/init.d
 %else
 %exclude /usr/lib/systemd
@@ -280,21 +280,22 @@ fi
 %files rhts
 %defattr(-,root,root,-)
 %attr(0755, root, root)%{_bindir}/rhts-environment.sh
-%attr(0755, root, root)%{_bindir}/rhts_environment.sh
-%attr(0755, root, root)%{_bindir}/rhts-reboot
-%attr(0755, root, root)%{_bindir}/rhts-report-result
-%attr(0755, root, root)%{_bindir}/rhts-submit-log
-%attr(0755, root, root)%{_bindir}/rhts_submit_log
 %attr(0755, root, root)%{_bindir}/rhts-run-simple-test
-%attr(0755, root, root)%{_bindir}/rhts-backup
-%attr(0755, root, root)%{_bindir}/rhts-restore
-%attr(0755, root, root)%{_bindir}/rhts-restore
 %attr(0755, root, root)%{_bindir}/rhts-lint
 %attr(0755, root, root)%{_bindir}/rhts-sync-set
 %attr(0755, root, root)%{_bindir}/rhts-sync-block
-%attr(0755, root, root)%{_bindir}/rhts-recipe-sync-set
-%attr(0755, root, root)%{_bindir}/rhts-recipe-sync-block
-%attr(0755, root, root)%{_bindir}/rhts-abort
+
+%{_bindir}/rhts_environment.sh
+%{_bindir}/rhts-reboot
+%{_bindir}/rhts-report-result
+%{_bindir}/rhts-submit-log
+%{_bindir}/rhts_submit_log
+%{_bindir}/rhts-backup
+%{_bindir}/rhts-restore
+%{_bindir}/rhts-recipe-sync-set
+%{_bindir}/rhts-recipe-sync-block
+%{_bindir}/rhts-abort
+
 %{_datadir}/rhts/lib/rhts-make.include
 /mnt/scratchspace
 %attr(1777,root,root)/mnt/testarea
