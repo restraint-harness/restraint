@@ -1,0 +1,8 @@
+Ready-for-Checks+1: Dan Callaghan <dcallagh@redhat.com>
+Code-Review+2: Bill Peck <bpeck@redhat.com>
+Verified+1: Bill Peck <bpeck@redhat.com>
+Submitted-by: Bill Peck <bpeck@redhat.com>
+Submitted-at: Tue, 14 Apr 2015 13:04:57 +0000
+Reviewed-on: http://gerrit.beaker-project.org/4126
+Project: restraint
+Branch: refs/heads/master
