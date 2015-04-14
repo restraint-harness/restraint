@@ -23,7 +23,7 @@
 
 static void test_testinfo_dependencies(void) {
     GError *error = NULL;
-    MetaData *metadata = g_slice_new0 (MetaData);
+    MetaData *metadata;
     gchar *dependency;
 
     gchar *filename = "test-data/parse_testinfo/dependencies/requires/testinfo.desc";
@@ -47,7 +47,7 @@ static void test_testinfo_dependencies(void) {
 
 static void test_testinfo_repodeps(void) {
     GError *error = NULL;
-    MetaData *metadata = g_slice_new0 (MetaData);
+    MetaData *metadata;
     gchar *dependency;
 
     gchar *filename = "test-data/parse_testinfo/dependencies/requires/testinfo.desc";
@@ -65,7 +65,7 @@ static void test_testinfo_repodeps(void) {
 
 static void test_testinfo_testtime_day(void) {
     GError *error = NULL;
-    MetaData *metadata = g_slice_new0 (MetaData);
+    MetaData *metadata;
 
     gchar *filename = "test-data/parse_testinfo/testtime/day/testinfo.desc";
 
@@ -79,7 +79,7 @@ static void test_testinfo_testtime_day(void) {
 
 static void test_testinfo_testtime_hour(void) {
     GError *error = NULL;
-    MetaData *metadata = g_slice_new0 (MetaData);
+    MetaData *metadata;
 
     gchar *filename = "test-data/parse_testinfo/testtime/hour/testinfo.desc";
 
@@ -93,7 +93,7 @@ static void test_testinfo_testtime_hour(void) {
 
 static void test_testinfo_testtime_invalid(void) {
     GError *error = NULL;
-    MetaData *metadata = g_slice_new0 (MetaData);
+    MetaData *metadata;
 
     gchar *filename = "test-data/parse_testinfo/testtime/invalid/testinfo.desc";
 
@@ -107,7 +107,7 @@ static void test_testinfo_testtime_invalid(void) {
 
 static void test_testinfo_testtime_minute(void) {
     GError *error = NULL;
-    MetaData *metadata = g_slice_new0 (MetaData);
+    MetaData *metadata;
 
     gchar *filename = "test-data/parse_testinfo/testtime/minute/testinfo.desc";
 
@@ -121,7 +121,7 @@ static void test_testinfo_testtime_minute(void) {
 
 static void test_testinfo_testtime_second(void) {
     GError *error = NULL;
-    MetaData *metadata = g_slice_new0 (MetaData);
+    MetaData *metadata;
 
     gchar *filename = "test-data/parse_testinfo/testtime/second/testinfo.desc";
 
@@ -135,7 +135,7 @@ static void test_testinfo_testtime_second(void) {
 
 static void test_metadata_dependencies(void) {
     GError *error = NULL;
-    MetaData *metadata = g_slice_new0 (MetaData);
+    MetaData *metadata;
 
     gchar *filename = "test-data/parse_metadata/dependencies/metadata";
     gchar *osmajor = "RedHatEnterpriseLinux6";
@@ -155,6 +155,8 @@ static void test_metadata_dependencies(void) {
     dependency = g_slist_nth_data(metadata->dependencies, 11);
     g_assert_cmpstr(dependency, ==, "lib-virt");
 
+    restraint_metadata_free (metadata);
+
     filename = "test-data/parse_metadata/dependencies/metadata-no-deps";
     metadata = restraint_parse_metadata(filename, osmajor, &error);
     g_assert_no_error (error);
@@ -164,7 +166,7 @@ static void test_metadata_dependencies(void) {
 
 static void test_metadata_repodeps(void) {
     GError *error = NULL;
-    MetaData *metadata = g_slice_new0 (MetaData);
+    MetaData *metadata;
 
     gchar *filename = "test-data/parse_metadata/dependencies/metadata";
     gchar *osmajor = "RedHatEnterpriseLinux6";
@@ -178,6 +180,8 @@ static void test_metadata_repodeps(void) {
     dependency = g_slist_nth_data(metadata->repodeps, 1);
     g_assert_cmpstr(dependency, ==, "restraint/sanity/common");
 
+    restraint_metadata_free (metadata);
+
     filename = "test-data/parse_metadata/dependencies/metadata-no-deps";
     metadata = restraint_parse_metadata(filename, osmajor, &error);
     g_assert_no_error (error);
@@ -187,7 +191,7 @@ static void test_metadata_repodeps(void) {
 
 static void test_metadata_testtime_day(void) {
     GError *error = NULL;
-    MetaData *metadata = g_slice_new0 (MetaData);
+    MetaData *metadata;
 
     gchar *filename = "test-data/parse_metadata/testtime/day/metadata";
     gchar *osmajor = "RedHatEnterpriseLinux6";
@@ -201,7 +205,7 @@ static void test_metadata_testtime_day(void) {
 
 static void test_metadata_testtime_hour(void) {
     GError *error = NULL;
-    MetaData *metadata = g_slice_new0 (MetaData);
+    MetaData *metadata;
 
     gchar *filename = "test-data/parse_metadata/testtime/hour/metadata";
     gchar *osmajor = "RedHatEnterpriseLinux6";
@@ -215,7 +219,7 @@ static void test_metadata_testtime_hour(void) {
 
 static void test_metadata_testtime_invalid(void) {
     GError *error = NULL;
-    MetaData *metadata = g_slice_new0 (MetaData);
+    MetaData *metadata;
 
     gchar *filename = "test-data/parse_metadata/testtime/invalid/metadata";
     gchar *osmajor = "RedHatEnterpriseLinux6";
@@ -229,7 +233,7 @@ static void test_metadata_testtime_invalid(void) {
 
 static void test_metadata_testtime_minute(void) {
     GError *error = NULL;
-    MetaData *metadata = g_slice_new0 (MetaData);
+    MetaData *metadata;
 
     gchar *filename = "test-data/parse_metadata/testtime/minute/metadata";
     gchar *osmajor = "RedHatEnterpriseLinux6";
@@ -243,7 +247,7 @@ static void test_metadata_testtime_minute(void) {
 
 static void test_metadata_testtime_second(void) {
     GError *error = NULL;
-    MetaData *metadata = g_slice_new0 (MetaData);
+    MetaData *metadata;
 
     gchar *filename = "test-data/parse_metadata/testtime/second/metadata";
     gchar *osmajor = "RedHatEnterpriseLinux6";

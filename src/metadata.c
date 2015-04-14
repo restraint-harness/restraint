@@ -174,6 +174,7 @@ restraint_parse_metadata (gchar *filename,
     return metadata;
 
 error:
+    restraint_metadata_free(metadata);
     g_key_file_free(keyfile);
     return NULL;
 }
@@ -360,8 +361,6 @@ restraint_parse_testinfo(gchar *filename,
     g_return_val_if_fail(filename != NULL, NULL);
     g_return_val_if_fail(error == NULL || *error == NULL, NULL);
 
-    MetaData *metadata = g_slice_new0 (MetaData);
-
     GError *tmp_error = NULL;
     gint fd;
 
@@ -374,11 +373,13 @@ restraint_parse_testinfo(gchar *filename,
         return NULL;
     }
 
+    MetaData *metadata = g_slice_new0(MetaData);
     parse_testinfo_from_fd(metadata, fd, &tmp_error);
     close(fd);
 
     if (tmp_error) {
         g_propagate_error(error, tmp_error);
+        restraint_metadata_free(metadata);
         return NULL;
     }
     return metadata;

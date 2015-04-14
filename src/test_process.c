@@ -238,6 +238,7 @@ static void test_no_hang(void) {
     g_strfreev(outsplit);
 
     g_assert_cmpstr(output->str, == , expected);
+    g_string_free (output, TRUE);
     g_string_free (run_data->output, TRUE);
     g_assert (!run_data->localwatchdog);
     g_assert_cmpint (run_data->pid_result, ==, 0);

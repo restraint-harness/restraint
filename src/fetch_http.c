@@ -87,6 +87,7 @@ myclose(struct archive *a, void *client_data)
     g_input_stream_close(fetch_data->istream,
                       NULL,
                       &error);
+    g_object_unref(fetch_data->istream);
     if (error != NULL) {
         archive_set_error(fetch_data->a, error->code, "%s", error->message);
         return ARCHIVE_FATAL;
@@ -119,13 +120,13 @@ archive_finish_callback (gpointer user_data)
     if (fetch_data->finish_callback) {
         fetch_data->finish_callback (fetch_data->error,
                                      fetch_data->user_data);
+    } else {
+        g_clear_error(&fetch_data->error);
     }
 
     soup_session_abort (session);
     g_object_unref (session);
-
-    if (fetch_data != NULL)
-        g_slice_free(FetchData, fetch_data);
+    g_slice_free(FetchData, fetch_data);
     return FALSE;
 }
 
