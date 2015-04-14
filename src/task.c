@@ -400,12 +400,45 @@ array_add (GPtrArray *array, const gchar *prefix, const gchar *variable, const g
     }
 }
 
+static void get_recipe_members(GSList **hosts, GList *rolehosts)
+{
+    for (GList *t_param = rolehosts; t_param != NULL;
+                    t_param = g_list_next(t_param)) {
+      Param *param = t_param->data;
+      gchar **phosts = g_strsplit(param->value, " ", -1);
+      for (gchar **chost = phosts; *chost != NULL; chost++) {
+        if (g_slist_find_custom(*hosts, *chost,
+                    (GCompareFunc)g_strcmp0) == NULL) {
+          *hosts = g_slist_prepend(*hosts, g_strdup(*chost));
+        }
+      }
+      g_strfreev(phosts);
+    }
+}
+
 static void build_env(AppData *app_data, Task *task) {
     //GPtrArray *env = g_ptr_array_new();
     GPtrArray *env = g_ptr_array_new_with_free_func (g_free);
 
     g_list_foreach(task->recipe->roles, (GFunc) build_param_var, env);
     g_list_foreach(task->roles, (GFunc) build_param_var, env);
+
+    GSList *rmembers = NULL;
+    get_recipe_members(&rmembers, task->recipe->roles);
+    get_recipe_members(&rmembers, task->roles);
+
+    gchar **hostarr = g_new0(gchar *, g_slist_length(rmembers) + 1);
+    gchar **p = hostarr;
+    gchar *hoststr = NULL;
+
+    for (GSList *host = rmembers; host != NULL; host = g_slist_next(host)) {
+      *p++ = host->data;
+    }
+    hoststr = g_strjoinv(" ", hostarr);
+    array_add(env, NULL, "RECIPE_MEMBERS", hoststr);
+    g_free(hoststr);
+    g_free(hostarr);
+    g_slist_free(rmembers);
 
     gchar *prefix = ENV_PREFIX;
     if (task->rhts_compat == TRUE) {
