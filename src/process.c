@@ -99,6 +99,11 @@ process_run (const gchar *command,
     process_data->io = NULL;
     process_data->cancellable = cancellable;
 
+    if (fflush (stdout) != 0)
+        g_warning ("Failed to flush stdout: %s\n", g_strerror (errno));
+    if (fflush (stderr) != 0)
+        g_warning ("Failed to flush stderr: %s\n", g_strerror (errno));
+
     process_data->pid = forkpty (&process_data->fd, NULL, NULL, &win);
     if (process_data->pid < 0) {
         /* Failed to fork */
@@ -109,6 +114,11 @@ process_run (const gchar *command,
         return;
     } else if (process_data->pid == 0) {
         /* Child process. */
+
+        // Flush any input that hasn't been read
+        if (fflush (stdin) != 0)
+            g_warning ("Failed to flush stdin: %s\n", g_strerror (errno));
+
         setbuf (stdout, NULL);
         setbuf (stderr, NULL);
         if (process_data->path && (chdir (process_data->path) == -1)) {
