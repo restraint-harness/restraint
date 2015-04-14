@@ -33,7 +33,7 @@ RC=$?
 if [ $RC == 0 ]; then
     rstrnt-report-result --no-plugins -o $TMPDIR/avc.log $TEST/$PLUGIN FAIL $RC
 else
-    rstrnt-report-result --no-plugins -o $TMPDIR/avc.log $TEST/$PLUGIN PASS $RC
+    rstrnt-report-log --server $RSTRNT_RESULT_URL -l $TMPDIR/avc.log
 fi
 
 rm -rf $TMPDIR
