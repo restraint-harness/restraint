@@ -145,8 +145,7 @@ task_io_callback (GIOChannel *io, GIOCondition condition, gpointer user_data) {
         switch (g_io_channel_read_chars(io, buf, 10000, &bytes_read, &tmp_error)) {
           case G_IO_STATUS_NORMAL:
             /* Push data to our connections.. */
-            if (write (STDOUT_FILENO, buf, bytes_read) != bytes_read)
-                g_warning ("failed to write message");
+            fwrite(buf, sizeof(gchar), bytes_read, stdout);
             connections_write(app_data, buf, bytes_read);
             return TRUE;
 
@@ -333,8 +332,7 @@ task_heartbeat_callback (gpointer user_data)
     timeinfo = localtime (&rawtime);
     strftime(currtime,80,"%a %b %d %H:%M:%S %Y", timeinfo);
     g_string_printf(message, "*** Current Time: %s Localwatchdog at: %s\n", currtime, task_run_data->expire_time);
-    if (write (STDERR_FILENO, message->str, message->len) != message->len)
-        g_warning ("failed to write message");
+    fwrite(message->str, sizeof(gchar), message->len, stderr);
     connections_write(app_data, message->str, message->len);
     g_string_free(message, TRUE);
     return TRUE;
@@ -935,8 +933,7 @@ task_handler (gpointer user_data)
       break;
   }
   if (message->len) {
-    if (write (STDERR_FILENO, message->str, message->len) != message->len)
-        g_warning ("failed to write message");
+    fwrite(message->str, sizeof(gchar), message->len, stderr);
     connections_write(app_data, message->str, message->len);
   }
   g_string_free(message, TRUE);
