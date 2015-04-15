@@ -15,7 +15,7 @@ if [ -z "$RSTRNT_NOPLUGINS" ]; then
         rstrnt_debug $OUTPUT
         if [ $rc -eq 21 ]; then
             rstrnt_info "**** Starting STAFProc"
-            (setsid nohup /opt/staf/bin/STAFProc &) 2>/dev/null
+            /opt/staf/bin/STAFProc >/dev/null 2>&1 &
             # If we rebooted we need to re-post all the previous events
             if [ -e "/var/lib/restraint/staf_sem_post_event" ]; then
                 for event in $(cat /var/lib/restraint/staf_sem_post_event); do
