@@ -11,7 +11,7 @@ rstrnt_info "*** Running Plugin: $0"
 
 # Adjust oomkiller to normal for tasks we run
 # Don't run from PLUGINS since we want reports and logs to go through too
-if [ -z "$RSTRNT_NOPLUGINS" ]; then
+if [ -z "$RSTRNT_NOPLUGINS" -a -e "/proc/$$/oom_score_adj" ]; then
     echo 0 >/proc/$$/oom_score_adj
 fi
 
