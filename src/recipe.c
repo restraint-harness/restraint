@@ -620,7 +620,7 @@ recipe_handler (gpointer user_data)
 
     // write message out to stderr
     if (message->len) {
-      if (write (STDERR_FILENO, message->str, message->len) != message->len)
+      if (fwrite(message->str, sizeof(gchar), message->len, stderr) != message->len)
           g_warning ("failed to write message");
     }
 
