@@ -145,7 +145,8 @@ server_io_callback (GIOChannel *io, GIOCondition condition, gpointer user_data) 
         //switch (g_io_channel_read_line_string(io, s, NULL, &tmp_error)) {
         switch (g_io_channel_read_chars(io, buf, 10000, &bytes_read, &tmp_error)) {
           case G_IO_STATUS_NORMAL:
-            fwrite(buf, sizeof(gchar), bytes_read, stdout);
+            if (fwrite(buf, sizeof(gchar), bytes_read, stdout) != bytes_read)
+                g_warning ("failed to write message");
             /* Push data to our connections.. */
             connections_write(app_data, buf, bytes_read);
             return TRUE;
