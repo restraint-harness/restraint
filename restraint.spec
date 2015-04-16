@@ -10,7 +10,7 @@
 %endif
 
 Name:		restraint
-Version:	0.1.18
+Version:	0.1.19
 Release:	1%{?dist}
 Summary:	Simple test harness which can be used with beaker
 
@@ -307,6 +307,50 @@ fi
 %{__rm} -rf %{buildroot}
 
 %changelog
+* Thu Apr 16 2015 Bill Peck <bpeck@redhat.com> 0.1.19-1
+- Only try and adjust oom score on systems with the knob present.
+  (bpeck@redhat.com)
+- Check return value of fwrite to make sure we wrote everything.
+  (bpeck@redhat.com)
+- Make reporting cleaner byt not reporting /avc pass. (bpeck@redhat.com)
+- Flush stdout and stderr before we fork.  Flush stdin after we fork.
+  (bpeck@redhat.com)
+- Create a new Session, this allows background processes to keep running after
+  we exit. (bpeck@redhat.com)
+- Fix for symlink attr warning during build (asavkov@redhat.com)
+- Added server side RECIPE_MEMBERS (asavkov@redhat.com)
+- fix some misc memory leaks found by valgrind (dcallagh@redhat.com)
+- finish callbacks take ownership of error (dcallagh@redhat.com)
+- update valgrind suppressions (dcallagh@redhat.com)
+- fix test failures due to rstrnt-package (dcallagh@redhat.com)
+- provide a very low version of rhts-test-env (dcallagh@redhat.com)
+- Abstract install/remove package command (bpeck@redhat.com)
+- Update dmesg grep to show context around matches. (bpeck@redhat.com)
+- use glib format specifier macros instead of C99 ones (dcallagh@redhat.com)
+- don't remove third-party dir during RPM %%install (dcallagh@redhat.com)
+- RepoRequires: removing old workaround for RhtsRequires (asavkov@redhat.com)
+- Conflict with rhts-test-env instead of Providing it (dcallagh@redhat.com)
+- %%{sources} isn't defined on older RPM (RHEL<=5) (dcallagh@redhat.com)
+- Modify oomkill behavior to prevent test harness from being oomkilled.
+  (bpeck@redhat.com)
+- use HTTP for tarball downloads (dcallagh@redhat.com)
+- don't fetch third-party tarballs on every build (dcallagh@redhat.com)
+- Oops - I ate the return code with the debug logging. (bpeck@redhat.com)
+- Update remote_hup method to only check the status of tasks in its recipe
+  (bpeck@redhat.com)
+- Update XPath search to only tasks from the current node. (bpeck@redhat.com)
+- ftp.gnome.org has moved some of the older packages to different sites.
+  (bpeck@redhat.com)
+- Lots of fixes for running multihost jobs under restraint controller
+  (standalone mode) (bpeck@redhat.com)
+- Fix spec file so that /usr/share/restraint/client doesn't get owned by both
+  client and server package (bpeck@redhat.com)
+- Race condition where cancellable object can get set between recipe finishing
+  and client disconnecting. symptom is that next run will still have
+  cancellable object set and every task will complete without running
+  (bpeck@redhat.com)
+- Look for RepoRequires instead of RhtsRequires. (asavkov@redhat.com)
+
 * Wed Feb 25 2015 Bill Peck <bpeck@redhat.com> 0.1.18-1
 - Clear previous beakerlib run (bpeck@redhat.com)
 - previous fix showed an error where we call truncate when no file exists.
