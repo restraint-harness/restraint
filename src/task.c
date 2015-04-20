@@ -42,6 +42,7 @@
 #include "fetch_git.h"
 #include "fetch_http.h"
 #include "utils.h"
+#include "env.h"
 
 void
 archive_entry_callback (const gchar *entry, gpointer user_data)
@@ -125,10 +126,6 @@ restraint_task_fetch(AppData *app_data) {
             fetch_finish_callback (error, app_data);
             g_return_if_reached();
     }
-}
-
-static void build_param_var(Param *param, GPtrArray *env) {
-    g_ptr_array_add(env, g_strdup_printf("%s=%s", param->name, param->value));
 }
 
 gboolean
@@ -386,117 +383,6 @@ task_run (AppData *app_data)
                                                            task_heartbeat_callback,
                                                            task_run_data,
                                                            NULL);
-}
-
-static void
-array_add (GPtrArray *array, const gchar *prefix, const gchar *variable, const gchar *value)
-{
-    if (value) {
-        if (prefix) {
-            g_ptr_array_add (array, g_strdup_printf ("%s%s=%s", prefix, variable, value));
-        } else {
-            g_ptr_array_add (array, g_strdup_printf ("%s=%s", variable, value));
-        }
-    }
-}
-
-static void get_recipe_members(GSList **hosts, GList *rolehosts)
-{
-    for (GList *t_param = rolehosts; t_param != NULL;
-                    t_param = g_list_next(t_param)) {
-      Param *param = t_param->data;
-      gchar **phosts = g_strsplit(param->value, " ", -1);
-      for (gchar **chost = phosts; *chost != NULL; chost++) {
-        if (g_slist_find_custom(*hosts, *chost,
-                    (GCompareFunc)g_strcmp0) == NULL) {
-          *hosts = g_slist_prepend(*hosts, g_strdup(*chost));
-        }
-      }
-      g_strfreev(phosts);
-    }
-}
-
-static void build_env(AppData *app_data, Task *task) {
-    //GPtrArray *env = g_ptr_array_new();
-    GPtrArray *env = g_ptr_array_new_with_free_func (g_free);
-
-    g_list_foreach(task->recipe->roles, (GFunc) build_param_var, env);
-    g_list_foreach(task->roles, (GFunc) build_param_var, env);
-
-    GSList *rmembers = NULL;
-    get_recipe_members(&rmembers, task->recipe->roles);
-    get_recipe_members(&rmembers, task->roles);
-
-    gchar **hostarr = g_new0(gchar *, g_slist_length(rmembers) + 1);
-    gchar **p = hostarr;
-    gchar *hoststr = NULL;
-
-    for (GSList *host = rmembers; host != NULL; host = g_slist_next(host)) {
-      *p++ = host->data;
-    }
-    hoststr = g_strjoinv(" ", hostarr);
-    array_add(env, NULL, "RECIPE_MEMBERS", hoststr);
-    g_free(hoststr);
-    g_free(hostarr);
-    g_slist_free(rmembers);
-
-    gchar *prefix = ENV_PREFIX;
-    if (task->rhts_compat == TRUE) {
-        array_add (env, NULL, "RESULT_SERVER", "LEGACY");
-        array_add (env, NULL, "SUBMITTER", task->recipe->owner);
-        array_add (env, NULL, "JOBID", task->recipe->job_id);
-        array_add (env, NULL, "RECIPESETID", task->recipe->recipe_set_id);
-        array_add (env, NULL, "RECIPEID", task->recipe->recipe_id);
-        array_add (env, NULL, "RECIPETESTID", task->task_id);
-        array_add (env, NULL, "TASKID", task->task_id);
-        array_add (env, NULL, "DISTRO", task->recipe->osdistro);
-        array_add (env, NULL, "VARIANT", task->recipe->osvariant);
-        array_add (env, NULL, "FAMILY", task->recipe->osmajor);
-        array_add (env, NULL, "ARCH", task->recipe->osarch);
-        array_add (env, NULL, "TESTNAME", task->name);
-        array_add (env, NULL, "TESTPATH", task->path);
-        array_add (env, NULL, "TESTID", task->task_id);
-        g_ptr_array_add(env, g_strdup_printf("MAXTIME=%" G_GINT64_FORMAT, task->remaining_time));
-        g_ptr_array_add(env, g_strdup_printf("REBOOTCOUNT=%" G_GUINT64_FORMAT, task->reboots));
-        g_ptr_array_add(env, g_strdup_printf("TASKORDER=%d", task->order));
-    }
-    g_ptr_array_add(env, g_strdup_printf("HARNESS_PREFIX=%s", ENV_PREFIX));
-    gchar *recipe_url = g_strdup_printf ("%s/recipes/%s", app_data->restraint_url, task->recipe->recipe_id);
-    array_add (env, prefix, "RECIPE_URL", recipe_url);
-    g_free (recipe_url);
-    array_add (env, prefix, "OWNER", task->recipe->owner);
-    array_add (env, prefix, "JOBID", task->recipe->job_id);
-    array_add (env, prefix, "RECIPESETID", task->recipe->recipe_set_id);
-    array_add (env, prefix, "RECIPEID", task->recipe->recipe_id);
-    array_add (env, prefix, "TASKID", task->task_id);
-    array_add (env, prefix, "OSDISTRO", task->recipe->osdistro);
-    array_add (env, prefix, "OSMAJOR", task->recipe->osmajor);
-    array_add (env, prefix, "OSVARIANT", task->recipe->osvariant);
-    array_add (env, prefix, "OSARCH", task->recipe->osarch);
-    array_add (env, prefix, "TASKNAME", task->name);
-    array_add (env, prefix, "TASKPATH", task->path);
-    g_ptr_array_add(env, g_strdup_printf("%sMAXTIME=%" G_GINT64_FORMAT, prefix, task->remaining_time));
-    g_ptr_array_add(env, g_strdup_printf("%sREBOOTCOUNT=%" G_GUINT64_FORMAT, prefix, task->reboots));
-    //g_ptr_array_add(env, g_strdup_printf("%sLAB_CONTROLLER=", prefix));
-    g_ptr_array_add(env, g_strdup_printf("%sTASKORDER=%d", prefix, task->order));
-    // HOME, LANG and TERM can be overriden by user by passing it as recipe or task params.
-    g_ptr_array_add(env, g_strdup_printf("HOME=/root"));
-    g_ptr_array_add(env, g_strdup_printf("TERM=vt100"));
-    g_ptr_array_add(env, g_strdup_printf("LANG=en_US.UTF-8"));
-    g_ptr_array_add(env, g_strdup_printf("PATH=/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin"));
-
-    // Override with recipe level params
-    g_list_foreach(task->recipe->params, (GFunc) build_param_var, env);
-    // Override with task level params
-    g_list_foreach(task->params, (GFunc) build_param_var, env);
-    // Leave four NULL slots for PLUGIN varaibles.
-    g_ptr_array_add(env, NULL);
-    g_ptr_array_add(env, NULL);
-    g_ptr_array_add(env, NULL);
-    g_ptr_array_add(env, NULL);
-    // This terminates the array
-    g_ptr_array_add(env, NULL);
-    task->env = env;
 }
 
 static void
@@ -833,7 +719,7 @@ task_handler (gpointer user_data)
       // If not running in rhts_compat mode it will prepend
       // the variables with ENV_PREFIX.
       g_string_printf(message, "** Updating env vars\n");
-      build_env(app_data, task);
+      build_env(app_data->restraint_url, task);
       task->state = TASK_WATCHDOG;
       break;
     case TASK_WATCHDOG:

@@ -36,7 +36,7 @@ rstrnt-abort: cmd_abort.o utils.o errors.o
 restraint: client.o multipart.o errors.o xml.o
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
-restraintd: server.o recipe.o task.o fetch.o fetch_git.o fetch_http.o param.o role.o metadata.o process.o message.o dependency.o utils.o config.o errors.o xml.o
+restraintd: server.o recipe.o task.o fetch.o fetch_git.o fetch_http.o param.o role.o metadata.o process.o message.o dependency.o utils.o config.o errors.o xml.o env.o
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 fetch_git.o: fetch.h fetch_git.h
