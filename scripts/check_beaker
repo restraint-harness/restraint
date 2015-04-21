@@ -20,8 +20,10 @@ if [ ! -e "/var/lib/restraint/config.conf" ]; then
         esac
     done
 
-cat <<EOF >/var/lib/restraint/config.conf
+if [ -n "$BEAKER_LAB_CONTROLLER_URL" -a -n "$BEAKER_RECIPE_ID" ]; then
+    cat <<EOF >/var/lib/restraint/config.conf
 [restraint]
 recipe_url=$BEAKER_LAB_CONTROLLER_URL/recipes/$BEAKER_RECIPE_ID/
 EOF
+fi
 fi
