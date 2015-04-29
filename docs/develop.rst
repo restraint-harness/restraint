@@ -18,7 +18,7 @@ Getting started
 ~~~~~~~~~~~~~~~
 
 Restraint is written in C. The source lives in a git repo on
-http://git.beakerproject.org along with other related projects. Let's
+http://git.beaker-project.org along with other related projects. Let's
 create a local clone of the restraint source::
 
     $ git clone git://git.beaker-project.org/restraint
