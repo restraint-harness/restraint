@@ -88,7 +88,11 @@ Requires:	restraint = %{version}
 Requires:       make
 Requires:       /bin/hostname
 Requires:       coreutils
+%if 0%{?rhel} == 4
+Requires:       libselinux
+%else
 Requires:       libselinux-utils
+%endif
 # All RHTS-format task RPMs have an unversioned requirement on rhts-test-env.
 # Therefore restraint-rhts provides a very low version of rhts-test-env so that
 # if restraint-rhts is already installed, the dependency is satisfied without
