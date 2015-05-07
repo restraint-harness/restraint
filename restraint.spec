@@ -11,7 +11,7 @@
 
 Name:		restraint
 Version:	0.1.19
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Simple test harness which can be used with beaker
 
 Group:		Applications/Internet
@@ -311,6 +311,14 @@ fi
 %{__rm} -rf %{buildroot}
 
 %changelog
+* Thu May 07 2015 Bill Peck <bpeck@redhat.com> 0.1.19-2
+- RHEL4 has no libselinux-utils, only libselinux (dcallagh@redhat.com)
+- Fix beaker project URL (vashirov@redhat.com)
+- Add RECIPE_MEMBERS tests. (asavkov@redhat.com)
+- Move build_env and related functions to separate file (asavkov@redhat.com)
+- Don't write out a config file if no beaker variables are defined.
+  (bpeck@redhat.com)
+
 * Thu Apr 16 2015 Bill Peck <bpeck@redhat.com> 0.1.19-1
 - Only try and adjust oom score on systems with the knob present.
   (bpeck@redhat.com)
