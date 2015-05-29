@@ -7,7 +7,9 @@
  <xsl:output method="xml" indent="yes" cdata-section-elements="system-out error failure" />
 
  <xsl:template match="/">
+    <testsuites>
    <xsl:apply-templates select="job/recipeSet/recipe"/>
+    </testsuites>
  </xsl:template>
 
  <xsl:template match="job/recipeSet/recipe">
