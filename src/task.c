@@ -524,7 +524,7 @@ parse_task_config (gchar *config_file, Task *task, GError **error)
                                                         "remaining_time",
                                                         &tmp_error);
 
-    task->remaining_time = remaining_time == 0 ? -1 : remaining_time;
+    task->remaining_time = remaining_time == 0 ? task->remaining_time : remaining_time;
 
     if (tmp_error) {
         g_propagate_prefixed_error(error, tmp_error,
