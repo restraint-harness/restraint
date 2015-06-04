@@ -11,7 +11,7 @@
 
 Name:		restraint
 Version:	0.1.19
-Release:	2%{?dist}
+Release:	3%{?dist}
 Summary:	Simple test harness which can be used with beaker
 
 Group:		Applications/Internet
@@ -311,6 +311,10 @@ fi
 %{__rm} -rf %{buildroot}
 
 %changelog
+* Thu Jun 04 2015 Bill Peck <bpeck@redhat.com> 0.1.19-3
+- report localwatchdog (bpeck@redhat.com)
+- fix KILLTIMEOVERRIDE (bpeck@redhat.com)
+
 * Thu May 07 2015 Bill Peck <bpeck@redhat.com> 0.1.19-2
 - RHEL4 has no libselinux-utils, only libselinux (dcallagh@redhat.com)
 - Fix beaker project URL (vashirov@redhat.com)
