@@ -3,6 +3,7 @@
 PLUGIN=$(basename $0)
 
 SLABLOG=$(mktemp)
+PS_LWD=$(mktemp -d)
 
 function WatchFile ()
 {
@@ -34,7 +35,9 @@ function SysRq ()
 
 # Verbose tree view of running processes:
 
-ps -elfH | logger -p local2.info -t "LWD:ps-elfH"
+ps -elfH > $PS_LWD/ps-lwd.log
+rstrnt-report-log -l $PS_LWD/ps-lwd.log
+rm -rf $PS_LWD
 
 # Get some system information from the system
 
