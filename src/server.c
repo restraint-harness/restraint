@@ -626,7 +626,7 @@ int main(int argc, char *argv[]) {
 
   // Tell our soup server to listen on any interface
   // This includes ipv4 and ipv6 if available.
-  if (! soup_server_listen_all (soup_server, port, 0, NULL)) {
+  if (! soup_server_listen_local (soup_server, port, 0, NULL)) {
       g_printerr ("Unable to bind to server port %d\n", port);
       exit (1);
   }

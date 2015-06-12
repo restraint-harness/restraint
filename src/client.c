@@ -26,15 +26,12 @@
 #include <string.h>
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
-#include <libsoup/soup.h>
-#include <libxml/parser.h>
 #include <libxml/xpath.h>
 #include <libxml/tree.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <regex.h>
 #include "client.h"
 #include "multipart.h"
 #include "errors.h"
@@ -52,6 +49,8 @@ static void restraint_free_recipe_data(RecipeData *recipe_data)
     }
     soup_uri_free(recipe_data->remote_uri);
     g_string_free(recipe_data->body, TRUE);
+    ssh_kill(recipe_data->ssh_data);
+    g_slice_free(SshData, recipe_data->ssh_data);
     g_slice_free(RecipeData, recipe_data);
 }
 
@@ -250,6 +249,7 @@ remote_hup (GError *error,
         recipe_data->remote_uri = continue_uri;
         full_url = soup_uri_to_string (recipe_data->remote_uri, FALSE);
         g_print ("Disconnected.. delaying %d seconds.\n", DEFAULT_DELAY);
+        recipe_data->ssh_data->soup_disc = TRUE;
         g_free (full_url);
         // Try and re-connect to the other host
         g_timeout_add_seconds_full (G_PRIORITY_DEFAULT,
@@ -626,6 +626,12 @@ process_path (GSList *regexes, const char *path)
     return NULL;
 }
 
+gboolean chk_ssh_state(gpointer user_data)
+{
+    RecipeData *recipe_data = (RecipeData*) user_data;
+    return recipe_data->ssh_data->state == SSH_FAILED;
+}
+
 void
 message_cb (const char *method,
             const char *path,
@@ -849,6 +855,11 @@ run_recipe_handler (gpointer user_data)
     gchar *full_url = NULL;
     // Tell restraintd to run our recipe
     SoupRequest *request;
+
+    if (recipe_data->ssh_data->state != SSH_ESTABLISHED) {
+        g_print ("ssh tunnel is not ready.. delaying %d seconds.\n", DEFAULT_DELAY);
+        return G_SOURCE_CONTINUE;
+    }
     request = (SoupRequest *)soup_session_request_http_uri(session,
                                                            "POST",
                                                            recipe_data->remote_uri,
@@ -861,7 +872,9 @@ run_recipe_handler (gpointer user_data)
     gint size = xmlNodeDump(buffer, app_data->xml_doc, recipe_data->recipe_node_ptr, 0, 1);
 
     full_url = soup_uri_to_string (recipe_data->remote_uri, FALSE);
-    g_print ("Connecting to %s for recipe id:%d\n", full_url, recipe_data->recipe_id);
+    g_print ("Connecting to %s for host: %s:%d, recipe id:%d\n", full_url,
+             recipe_data->ssh_data->rhost, recipe_data->ssh_data->rport,
+             recipe_data->recipe_id);
     g_free (full_url);
     soup_message_set_request (recipe_data->remote_msg,
                               "text/xml",
@@ -870,9 +883,9 @@ run_recipe_handler (gpointer user_data)
 
     // turn off message body accumulating
     soup_message_body_set_accumulate (recipe_data->remote_msg->response_body, FALSE);
-    multipart_request_send_async (request, recipe_data->cancellable, message_cb, remote_hup, recipe_data);
+    multipart_request_send_async (request, recipe_data->cancellable, message_cb, remote_hup, chk_ssh_state, recipe_data);
 
-    return FALSE;
+    return G_SOURCE_REMOVE;
 }
 
 static xmlDocPtr
@@ -1343,11 +1356,15 @@ static gboolean add_recipe_host(const gchar *option_name, const gchar *value,
         return FALSE;
     }
 
-    if (g_strrstr(args[1], ":") == NULL) {
-        remote = g_strdup_printf("http://%s:%d/run", args[1], DEFAULT_PORT);
-    } else {
-        remote = g_strdup_printf("http://%s/run", args[1]);
+    SshData *ssh_data = ssh_start(args[1]);
+    if (ssh_data == NULL) {
+        g_set_error (error, RESTRAINT_ERROR,
+                     RESTRAINT_SSH_ERROR,
+                     "Failed to establish ssh tunnel");
+        g_strfreev(args);
+        return FALSE;
     }
+    remote = g_strdup_printf("http://localhost:%d/run", ssh_data->lport);
 
     remote_uri = soup_uri_new(remote);
     if (remote_uri == NULL) {
@@ -1359,6 +1376,7 @@ static gboolean add_recipe_host(const gchar *option_name, const gchar *value,
 
     RecipeData *recipe_data = new_recipe_data(app_data, args[0]);
     recipe_data->remote_uri = remote_uri;
+    recipe_data->ssh_data = ssh_data;
 
 cleanup:
     g_free(remote);
@@ -1386,6 +1404,9 @@ int main(int argc, char *argv[]) {
     app_data->recipes = g_hash_table_new_full(g_str_hash, g_str_equal,
             g_free, (GDestroyNotify)&restraint_free_recipe_data);
 
+    ssh_threads_set_callbacks(ssh_threads_get_pthread());
+    ssh_init();
+
     GOptionEntry entries[] = {
         {"ipv6", '6', 0, G_OPTION_ARG_NONE, &ipv6,
             "Use IPV6 for communication", NULL },
@@ -1397,7 +1418,7 @@ int main(int argc, char *argv[]) {
             "Continue interrupted job from DIR", "DIR" },
         { "host", 't', 0, G_OPTION_ARG_CALLBACK, &add_recipe_host,
             "Set host for a recipe with specific id.",
-            "<recipe_id>=<host>[:<port>]" },
+            "<recipe_id>=[<user>@]<host>[:<port>][/ssh_port]" },
         { "verbose", 'v', G_OPTION_FLAG_NO_ARG, G_OPTION_ARG_CALLBACK,
             callback_parse_verbose, "Increase verbosity, up to three times.",
             NULL },
@@ -1493,6 +1514,7 @@ int main(int argc, char *argv[]) {
     // convert job.xml to index.html
     pretty_results(app_data->run_dir);
 
+
 cleanup:
     soup_session_abort(session);
     g_object_unref(session);
@@ -1506,9 +1528,11 @@ cleanup:
                 g_quark_to_string(app_data->error->domain),
                 app_data->error->code);
         restraint_free_app_data(app_data);
+        ssh_finalize();
         return retcode;
     } else {
         restraint_free_app_data(app_data);
+        ssh_finalize();
         return EXIT_SUCCESS;
     }
 }

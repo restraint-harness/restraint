@@ -15,7 +15,14 @@
     along with Restraint.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#define DEFAULT_PORT 8081
+#ifndef _CLIENT_H
+#define _CLIENT_H
+
+#include <libxml/parser.h>
+#include <libsoup/soup.h>
+#include <regex.h>
+#include "ssh.h"
+
 #define DEFAULT_DELAY 60
 
 struct _AppData;
@@ -38,6 +45,7 @@ typedef struct {
     GString *body;
     GCancellable *cancellable;
     guint timeout_handler_id;
+    SshData *ssh_data;
 } RecipeData;
 
 typedef struct {
@@ -60,3 +68,5 @@ typedef struct _AppData {
     gboolean started;
     GSList *regexes;
 } AppData;
+
+#endif

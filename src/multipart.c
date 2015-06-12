@@ -99,7 +99,9 @@ read_cb (GObject *source, GAsyncResult *async_result, gpointer user_data)
             soup_buffer_free(soup_buffer);
         }
         g_string_free (multipart_data->buffer, TRUE);
-        if (multipart_data->error) {
+        if (multipart_data->error ||
+                (multipart_data->chk_state &&
+                 multipart_data->chk_state(multipart_data->user_data))) {
             g_input_stream_close_async (G_INPUT_STREAM (multipart),
                                         G_PRIORITY_DEFAULT,
                                         multipart_data->cancellable,
@@ -156,6 +158,7 @@ next_part_cb (GObject *source, GAsyncResult *async_result, gpointer user_data)
     GInputStream *in = soup_multipart_input_stream_next_part_finish (multipart,
                                                        async_result,
                                                        &multipart_data->error);
+
     if (!in) {
         g_input_stream_close_async (G_INPUT_STREAM (multipart),
                                     G_PRIORITY_DEFAULT,
@@ -232,11 +235,13 @@ multipart_request_send_async (SoupRequest *request,
                               GCancellable *cancellable,
                               MultiPartCallback callback,
                               MultiPartDestroy destroy,
+                              MultiPartCheckState chk_state,
                               gpointer user_data)
 {
     MultiPartData *multipart_data = g_slice_new0 (MultiPartData);
     multipart_data->callback = callback;
     multipart_data->destroy = destroy;
+    multipart_data->chk_state = chk_state;
     multipart_data->user_data = user_data;
     multipart_data->cancellable = cancellable;
     multipart_data->buffer = NULL;
