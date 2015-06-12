@@ -8,6 +8,9 @@ CURL = curl-7.29.0
 LIBARCHIVE = libarchive-3.1.2
 XZ = xz-5.0.4
 LIBSOUP = libsoup-2.48.1
+CMAKE = cmake-3.2.3
+LIBSSH = libssh-0.7.0
+OPENSSL = openssl-1.0.1m
 SQLITE = sqlite-autoconf-3080002
 INTLTOOL = intltool-0.35.5
 
@@ -23,12 +26,31 @@ all: \
     tree/lib/pkgconfig/libarchive.pc \
     tree/lib/pkgconfig/sqlite3.pc \
     tree/bin/intltool-update \
-    tree/lib/pkgconfig/libsoup-2.4.pc
+    tree/lib/pkgconfig/libsoup-2.4.pc \
+    tree/bin/cmake \
+    tree/lib/pkgconfig/openssl.pc \
+    tree/lib/pkgconfig/libssh.pc 
 
 tree/lib/pkgconfig/zlib.pc: $(ZLIB)
 	( cd $(ZLIB) && ./configure --prefix=$(CURDIR)/tree --static )
 	$(MAKE) -C $(ZLIB)
 	$(MAKE) -C $(ZLIB) install
+
+tree/bin/cmake: $(CMAKE)
+	( cd $(CMAKE) && ./bootstrap --prefix=$(CURDIR)/tree )
+	$(MAKE) -C $(CMAKE)
+	$(MAKE) -C $(CMAKE) PREFIX=$(CURDIR)/tree install
+	touch $@
+
+tree/lib/pkgconfig/libssh.pc: $(LIBSSH) $(LIBSSH)/.patches-done tree/bin/cmake tree/lib/pkgconfig/openssl.pc tree/lib/pkgconfig/zlib.pc
+	( mkdir -p $(LIBSSH)/build && cd $(LIBSSH)/build && PATH=$(CURDIR)/tree/bin:$(CURDIR)/tree:$(PATH) PKG_CONFIG_PATH=../tree/lib/pkgconfig cmake -DCMAKE_INSTALL_PREFIX=$(CURDIR)/tree -DWITH_STATIC_LIB=ON -DWITHOUT_SHARED_LIB=ON -DWITH_GSSAPI=OFF -DOPENSSL_ROOT_DIR=$(CURDIR)/tree -DZLIB_ROOT_DIR=$(CURDIR)/tree .. )
+	$(MAKE) -C $(LIBSSH)/build
+	$(MAKE) -C $(LIBSSH)/build install
+
+tree/lib/pkgconfig/openssl.pc: $(OPENSSL)
+	( cd $(OPENSSL) && ./config --prefix=$(CURDIR)/tree -DPURIFY )
+	$(MAKE) -C $(OPENSSL)
+	$(MAKE) -C $(OPENSSL) PREFIX=$(CURDIR)/tree install
 
 tree/lib/libbz2.a: $(BZIP2)
 	$(MAKE) -C $(BZIP2)
@@ -84,9 +106,9 @@ tree/lib/pkgconfig/libsoup-2.4.pc: $(LIBSOUP) $(LIBSOUP)/.patches-done tree/lib/
 	( PATH=$(CURDIR)/tree/bin:$(PATH) $(MAKE) -C $(LIBSOUP) )
 	$(MAKE) -C $(LIBSOUP) install
 
-tree/lib/pkgconfig/libcurl.pc: $(CURL) $(CURL)/.patches-done tree/lib/pkgconfig/zlib.pc
-	( cd $(CURL) && PKG_CONFIG_PATH=../tree/lib/pkgconfig ./configure --prefix=$(CURDIR)/tree \
-	    --with-zlib=$(CURDIR)/tree --with-ssl --enable-ipv6 --disable-manual \
+tree/lib/pkgconfig/libcurl.pc: $(CURL) $(CURL)/.patches-done tree/lib/pkgconfig/zlib.pc tree/lib/pkgconfig/openssl.pc
+	( cd $(CURL) && LIBS="-ldl" PKG_CONFIG_PATH=../tree/lib/pkgconfig ./configure --prefix=$(CURDIR)/tree \
+	    --with-zlib=$(CURDIR)/tree --with-ssl=$(CURDIR)/tree --enable-ipv6 --disable-manual \
 	    --enable-static --disable-shared )
 	$(MAKE) -C $(CURL)
 	$(MAKE) -C $(CURL) install
@@ -145,6 +167,18 @@ TAR_BALLS += $(LIBSOUP).tar.xz
 $(LIBSOUP).tar.xz:
 	curl -L -O http://ftp.gnome.org/pub/GNOME/sources/libsoup/2.48/$@
 
+TAR_BALLS += $(LIBSSH).tar.xz
+$(LIBSSH).tar.xz:
+	curl -L -O https://red.libssh.org/attachments/download/140/$@
+
+TAR_BALLS += $(OPENSSL).tar.gz
+$(OPENSSL).tar.gz:
+	curl -L -O https://www.openssl.org/source/$@
+
+TAR_BALLS += $(CMAKE).tar.gz
+$(CMAKE).tar.gz:
+	curl -L -O http://www.cmake.org/files/v3.2/$@
+
 tarballs: $(TAR_BALLS)
 	printf '%s\n' $(TAR_BALLS) >$@
 
@@ -196,6 +230,11 @@ $(LIBXML2)/.patches-done:
 	patch -d$(LIBXML2) -p1 <libxml2_add_ppc64le.patch
 	touch $@
 
+$(LIBSSH)/.patches-done:
+	patch -d$(LIBSSH) -p1 <libssh_noshared.patch
+	patch -d$(LIBSSH) -p1 <libssh_openssl_path.patch
+	touch $@
+
 .PHONY: clean
 clean:
-	rm -rf $(XZ) $(ZLIB) $(BZIP2) $(LIBFFI) $(GLIB) $(LIBXML2) $(CURL) $(LIBARCHIVE) $(LIBSOUP) $(SQLITE) $(INTLTOOL) tree
+	rm -rf $(XZ) $(ZLIB) $(BZIP2) $(LIBFFI) $(GLIB) $(LIBXML2) $(CURL) $(LIBARCHIVE) $(LIBSOUP) $(SQLITE) $(INTLTOOL) $(CMAKE) $(LIBSSH) $(OPENSSL) tree
