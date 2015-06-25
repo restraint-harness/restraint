@@ -523,6 +523,9 @@ server_control_callback (SoupServer *server, SoupMessage *client_msg,
                                        SOUP_ENCODING_EOF);
     soup_message_headers_append (client_msg->response_headers,
                                  "Content-Type", "multipart/x-mixed-replace; boundary=--cut-here");
+    soup_message_headers_append (client_msg->response_headers,
+                                 "rstrnt-path", "/start");
+
     // pause message until we start the recipe.
     // if anything goes wrong we set the status to BAD_REQUEST and close
     // the connection

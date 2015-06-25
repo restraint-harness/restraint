@@ -375,6 +375,21 @@ watchdog_cb (const char *method,
 }
 
 void
+recipe_start_cb (const char *method,
+                 const char *path,
+                 GCancellable *cancellable,
+                 GError *error,
+                 SoupMessageHeaders *headers,
+                 SoupBuffer *body,
+                 gpointer user_data)
+{
+    RecipeData *recipe_data = (RecipeData*) user_data;
+    AppData *app_data = recipe_data->app_data;
+
+    app_data->started = TRUE;
+}
+
+void
 tasks_status_cb (const char *method,
                  const char *path,
                  GCancellable *cancellable,
@@ -625,8 +640,12 @@ message_cb (const char *method,
     RegexCallback callback;
 
     // path must be defined in order to dispatch
-    if (!path)
+    if (!path) {
+        g_set_error (&error, RESTRAINT_ERROR,
+                     RESTRAINT_TASK_RUNNER_RESULT_ERROR,
+                     "Invalid message! path not defined");
         return;
+    }
     callback = process_path (app_data->regexes, path);
     if (callback)
         callback (method,
@@ -1441,6 +1460,9 @@ int main(int argc, char *argv[]) {
 
     g_hash_table_foreach(app_data->recipes, (GHFunc)&recipe_init, NULL);
 
+    app_data->regexes = register_path (app_data->regexes,
+                                       "/start$",
+                                        recipe_start_cb);
     app_data->regexes = register_path (app_data->regexes,
                                        "/recipes/[[:digit:]]+/tasks/[[:digit:]]+/status$",
                                        tasks_status_cb);
