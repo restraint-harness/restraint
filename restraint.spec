@@ -10,8 +10,8 @@
 %endif
 
 Name:		restraint
-Version:	0.1.19
-Release:	4%{?dist}
+Version:	0.1.20
+Release:	1%{?dist}
 Summary:	Simple test harness which can be used with beaker
 
 Group:		Applications/Internet
@@ -311,6 +311,9 @@ fi
 %{__rm} -rf %{buildroot}
 
 %changelog
+* Sun Jun 28 2015 Bill Peck <bpeck@redhat.com> 0.1.20-1
+- fix tight loop/memory exhaust (bpeck@redhat.com)
+
 * Fri Jun 05 2015 Bill Peck <bpeck@redhat.com> 0.1.19-4
 - add root element testsuites (mkovarik@redhat.com)
 - job2junit: add support for beaker result xml (mkovarik@redhat.com)
