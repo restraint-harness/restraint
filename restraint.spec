@@ -11,7 +11,7 @@
 
 Name:		restraint
 Version:	0.1.20
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Simple test harness which can be used with beaker
 
 Group:		Applications/Internet
@@ -311,6 +311,9 @@ fi
 %{__rm} -rf %{buildroot}
 
 %changelog
+* Mon Jun 29 2015 Bill Peck <bpeck@redhat.com> 0.1.20-2
+- fix error passing. (bpeck@redhat.com)
+
 * Sun Jun 28 2015 Bill Peck <bpeck@redhat.com> 0.1.20-1
 - fix tight loop/memory exhaust (bpeck@redhat.com)
 
