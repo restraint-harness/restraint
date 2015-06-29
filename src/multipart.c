@@ -82,7 +82,7 @@ read_cb (GObject *source, GAsyncResult *async_result, gpointer user_data)
             multipart_data->callback (multipart_data->method,
                                       multipart_data->path,
                                       multipart_data->cancellable,
-                                      multipart_data->error,
+                                      &multipart_data->error,
                                       multipart_data->headers,
                                       soup_buffer,
                                       multipart_data->user_data);

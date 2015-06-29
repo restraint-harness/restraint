@@ -3,7 +3,7 @@
 typedef void (*MultiPartCallback)	(const char *method,
 					 const char *path,
 					 GCancellable *cancellable,
-					 GError *error,
+					 GError **error,
 					 SoupMessageHeaders *headers,
 					 SoupBuffer *buffer,
 					 gpointer user_data);

@@ -269,7 +269,7 @@ void
 tasks_results_cb (const char *method,
                   const char *path,
                   GCancellable *cancellable,
-                  GError *error,
+                  GError **error,
                   SoupMessageHeaders *headers,
                   SoupBuffer *body,
                   gpointer user_data)
@@ -351,7 +351,7 @@ void
 watchdog_cb (const char *method,
              const char *path,
              GCancellable *cancellable,
-             GError *error,
+             GError **error,
              SoupMessageHeaders *headers,
              SoupBuffer *body,
              gpointer user_data)
@@ -378,7 +378,7 @@ void
 recipe_start_cb (const char *method,
                  const char *path,
                  GCancellable *cancellable,
-                 GError *error,
+                 GError **error,
                  SoupMessageHeaders *headers,
                  SoupBuffer *body,
                  gpointer user_data)
@@ -393,7 +393,7 @@ void
 tasks_status_cb (const char *method,
                  const char *path,
                  GCancellable *cancellable,
-                 GError *error,
+                 GError **error,
                  SoupMessageHeaders *headers,
                  SoupBuffer *body,
                  gpointer user_data)
@@ -476,7 +476,7 @@ void
 tasks_logs_cb (const char *method,
                const char *path,
                GCancellable *cancellable,
-               GError *error,
+               GError **error,
                SoupMessageHeaders *headers,
                SoupBuffer *body,
                gpointer user_data)
@@ -630,7 +630,7 @@ void
 message_cb (const char *method,
             const char *path,
             GCancellable *cancellable,
-            GError *error,
+            GError **error,
             SoupMessageHeaders *headers,
             SoupBuffer *body,
             gpointer user_data)
@@ -641,7 +641,7 @@ message_cb (const char *method,
 
     // path must be defined in order to dispatch
     if (!path) {
-        g_set_error (&error, RESTRAINT_ERROR,
+        g_set_error (error, RESTRAINT_ERROR,
                      RESTRAINT_TASK_RUNNER_RESULT_ERROR,
                      "Invalid message! path not defined");
         return;

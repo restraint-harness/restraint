@@ -23,7 +23,7 @@ struct _AppData;
 typedef void (*RegexCallback) (const char *method,
                                const char *path,
                                GCancellable *cancellable,
-                               GError *error,
+                               GError **error,
                                SoupMessageHeaders *headers,
                                SoupBuffer *body,
                                gpointer user_data);
