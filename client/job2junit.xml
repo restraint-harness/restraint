@@ -103,6 +103,7 @@
   Logs:
   <xsl:for-each select="logs/log">
     <xsl:value-of select="@path"/>
+     <xsl:text>&#xA;</xsl:text>
   </xsl:for-each>
  </xsl:template>
 </xsl:stylesheet>
