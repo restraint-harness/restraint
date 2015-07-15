@@ -73,6 +73,16 @@ read_cb (GObject *source, GAsyncResult *async_result, gpointer user_data)
                                     multipart_data->cancellable,
                                     close_cb,
                                     user_data);
+        // if we read 0 bytes and buffer length is zero as well.
+        // close the connection and try connecting again.
+        if (! multipart_data->buffer->len) {
+            g_input_stream_close_async (G_INPUT_STREAM (multipart),
+                                        G_PRIORITY_DEFAULT,
+                                        multipart_data->cancellable,
+                                        close_base_cb,
+                                        user_data);
+            return;
+        }
         if (multipart_data->callback) {
             SoupBuffer *soup_buffer;
             //g_print ("callback\n");
