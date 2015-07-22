@@ -86,7 +86,11 @@ Summary:	Allow unmodified rhts tests to run under restraint
 Group:		Applications/Internet
 Requires:	restraint = %{version}
 Requires:       make
+%if 0%{?rhel}%{?fedora} >= 7
+Requires:	/usr/bin/hostname
+%else
 Requires:       /bin/hostname
+%endif
 Requires:       coreutils
 %if 0%{?rhel} == 4
 Requires:       libselinux
