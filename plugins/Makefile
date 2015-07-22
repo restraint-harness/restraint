@@ -8,6 +8,7 @@ install:
 	install -m0755 -d $(DESTDIR)/usr/share/restraint/plugins/completed.d
 	install -m0755 -d $(DESTDIR)/usr/share/restraint/plugins/localwatchdog.d
 	install -m0755 -d $(DESTDIR)/usr/share/restraint/plugins/task_run.d
+	install -m0755 -d $(DESTDIR)/usr/share/restraint/pkg_commands.d
 	install -m0755 run_plugins $(DESTDIR)/usr/share/restraint/plugins
 	install -m0755 run_task_plugins $(DESTDIR)/usr/share/restraint/plugins
 	install -m0755 helpers $(DESTDIR)/usr/share/restraint/plugins
@@ -24,6 +25,7 @@ install:
 	install -m0755 task_run.d/25_environment $(DESTDIR)/usr/share/restraint/plugins/task_run.d
 	install -m0755 task_run.d/30_start_stafproc $(DESTDIR)/usr/share/restraint/plugins/task_run.d
 	install -m0755 task_run.d/35_oom_adj $(DESTDIR)/usr/share/restraint/plugins/task_run.d
+	install -m0755 pkg_commands.d/fedora $(DESTDIR)/usr/share/restraint/pkg_commands.d
 
 .PHONY: clean
 clean:

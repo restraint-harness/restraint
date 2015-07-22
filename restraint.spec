@@ -272,6 +272,7 @@ fi
 /usr/share/%{name}/plugins/completed.d
 /usr/share/%{name}/plugins/report_result.d
 /usr/share/%{name}/plugins/task_run.d
+/usr/share/%{name}/pkg_commands.d
 /var/lib/%{name}
 %if %{with_selinux_policy}
 %{_datadir}/selinux/packages/%{name}/restraint.pp

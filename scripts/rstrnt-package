@@ -21,8 +21,15 @@ PATH=/sbin:/usr/sbin:$PATH
 # OS specific package commands
 if [ -f "/etc/os-release" ]; then
     . /etc/os-release
+    # Old location
     if [ -f "/usr/share/restraint/pkg_commands.${ID}" ]; then
+    echo "WARNING: /usr/share/restraint/pkg_commands.${ID} is deprecated," \
+         "please use /usr/share/restraint/pkg_commands.d/${ID} instead" >&2
     . /usr/share/restraint/pkg_commands.${ID}
+    fi
+    # preferred location.
+    if [ -f "/usr/share/restraint/pkg_commands.d/${ID}" ]; then
+    . /usr/share/restraint/pkg_commands.d/${ID}
     fi
 fi
 

@@ -1,0 +1,8 @@
+#!/bin/sh
+
+. /etc/os-release
+
+# Fedora 22 and newer use dnf as default
+if [ 0"$VERSION_ID" -gt 21 ]; then
+    RSTRNT_PKG_CMD=${RSTRNT_PKG_CMD:-dnf}
+fi
