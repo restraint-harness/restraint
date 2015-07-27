@@ -11,7 +11,7 @@
 
 Name:		restraint
 Version:	0.1.21
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Simple test harness which can be used with beaker
 
 Group:		Applications/Internet
@@ -316,6 +316,11 @@ fi
 %{__rm} -rf %{buildroot}
 
 %changelog
+* Mon Jul 27 2015 Bill Peck <bpeck@redhat.com> 0.1.21-2
+- use dnf if on fedora systems (bpeck@redhat.com)
+- rhel7 and fedora have hostname in /usr/bin (bpeck@redhat.com)
+- ps output is too much for syslog. (bpeck@redhat.com)
+
 * Fri Jul 17 2015 Bill Peck <bpeck@redhat.com> 0.1.21-1
 - close the connection on an empty message (bpeck@redhat.com)
 - fix: log separation (mkovarik@redhat.com)
