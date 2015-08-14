@@ -54,9 +54,13 @@ The first example shows fetching a task from git.
 
  <fetch url="git://fedorapeople.org/home/fedora/bpeck/public_git/tests.git?master#kernel/performance/fs_mark" />
 
-The fetch node accepts git uri's that coform to the following:
+ OR
 
-* Prefixed with git://
+ <fetch url="http://fedorapeople.org/cgit/bpeck/public_git/tests.git/snapshot/tests-master.tar.gz#kernel/performance/fs_mark" />
+
+The fetch node accepts git uri's that conform to the following:
+
+* Prefixed with git:// OR use tarballs with http:// and cgit can serve them automatically.
 * the fully qualified hostname, remember that the system running restraintd must be able to reach this host.
 * the path to the git repo.
 * Optionally you can specify a valid reference which can be a branch, tag or SHA-1. ie: ?master
