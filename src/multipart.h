@@ -10,6 +10,8 @@ typedef void (*MultiPartCallback)	(const char *method,
 typedef void (*MultiPartDestroy)	(GError *error,
 					 gpointer user_data);
 
+typedef gboolean (*MultiPartCheckState) (gpointer user_data);
+
 typedef struct {
     const gchar *method;
     const gchar *path;
@@ -20,6 +22,7 @@ typedef struct {
     gchar read_buffer[READ_BUFFER_SIZE];
     MultiPartCallback callback;
     MultiPartDestroy destroy;
+    MultiPartCheckState chk_state;
     gpointer user_data;
     SoupMultipartInputStream *multipart;
 } MultiPartData;
@@ -29,4 +32,5 @@ multipart_request_send_async (SoupRequest *request,
                               GCancellable *cancellable,
                               MultiPartCallback callback,
                               MultiPartDestroy destroy,
+                              MultiPartCheckState chk_state,
                               gpointer user_data);
