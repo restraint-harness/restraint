@@ -20,6 +20,12 @@
 /third-party/sqlite-autoconf-3080002/
 /third-party/zlib-1.2.8.tar.gz
 /third-party/zlib-1.2.8/
+/third-party/libssh-0.7.0.tar.xz
+/third-party/libssh-0.7.0
+/third-party/cmake-3.2.3.tar.gz
+/third-party/cmake-3.2.3
+/third-party/openssl-1.0.1m.tar.gz
+/third-party/openssl-1.0.1m
 /third-party/tarballs
 /third-party/tree/
 /src/test-data/git-remote/

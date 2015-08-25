@@ -32,13 +32,15 @@ Source108:      xz-5.0.4.tar.gz
 Source109:      sqlite-autoconf-3080002.tar.gz
 Source110:      intltool-0.35.5.tar.gz
 Source111:      libsoup-2.48.1.tar.xz
+Source112:      libssh-0.7.0.tar.xz
+Source113:      cmake-3.2.3.tar.gz
+Source114:      openssl-1.0.1m.tar.gz
 %endif
 
 BuildRoot:	%(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 BuildRequires:	pkgconfig
 BuildRequires:	gettext
 BuildRequires:	perl-XML-Parser
-BuildRequires:	openssl-devel
 BuildRequires:	libselinux-devel
 BuildRequires:	glibc-devel
 %if 0%{?rhel}%{?fedora} > 4
@@ -67,15 +69,17 @@ Requires: selinux-policy >= %{_selinux_policy_version}
 %{?without_static:BuildRequires:  libsoup-devel}
 %{?without_static:BuildRequires:  libarchive-devel}
 %{?without_static:BuildRequires:  libxml2-devel}
+%{?without_static:BuildRequires:  libssh-devel}
+%{?without_static:BuildRequires:  openssl-devel}
 BuildRequires:  make
 BuildRequires:  tar
 
 # If static build...
 %if 0%{?rhel}%{?fedora} >= 6
 %{?with_static:BuildRequires:	libselinux-static}
-%{?with_static:BuildRequires:	openssl-static}
 %{?with_static:BuildRequires:	glibc-static}
 %endif
+%{?with_static:BuildRequires:  ncurses-devel}
 
 %description
 restraint harness which can run standalone or with beaker.  when provided a recipe xml it will execute
