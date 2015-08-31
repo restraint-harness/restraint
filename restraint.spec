@@ -11,7 +11,7 @@
 
 Name:		restraint
 Version:	0.1.21
-Release:	2%{?dist}
+Release:	3%{?dist}
 Summary:	Simple test harness which can be used with beaker
 
 Group:		Applications/Internet
@@ -316,6 +316,14 @@ fi
 %{__rm} -rf %{buildroot}
 
 %changelog
+* Mon Aug 31 2015 Bill Peck <bpeck@redhat.com> 0.1.21-3
+- fix status cb to raise any WARN reported to task and recipe level.
+  (bpeck@redhat.com)
+
+* Mon Aug 31 2015 Bill Peck <bpeck@redhat.com>
+- fix status cb to raise any WARN reported to task and recipe level.
+  (bpeck@redhat.com)
+
 * Mon Jul 27 2015 Bill Peck <bpeck@redhat.com> 0.1.21-2
 - use dnf if on fedora systems (bpeck@redhat.com)
 - rhel7 and fedora have hostname in /usr/bin (bpeck@redhat.com)
