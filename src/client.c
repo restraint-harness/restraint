@@ -41,6 +41,7 @@
 #include "xml.h"
 
 static SoupSession *session;
+static GHashTable *result_states_to;
 
 static void recipe_finish(RecipeData *recipe_data);
 static gboolean run_recipe_handler (gpointer user_data);
@@ -67,8 +68,8 @@ static void restraint_free_app_data(AppData *app_data)
     g_clear_error(&app_data->error);
     g_free(app_data->run_dir);
 
-    if (app_data->result_states_to != NULL) {
-        g_hash_table_destroy(app_data->result_states_to);
+    if (result_states_to != NULL) {
+        g_hash_table_destroy(result_states_to);
     }
     g_hash_table_destroy(app_data->recipes);
     if (app_data->loop != NULL) {
@@ -111,13 +112,11 @@ init_result_hash (AppData *app_data)
     static gint warn = 2;
     static gint fail = 3;
 
-    GHashTable *result_hash_to = g_hash_table_new(g_str_hash, g_str_equal);
-    g_hash_table_insert(result_hash_to, "NONE", &none);
-    g_hash_table_insert(result_hash_to, "PASS", &pass);
-    g_hash_table_insert(result_hash_to, "WARN", &warn);
-    g_hash_table_insert(result_hash_to, "FAIL", &fail);
-
-    app_data->result_states_to = result_hash_to;
+    result_states_to = g_hash_table_new(g_str_hash, g_str_equal);
+    g_hash_table_insert(result_states_to, "NONE", &none);
+    g_hash_table_insert(result_states_to, "PASS", &pass);
+    g_hash_table_insert(result_states_to, "WARN", &warn);
+    g_hash_table_insert(result_states_to, "FAIL", &fail);
 }
 
 static gboolean
@@ -159,8 +158,19 @@ record_log (xmlNodePtr node_ptr,
     xmlSetProp (log_node_ptr, (xmlChar *)"filename", (xmlChar *) filename);
 }
 
+static gint
+result_to_id (const gchar *result, GHashTable *states)
+{
+    gint id = 0;
+    gpointer val = g_hash_table_lookup (states, result);
+    if (val)
+        id = *((gint *)val);
+    return id;
+}
+
 static void
-record_result (xmlNodePtr results_node_ptr,
+record_result (xmlNodePtr recipe_node_ptr,
+               xmlNodePtr task_node_ptr,
                const gchar *result_id,
                const gchar *result,
                const gchar *message,
@@ -168,7 +178,9 @@ record_result (xmlNodePtr results_node_ptr,
                const gchar *score,
                gint verbose)
 {
-    // record result under task_node_ptr
+    xmlNodePtr results_node_ptr = first_child_with_name(task_node_ptr,
+                                                        "results", TRUE);
+    // record result under results_node_ptr
     xmlNodePtr result_node_ptr = xmlNewTextChild (results_node_ptr,
                                                   NULL,
                                                   (xmlChar *) "result",
@@ -185,6 +197,22 @@ record_result (xmlNodePtr results_node_ptr,
 
     if (score)
         xmlSetProp (result_node_ptr, (xmlChar *)"score", (xmlChar *) score);
+
+    gchar *recipe_result = (gchar *)xmlGetNoNsProp(recipe_node_ptr,
+                                                   (xmlChar*)"result");
+    gchar *task_result = (gchar *)xmlGetNoNsProp(task_node_ptr,
+                                                 (xmlChar*)"result");
+
+    // Push higher priority results up the chain, result->task->recipe.
+    if (result_to_id(result, result_states_to) >
+            result_to_id(task_result, result_states_to))
+        xmlSetProp(task_node_ptr, (xmlChar *)"result", (xmlChar *) result);
+    if (result_to_id(result, result_states_to) >
+            result_to_id(recipe_result, result_states_to))
+        xmlSetProp (recipe_node_ptr, (xmlChar*)"result",
+                    (xmlChar*)result);
+    g_free(recipe_result);
+    g_free(task_result);
 
     if (verbose == 1) {
         // FIXME - read the terminal width and base this value off that.
@@ -205,16 +233,6 @@ record_result (xmlNodePtr results_node_ptr,
             g_print ("**            %s\n", message);
         }
     }
-}
-
-static gint
-result_to_id (gchar *result, GHashTable *states)
-{
-    gint id = 0;
-    gpointer val = g_hash_table_lookup (states, result);
-    if (val)
-        id = *((gint *)val);
-    return id;
 }
 
 static void
@@ -303,27 +321,9 @@ tasks_results_cb (const char *method,
     gchar *result_path = g_hash_table_lookup (table, "path");
     gchar *score = g_hash_table_lookup (table, "score");
 
-    xmlNodePtr results_node_ptr = first_child_with_name(task_node_ptr,
-                                                        "results", TRUE);
-    // Record the result and get our result id back.
-    record_result(results_node_ptr, transaction_id, result, message,
+    // Record the result
+    record_result(recipe_data->recipe_node_ptr, task_node_ptr, transaction_id, result, message,
                   result_path, score, app_data->verbose);
-
-    gchar *recipe_result = (gchar *)xmlGetNoNsProp(
-        recipe_data->recipe_node_ptr, (xmlChar*)"result");
-    gchar *task_result = (gchar *)xmlGetNoNsProp(task_node_ptr,
-                                                 (xmlChar*)"result");
-
-    // Push higher priority results up the chain, result->task->recipe.
-    if (result_to_id(result, app_data->result_states_to) >
-            result_to_id(task_result, app_data->result_states_to))
-        xmlSetProp(task_node_ptr, (xmlChar *)"result", (xmlChar *) result);
-    if (result_to_id(result, app_data->result_states_to) >
-            result_to_id(recipe_result, app_data->result_states_to))
-        xmlSetProp (recipe_data->recipe_node_ptr, (xmlChar*)"result",
-                    (xmlChar*)result);
-    g_free(recipe_result);
-    g_free(task_result);
 
     g_hash_table_destroy(table);
 cleanup:
@@ -441,9 +441,13 @@ tasks_status_cb (const char *method,
     }
     // If message is passed then record a result with that.
     if (message) {
-        xmlNodePtr results_node_ptr = first_child_with_name(task_node_ptr,
-                "results", TRUE);
-        record_result(results_node_ptr, transaction_id, "Warn", message, "/", NULL,
+        record_result(recipe_data->recipe_node_ptr,
+                      task_node_ptr,
+                      transaction_id,
+                      "WARN",
+                      message,
+                      "/",
+                      NULL,
                       app_data->verbose);
     }
 
