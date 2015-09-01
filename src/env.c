@@ -91,7 +91,7 @@ void build_env(gchar *restraint_url, Task *task) {
     hoststr = g_strjoinv(" ", hostarr);
     array_add(env, NULL, "RECIPE_MEMBERS", hoststr);
     g_free(hoststr);
-    g_free(hostarr);
+    g_strfreev(hostarr);
     g_slist_free(rmembers);
 
     gchar *prefix = ENV_PREFIX;
