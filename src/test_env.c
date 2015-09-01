@@ -43,7 +43,7 @@ static void test_task_env_role_members_standalone(void)
   gchar *rmembers = NULL;
 
   task->rhts_compat = FALSE;
-  task->recipe = g_slice_new(Recipe);
+  task->recipe = g_slice_new0(Recipe);
   task->params = g_list_append(task->params, &rmem);
 
   build_env("http://localhost", task);
@@ -56,6 +56,7 @@ static void test_task_env_role_members_standalone(void)
   if (task->env != NULL) {
     g_ptr_array_free(task->env, TRUE);
   }
+  g_list_free(task->params);
   g_slice_free(Task, task);
 
   if (rmembers != NULL) {
@@ -78,7 +79,7 @@ static void test_task_env_role_members_beaker(void)
   roles = g_list_append(roles, &dupe);
 
   task->rhts_compat = FALSE;
-  task->recipe = g_slice_new(Recipe);
+  task->recipe = g_slice_new0(Recipe);
   task->roles = roles;
 
   build_env("http://localhost", task);
