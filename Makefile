@@ -16,7 +16,7 @@ check:
 
 .PHONY: valgrind
 valgrind:
-	set -e; for i in $(SUBDIRS); do $(MAKE) -C $$i valgrind; done
+	set -e; $(MAKE) -C src valgrind
 
 .PHONY: clean
 clean:
