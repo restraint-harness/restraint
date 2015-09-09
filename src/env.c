@@ -49,7 +49,25 @@ array_add (GPtrArray *array, const gchar *prefix, const gchar *variable, const g
     }
 }
 
+struct env_remove_t {
+    gchar *varname;
+    GPtrArray *env;
+};
+
+static void remove_env_var(gchar *evar, struct env_remove_t *er)
+{
+    if (evar != NULL) {
+        gchar **envval = g_strsplit(evar, "=", 2);
+        if (g_strcmp0(envval[0], er->varname) == 0) {
+            g_ptr_array_remove_fast(er->env, evar);
+        }
+        g_strfreev(envval);
+    }
+}
+
 static void build_param_var(Param *param, GPtrArray *env) {
+    struct env_remove_t er = { .varname = param->name, .env = env };
+    g_ptr_array_foreach(env, (GFunc)remove_env_var, &er);
     g_ptr_array_add(env, g_strdup_printf("%s=%s", param->name, param->value));
 }
 
