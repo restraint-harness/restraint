@@ -50,7 +50,7 @@ tree/lib/pkgconfig/libssh.pc: $(LIBSSH) $(LIBSSH)/.patches-done tree/bin/cmake t
 tree/lib/pkgconfig/openssl.pc: $(OPENSSL)
 	( cd $(OPENSSL) && ./config --prefix=$(CURDIR)/tree -DPURIFY )
 	$(MAKE) -C $(OPENSSL)
-	$(MAKE) -C $(OPENSSL) PREFIX=$(CURDIR)/tree install
+	$(MAKE) -C $(OPENSSL) PREFIX=$(CURDIR)/tree install_sw
 
 tree/lib/libbz2.a: $(BZIP2)
 	$(MAKE) -C $(BZIP2)
