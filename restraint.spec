@@ -80,6 +80,9 @@ BuildRequires:  tar
 %{?with_static:BuildRequires:	glibc-static}
 %endif
 %{?with_static:BuildRequires:  ncurses-devel}
+# intltool perl dependencies
+%{?with_static:BuildRequires:  perl(Getopt::Long)}
+%{?with_static:BuildRequires:  perl(XML::Parser)}
 
 %description
 restraint harness which can run standalone or with beaker.  when provided a recipe xml it will execute
