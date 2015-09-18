@@ -33,6 +33,12 @@ if [ -f "/etc/os-release" ]; then
     fi
 fi
 
+# source override file.  Allows for additional args to be added
+# for example.  --enable-repo=debug*
+if [ -f "/usr/share/restraint/pkg_commands.d/override" ]; then
+    . /usr/share/restraint/pkg_commands.d/override
+fi
+
 operation=$1
 package=$2
 
