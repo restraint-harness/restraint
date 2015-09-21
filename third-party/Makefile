@@ -169,7 +169,7 @@ $(LIBSOUP).tar.xz:
 
 TAR_BALLS += $(LIBSSH).tar.xz
 $(LIBSSH).tar.xz:
-	curl -L -O https://red.libssh.org/attachments/download/140/$@
+	curl -L -O https://git.libssh.org/projects/libssh.git/snapshot/$@
 
 TAR_BALLS += $(OPENSSL).tar.gz
 $(OPENSSL).tar.gz:
