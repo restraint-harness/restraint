@@ -11,7 +11,7 @@
 
 Name:		restraint
 Version:	0.1.21
-Release:	3%{?dist}
+Release:	4%{?dist}
 Summary:	Simple test harness which can be used with beaker
 
 Group:		Applications/Internet
@@ -316,6 +316,11 @@ fi
 %{__rm} -rf %{buildroot}
 
 %changelog
+* Mon Oct 19 2015 Bill Peck <bpeck@redhat.com> 0.1.21-4
+- Build target changed.  Create symlink to rhts.el6eso.pp so we install correct
+  selinux policy for rhel6. (bpeck@redhat.com)
+- if override file exists then source it. (bpeck@redhat.com)
+
 * Mon Aug 31 2015 Bill Peck <bpeck@redhat.com> 0.1.21-3
 - fix status cb to raise any WARN reported to task and recipe level.
   (bpeck@redhat.com)
