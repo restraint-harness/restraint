@@ -54,7 +54,7 @@ upload_chunk (SoupSession *session,
         soup_message_set_request (server_msg, "text/plain", SOUP_MEMORY_COPY, input_buf, bytes_read);
         ret = soup_session_send_message (session, server_msg);
         if (SOUP_STATUS_IS_SUCCESSFUL (ret)) {
-            return 1;
+            return bytes_read;
         } else {
             g_set_error_literal (error, SOUP_HTTP_ERROR, server_msg->status_code,
                                      server_msg->reason_phrase);
@@ -75,7 +75,7 @@ upload_file (SoupSession *session,
     GFile *f = g_file_new_for_path (filepath);
     GFileInputStream *fis = NULL;
     GFileInfo *fileinfo = NULL;
-    guint64 filesize;
+    guint64 filesize, uploaded;
     GError *tmp_error = NULL;
     SoupURI *result_log_uri;
     gint ret;
@@ -102,9 +102,16 @@ upload_file (SoupSession *session,
     }
 
     result_log_uri = soup_uri_new_with_base (results_uri, filename);
-    while ((ret = upload_chunk (session, G_INPUT_STREAM (fis), filesize, result_log_uri, &tmp_error)) > 0) {
-        // replace with callback
-        g_print (".");
+    uploaded = 0;
+    while (uploaded < filesize) {
+        ret = upload_chunk (session, G_INPUT_STREAM (fis), filesize, result_log_uri, &tmp_error);
+        if (ret < 0) {
+            break;
+        } else {
+            uploaded += ret;
+            // replace with callback
+            g_print (".");
+        }
     }
 
     if (tmp_error) {
