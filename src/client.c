@@ -903,7 +903,7 @@ new_job ()
 }
 
 static xmlNodePtr
-new_recipe (xmlDocPtr xml_doc_ptr, guint recipe_id,
+new_recipe (xmlDocPtr xml_doc_ptr, xmlChar *recipe_id,
             xmlNodePtr recipe_set_node_ptr, const xmlChar *wboard,
             const xmlChar *role)
 {
@@ -911,8 +911,7 @@ new_recipe (xmlDocPtr xml_doc_ptr, guint recipe_id,
                                        NULL,
                                        (xmlChar *) "recipe",
                                        NULL);
-    gchar *new_id = g_strdup_printf ("%u", recipe_id);
-    xmlSetProp (recipe_node_ptr, (xmlChar *)"id", (xmlChar *) new_id);
+    xmlSetProp (recipe_node_ptr, (xmlChar *)"id", (xmlChar *) recipe_id);
     xmlSetProp (recipe_node_ptr, (xmlChar *)"status", (xmlChar *) "New");
     xmlSetProp (recipe_node_ptr, (xmlChar *)"result", (xmlChar *) "None");
     if (wboard != NULL) {
@@ -921,7 +920,6 @@ new_recipe (xmlDocPtr xml_doc_ptr, guint recipe_id,
     if (role != NULL) {
         xmlSetProp(recipe_node_ptr, (xmlChar *)"role", role);
     }
-    g_free(new_id);
     return recipe_node_ptr;
 }
 
@@ -1070,10 +1068,8 @@ static gchar *copy_job_as_template(gchar *job, AppData *app_data)
         xmlChar *id = xmlGetNoNsProp(node, (xmlChar*)"id");
         xmlChar *role = xmlGetNoNsProp(node, (xmlChar*)"role");
 
-        if (id != NULL) {
-            recipe_id = (guint)g_ascii_strtoull((gchar*)id, NULL, 0);
-        } else {
-            id = (xmlChar*)g_strdup_printf ("%u", recipe_id);
+        if (id == NULL) {
+            id = (xmlChar*)g_strdup_printf ("%u", recipe_id++);
         }
 
         RecipeData *recipe_data = g_hash_table_lookup(app_data->recipes,
@@ -1086,7 +1082,7 @@ static gchar *copy_job_as_template(gchar *job, AppData *app_data)
         }
 
         guint recipe_role = get_node_role(node, roletable, recipe_data);
-        xmlNodePtr new_recipe_ptr = new_recipe(new_xml_doc_ptr, recipe_id++,
+        xmlNodePtr new_recipe_ptr = new_recipe(new_xml_doc_ptr, id,
                                        recipe_set_node_ptr, wboard, role);
 
         // find task nodes
@@ -1499,19 +1495,19 @@ int main(int argc, char *argv[]) {
                                        "/start$",
                                         recipe_start_cb);
     app_data->regexes = register_path (app_data->regexes,
-                                       "/recipes/[[:digit:]]+/tasks/[[:digit:]]+/status$",
+                                       "/recipes/[[:alnum:]]+/tasks/[[:digit:]]+/status$",
                                        tasks_status_cb);
     app_data->regexes = register_path (app_data->regexes,
-                                       "/recipes/[[:digit:]]+/tasks/[[:digit:]]+/results/$",
+                                       "/recipes/[[:alnum:]]+/tasks/[[:digit:]]+/results/$",
                                        tasks_results_cb);
     app_data->regexes = register_path (app_data->regexes,
-                                       "/recipes/[[:digit:]]+/watchdog$",
+                                       "/recipes/[[:alnum:]]+/watchdog$",
                                        watchdog_cb);
     app_data->regexes = register_path (app_data->regexes,
-                                       "/recipes/[[:digit:]]+/tasks/[[:digit:]]+/logs/",
+                                       "/recipes/[[:alnum:]]+/tasks/[[:digit:]]+/logs/",
                                        tasks_logs_cb);
     app_data->regexes = register_path (app_data->regexes,
-                                       "/recipes/[[:digit:]]+/tasks/[[:digit:]]+/results/[[:digit:]]+/logs/",
+                                       "/recipes/[[:alnum:]]+/tasks/[[:digit:]]+/results/[[:digit:]]+/logs/",
                                        tasks_logs_cb);
     // Create and enter the main loop
     app_data->loop = g_main_loop_new(NULL, FALSE);
