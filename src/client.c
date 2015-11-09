@@ -1343,25 +1343,27 @@ cleanup:
         g_free (std_err);
 }
 
-static gboolean add_recipe_host(const gchar *option_name, const gchar *value,
-                                gpointer data, GError **error) {
-    AppData *app_data = (AppData*)data;
+static gboolean add_recipe_host(const gchar *value, AppData *app_data,
+                                guint *recipe_id) {
     gchar **args;
-    gchar *remote;
+    gchar *remote = NULL;
+    gchar *host = NULL;
+    gchar *id = NULL;
     gboolean result = TRUE;
     SoupURI *remote_uri;
 
     args = g_strsplit(value, "=", 2);
     if (g_strv_length(args) != 2) {
-        g_set_error(error, G_OPTION_ERROR, G_OPTION_ERROR_FAILED,
-            "Option format not recognized: '%s'. Try --help.", value);
-        g_strfreev(args);
-        return FALSE;
+        id = g_strdup_printf("%u", (*recipe_id)++);
+        host = args[0];
+    } else {
+        id = g_strdup(args[0]);
+        host = args[1];
     }
 
-    SshData *ssh_data = ssh_start(args[1]);
+    SshData *ssh_data = ssh_start(host);
     if (ssh_data == NULL) {
-        g_set_error (error, RESTRAINT_ERROR,
+        g_set_error (&app_data->error, RESTRAINT_ERROR,
                      RESTRAINT_SSH_ERROR,
                      "Failed to establish ssh tunnel");
         g_strfreev(args);
@@ -1371,17 +1373,18 @@ static gboolean add_recipe_host(const gchar *option_name, const gchar *value,
 
     remote_uri = soup_uri_new(remote);
     if (remote_uri == NULL) {
-        g_set_error(error, G_OPTION_ERROR, G_OPTION_ERROR_FAILED,
+        g_set_error(&app_data->error, G_OPTION_ERROR, G_OPTION_ERROR_FAILED,
             "Wrong URI format: %s.", remote);
         result = FALSE;
         goto cleanup;
     }
 
-    RecipeData *recipe_data = new_recipe_data(app_data, args[0]);
+    RecipeData *recipe_data = new_recipe_data(app_data, id);
     recipe_data->remote_uri = remote_uri;
     recipe_data->ssh_data = ssh_data;
 
 cleanup:
+    g_free(id);
     g_free(remote);
     g_strfreev(args);
     return result;
@@ -1400,6 +1403,7 @@ static void recipe_init(gchar *id, RecipeData *recipe_data,
 int main(int argc, char *argv[]) {
     gchar *job = NULL;
     gboolean ipv6 = FALSE;
+    gchar **hostarr = NULL;
 
     AppData *app_data = g_slice_new0 (AppData);
 
@@ -1419,7 +1423,7 @@ int main(int argc, char *argv[]) {
             "Run job from file", "FILE" },
         { "run", 'r', 0, G_OPTION_ARG_STRING, &app_data->run_dir,
             "Continue interrupted job from DIR", "DIR" },
-        { "host", 't', 0, G_OPTION_ARG_CALLBACK, &add_recipe_host,
+        { "host", 't', 0, G_OPTION_ARG_STRING_ARRAY, &hostarr,
             "Set host for a recipe with specific id.",
             "<recipe_id>=[<user>@]<host>[:<port>][/ssh_port]" },
         { "verbose", 'v', G_OPTION_FLAG_NO_ARG, G_OPTION_ARG_CALLBACK,
@@ -1462,6 +1466,13 @@ int main(int argc, char *argv[]) {
         g_printerr ("You can't specify both run_dir and port\n");
         g_printerr ("Try %s --help\n", argv[0]);
         goto cleanup;
+    }
+
+    guint recipe_id = 1;
+    for (int i = 0; i < g_strv_length(hostarr); i++) {
+        if (!add_recipe_host(hostarr[i], app_data, &recipe_id)) {
+            goto cleanup;
+        }
     }
 
     if (job) {
@@ -1522,6 +1533,7 @@ cleanup:
     soup_session_abort(session);
     g_object_unref(session);
     g_object_unref(address);
+    g_strfreev(hostarr);
     if (job != NULL) {
         g_free(job);
     }
