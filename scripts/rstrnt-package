@@ -68,6 +68,10 @@ if [ "$operation" = "install" ]; then
 elif [ "$operation" = "remove" ]; then
     _pkg_cmd $pkg_remove
     RC=$?
+elif [ "$operation" = "reinstall" ]; then
+    _pkg_cmd $pkg_remove
+    _pkg_cmd $pkg_install
+    RC=$?
 else
    >&2 echo "Unrecognized operation $operation"
    RC=2

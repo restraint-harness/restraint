@@ -226,6 +226,12 @@ static Task *parse_task(xmlNode *task_node, Recipe *recipe, GError **error) {
     task->name = g_strdup((gchar *)task_name);
     xmlFree (task_name);
 
+    xmlChar *keepchanges = xmlGetNoNsProp(task_node, (xmlChar *)"keepchanges");
+    if (g_strcmp0((gchar *)keepchanges, "yes") == 0) {
+        task->keepchanges = TRUE;
+    }
+    xmlFree(keepchanges);
+
     xmlChar *task_id = xmlGetNoNsProp(task_node, (xmlChar *)"id");
     if (task_id == NULL) {
         unrecognised("<task/> without id");

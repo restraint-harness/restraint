@@ -73,6 +73,8 @@ typedef struct {
         gchar *package_name; // when TASK_FETCH_INSTALL_PACKAGE
         SoupURI *url; // when TASK_FETCH_UNPACK
     } fetch;
+    /* Whether to keep task changes */
+    gboolean keepchanges;
     /* List of Params */
     GList *params;
     /* List of Roles */

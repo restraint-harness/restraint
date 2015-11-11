@@ -17,6 +17,7 @@
 
 void restraint_fetch_http (SoupURI *url,
                      const gchar *base_path,
+                     gboolean keepchanges,
                      ArchiveEntryCallback entry_callback,
                      FetchFinishCallback finish_callback,
                      gpointer user_data);

@@ -384,7 +384,8 @@ git_archive_read_callback (gpointer user_data)
     archive_entry_set_pathname( entry, newPath );
     g_free(newPath);
 
-    if (access(archive_entry_pathname(entry), F_OK) == -1) {
+    if (fetch_data->keepchanges == FALSE ||
+            access(archive_entry_pathname(entry), F_OK) == -1) {
         r = archive_read_extract2(fetch_data->a, entry, fetch_data->ext);
         if (r != ARCHIVE_OK) {
             g_set_error(&fetch_data->error, RESTRAINT_FETCH_LIBARCHIVE_ERROR, r,
@@ -399,6 +400,7 @@ git_archive_read_callback (gpointer user_data)
 void
 restraint_fetch_git (SoupURI *url,
                      const gchar *base_path,
+                     gboolean keepchanges,
                      ArchiveEntryCallback archive_entry_callback,
                      FetchFinishCallback finish_callback,
                      gpointer user_data)
@@ -412,6 +414,7 @@ restraint_fetch_git (SoupURI *url,
     fetch_data->user_data = user_data;
     fetch_data->url = url;
     fetch_data->base_path = base_path;
+    fetch_data->keepchanges = keepchanges;
 
     GError *tmp_error = NULL;
     gint r;

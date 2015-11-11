@@ -726,6 +726,9 @@ copy_task_nodes(xmlNodeSetPtr nodeset, xmlDocPtr orig_xml_doc,
 
         xmlChar *name = xmlGetNoNsProp (nodeset->nodeTab[i], (xmlChar*)"name");
         xmlSetProp (task_node_ptr, (xmlChar *) "name", name);
+        xmlChar *keepchanges = xmlGetNoNsProp (nodeset->nodeTab[i],
+                                               (xmlChar*)"keepchanges");
+        xmlSetProp (task_node_ptr, (xmlChar *) "keepchanges", keepchanges);
         xmlChar *role = xmlGetNoNsProp(nodeset->nodeTab[i], (xmlChar*)"role");
         if (role != NULL) {
             xmlSetProp (task_node_ptr, (xmlChar*)"role", (xmlChar*)role);
@@ -737,6 +740,7 @@ copy_task_nodes(xmlNodeSetPtr nodeset, xmlDocPtr orig_xml_doc,
         xmlSetProp (task_node_ptr, (xmlChar *) "result", (xmlChar *) "None");
         g_free(new_id);
         g_free(name);
+        g_free(keepchanges);
     }
 }
 

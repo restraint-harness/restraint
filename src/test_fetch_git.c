@@ -62,6 +62,7 @@ test_fetch_git_success(void) {
 
     restraint_fetch_git (url,
                          path,
+                         FALSE,
                          archive_entry_callback,
                          fetch_finish_callback,
                          run_data);
@@ -122,6 +123,7 @@ test_fetch_git_fail(void) {
 
     restraint_fetch_git (url,
                          path,
+                         FALSE,
                          archive_entry_callback,
                          fetch_finish_callback,
                          run_data);

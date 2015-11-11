@@ -32,6 +32,7 @@ typedef struct {
     GSList *dependencies;
     GSList *repodeps;
     SoupURI *fetch_url;
+    gboolean keepchanges;
     const gchar *main_task_name;
     const gchar *base_path;
     gboolean ignore_failed_install;
