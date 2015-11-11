@@ -21,6 +21,8 @@
 #include <libsoup/soup.h>
 #include <libsoup/soup-uri.h>
 #include <archive.h>
+#include <string.h>
+#include <unistd.h>
 
 #include "fetch.h"
 #include "fetch_http.h"
@@ -80,6 +82,121 @@ static void test_fetch_http_nofragment_success(void) {
     GFile *base = g_file_new_for_path (path);
 
     GFile *file = g_file_get_child (base, "Makefile");
+    g_assert(g_file_query_exists (file, NULL) != FALSE);
+    g_file_delete (file, NULL, NULL);
+    g_object_unref(file);
+
+    file = g_file_get_child(base, "PURPOSE");
+    g_assert(g_file_query_exists (file, NULL) != FALSE);
+    g_file_delete (file, NULL, NULL);
+    g_object_unref(file);
+
+    file = g_file_get_child(base, "metadata");
+    g_assert(g_file_query_exists (file, NULL) != FALSE);
+    g_file_delete (file, NULL, NULL);
+    g_object_unref(file);
+
+    file = g_file_get_child(base, "runtest.sh");
+    g_assert(g_file_query_exists (file, NULL) != FALSE);
+    g_file_delete (file, NULL, NULL);
+    g_object_unref(file);
+
+    g_object_unref(base);
+
+    // free our memory
+    g_string_free (run_data->entry, TRUE);
+    g_clear_error (&run_data->error);
+    g_slice_free (RunData, run_data);
+    g_remove (path);
+    g_free (path);
+    soup_uri_free (url);
+}
+
+static void test_fetch_http_nofragment_keepchanges(void) {
+    RunData *run_data;
+
+    gchar *expected = "././runtest.sh./PURPOSE./metadata./Makefile";
+    // read archive data in
+
+    run_data = g_slice_new0 (RunData);
+    run_data->entry = g_string_new (NULL);
+
+    SoupURI *url = soup_uri_new ("http://localhost:8000/fetch_git.tgz");
+    gchar *path = g_dir_make_tmp ("test_fetch_http_XXXXXX", NULL);
+
+    restraint_fetch_http (url,
+                          path,
+                          FALSE,
+                          archive_entry_callback,
+                          fetch_finish_callback,
+                          run_data);
+
+    // run event loop while process is running.
+    run_data->loop = g_main_loop_new (NULL, TRUE);
+    g_main_loop_run (run_data->loop);
+
+    // check that initial request worked.
+    g_assert_no_error (run_data->error);
+
+    // check that output is expected
+    g_assert_cmpstr (run_data->entry->str, ==, expected);
+
+    GFile *base = g_file_new_for_path (path);
+
+    gchar *tf_path = g_strconcat(path, "/PURPOSE", NULL);
+    gchar *mf_path = g_strconcat(path, "/Makefile", NULL);
+    const gchar *tmsg = "KEEPCHANGES TEST";
+    gssize tmsg_size = strlen(tmsg);
+
+    struct stat statbuf;
+    stat(tf_path, &statbuf);
+    gssize orig_size = statbuf.st_size;
+
+    g_file_set_contents(tf_path, tmsg, tmsg_size, &run_data->error);
+    g_assert_no_error (run_data->error);
+
+    GFile *file = g_file_get_child (base, "Makefile");
+    g_assert(g_file_query_exists (file, NULL) != FALSE);
+    g_file_delete (file, NULL, NULL);
+    g_object_unref(file);
+
+    restraint_fetch_http (url,
+                          path,
+                          TRUE,
+                          archive_entry_callback,
+                          fetch_finish_callback,
+                          run_data);
+
+    run_data->loop = g_main_loop_new (NULL, TRUE);
+    g_main_loop_run (run_data->loop);
+
+    g_assert_cmpint(access(mf_path, F_OK), !=, -1);
+    stat(tf_path, &statbuf);
+    g_assert_cmpint(tmsg_size, ==, statbuf.st_size);
+
+    gchar *msgbuf = NULL;
+    g_file_get_contents(tf_path, &msgbuf, NULL, &run_data->error);
+    g_assert_no_error (run_data->error);
+    g_assert_cmpstr(tmsg, ==, msgbuf);
+    g_free(msgbuf);
+
+    restraint_fetch_http (url,
+                          path,
+                          FALSE,
+                          archive_entry_callback,
+                          fetch_finish_callback,
+                          run_data);
+
+    run_data->loop = g_main_loop_new (NULL, TRUE);
+    g_main_loop_run (run_data->loop);
+
+    stat(tf_path, &statbuf);
+    g_assert_cmpint(orig_size, ==, statbuf.st_size);
+
+    g_free(tf_path);
+    g_free(mf_path);
+
+    file = g_file_get_child (base, "Makefile");
     g_assert(g_file_query_exists (file, NULL) != FALSE);
     g_file_delete (file, NULL, NULL);
     g_object_unref(file);
@@ -277,6 +394,7 @@ int main(int argc, char *argv[]) {
     g_test_add_func("/fetch_http/nofragment/success", test_fetch_http_nofragment_success);
     g_test_add_func("/fetch_http/nofragment/bad_archive", test_fetch_http_nofragment_bad_archive);
     g_test_add_func("/fetch_http/nofragment/fail", test_fetch_http_nofragment_fail);
+    g_test_add_func("/fetch_http/nofragment/keepchanges", test_fetch_http_nofragment_keepchanges);
     g_test_add_func("/fetch_http/fragment/success", test_fetch_http_fragment_success);
     g_test_add_func("/fetch_http/fragment/fail", test_fetch_http_fragment_fail);
     return g_test_run();
