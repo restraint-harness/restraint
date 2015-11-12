@@ -382,7 +382,6 @@ git_archive_read_callback (gpointer user_data)
     // Update pathname
     newPath = g_build_filename (fetch_data->base_path, archive_entry_pathname( entry ), NULL);
     archive_entry_set_pathname( entry, newPath );
-    g_free(newPath);
 
     if (fetch_data->keepchanges == FALSE ||
             access(archive_entry_pathname(entry), F_OK) == -1) {
@@ -418,6 +417,10 @@ restraint_fetch_git (SoupURI *url,
 
     GError *tmp_error = NULL;
     gint r;
+
+    if (keepchanges == FALSE) {
+        rmrf(base_path);
+    }
 
     fetch_data->a = archive_read_new();
     if (fetch_data->a == NULL) {

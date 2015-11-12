@@ -15,6 +15,10 @@
     along with Restraint.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <stdint.h>
+#include <glib.h>
+#include <libsoup/soup.h>
+
 #define LARGE_PACKET_MAX 65520
 
 typedef void (*FetchFinishCallback) (GError *error,
@@ -53,3 +57,5 @@ typedef enum {
 
 #define RESTRAINT_FETCH_LIBARCHIVE_ERROR restraint_fetch_libarchive_error()
 GQuark restraint_fetch_libarchive_error(void);
+
+int rmrf(const char *path);
