@@ -516,14 +516,18 @@ tasks_logs_cb (const char *method,
 
     gchar *logs_xpath = NULL;
     if (g_strcmp0 (entries[5], "logs") == 0) {
+        gchar *fpath = g_strjoinv ("/", &entries[6]);
         logs_xpath = g_strdup_printf("task[@id='%s']/logs", task_id);
-        short_path = g_strjoinv ("/", &entries[6]);
+        short_path = g_uri_unescape_string(fpath, NULL);
+        g_free(fpath);
     } else {
         // We shouldn't have to specify recipe and task id since we
         // are searching from recipe node.
+        gchar *fpath = g_strjoinv ("/", &entries[8]);
         logs_xpath = g_strdup_printf("task[@id='%s']/results/result[@id='%s']/logs",
                                      task_id, entries[6]);
-        short_path = g_strjoinv ("/", &entries[8]);
+        short_path = g_uri_unescape_string(fpath, NULL);
+        g_free(fpath);
     }
 
     gboolean content_range = soup_message_headers_get_content_range(

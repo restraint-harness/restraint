@@ -101,7 +101,8 @@ upload_file (SoupSession *session,
         return FALSE;
     }
 
-    result_log_uri = soup_uri_new_with_base (results_uri, filename);
+    result_log_uri = soup_uri_new_with_base (results_uri,
+                        g_uri_escape_string(filename, NULL, FALSE));
     uploaded = 0;
     while (uploaded < filesize) {
         ret = upload_chunk (session, G_INPUT_STREAM (fis), filesize, result_log_uri, &tmp_error);
