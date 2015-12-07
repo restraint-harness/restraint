@@ -988,7 +988,7 @@ static guint get_node_role(xmlNodePtr node, GHashTable *roletable,
     xmlChar *role = xmlGetNoNsProp(node, (xmlChar*)"role");
 
     if (role != NULL) {
-        gchar *host = (gchar*)soup_uri_get_host(recipe_data->remote_uri);
+        gchar *host = recipe_data->ssh_data->rhost;
         GSList *hostlist = g_hash_table_lookup(roletable, role);
         if (hostlist == NULL) {
             hostlist = g_slist_prepend(hostlist, host);
