@@ -10,8 +10,8 @@
 %endif
 
 Name:		restraint
-Version:	0.1.21
-Release:	2%{?dist}
+Version:	0.1.22
+Release:	1%{?dist}
 Summary:	Simple test harness which can be used with beaker
 
 Group:		Applications/Internet
@@ -325,6 +325,38 @@ fi
 %{__rm} -rf %{buildroot}
 
 %changelog
+* Tue Dec 08 2015 Bill Peck <bpeck@redhat.com> 0.1.22-1
+- fix BuildRequires for older releases (bpeck@redhat.com)
+- Fix upload failures with files containing special characters.
+  (asavkov@redhat.com)
+- Add tests for extra files deletion functionality. (asavkov@redhat.com)
+- Delete extra files on fetch. (asavkov@redhat.com)
+- Add unit tests for keepchanges task argument. (asavkov@redhat.com)
+- Add an option to keep changes when fetching tasks. (asavkov@redhat.com)
+- fetch: do not overwrite existing files. (asavkov@redhat.com)
+- Fix infinite uploadloop bug. (asavkov@redhat.com)
+- Support alphanumeric recipe ids. (asavkov@redhat.com)
+- Implicit recipe ids support for --host option. (asavkov@redhat.com)
+- Fix role variables for multihost jobs. (asavkov@redhat.com)
+- libssh download location is offline (dcallagh@redhat.com)
+- explicitly require perl modules for intltool (dcallagh@redhat.com)
+- third-party/openssl: skip building docs (dcallagh@redhat.com)
+- fix status cb to raise any WARN reported to task and recipe level.
+  (bpeck@redhat.com)
+- Fix memleak in build_env. (asavkov@redhat.com)
+- Delete duplicate env variables. (asavkov@redhat.com)
+- Fix test_env.c valgrind errors. (asavkov@redhat.com)
+- Run valgrind target only on src directory. (asavkov@redhat.com)
+- Add __libc_sigaction issue to valgrind supressions. (asavkov@redhat.com)
+- Standalone mode authentication through libssh. (asavkov@redhat.com)
+- libssh and dependencies added to third-party. (asavkov@redhat.com)
+- Build target changed.  Create symlink to rhts.el6eso.pp so we install correct
+  selinux policy for rhel6. (bpeck@redhat.com)
+- Fix runcon test to not be noisy.  This only shows up on rhel5 or earlier.
+  (bpeck@redhat.com)
+- Fix jobs.rst to include information about using tarballs in fetch URL.
+  (gsr@redhat.com)
+
 * Mon Jul 27 2015 Bill Peck <bpeck@redhat.com> 0.1.21-2
 - use dnf if on fedora systems (bpeck@redhat.com)
 - rhel7 and fedora have hostname in /usr/bin (bpeck@redhat.com)
