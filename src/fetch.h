@@ -38,6 +38,7 @@ typedef struct {
     gpointer user_data;
     GError *error;
     uint32_t extracted_cnt;
+    gboolean keepchanges;
 } FetchData;
 
 #define RESTRAINT_FETCH_ERROR restraint_fetch_error ()

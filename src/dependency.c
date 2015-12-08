@@ -129,11 +129,13 @@ restraint_fetch_repodeps(DependencyData *dependency_data)
                                          soup_uri_get_fragment(rd_data->url),
                                          NULL);
         if (g_strcmp0(soup_uri_get_scheme(rd_data->url), "git") == 0) {
-            restraint_fetch_git(rd_data->url, rd_data->path, NULL,
+            restraint_fetch_git(rd_data->url, rd_data->path,
+                                dependency_data->keepchanges, NULL,
                                 fetch_repodeps_finish_callback, rd_data);
         } else {
-            restraint_fetch_http(rd_data->url, rd_data->path, NULL,
-                                fetch_repodeps_finish_callback, rd_data);
+            restraint_fetch_http(rd_data->url, rd_data->path,
+                                 dependency_data->keepchanges, NULL,
+                                 fetch_repodeps_finish_callback, rd_data);
         }
     } else {
         dependency_data->state = DEPENDENCY_RPM;
@@ -176,6 +178,7 @@ restraint_install_dependencies (Task *task,
     dependency_data->main_task_name = task->name;
     dependency_data->base_path = task->recipe->base_path;
     dependency_data->ignore_failed_install = task->rhts_compat;
+    dependency_data->keepchanges = task->keepchanges;
     dependency_data->io_callback = io_callback;
     dependency_data->finish_cb = finish_cb;
     dependency_data->cancellable = cancellable;

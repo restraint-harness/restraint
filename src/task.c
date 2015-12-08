@@ -87,6 +87,7 @@ restraint_task_fetch(AppData *app_data) {
             if (g_strcmp0(scheme, "git") == 0) {
                 restraint_fetch_git (task->fetch.url,
                                      task->path,
+                                     task->keepchanges,
                                      archive_entry_callback,
                                      fetch_finish_callback,
                                      app_data);
@@ -94,6 +95,7 @@ restraint_task_fetch(AppData *app_data) {
                        g_strcmp0(scheme, "https") == 0 ) {
                 restraint_fetch_http (task->fetch.url,
                                       task->path,
+                                      task->keepchanges,
                                       archive_entry_callback,
                                       fetch_finish_callback,
                                       app_data);
@@ -108,7 +110,14 @@ restraint_task_fetch(AppData *app_data) {
         }
         case TASK_FETCH_INSTALL_PACKAGE:
             ;
-            gchar *command = g_strdup_printf ("rstrnt-package install %s", task->fetch.package_name);
+            gchar *command = NULL;
+            if (task->keepchanges) {
+              command = g_strdup_printf ("rstrnt-package install %s",
+                                         task->fetch.package_name);
+            } else {
+              command = g_strdup_printf ("rstrnt-package reinstall %s",
+                                         task->fetch.package_name);
+            }
             // Use appropriate package install command
             TaskRunData *task_run_data = g_slice_new0(TaskRunData);
             task_run_data->app_data = app_data;
