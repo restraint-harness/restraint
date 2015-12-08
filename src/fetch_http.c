@@ -25,6 +25,7 @@
 #include <fcntl.h>
 #include <archive.h>
 #include <archive_entry.h>
+#include <unistd.h>
 #include <libsoup/soup.h>
 #include <libsoup/soup-uri.h>
 
@@ -174,14 +175,16 @@ http_archive_read_callback (gpointer user_data)
         g_free(newPath);
         g_free(basename);
 
-        r = archive_read_extract2(fetch_data->a, entry, fetch_data->ext);
-        if (r != ARCHIVE_OK) {
-            g_set_error(&fetch_data->error, RESTRAINT_FETCH_LIBARCHIVE_ERROR, r,
-                    "archive_read_extract2 failed: %s", archive_error_string(fetch_data->ext));
-            g_idle_add (archive_finish_callback, fetch_data);
-            return FALSE;
+        if (access(archive_entry_pathname(entry), F_OK) == -1) {
+            r = archive_read_extract2(fetch_data->a, entry, fetch_data->ext);
+            if (r != ARCHIVE_OK) {
+                g_set_error(&fetch_data->error, RESTRAINT_FETCH_LIBARCHIVE_ERROR, r,
+                        "archive_read_extract2 failed: %s", archive_error_string(fetch_data->ext));
+                g_idle_add (archive_finish_callback, fetch_data);
+                return FALSE;
+            }
+            fetch_data->extracted_cnt++;
         }
-        fetch_data->extracted_cnt++;
     }
     return TRUE;
 }
