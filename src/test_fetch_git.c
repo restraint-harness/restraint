@@ -180,6 +180,7 @@ test_fetch_git_keepchanges(void) {
 
     gchar *tf_path = g_strconcat(path, "/PURPOSE", NULL);
     gchar *mf_path = g_strconcat(path, "/Makefile", NULL);
+    gchar *df_path = g_strconcat(path, "/DELETEME", NULL);
     const gchar *tmsg = "KEEPCHANGES TEST";
     gssize tmsg_size = strlen(tmsg);
 
@@ -188,6 +189,9 @@ test_fetch_git_keepchanges(void) {
     gssize orig_size = statbuf.st_size;
 
     g_file_set_contents(tf_path, tmsg, tmsg_size, &run_data->error);
+    g_assert_no_error (run_data->error);
+
+    g_file_set_contents(df_path, "DELME", -1, &run_data->error);
     g_assert_no_error (run_data->error);
 
     GFile *file = g_file_get_child (base, "Makefile");
@@ -215,6 +219,8 @@ test_fetch_git_keepchanges(void) {
     g_assert_cmpstr(tmsg, ==, msgbuf);
     g_free(msgbuf);
 
+    g_assert_cmpint(access(df_path, F_OK), !=, -1);
+
     restraint_fetch_git (url,
                          path,
                          FALSE,
@@ -228,8 +234,11 @@ test_fetch_git_keepchanges(void) {
     stat(tf_path, &statbuf);
     g_assert_cmpint(orig_size, ==, statbuf.st_size);
 
+    g_assert_cmpint(access(df_path, F_OK), ==, -1);
+
     g_free(tf_path);
     g_free(mf_path);
+    g_free(df_path);
 
     file = g_file_get_child (base, "Makefile");
     g_assert(g_file_query_exists (file, NULL) != FALSE);
