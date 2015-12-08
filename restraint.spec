@@ -81,7 +81,9 @@ BuildRequires:  tar
 %endif
 %{?with_static:BuildRequires:  ncurses-devel}
 # intltool perl dependencies
+%if 0%{?rhel}%{?fedora} >= 6
 %{?with_static:BuildRequires:  perl(Getopt::Long)}
+%endif
 %{?with_static:BuildRequires:  perl(XML::Parser)}
 
 %description
