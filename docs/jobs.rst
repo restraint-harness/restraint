@@ -45,6 +45,8 @@ Installing Tasks
 The above example shows that you can install tasks directly from git or from an rpm
 in a yum repo.
 
+.. _fetch-label:
+
 Fetch
 ~~~~~
 

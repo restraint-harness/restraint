@@ -69,6 +69,19 @@ multiple packages with ;
 
  dependencies=lib-virt;httpd;postgresql;nfs-utils;net-tools;net-snmp;ethereal;wireshark;tcpdump;rusers;bzip2;gcc
 
+repoRequires
+~~~~~~~~~~~~
+
+A semicolon-delimited (``;``) list of additional tasks needed for this task to run.
+
+::
+
+ repoRequires=general/include;filesystems/include
+
+**Note:** When fetching from git (see :ref:`fetch-label`), this is the
+``#subdirectory`` portion of the URL, so do *not* use a leading ``/`` character
+as was done with RhtsRequires in testinfo.desc for Legacy RHTS tasks.
+
 no_localwatchdog
 ~~~~~~~~~~~~~~~~
 
