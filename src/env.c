@@ -109,11 +109,13 @@ void build_env(gchar *restraint_url, Task *task) {
         array_add (env, NULL, "ARCH", task->recipe->osarch);
         array_add (env, NULL, "TESTNAME", task->name);
         array_add (env, NULL, "TESTPATH", task->path);
-        array_add (env, NULL, "TESTID", task->task_id);
         g_ptr_array_add(env, g_strdup_printf("MAXTIME=%" G_GINT64_FORMAT, task->remaining_time));
         g_ptr_array_add(env, g_strdup_printf("REBOOTCOUNT=%" G_GUINT64_FORMAT, task->reboots));
         g_ptr_array_add(env, g_strdup_printf("TASKORDER=%d", task->order));
     }
+    // beakerlib checks TESTID to run BEAKERLIB_COMMAND_REPORT_RESULT, so
+    // export TESTID even if not in rhts_compat mode
+    array_add (env, NULL, "TESTID", task->task_id);
     g_ptr_array_add(env, g_strdup_printf("HARNESS_PREFIX=%s", ENV_PREFIX));
     gchar *recipe_url = g_strdup_printf ("%s/recipes/%s", restraint_url, task->recipe->recipe_id);
     array_add (env, prefix, "RECIPE_URL", recipe_url);
