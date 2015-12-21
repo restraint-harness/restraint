@@ -62,8 +62,8 @@ To set a max run time for 2 days you would use the following
 dependencies
 ~~~~~~~~~~~~
 
-You can specify additional packages needed to be installed on the system using this.  Seperate
-multiple packages with ;
+A semicolon-delimited (``;``) list of additional packages (needed to run this
+task) to be installed on the system.
 
 ::
 
