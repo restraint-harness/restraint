@@ -330,7 +330,8 @@ task_heartbeat_callback (gpointer user_data)
     GString *message = g_string_new(NULL);
     gchar currtime[80];
 
-    task->remaining_time -= HEARTBEAT;
+    if (!task->metadata->nolocalwatchdog)
+        task->remaining_time -= HEARTBEAT;
     restraint_config_set (app_data->config_file, task->task_id,
                           "remaining_time", NULL,
                           G_TYPE_UINT64, task->remaining_time);
@@ -364,6 +365,7 @@ task_run (AppData *app_data)
                  sizeof(task_run_data->expire_time),
                  "%a %b %d %H:%M:%S %Y", &timeinfo);
     } else {
+        task->remaining_time = 0;
         snprintf (task_run_data->expire_time,
                   sizeof(task_run_data->expire_time),
                   " * Disabled! *");
