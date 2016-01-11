@@ -115,16 +115,15 @@ upload_file (SoupSession *session,
         }
     }
 
-    if (tmp_error) {
-        g_propagate_prefixed_error (error, tmp_error,
-            "Error uploading: %s ", filepath);
-    }
     soup_uri_free (result_log_uri);
     g_object_unref(fis);
     g_object_unref (f);
 
-    if (ret == 0)
-        return TRUE;
-    else
+    if (tmp_error) {
+        g_propagate_prefixed_error (error, tmp_error,
+            "Error uploading: %s ", filepath);
         return FALSE;
+    }
+
+    return uploaded == filesize;
 }
