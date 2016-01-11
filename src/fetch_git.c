@@ -382,6 +382,7 @@ git_archive_read_callback (gpointer user_data)
     // Update pathname
     newPath = g_build_filename (fetch_data->base_path, archive_entry_pathname( entry ), NULL);
     archive_entry_set_pathname( entry, newPath );
+    g_free(newPath);
 
     if (fetch_data->keepchanges == FALSE ||
             access(archive_entry_pathname(entry), F_OK) == -1) {

@@ -172,6 +172,7 @@ http_archive_read_callback (gpointer user_data)
         gchar *basename = g_path_get_basename(entry_path);
         newPath = g_build_filename(fetch_data->base_path, basename, NULL);
         archive_entry_set_pathname( entry, newPath );
+        g_free(newPath);
         g_free(basename);
 
         if (fetch_data->keepchanges == FALSE ||
