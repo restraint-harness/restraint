@@ -603,6 +603,7 @@ int main(int argc, char *argv[]) {
 
   if (app_data->recipe_url) {
     app_data->queue_message = (QueueMessage) restraint_queue_message;
+    app_data->fetch_retries = 0;
     app_data->state = RECIPE_FETCH;
     app_data->recipe_handler_id = g_idle_add_full(G_PRIORITY_DEFAULT_IDLE,
                                                   recipe_handler,
