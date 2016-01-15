@@ -55,6 +55,20 @@ archive_entry_callback (const gchar *entry, gpointer user_data)
     g_string_free (message, TRUE);
 }
 
+static gboolean fetch_retry (gpointer user_data)
+{
+    AppData *app_data = (AppData *) user_data;
+    Task *task = (Task *) app_data->tasks->data;
+
+    task->state = TASK_FETCH;
+
+    app_data->task_handler_id = g_idle_add_full(G_PRIORITY_DEFAULT_IDLE,
+                                                task_handler,
+                                                app_data,
+                                                NULL);
+    return FALSE;
+}
+
 void
 fetch_finish_callback (GError *error, gpointer user_data)
 {
@@ -62,8 +76,16 @@ fetch_finish_callback (GError *error, gpointer user_data)
     Task *task = (Task *) app_data->tasks->data;
 
     if (error) {
-        g_propagate_error (&task->error, error);
-        task->state = TASK_COMPLETE;
+        if (app_data->fetch_retries < FETCH_RETRIES) {
+            g_print("* RETRY [%d]**:%s\n", ++app_data->fetch_retries,
+                    error->message);
+            g_clear_error(&error);
+            g_timeout_add_seconds(FETCH_INTERVAL, fetch_retry, app_data);
+            return;
+        } else {
+            g_propagate_error (&task->error, error);
+            task->state = TASK_COMPLETE;
+        }
     } else {
         task->state = TASK_GEN_TESTINFO;
     }
@@ -644,6 +666,7 @@ task_handler (gpointer user_data)
               restraint_task_status (task, app_data, "Running", NULL);
               result = FALSE;
               g_string_printf(message, "** Fetching task: %s [%s]\n", task->task_id, task->path);
+              app_data->fetch_retries = 0;
               task->state = TASK_FETCH;
           }
       } else {
