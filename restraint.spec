@@ -60,7 +60,7 @@ Requires(postun): initscripts
 %endif
 %if %{with_selinux_policy}
 BuildRequires: selinux-policy-devel
-Requires: selinux-policy >= %{_selinux_policy_version}
+Requires: selinux-policy
 %endif
 
 #if not static build
@@ -159,7 +159,11 @@ make -C selinux -f %{_datadir}/selinux/devel/Makefile
 
 make DESTDIR=%{buildroot} install
 %if %{with_selinux_policy}
-install -p -m 644 -D selinux/restraint.pp $RPM_BUILD_ROOT%{_datadir}/selinux/packages/%{name}/restraint.pp
+if [ -e "selinux/restraint%{?dist}.pp" ]; then
+    install -p -m 644 -D selinux/restraint%{?dist}.pp $RPM_BUILD_ROOT%{_datadir}/selinux/packages/%{name}/restraint.pp
+else
+    install -p -m 644 -D selinux/restraint.pp $RPM_BUILD_ROOT%{_datadir}/selinux/packages/%{name}/restraint.pp
+fi
 %endif
 
 # Legacy support.
