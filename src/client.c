@@ -123,6 +123,10 @@ tasks_finished (xmlDocPtr doc, xmlNodePtr node, xmlChar *path)
     gboolean finished = TRUE;
 
     xmlXPathObjectPtr task_nodes = get_node_set (doc, node, path);
+    if (task_nodes == NULL) {
+        g_printerr("Failed to get node %s\n", path);
+        return finished;
+    }
     for (guint i = 0; i < task_nodes->nodesetval->nodeNr; i++) {
         xmlNodePtr task_node = task_nodes->nodesetval->nodeTab[i];
         gchar *status = (gchar *)xmlGetNoNsProp(task_node,
@@ -1048,8 +1052,15 @@ static gchar *copy_job_as_template(gchar *job, AppData *app_data)
         xmlFreeDoc(template_xml_doc_ptr);
         return NULL;
     }
+
     xmlXPathObjectPtr recipe_nodes = get_node_set(template_xml_doc_ptr, NULL,
             (xmlChar*)"/job/recipeSet/recipe");
+
+    if (recipe_nodes == NULL) {
+        g_printerr("Unable to find any recipes in %s\n", job);
+        xmlFreeDoc(template_xml_doc_ptr);
+        return NULL;
+    }
 
     xmlDocPtr new_xml_doc_ptr = new_job ();
 
@@ -1123,6 +1134,19 @@ static gchar *copy_job_as_template(gchar *job, AppData *app_data)
     xmlXPathFreeObject(recipe_nodes);
     recipe_nodes = get_node_set(new_xml_doc_ptr, NULL,
                                 (xmlChar*)"/job/recipeSet/recipe");
+
+    if (recipe_nodes == NULL) {
+        g_printerr("Unable to find any recipes in newly created xml.\n");
+
+        g_slist_free(recipemembers);
+        g_hash_table_destroy(roletable);
+        xmlFreeNode(r_params);
+        xmlFreeDoc(template_xml_doc_ptr);
+        xmlFreeDoc(new_xml_doc_ptr);
+
+        return NULL;
+    }
+
     for (guint i = 0; i < recipe_nodes->nodesetval->nodeNr; i++) {
         xmlNodePtr rnode = recipe_nodes->nodesetval->nodeTab[i];
 
