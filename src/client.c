@@ -27,6 +27,7 @@
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
 #include <libxml/xpath.h>
+#include <libxml/relaxng.h>
 #include <libxml/tree.h>
 #include <unistd.h>
 #include <sys/types.h>
@@ -1040,7 +1041,8 @@ static GSList *get_recipe_members(GHashTable *roletable)
     return allhosts;
 }
 
-static gchar *copy_job_as_template(gchar *job, AppData *app_data)
+static gchar *copy_job_as_template(gchar *job, gboolean novalid,
+                                   AppData *app_data)
 {
     guint recipe_id = 1;
     gchar *run_dir = NULL;
@@ -1051,6 +1053,44 @@ static gchar *copy_job_as_template(gchar *job, AppData *app_data)
         g_printerr ("Unable to parse %s\n", job);
         xmlFreeDoc(template_xml_doc_ptr);
         return NULL;
+    }
+
+    if (novalid == FALSE) {
+        xmlRelaxNGParserCtxtPtr parserCtxt = xmlRelaxNGNewParserCtxt(RNG_SCHEMA);
+        if (parserCtxt == NULL) {
+            g_printerr ("Unable to create relaxng parsing context\n");
+            xmlFreeDoc(template_xml_doc_ptr);
+            return NULL;
+        }
+
+        xmlRelaxNGPtr relaxng = xmlRelaxNGParse(parserCtxt);
+        if (relaxng == NULL) {
+            g_printerr ("Unable to parse relaxng\n");
+            xmlFreeDoc(template_xml_doc_ptr);
+            xmlRelaxNGFreeParserCtxt(parserCtxt);
+            return NULL;
+        }
+
+        xmlRelaxNGValidCtxtPtr validCtxt = xmlRelaxNGNewValidCtxt(relaxng);
+        if (validCtxt == NULL) {
+            g_printerr ("Unable to create relaxng validation context\n");
+            xmlFreeDoc(template_xml_doc_ptr);
+            xmlRelaxNGFree(relaxng);
+            xmlRelaxNGFreeParserCtxt(parserCtxt);
+            return NULL;
+        }
+
+        gint valid = xmlRelaxNGValidateDoc(validCtxt, template_xml_doc_ptr);
+
+        xmlRelaxNGFreeValidCtxt(validCtxt);
+        xmlRelaxNGFree(relaxng);
+        xmlRelaxNGFreeParserCtxt(parserCtxt);
+
+        if (valid != 0) {
+            g_printerr ("Document failed validation.\n");
+            xmlFreeDoc(template_xml_doc_ptr);
+            return NULL;
+        }
     }
 
     xmlXPathObjectPtr recipe_nodes = get_node_set(template_xml_doc_ptr, NULL,
@@ -1431,6 +1471,7 @@ static void recipe_init(gchar *id, RecipeData *recipe_data,
 int main(int argc, char *argv[]) {
     gchar *job = NULL;
     gboolean ipv6 = FALSE;
+    gboolean novalid = FALSE;
     gchar **hostarr = NULL;
 
     AppData *app_data = g_slice_new0 (AppData);
@@ -1451,6 +1492,8 @@ int main(int argc, char *argv[]) {
             "Run job from file", "FILE" },
         { "run", 'r', 0, G_OPTION_ARG_STRING, &app_data->run_dir,
             "Continue interrupted job from DIR", "DIR" },
+        { "novalidate", 'n', 0, G_OPTION_ARG_NONE, &novalid,
+            "Do not perform xml validation", NULL },
         { "host", 't', 0, G_OPTION_ARG_STRING_ARRAY, &hostarr,
             "Set host for a recipe with specific id.",
             "<recipe_id>=[<user>@]<host>[:<port>][/ssh_port]" },
@@ -1505,7 +1548,7 @@ int main(int argc, char *argv[]) {
 
     if (job) {
         // if template job is passed in use it to generate our job
-        app_data->run_dir = copy_job_as_template(job, app_data);
+        app_data->run_dir = copy_job_as_template(job, novalid, app_data);
     }
     if (!parse_succeeded || !app_data->run_dir) {
         g_printerr("Try %s --help\n", argv[0]);

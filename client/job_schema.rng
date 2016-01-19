@@ -1,0 +1,52 @@
+<element name="job" xmlns="http://relaxng.org/ns/structure/1.0">
+  <oneOrMore>
+    <element name="recipeSet">
+      <oneOrMore>
+        <element name="recipe">
+          <optional>
+            <attribute name="id"/>
+          </optional>
+          <optional>
+            <attribute name="whiteboard"/>
+          </optional>
+          <optional>
+            <attribute name="role"/>
+          </optional>
+          <oneOrMore>
+            <element name="task">
+              <optional>
+                <attribute name="name"/>
+              </optional>
+              <optional>
+                <attribute name="role"/>
+              </optional>
+              <interleave>
+                <optional>
+                  <element name="params">
+                    <zeroOrMore>
+                      <element name="param">
+                        <group>
+                          <attribute name="name"/>
+                          <attribute name="value"/>
+                        </group>
+                      </element>
+                    </zeroOrMore>
+                  </element>
+                </optional>
+                <choice>
+                  <element name="rpm">
+                    <attribute name="name"/>
+                    <attribute name="path"/>
+                  </element>
+                  <element name="fetch">
+                    <attribute name="url"/>
+                  </element>
+                </choice>
+              </interleave>
+            </element>
+          </oneOrMore>
+        </element>
+      </oneOrMore>
+    </element>
+  </oneOrMore>
+</element>
