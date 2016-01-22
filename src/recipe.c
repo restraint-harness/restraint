@@ -505,12 +505,28 @@ read_finish (GObject *source, GAsyncResult *result, gpointer user_data)
 
 }
 
+static gboolean fetch_retry (gpointer user_data)
+{
+    AppData *app_data = (AppData *) user_data;
+    g_clear_error(&app_data->error);
+    app_data->state = RECIPE_FETCH;
+
+    return FALSE;
+}
+
 void
 restraint_recipe_parse_stream (GInputStream *stream, gpointer user_data)
 {
     AppData *app_data = (AppData *) user_data;
     if (!stream) {
-        app_data->state = RECIPE_COMPLETE;
+        if (app_data->fetch_retries < FETCH_RETRIES) {
+            g_print("* RETRY [%d]**:%s\n", ++app_data->fetch_retries,
+                    app_data->error->message);
+            g_timeout_add_seconds(FETCH_INTERVAL, fetch_retry, app_data);
+        } else {
+            app_data->state = RECIPE_COMPLETE;
+        }
+
         return;
     }
     g_input_stream_read_async (stream,

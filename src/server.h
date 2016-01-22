@@ -22,6 +22,8 @@
 #define PLUGIN_SCRIPT "/usr/share/restraint/plugins/run_plugins"
 #define TASK_PLUGIN_SCRIPT "/usr/share/restraint/plugins/run_task_plugins"
 #define PLUGIN_DIR "/usr/share/restraint/plugins"
+#define FETCH_RETRIES 3
+#define FETCH_INTERVAL 10
 
 typedef enum {
   ABORTED_NONE,
@@ -47,6 +49,7 @@ typedef struct {
   guint io_handler_id;
   GIOChannel *io_chan;
   StateAborted aborted;
+  guint fetch_retries;
 } AppData;
 
 void connections_write (AppData *app_data, gchar *msg_data, gsize msg_len);
