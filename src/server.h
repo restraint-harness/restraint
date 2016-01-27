@@ -52,5 +52,6 @@ typedef struct {
   guint fetch_retries;
 } AppData;
 
-void connections_write (AppData *app_data, gchar *msg_data, gsize msg_len);
+void connections_write (AppData *app_data, const gchar *path,
+                        const gchar *msg_data, gsize msg_len);
 #endif

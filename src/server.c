@@ -95,19 +95,25 @@ static void restraint_free_app_data(AppData *app_data)
   g_slice_free(AppData, app_data);
 }
 
-void connections_write (AppData *app_data, gchar *msg_data, gsize msg_len)
+void connections_write (AppData *app_data, const gchar *path,
+                        const gchar *msg_data, gsize msg_len)
 {
-    // Active parsed task?  Send the output to taskout.log via REST
+    // Active parsed task?  Send the output to log via REST
     if (app_data->tasks && ! g_cancellable_is_cancelled(app_data->cancellable)) {
         Task *task = (Task *) app_data->tasks->data;
-        SoupURI *task_output_uri = soup_uri_new_with_base (task->task_uri, "logs/taskoutput.log");
+        SoupURI *task_output_uri = soup_uri_new_with_base (task->task_uri, path);
         SoupMessage *server_msg = soup_message_new_from_uri ("PUT", task_output_uri);
         soup_uri_free (task_output_uri);
         g_return_if_fail (server_msg != NULL);
 
-        gchar *range = g_strdup_printf ("bytes %" G_GSSIZE_FORMAT "-%" G_GSSIZE_FORMAT "/*",
-                task->offset, task->offset + msg_len - 1);
-        task->offset = task->offset + msg_len;
+        goffset *offset = g_hash_table_lookup(task->offsets, path);
+        if (offset == NULL) {
+          offset = g_malloc0(sizeof(offset));
+          g_hash_table_insert(task->offsets, g_strdup(path), offset);
+        }
+        gchar *range = g_strdup_printf ("bytes %" G_GOFFSET_FORMAT "-%" G_GOFFSET_FORMAT "/*",
+                *offset, *offset + msg_len - 1);
+        *offset += msg_len;
         soup_message_headers_append (server_msg->request_headers, "Content-Range", range);
         g_free (range);
 
@@ -121,10 +127,11 @@ void connections_write (AppData *app_data, gchar *msg_data, gsize msg_len)
                                  app_data->cancellable,
                                  NULL);
 
-        // Update config file with new taskout.log offset.
-        restraint_config_set (app_data->config_file, task->task_id,
-                              "offset", NULL,
-                              G_TYPE_UINT64, task->offset);
+        // Update config file with new offset.
+        gchar *section = g_strdup_printf("offsets_%s", task->task_id);
+        restraint_config_set (app_data->config_file, section,
+                              path, NULL, G_TYPE_UINT64, *offset);
+        g_free(section);
     }
 }
 
@@ -148,7 +155,7 @@ server_io_callback (GIOChannel *io, GIOCondition condition, gpointer user_data) 
             if (fwrite(buf, sizeof(gchar), bytes_read, stdout) != bytes_read)
                 g_warning ("failed to write message");
             /* Push data to our connections.. */
-            connections_write(app_data, buf, bytes_read);
+            connections_write(app_data, LOG_PATH_HARNESS, buf, bytes_read);
             return TRUE;
 
           case G_IO_STATUS_ERROR:
@@ -552,8 +559,6 @@ on_signal_term (gpointer user_data)
                    quit_loop_handler,
                    NULL,
                    NULL);
-  //printf("[*] Stopping mainloop\n");
-  //g_main_loop_quit(loop);
   return FALSE;
 }
 

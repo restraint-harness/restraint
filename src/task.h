@@ -33,6 +33,9 @@
 #define ENV_PREFIX "RSTRNT_"
 #define EWD_TIME 30 * 60 // amount of time to add to local watchdog for externl watchdog
 
+#define LOG_PATH_HARNESS "logs/harness.log"
+#define LOG_PATH_TASK "logs/taskout.log"
+
 typedef enum {
     TASK_IDLE,
     TASK_FETCH,
@@ -97,8 +100,8 @@ typedef struct {
     TaskSetupState state;
     /* Error at the task level */
     GError *error;
-    /* offset of TASKOUT.log */
-    gssize offset;
+    /* Log file offsets */
+    GHashTable *offsets;
     /* reboot count */
     guint64 reboots;
     MetaData *metadata;
@@ -110,6 +113,7 @@ typedef struct {
     TaskSetupState fail_state;
     gint heartbeat_handler_id;
     gchar expire_time[80];
+    const gchar *logpath;
 } TaskRunData;
 
 Task *restraint_task_new(void);
