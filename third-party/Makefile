@@ -153,7 +153,7 @@ $(LIBARCHIVE).tar.gz:
 
 TAR_BALLS += $(XZ).tar.gz
 $(XZ).tar.gz:
-	curl -O http://tukaani.org/xz/$@
+	curl -L -O http://downloads.sourceforge.net/project/lzmautils/$@
 
 TAR_BALLS += $(SQLITE).tar.gz
 $(SQLITE).tar.gz:
