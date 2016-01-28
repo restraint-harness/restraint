@@ -10,7 +10,7 @@
 %endif
 
 Name:		restraint
-Version:	0.1.22
+Version:	0.1.23
 Release:	1%{?dist}
 Summary:	Simple test harness which can be used with beaker
 
@@ -330,6 +330,22 @@ fi
 %{__rm} -rf %{buildroot}
 
 %changelog
+* Thu Jan 28 2016 Bill Peck <bpeck@redhat.com> 0.1.23-1
+- Add relaxng validation. (asavkov@redhat.com)
+- Fix a couple of null-pointer dereferences. (asavkov@redhat.com)
+- Use precompiled selinux policy if present. (bpeck@redhat.com)
+- Add retry loop for task fetches. (asavkov@redhat.com)
+- Add retry loop for recipe fetches. (asavkov@redhat.com)
+- Fix memleak in *_archive_read_callback. (asavkov@redhat.com)
+- Fix erorneous 'failed' message during uploads. (asavkov@redhat.com)
+- disabling the localwatchdog didn't actually work.  It only said it did. :-)
+  (bpeck@redhat.com)
+- export $TESTID even if not in rhts_compat mode (jbastian@redhat.com)
+- add MIME type to links to log files (jbastian@redhat.com)
+- update release version for docs (jbastian@redhat.com)
+- update dependencies docs to match repoRequires wording (jbastian@redhat.com)
+- document metadata repoRequires (jbastian@redhat.com)
+
 * Tue Dec 08 2015 Bill Peck <bpeck@redhat.com> 0.1.22-1
 - fix BuildRequires for older releases (bpeck@redhat.com)
 - Fix upload failures with files containing special characters.
