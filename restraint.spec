@@ -11,7 +11,7 @@
 
 Name:		restraint
 Version:	0.1.23
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Simple test harness which can be used with beaker
 
 Group:		Applications/Internet
@@ -330,6 +330,9 @@ fi
 %{__rm} -rf %{buildroot}
 
 %changelog
+* Thu Jan 28 2016 Bill Peck <bpeck@redhat.com> 0.1.23-2
+- third-party: xz tarball location has moved (dcallagh@redhat.com)
+
 * Thu Jan 28 2016 Bill Peck <bpeck@redhat.com> 0.1.23-1
 - Add relaxng validation. (asavkov@redhat.com)
 - Fix a couple of null-pointer dereferences. (asavkov@redhat.com)
