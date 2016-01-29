@@ -1,3 +1,4 @@
+#!/bin/bash
 #Default logging to warn, error and crit
 RSTRNT_LOGGING=${RSTRNT_LOGGING:-3}
 
