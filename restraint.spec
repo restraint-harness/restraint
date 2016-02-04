@@ -153,6 +153,7 @@ popd
 %if %{with_selinux_policy}
 make -C selinux -f %{_datadir}/selinux/devel/Makefile
 %endif
+make -C legacy
 
 %install
 %{__rm} -rf %{buildroot}
@@ -166,6 +167,7 @@ else
 fi
 %endif
 
+make DESTDIR=%{buildroot} -C legacy install
 # Legacy support.
 ln -s rhts-environment.sh $RPM_BUILD_ROOT/usr/bin/rhts_environment.sh
 ln -s rstrnt-report-log $RPM_BUILD_ROOT/usr/bin/rhts-submit-log

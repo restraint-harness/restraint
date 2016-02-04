@@ -175,19 +175,3 @@ install:
 	ln -s restraintd.1 $(DESTDIR)/usr/share/man/man1/rstrnt-adjust-watchdog.1
 	ln -s restraintd.1 $(DESTDIR)/usr/share/man/man1/check_beaker.1
 	install -Dm0644 _build/man/restraint.1 $(DESTDIR)/usr/share/man/man1/restraint.1
-	install -Dm0644 _build/man/rhts.1 $(DESTDIR)/usr/share/man/man1/rhts.1
-	ln -s rhts.1 $(DESTDIR)/usr/share/man/man1/rhts-reboot.1
-	ln -s rhts.1 $(DESTDIR)/usr/share/man/man1/rhts-backup.1
-	ln -s rhts.1 $(DESTDIR)/usr/share/man/man1/rhts-restore.1
-	ln -s rhts.1 $(DESTDIR)/usr/share/man/man1/rhts-environment.sh.1
-	ln -s rhts.1 $(DESTDIR)/usr/share/man/man1/rhts_environment.sh.1
-	ln -s rhts.1 $(DESTDIR)/usr/share/man/man1/rhts-lint.1
-	ln -s rhts.1 $(DESTDIR)/usr/share/man/man1/rhts-run-simple-test.1
-	ln -s rhts.1 $(DESTDIR)/usr/share/man/man1/rhts-submit-log.1
-	ln -s rhts.1 $(DESTDIR)/usr/share/man/man1/rhts_submit_log.1
-	ln -s rhts.1 $(DESTDIR)/usr/share/man/man1/rhts-sync-set.1
-	ln -s rhts.1 $(DESTDIR)/usr/share/man/man1/rhts-sync-block.1
-	ln -s rhts.1 $(DESTDIR)/usr/share/man/man1/rhts-recipe-sync-set.1
-	ln -s rhts.1 $(DESTDIR)/usr/share/man/man1/rhts-recipe-sync-block.1
-	ln -s rhts.1 $(DESTDIR)/usr/share/man/man1/rhts-abort.1
-	ln -s rhts.1 $(DESTDIR)/usr/share/man/man1/rhts-report-result.1
