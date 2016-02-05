@@ -41,7 +41,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'restraint'
-copyright = u'2014, Bill Peck, Dan Callaghan, Jeff Bastian, Artem Savkov'
+copyright = u'2014-2016, Bill Peck, Dan Callaghan, Jeff Bastian, Artem Savkov'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -213,8 +213,12 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'restraint', u'restraint Documentation',
-     [u'Bill Peck, Dan Callaghan, Jeff Bastian'], 1)
+    ('restraintd', 'restraintd', u'restraintd documentation',
+     [u'Bill Peck, Dan Callaghan, Jeff Bastian, Artem Savkov'], 1),
+    ('restraint', 'restraint', u'restraint client documentation',
+     [u'Bill Peck, Dan Callaghan, Jeff Bastian, Artem Savkov'], 1),
+    ('rhts', 'rhts', u'legacy rhts commands documentation',
+     [u'Bill Peck, Dan Callaghan, Jeff Bastian, Artem Savkov'], 1)
 ]
 
 # If true, show URL addresses after external links.

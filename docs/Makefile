@@ -16,6 +16,10 @@ I18NSPHINXOPTS  = $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 
 .PHONY: help clean html dirhtml singlehtml pickle json htmlhelp qthelp devhelp epub latex latexpdf text man changes linkcheck doctest gettext
 
+.NOTPARALLEL: html dirhtml singlehtml pickle json htmlhelp qthelp devhelp epub latex latexpdf text man changes linkcheck doctest gettext
+
+default: man text
+
 help:
 	@echo "Please use \`make <target>' where <target> is one of"
 	@echo "  html       to make standalone HTML files"
@@ -151,3 +155,39 @@ doctest:
 	$(SPHINXBUILD) -b doctest $(ALLSPHINXOPTS) $(BUILDDIR)/doctest
 	@echo "Testing of doctests in the sources finished, look at the " \
 	      "results in $(BUILDDIR)/doctest/output.txt."
+
+install:
+	install -Dm0644 _build/text/commands.txt $(DESTDIR)/usr/share/doc/restraint/commands.txt
+	install -Dm0644 _build/text/develop.txt $(DESTDIR)/usr/share/doc/restraint/develop.txt
+	install -Dm0644 _build/text/jobs.txt $(DESTDIR)/usr/share/doc/restraint/jobs.txt
+	install -Dm0644 _build/text/plugins.txt $(DESTDIR)/usr/share/doc/restraint/plugins.txt
+	install -Dm0644 _build/text/tasks.txt $(DESTDIR)/usr/share/doc/restraint/tasks.txt
+	install -Dm0644 _build/text/using.txt $(DESTDIR)/usr/share/doc/restraint/using.txt
+	install -Dm0644 _build/text/variables.txt $(DESTDIR)/usr/share/doc/restraint/variables.txt
+	install -Dm0644 _build/man/restraintd.1 $(DESTDIR)/usr/share/man/man1/restraintd.1
+	ln -s restraintd.1 $(DESTDIR)/usr/share/man/man1/rstrnt-report-log.1
+	ln -s restraintd.1 $(DESTDIR)/usr/share/man/man1/rstrnt-report-result.1
+	ln -s restraintd.1 $(DESTDIR)/usr/share/man/man1/rstrnt-reboot.1
+	ln -s restraintd.1 $(DESTDIR)/usr/share/man/man1/rstrnt-backup.1
+	ln -s restraintd.1 $(DESTDIR)/usr/share/man/man1/rstrnt-restore.1
+	ln -s restraintd.1 $(DESTDIR)/usr/share/man/man1/rstrnt-abort.1
+	ln -s restraintd.1 $(DESTDIR)/usr/share/man/man1/rstrnt-package.1
+	ln -s restraintd.1 $(DESTDIR)/usr/share/man/man1/rstrnt-adjust-watchdog.1
+	ln -s restraintd.1 $(DESTDIR)/usr/share/man/man1/check_beaker.1
+	install -Dm0644 _build/man/restraint.1 $(DESTDIR)/usr/share/man/man1/restraint.1
+	install -Dm0644 _build/man/rhts.1 $(DESTDIR)/usr/share/man/man1/rhts.1
+	ln -s rhts.1 $(DESTDIR)/usr/share/man/man1/rhts-reboot.1
+	ln -s rhts.1 $(DESTDIR)/usr/share/man/man1/rhts-backup.1
+	ln -s rhts.1 $(DESTDIR)/usr/share/man/man1/rhts-restore.1
+	ln -s rhts.1 $(DESTDIR)/usr/share/man/man1/rhts-environment.sh.1
+	ln -s rhts.1 $(DESTDIR)/usr/share/man/man1/rhts_environment.sh.1
+	ln -s rhts.1 $(DESTDIR)/usr/share/man/man1/rhts-lint.1
+	ln -s rhts.1 $(DESTDIR)/usr/share/man/man1/rhts-run-simple-test.1
+	ln -s rhts.1 $(DESTDIR)/usr/share/man/man1/rhts-submit-log.1
+	ln -s rhts.1 $(DESTDIR)/usr/share/man/man1/rhts_submit_log.1
+	ln -s rhts.1 $(DESTDIR)/usr/share/man/man1/rhts-sync-set.1
+	ln -s rhts.1 $(DESTDIR)/usr/share/man/man1/rhts-sync-block.1
+	ln -s rhts.1 $(DESTDIR)/usr/share/man/man1/rhts-recipe-sync-set.1
+	ln -s rhts.1 $(DESTDIR)/usr/share/man/man1/rhts-recipe-sync-block.1
+	ln -s rhts.1 $(DESTDIR)/usr/share/man/man1/rhts-abort.1
+	ln -s rhts.1 $(DESTDIR)/usr/share/man/man1/rhts-report-result.1
