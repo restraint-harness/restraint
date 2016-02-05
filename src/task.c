@@ -51,7 +51,7 @@ archive_entry_callback (const gchar *entry, gpointer user_data)
     GString *message = g_string_new (NULL);
 
     g_string_printf (message, "** Extracting %s\n", entry);
-    connections_write (app_data, message->str, message->len);
+    connections_write (app_data, LOG_PATH_HARNESS, message->str, message->len);
     g_string_free (message, TRUE);
 }
 
@@ -145,6 +145,7 @@ restraint_task_fetch(AppData *app_data) {
             task_run_data->app_data = app_data;
             task_run_data->pass_state = TASK_GEN_TESTINFO;
             task_run_data->fail_state = TASK_COMPLETE;
+            task_run_data->logpath = LOG_PATH_HARNESS;
             process_run ((const gchar *)command, NULL, NULL, 0, task_io_callback, task_handler_callback,
                          app_data->cancellable, task_run_data);
             g_free (command);
@@ -175,7 +176,7 @@ task_io_callback (GIOChannel *io, GIOCondition condition, gpointer user_data) {
             /* Push data to our connections.. */
             if (fwrite(buf, sizeof(gchar), bytes_read, stdout) != bytes_read)
                 g_warning ("failed to write message");
-            connections_write(app_data, buf, bytes_read);
+            connections_write(app_data, task_run_data->logpath, buf, bytes_read);
             return TRUE;
 
           case G_IO_STATUS_ERROR:
@@ -275,6 +276,7 @@ task_finish_callback (gint pid_result, gboolean localwatchdog, gpointer user_dat
     }
     task->env->pdata[task->env->len - 3] = rstrnt_localwatchdog;
 
+    task_run_data->logpath = LOG_PATH_HARNESS;
     process_run ((const gchar *) command,
                  (const gchar **) task->env->pdata,
                  "/usr/share/restraint/plugins",
@@ -364,7 +366,7 @@ task_heartbeat_callback (gpointer user_data)
     g_string_printf(message, "*** Current Time: %s Localwatchdog at: %s\n", currtime, task_run_data->expire_time);
     if (fwrite(message->str, sizeof(gchar), message->len, stderr) != message->len)
         g_warning ("failed to write message");
-    connections_write(app_data, message->str, message->len);
+    connections_write(app_data, LOG_PATH_HARNESS, message->str, message->len);
     g_string_free(message, TRUE);
     return TRUE;
 }
@@ -399,6 +401,7 @@ task_run (AppData *app_data)
     } else {
         entry_point = g_strdup_printf ("%s %s", TASK_PLUGIN_SCRIPT, DEFAULT_ENTRY_POINT);
     }
+    task_run_data->logpath = LOG_PATH_TASK;
     process_run ((const gchar *) entry_point,
                  (const gchar **)task->env->pdata,
                  task->path,
@@ -499,6 +502,8 @@ restraint_task_watchdog (Task *task, AppData *app_data, guint64 seconds)
 Task *restraint_task_new(void) {
     Task *task = g_slice_new0(Task);
     task->remaining_time = -1;
+    task->offsets = g_hash_table_new_full(g_str_hash, g_str_equal, g_free,
+                                          g_free);
     return task;
 }
 
@@ -508,6 +513,7 @@ void restraint_task_free(Task *task) {
     soup_uri_free(task->task_uri);
     g_free(task->name);
     g_free(task->path);
+    g_hash_table_destroy(task->offsets);
     switch (task->fetch_method) {
         case TASK_FETCH_INSTALL_PACKAGE:
             g_free(task->fetch.package_name);
@@ -577,10 +583,39 @@ parse_task_config (gchar *config_file, Task *task, GError **error)
     }
     g_clear_error (&tmp_error);
 
-    task->offset = restraint_config_get_uint64 (config_file,
-                                                task->task_id,
-                                                "offset",
-                                                &tmp_error);
+    gchar *section = g_strdup_printf("offsets_%s", task->task_id);
+    gchar **offsets = restraint_config_get_keys(config_file, section, &tmp_error);
+
+    if (tmp_error) {
+        g_propagate_prefixed_error(error, tmp_error,
+                    "Task %s:  parse_task_config,", task->task_id);
+        g_free(section);
+        goto error;
+    }
+    g_clear_error (&tmp_error);
+
+    if (offsets) {
+      gchar **iter = offsets;
+      while (*iter) {
+        goffset *offset = g_malloc0(sizeof(goffset));
+        *offset = restraint_config_get_uint64(config_file, section, *iter,
+                                              &tmp_error);
+        if (tmp_error) {
+            g_propagate_prefixed_error(error, tmp_error,
+                        "Task %s:  parse_task_config,", task->task_id);
+            g_free(section);
+            g_free(offset);
+            goto error;
+        }
+        g_clear_error (&tmp_error);
+
+        g_hash_table_insert(task->offsets, g_strdup(*iter), offset);
+        iter++;
+      }
+      g_strfreev(offsets);
+    }
+    g_free(section);
+
     if (tmp_error) {
         g_propagate_prefixed_error(error, tmp_error,
                     "Task %s:  parse_task_config,", task->task_id);
@@ -698,6 +733,7 @@ task_handler (gpointer user_data)
 
           const gchar *command = "make testinfo.desc";
 
+          task_run_data->logpath = LOG_PATH_HARNESS;
           process_run (command,
                        NULL,
                        task->path,
@@ -773,6 +809,7 @@ task_handler (gpointer user_data)
           g_string_printf(message, "** Installing dependencies\n");
           TaskRunData *task_run_data = g_slice_new0(TaskRunData);
           task_run_data->app_data = app_data;
+          task_run_data->logpath = LOG_PATH_HARNESS;
           restraint_install_dependencies (task, task_io_callback,
                                           dependency_finish_cb,
                                           app_data->cancellable,
@@ -857,7 +894,7 @@ task_handler (gpointer user_data)
   if (message->len) {
     if (fwrite(message->str, sizeof(gchar), message->len, stderr) != message->len)
         g_warning ("failed to write message");
-    connections_write(app_data, message->str, message->len);
+    connections_write(app_data, LOG_PATH_HARNESS, message->str, message->len);
   }
   g_string_free(message, TRUE);
   return result;

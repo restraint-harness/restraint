@@ -161,6 +161,34 @@ restraint_config_get_string (gchar *config_file, gchar *section, gchar *key, GEr
     return value;
 }
 
+gchar **
+restraint_config_get_keys (gchar *config_file, gchar *section, GError **error)
+{
+    g_return_val_if_fail(config_file != NULL, NULL);
+    g_return_val_if_fail(section != NULL, NULL);
+    g_return_val_if_fail(error == NULL || *error == NULL, NULL);
+
+    GKeyFile *keyfile = NULL;
+    GError *tmp_error = NULL;
+    gchar **ret = NULL;
+    GKeyFileFlags flags = G_KEY_FILE_KEEP_COMMENTS | G_KEY_FILE_KEEP_TRANSLATIONS;
+
+    keyfile = g_key_file_new ();
+    g_key_file_load_from_file (keyfile, config_file, flags, NULL);
+    ret = g_key_file_get_keys(keyfile, section, NULL, &tmp_error);
+
+    if (tmp_error) {
+        if (tmp_error->code != G_KEY_FILE_ERROR_GROUP_NOT_FOUND ) {
+            g_propagate_prefixed_error(error, tmp_error, "config get keys,");
+        } else {
+            g_clear_error(&tmp_error);
+        }
+    }
+
+    g_key_file_free (keyfile);
+    return ret;
+}
+
 void
 restraint_config_trunc (gchar *config_file, GError **error)
 {
@@ -178,8 +206,8 @@ restraint_config_trunc (gchar *config_file, GError **error)
 }
 
 void
-restraint_config_set (gchar *config_file, gchar *section, gchar *key,
-                      GError **gerror, GType type, ...)
+restraint_config_set (gchar *config_file, const gchar *section,
+                      const gchar *key, GError **gerror, GType type, ...)
 {
     g_return_if_fail(config_file != NULL);
     g_return_if_fail(section != NULL);
