@@ -145,7 +145,7 @@ $(LIBXML2).tar.gz:
 
 TAR_BALLS += $(CURL).tar.bz2
 $(CURL).tar.bz2:
-	curl -f -L -O http://curl.haxx.se/download/$@
+	curl -f -L -O https://curl.haxx.se/download/$@
 
 TAR_BALLS += $(LIBARCHIVE).tar.gz
 $(LIBARCHIVE).tar.gz:
