@@ -125,59 +125,59 @@ tree/lib/pkgconfig/libarchive.pc: $(LIBARCHIVE) $(LIBARCHIVE)/.patches-done \
 
 TAR_BALLS = $(LIBFFI).tar.gz
 $(LIBFFI).tar.gz:
-	curl -O http://mirrors.kernel.org/sourceware/libffi/$@
+	curl -f -L -O http://mirrors.kernel.org/sourceware/libffi/$@
 
 TAR_BALLS += $(GLIB).tar.xz
 $(GLIB).tar.xz:
-	curl -L -O http://ftp.gnome.org/pub/gnome/sources/glib/2.38/$@
+	curl -f -L -O http://ftp.gnome.org/pub/gnome/sources/glib/2.38/$@
 
 TAR_BALLS += $(ZLIB).tar.gz
 $(ZLIB).tar.gz:
-	curl -O http://zlib.net/$@
+	curl -f -L -O http://zlib.net/$@
 
 TAR_BALLS += $(BZIP2).tar.gz
 $(BZIP2).tar.gz:
-	curl -O http://www.bzip.org/1.0.6/$@
+	curl -f -L -O http://www.bzip.org/1.0.6/$@
 
 TAR_BALLS += $(LIBXML2).tar.gz
 $(LIBXML2).tar.gz:
-	curl -O http://xmlsoft.org/sources/$@
+	curl -f -L -O http://xmlsoft.org/sources/$@
 
 TAR_BALLS += $(CURL).tar.bz2
 $(CURL).tar.bz2:
-	curl -O http://curl.haxx.se/download/$@
+	curl -f -L -O http://curl.haxx.se/download/$@
 
 TAR_BALLS += $(LIBARCHIVE).tar.gz
 $(LIBARCHIVE).tar.gz:
-	curl -O http://libarchive.org/downloads/$@
+	curl -f -L -O http://libarchive.org/downloads/$@
 
 TAR_BALLS += $(XZ).tar.gz
 $(XZ).tar.gz:
-	curl -L -O http://downloads.sourceforge.net/project/lzmautils/$@
+	curl -f -L -O http://downloads.sourceforge.net/project/lzmautils/$@
 
 TAR_BALLS += $(SQLITE).tar.gz
 $(SQLITE).tar.gz:
-	curl -O http://sqlite.org/2013/$@
+	curl -f -L -O http://sqlite.org/2013/$@
 
 TAR_BALLS += $(INTLTOOL).tar.gz
 $(INTLTOOL).tar.gz:
-	curl -L -O http://ftp.gnome.org/pub/gnome/sources/intltool/0.35/$@
+	curl -f -L -O http://ftp.gnome.org/pub/gnome/sources/intltool/0.35/$@
 
 TAR_BALLS += $(LIBSOUP).tar.xz
 $(LIBSOUP).tar.xz:
-	curl -L -O http://ftp.gnome.org/pub/GNOME/sources/libsoup/2.48/$@
+	curl -f -L -O http://ftp.gnome.org/pub/GNOME/sources/libsoup/2.48/$@
 
 TAR_BALLS += $(LIBSSH).tar.xz
 $(LIBSSH).tar.xz:
-	curl -L -O https://git.libssh.org/projects/libssh.git/snapshot/$@
+	curl -f -L -O https://git.libssh.org/projects/libssh.git/snapshot/$@
 
 TAR_BALLS += $(OPENSSL).tar.gz
 $(OPENSSL).tar.gz:
-	curl -L -O https://www.openssl.org/source/$@
+	curl -f -L -O https://www.openssl.org/source/$@
 
 TAR_BALLS += $(CMAKE).tar.gz
 $(CMAKE).tar.gz:
-	curl -L -O http://www.cmake.org/files/v3.2/$@
+	curl -f -L -O http://www.cmake.org/files/v3.2/$@
 
 tarballs: $(TAR_BALLS)
 	printf '%s\n' $(TAR_BALLS) >$@
