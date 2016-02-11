@@ -625,8 +625,6 @@ recipe_handler (gpointer user_data)
               app_data->recipe_url = NULL;
             }
 
-            restraint_config_trunc (app_data->config_file, NULL);
-
             // We are done. remove ourselves so we can run another recipe.
             app_data->state = RECIPE_IDLE;
             result = FALSE;
