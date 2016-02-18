@@ -296,6 +296,7 @@ fi
 %files client
 %attr(0755, root, root)%{_bindir}/%{name}
 /usr/share/%{name}/client/job_schema.rng
+/usr/share/%{name}/client/bkr2rstrnt.xsl
 /usr/share/%{name}/client/job2junit.xml
 /usr/share/%{name}/client/job2html.xml
 /usr/share/%{name}/client/bootstrap/LICENSE
