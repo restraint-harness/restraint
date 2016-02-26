@@ -179,8 +179,10 @@ record_result (xmlNodePtr recipe_node_ptr,
                const gchar *message,
                const gchar *path,
                const gchar *score,
-               AppData *app_data)
+               AppData *app_data,
+               const gchar *rhost)
 {
+    gchar *trunc_host = g_strndup (rhost, 20);
     xmlNodePtr results_node_ptr = first_child_with_name(task_node_ptr,
                                                         "results", TRUE);
     // record result under results_node_ptr
@@ -214,28 +216,30 @@ record_result (xmlNodePtr recipe_node_ptr,
             result_to_id(recipe_result, app_data->result_states_to))
         xmlSetProp (recipe_node_ptr, (xmlChar*)"result",
                     (xmlChar*)result);
-    g_free(recipe_result);
-    g_free(task_result);
 
     if (app_data->verbose == 1) {
         // FIXME - read the terminal width and base this value off that.
-        gint offset = (gint) strlen (path) - 48;
+        gint offset = (gint) strlen (path) - 43;
         const gchar *offset_path = NULL;
         if (offset < 0) {
             offset_path = path;
         } else {
             offset_path = &path[offset];
         }
-        g_print ("**   %4s [%-48s] %s", result_id,
+        g_print ("[%-20s] %10s [%-43s] %s", 
+                 trunc_host, result_id,
                  offset_path, result);
         if (score != NULL) {
             g_print (" Score: %s", score);
         }
         g_print ("\n");
         if (message) {
-            g_print ("**            %s\n", message);
+            g_print ("[%-20s]           %s\n", trunc_host, message);
         }
     }
+    g_free(recipe_result);
+    g_free(task_result);
+    g_free(trunc_host);
 }
 
 static void
@@ -327,7 +331,7 @@ tasks_results_cb (const char *method,
 
     // Record the result
     record_result(recipe_data->recipe_node_ptr, task_node_ptr, transaction_id, result, message,
-                  result_path, score, app_data);
+                  result_path, score, app_data, (const gchar *) recipe_data->ssh_data->rhost);
 
     g_hash_table_destroy(table);
 cleanup:
@@ -408,12 +412,14 @@ tasks_status_cb (const char *method,
     gchar *task_id = NULL;
     gchar *recipe_id = NULL;
     gchar **entries = NULL;
+    gchar *trunc_host = NULL;
 
     const gchar *transaction_id = soup_message_headers_get_one (headers, "transaction-id");
     // Pull some values out of the path.
     entries = g_strsplit (path, "/", 0);
     task_id = g_strdup (entries[4]);
     recipe_id = g_strdup (entries[2]);
+    trunc_host = g_strndup ((const gchar *) recipe_data->ssh_data->rhost, 20);
 
     app_data->started = TRUE;
 
@@ -432,9 +438,17 @@ tasks_status_cb (const char *method,
                                             (xmlChar *)"name");
         xmlChar *task_result = xmlGetNoNsProp(task_node_ptr,
                                               (xmlChar *)"result");
-        g_print ("*  T: %3s [%-48s] %s",
+        gint offset = (gint) strlen ((const gchar *) task_name) - 43;
+        const gchar *offset_name = NULL;
+        if (offset < 0) {
+            offset_name = (const gchar *) task_name;
+        } else {
+            offset_name = (const gchar *) &task_name[offset];
+        }
+        g_print ("[%-20s] T: %7s [%-43s] %s",
+                 trunc_host,
                  task_id,
-                 (gchar *)task_name,
+                 offset_name,
                  status);
         if (g_strcmp0 ("None", (gchar *)task_result) != 0) {
             g_print (": %s", (gchar *)task_result);
@@ -452,7 +466,8 @@ tasks_status_cb (const char *method,
                       message,
                       "/",
                       NULL,
-                      app_data);
+                      app_data,
+                      (const gchar *) recipe_data->ssh_data->rhost);
     }
 
     xmlSetProp (task_node_ptr, (xmlChar *)"status", (xmlChar *) status);
@@ -478,6 +493,7 @@ cleanup:
     g_free (task_id);
     g_free (recipe_id);
     g_strfreev (entries);
+    g_free (trunc_host);
 }
 
 void
@@ -495,6 +511,9 @@ tasks_logs_cb (const char *method,
     gchar *task_id = NULL;
     gchar *recipe_id = NULL;
     gchar **entries = NULL;
+    gchar **lines = NULL;
+    gint i = 0;
+    gchar *trunc_host = NULL;
 
     // Pull some values out of the path.
     entries = g_strsplit (path, "/", 0);
@@ -586,12 +605,18 @@ tasks_logs_cb (const char *method,
         xmlXPathFreeObject (logs_node_ptrs);
         update_chunk (filename, body->data, body->length, (goffset) 0);
     }
+    trunc_host = g_strndup ((const gchar *) recipe_data->ssh_data->rhost, 20);
     const gchar *log_level_char = soup_message_headers_get_one(headers, "log-level");
     if (log_level_char) {
         gint log_level = g_ascii_strtoll (log_level_char, NULL, 0);
         if (app_data->verbose >= log_level) {
-            ssize_t written = write (STDOUT_FILENO, body->data, body->length);
-            g_warn_if_fail(written == body->length);
+            lines = g_strsplit_set (body->data, "\r\n", 0);
+            for (i = 0; lines[i] != NULL; i++) {
+                if (strlen(lines[i]) > 0) {
+                    g_print ("[%-20s] %s\n", trunc_host, lines[i]);
+                }
+            }
+            g_strfreev(lines);
         }
     }
 logs_cleanup:
@@ -605,6 +630,7 @@ cleanup:
     g_free (task_id);
     g_free (recipe_id);
     g_strfreev (entries);
+    g_free (trunc_host);
 }
 
 GSList *
