@@ -191,24 +191,24 @@ tarballs: $(TAR_BALLS)
 %: %.tar.xz tree/lib/pkgconfig/liblzma.pc
 	$(CURDIR)/tree/bin/xzcat $< | tar -xf -
 
-$(CURL)/.patches-done:
+$(CURL)/.patches-done: $(CURL)
 	patch -d$(CURL) -p1 <curl_add_ppc64le.patch
 	touch $@
 
-$(XZ)/.patches-done:
+$(XZ)/.patches-done: $(XZ)
 	patch -d$(XZ) -p1 <xz-no-pkgconfig-url.patch
 	patch -d$(XZ) -p1 <xz_add_ppc64le.patch
 	touch $@
 
-$(LIBFFI)/.patches-done:
+$(LIBFFI)/.patches-done: $(LIBFFI)
 	patch -d$(LIBFFI) -p1 <libffi-3.1-toolexeclibdir.patch
 	touch $@
 
-$(SQLITE)/.patches-done:
+$(SQLITE)/.patches-done: $(SQLITE)
 	patch -d$(SQLITE) -p1 <sqlite_add_ppc64le.patch
 	touch $@
 
-$(GLIB)/.patches-done:
+$(GLIB)/.patches-done: $(GLIB)
 	patch -d$(GLIB) -p1 <glib-python2.2.patch
 	patch -d$(GLIB) -p1 <glib-no-pkgconfig-version-check.patch
 	patch -d$(GLIB) -p1 <glib-g_socket_recovery.patch
@@ -216,22 +216,22 @@ $(GLIB)/.patches-done:
 	patch -d$(GLIB) -p1 <glib-format-nonliteral.patch
 	touch $@
 
-$(LIBARCHIVE)/.patches-done:
+$(LIBARCHIVE)/.patches-done: $(LIBARCHIVE)
 #	patch -d$(LIBARCHIVE) -p1 <libarchive-rhel3-headers.patch
 	patch -d$(LIBARCHIVE) -p1 <libarchive-use-pkgconfig.patch
 	patch -d$(LIBARCHIVE) -p1 <libarchive_add_ppc64le.patch
 	touch $@
 
-$(LIBSOUP)/.patches-done:
+$(LIBSOUP)/.patches-done: $(LIBSOUP)
 	patch -d$(LIBSOUP) -p1 <libsoup-no-pkgconfig-version-check.patch
 	patch -d$(LIBSOUP) -p1 <libsoup-perl580.patch
 	touch $@
 
-$(LIBXML2)/.patches-done:
+$(LIBXML2)/.patches-done: $(LIBXML2)
 	patch -d$(LIBXML2) -p1 <libxml2_add_ppc64le.patch
 	touch $@
 
-$(LIBSSH)/.patches-done:
+$(LIBSSH)/.patches-done: $(LIBSSH)
 	patch -d$(LIBSSH) -p1 <libssh_noshared.patch
 	patch -d$(LIBSSH) -p1 <libssh_openssl_path.patch
 	touch $@
