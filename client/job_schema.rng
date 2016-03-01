@@ -1,52 +1,120 @@
-<element name="job" xmlns="http://relaxng.org/ns/structure/1.0">
-  <oneOrMore>
-    <element name="recipeSet">
-      <oneOrMore>
-        <element name="recipe">
-          <optional>
-            <attribute name="id"/>
-          </optional>
-          <optional>
-            <attribute name="whiteboard"/>
-          </optional>
-          <optional>
-            <attribute name="role"/>
-          </optional>
-          <oneOrMore>
-            <element name="task">
-              <optional>
-                <attribute name="name"/>
-              </optional>
-              <optional>
-                <attribute name="role"/>
-              </optional>
-              <interleave>
-                <optional>
-                  <element name="params">
-                    <zeroOrMore>
-                      <element name="param">
-                        <group>
-                          <attribute name="name"/>
-                          <attribute name="value"/>
-                        </group>
-                      </element>
-                    </zeroOrMore>
-                  </element>
-                </optional>
-                <choice>
-                  <element name="rpm">
-                    <attribute name="name"/>
-                    <attribute name="path"/>
-                  </element>
-                  <element name="fetch">
-                    <attribute name="url"/>
-                  </element>
-                </choice>
-              </interleave>
-            </element>
-          </oneOrMore>
-        </element>
-      </oneOrMore>
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- vim: set sw=2: -->
+<!--
+This schema is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+-->
+<grammar xmlns="http://relaxng.org/ns/structure/1.0"
+         datatypeLibrary="http://www.w3.org/2001/XMLSchema-datatypes"
+         xmlns:a="http://relaxng.org/ns/compatibility/annotations/1.0">
+  <start>
+    <ref name="job"/>
+  </start>
+  <define name="job">
+    <element name="job">
+      <ref name="anyAttributes" />
+      <interleave>
+       <zeroOrMore>
+         <element>
+           <anyName>
+             <except>
+               <name>recipeSet</name>
+             </except>
+           </anyName>
+           <ref name="anyAttributes" />
+           <ref name="anyContent" />
+         </element>
+       </zeroOrMore>
+       <oneOrMore>
+         <element name="recipeSet">
+           <ref name="anyAttributes" />
+           <oneOrMore>
+             <element name="recipe">
+               <ref name="anyAttributes" />
+               <interleave>
+                 <zeroOrMore>
+                   <element>
+                     <anyName>
+                       <except>
+                         <name>task</name>
+                       </except>
+                     </anyName>
+                     <ref name="anyAttributes" />
+                     <ref name="anyContent" />
+                   </element>
+                 </zeroOrMore>
+                 <oneOrMore>
+                   <element name="task">
+                     <ref name="anyAttributes" />
+                     <interleave>
+                       <zeroOrMore>
+                         <element>
+                           <anyName>
+                             <except>
+                               <name>params</name>
+                               <name>rpm</name>
+                               <name>fetch</name>
+                             </except>
+                           </anyName>
+                           <ref name="anyAttributes" />
+                           <ref name="anyContent" />
+                         </element>
+                       </zeroOrMore>
+                       <optional>
+                         <element name="params">
+                           <zeroOrMore>
+                             <element name="param">
+                               <group>
+                                 <attribute name="name"/>
+                                 <attribute name="value"/>
+                               </group>
+                             </element>
+                           </zeroOrMore>
+                         </element>
+                       </optional>
+                       <choice>
+                         <element name="rpm">
+                           <attribute name="name"/>
+                           <attribute name="path"/>
+                         </element>
+                         <element name="fetch">
+                           <attribute name="url"/>
+                         </element>
+                       </choice>
+                     </interleave>
+                   </element>
+                 </oneOrMore>
+               </interleave>
+             </element>
+           </oneOrMore>
+         </element>
+       </oneOrMore>
+      </interleave>
     </element>
-  </oneOrMore>
-</element>
+  </define>
+
+  <define name="anyContent">
+    <zeroOrMore>
+      <choice>
+        <ref name="anyElement" />
+        <text />
+      </choice>
+    </zeroOrMore>
+  </define>
+  <define name="anyElement">
+    <element>
+      <anyName />
+      <ref name="anyAttributes" />
+      <ref name="anyContent" />
+    </element>
+  </define>
+  <define name="anyAttributes">
+    <zeroOrMore>
+      <attribute>
+        <anyName />
+      </attribute>
+    </zeroOrMore>
+  </define>
+</grammar>
