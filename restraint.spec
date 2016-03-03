@@ -10,8 +10,8 @@
 %endif
 
 Name:		restraint
-Version:	0.1.23
-Release:	2%{?dist}
+Version:	0.1.24
+Release:	1%{?dist}
 Summary:	Simple test harness which can be used with beaker
 
 Group:		Applications/Internet
@@ -333,6 +333,20 @@ fi
 %{__rm} -rf %{buildroot}
 
 %changelog
+* Thu Mar 03 2016 Bill Peck <bpeck@redhat.com> 0.1.24-1
+- Relax xml schema validation to ignore unknown fields and attributes that we
+  will end up ignoring anyway. (bpeck@redhat.com)
+- Prepend [HOSTNAME] on to each line.  Makes multi-host recipes much easier to
+  understand. (bpeck@redhat.com)
+- Add beaker->restraint xslt translator. (asavkov@redhat.com)
+- Don't build rhts/legacy by default. (asavkov@redhat.com)
+- use https to download curl source tarball (jbastian@redhat.com)
+- Don't clear "config" file on recipe complete. (bpeck@redhat.com)
+- third-party: error out if tarballs fail to fetch (dcallagh@redhat.com)
+- Documentation fixes. (asavkov@redhat.com)
+- Add missing shebangs to bash scripts. (asavkov@redhat.com)
+- Separate harness and test logs. (asavkov@redhat.com)
+
 * Thu Jan 28 2016 Bill Peck <bpeck@redhat.com> 0.1.23-2
 - third-party: xz tarball location has moved (dcallagh@redhat.com)
 
