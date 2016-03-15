@@ -87,7 +87,7 @@ fetch_finish_callback (GError *error, gpointer user_data)
             task->state = TASK_COMPLETE;
         }
     } else {
-        task->state = TASK_GEN_TESTINFO;
+        task->state = TASK_METADATA_PARSE;
     }
 
     app_data->task_handler_id = g_idle_add_full(G_PRIORITY_DEFAULT_IDLE,
@@ -143,7 +143,7 @@ restraint_task_fetch(AppData *app_data) {
             // Use appropriate package install command
             TaskRunData *task_run_data = g_slice_new0(TaskRunData);
             task_run_data->app_data = app_data;
-            task_run_data->pass_state = TASK_GEN_TESTINFO;
+            task_run_data->pass_state = TASK_METADATA_PARSE;
             task_run_data->fail_state = TASK_COMPLETE;
             task_run_data->logpath = LOG_PATH_HARNESS;
             process_run ((const gchar *)command, NULL, NULL, 0, task_io_callback, task_handler_callback,
@@ -286,6 +286,36 @@ task_finish_callback (gint pid_result, gboolean localwatchdog, gpointer user_dat
                  app_data->cancellable,
                  task_run_data);
     g_free (command);
+}
+
+void metadata_finish_cb(gpointer user_data, GError *error)
+{
+    AppData *app_data = (AppData *)user_data;
+    Task *task = app_data->tasks->data;
+
+    if (error) {
+        g_propagate_error(&task->error, error);
+    }
+
+    if (task->error || task->metadata == NULL) {
+        task->state = TASK_COMPLETE;
+    } else {
+        task->state = TASK_ENV;
+
+        // If task->remaining_time is not set then set it from metadata
+        if (task->remaining_time == -1) {
+            task->remaining_time = task->metadata->max_time;
+        }
+        // If task->name is NULL then take name from metadata
+        if (task->name == NULL) {
+            task->name = task->metadata->name;
+        }
+    }
+
+    app_data->task_handler_id = g_idle_add_full(G_PRIORITY_DEFAULT_IDLE,
+                                                task_handler,
+                                                app_data,
+                                                NULL);
 }
 
 void dependency_finish_cb (gpointer user_data, GError *error)
@@ -663,8 +693,6 @@ task_handler (gpointer user_data)
   }
 
   Task *task = app_data->tasks->data;
-  gchar *metadata_file = NULL;
-  gchar *testinfo_file = NULL;
   GString *message = g_string_new(NULL);
   gboolean result = TRUE;
 
@@ -695,7 +723,7 @@ task_handler (gpointer user_data)
           } else if (task->started) {
               // If the task is not finished but started then skip fetching the task again.
               g_string_printf(message, "** Continuing task: %s [%s]\n", task->task_id, task->path);
-              task->state = TASK_GEN_TESTINFO;
+              task->state = TASK_METADATA_PARSE;
           } else {
               // If neither started nor finished then fetch the task
               restraint_task_status (task, app_data, "Running", NULL);
@@ -713,75 +741,13 @@ task_handler (gpointer user_data)
       restraint_task_fetch (app_data);
       result=FALSE;
       break;
-    case TASK_GEN_TESTINFO:
-      // if new metadata file is found then don't bother trying to generate
-      // old testinfo.desc
-      metadata_file = g_build_filename (task->path, "metadata", NULL);
-      testinfo_file = g_build_filename (task->path, "testinfo.desc", NULL);
-      if (file_exists (metadata_file)) {
-          task->rhts_compat = FALSE;
-          task->state = TASK_METADATA_PARSE;
-      } else if (file_exists (testinfo_file)) {
-          task->rhts_compat = TRUE;
-          task->state = TASK_METADATA_PARSE;
-      } else {
-          task->rhts_compat = TRUE;
-          TaskRunData *task_run_data = g_slice_new0(TaskRunData);
-          task_run_data->app_data = app_data;
-          task_run_data->pass_state = TASK_METADATA_PARSE;
-          task_run_data->fail_state = TASK_METADATA_PARSE;
-
-          const gchar *command = "make testinfo.desc";
-
-          task_run_data->logpath = LOG_PATH_HARNESS;
-          process_run (command,
-                       NULL,
-                       task->path,
-                       0,
-                       task_io_callback,
-                       task_handler_callback,
-                       app_data->cancellable,
-                       task_run_data);
-
-          g_string_printf(message, "** Generating testinfo.desc\n");
-          result=FALSE;
-      }
-      g_free (testinfo_file);
-      g_free (metadata_file);
-      break;
     case TASK_METADATA_PARSE:
-      // Update Task metadata
-      // entry_point, defaults to "make run"
-      // max_time which is used by both localwatchdog and externalwatchdog
-      // dependencies required for task execution
-      // rhts_compat is set to false if new "metadata" file exists.
-      metadata_file = g_build_filename (task->path, "metadata", NULL);
-      testinfo_file = g_build_filename (task->path, "testinfo.desc", NULL);
-      if (task->rhts_compat) {
-          task->metadata = restraint_parse_testinfo (testinfo_file, &task->error);
-          g_string_printf (message, "** Parsing testinfo.desc\n");
-          task->state = TASK_ENV;
-      } else {
-          task->metadata = restraint_parse_metadata (metadata_file, task->recipe->osmajor, &task->error);
-          g_string_printf (message, "** Parsing metadata\n");
-          task->state = TASK_ENV;
-      }
-      if (task->metadata == NULL) {
-          task->state = TASK_COMPLETE;
-      } else {
-
-          // If task->remaining_time is not set then set it from metadata
-          if (task->remaining_time == -1) {
-              task->remaining_time = task->metadata->max_time;
-          }
-          // If task->name is NULL then take name from metadata
-          if (task->name == NULL) {
-              task->name = task->metadata->name;
-          }
-      }
-
-      g_free (testinfo_file);
-      g_free (metadata_file);
+      g_string_printf (message, "** Preparing metadata\n");
+      task->rhts_compat = restraint_get_metadata(task->path,
+                            task->recipe->osmajor, &task->metadata,
+                            app_data->cancellable, metadata_finish_cb,
+                            app_data);
+      result=FALSE;
       break;
     case TASK_ENV:
       // Build environment to execute task

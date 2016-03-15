@@ -39,7 +39,6 @@
 typedef enum {
     TASK_IDLE,
     TASK_FETCH,
-    TASK_GEN_TESTINFO,
     TASK_METADATA_PARSE,
     TASK_ENV,
     TASK_WATCHDOG,

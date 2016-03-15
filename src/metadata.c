@@ -31,6 +31,15 @@
 #include "errors.h"
 #include "utils.h"
 
+typedef struct _MetadataData {
+    char *path;
+    char *osmajor;
+    MetaData **metadata;
+    GCancellable *cancellable;
+    metadata_cb finish_cb;
+    void *user_data;
+} MetadataData;
+
 void
 restraint_metadata_free (MetaData *metadata)
 {
@@ -383,4 +392,61 @@ restraint_parse_testinfo(gchar *filename,
         return NULL;
     }
     return metadata;
+}
+
+static void mktinfo_cb(gint pid_result, gboolean localwatchdog,
+                       gpointer user_data, GError *error)
+{
+    MetadataData *mtdata = (MetadataData*)user_data;
+
+    gchar *testinfo_file = g_build_filename(mtdata->path, "testinfo.desc",
+                                            NULL);
+    g_cancellable_set_error_if_cancelled(mtdata->cancellable, &error);
+    if (error || !file_exists(testinfo_file)) {
+        mtdata->finish_cb(mtdata->user_data, error);
+    } else {
+        restraint_get_metadata(mtdata->path, mtdata->osmajor, mtdata->metadata,
+                               mtdata->cancellable, mtdata->finish_cb,
+                               mtdata->user_data);
+    }
+    g_free (testinfo_file);
+    g_slice_free(MetadataData, mtdata);
+}
+
+gboolean restraint_get_metadata(char *path, char *osmajor, MetaData **metadata,
+                                GCancellable *cancellable,
+                                metadata_cb finish_cb, void *user_data)
+{
+    GError *error = NULL;
+    gboolean ret = TRUE;
+    gchar *metadata_file = g_build_filename(path, "metadata", NULL);
+    gchar *testinfo_file = g_build_filename(path, "testinfo.desc", NULL);
+
+    if (file_exists(metadata_file)) {
+        ret = FALSE;
+        *metadata = restraint_parse_metadata(metadata_file, osmajor, &error);
+        finish_cb(user_data, error);
+    } else if (file_exists(testinfo_file)) {
+        ret = TRUE;
+        *metadata = restraint_parse_testinfo(testinfo_file, &error);
+        finish_cb(user_data, error);
+    } else {
+        ret = TRUE;
+
+        const gchar *command = "make testinfo.desc";
+        MetadataData *mtdata = g_slice_new0(MetadataData);
+        mtdata->path = path;
+        mtdata->osmajor = osmajor;
+        mtdata->metadata = metadata;
+        mtdata->cancellable = cancellable;
+        mtdata->finish_cb = finish_cb;
+        mtdata->user_data = user_data;
+
+        process_run(command, NULL, path, 0, NULL, mktinfo_cb, cancellable,
+                    mtdata);
+    }
+
+    g_free (testinfo_file);
+    g_free (metadata_file);
+    return ret;
 }

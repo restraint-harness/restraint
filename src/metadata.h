@@ -18,6 +18,8 @@
 #ifndef _RESTRAINT_METADATA_H
 #define _RESTRAINT_METADATA_H
 
+#include <gio/gio.h>
+
 typedef struct {
     gchar *name;
     /* entry_point, defaults to make run */
@@ -32,7 +34,12 @@ typedef struct {
     gboolean nolocalwatchdog;
 } MetaData;
 
+typedef void (*metadata_cb) (gpointer user_data, GError *error);
+
 MetaData* restraint_parse_metadata (gchar *filename, gchar *locale, GError **error);
 MetaData* restraint_parse_testinfo (gchar *filename, GError **error);
 void restraint_metadata_free (MetaData *metadata);
+gboolean restraint_get_metadata(char *path, char *osmajor, MetaData **metadata,
+                                GCancellable *cancellable,
+                                metadata_cb finish_cb, void *user_data);
 #endif
