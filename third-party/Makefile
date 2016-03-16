@@ -213,6 +213,7 @@ $(GLIB)/.patches-done:
 	patch -d$(GLIB) -p1 <glib-no-pkgconfig-version-check.patch
 	patch -d$(GLIB) -p1 <glib-g_socket_recovery.patch
 #	patch -d$(GLIB) -p1 <glib-gcc3.patch
+	patch -d$(GLIB) -p1 <glib-format-nonliteral.patch
 	touch $@
 
 $(LIBARCHIVE)/.patches-done:
