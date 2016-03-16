@@ -15,6 +15,7 @@
     along with Restraint.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <string.h>
 #include "dependency.h"
 #include "errors.h"
 #include "process.h"
@@ -27,6 +28,12 @@ typedef struct {
     gchar *path;
     DependencyData *dependency_data;
 } RepoDepData;
+
+typedef struct {
+    char *path;
+    MetaData *tmp_meta;
+    DependencyData *dependency_data;
+} MetadataFetchInfo;
 
 static void dependency_handler (gpointer user_data);
 static void restraint_fetch_repodeps(DependencyData *dependency_data);
@@ -46,7 +53,10 @@ dependency_callback (gint pid_result, gboolean localwatchdog, gpointer user_data
     g_cancellable_set_error_if_cancelled (dependency_data->cancellable, &error);
 
     if (error) {
-        dependency_data->finish_cb (dependency_data->user_data, error);
+        if (dependency_data->finish_cb) {
+            dependency_data->finish_cb (dependency_data->user_data, error);
+        }
+        g_slist_free_full(dependency_data->processed_deps, g_free);
         g_slice_free (DependencyData, dependency_data);
     } else if (dependency_data->ignore_failed_install != TRUE && pid_result != 0) {
         // If running in rhts_compat mode we don't check whether a packge installed
@@ -55,7 +65,10 @@ dependency_callback (gint pid_result, gboolean localwatchdog, gpointer user_data
         g_set_error (&error, RESTRAINT_ERROR,
                      RESTRAINT_TASK_RUNNER_RC_ERROR,
                      "Command returned non-zero %i", pid_result);
-        dependency_data->finish_cb (dependency_data->user_data, error);
+        if (dependency_data->finish_cb) {
+            dependency_data->finish_cb (dependency_data->user_data, error);
+        }
+        g_slist_free_full(dependency_data->processed_deps, g_free);
         g_slice_free (DependencyData, dependency_data);
     } else {
         dependency_data->dependencies = dependency_data->dependencies->next;
@@ -67,6 +80,7 @@ static void
 dependency_rpm(DependencyData *dependency_data)
 {
     GError *error = NULL;
+
     if (dependency_data->dependencies) {
         gchar *package_name = dependency_data->dependencies->data;
         gchar *command;
@@ -95,23 +109,89 @@ dependency_rpm(DependencyData *dependency_data)
 
 }
 
+static void ldep_finish_cb(gpointer user_data, GError *error)
+{
+    MetadataFetchInfo *mtfi = (MetadataFetchInfo*)user_data;
+    DependencyData *dependency_data = mtfi->dependency_data;
+
+    if (error) {
+        if (dependency_data->finish_cb) {
+            dependency_data->finish_cb (dependency_data->user_data, error);
+        }
+        g_slist_free_full(dependency_data->processed_deps, g_free);
+        g_slice_free (DependencyData, dependency_data);
+    } else {
+        dependency_data->repodeps = g_slist_next(dependency_data->repodeps);
+        restraint_fetch_repodeps(dependency_data);
+    }
+
+    g_free(mtfi->path);
+    restraint_metadata_free(mtfi->tmp_meta);
+    g_slice_free(MetadataFetchInfo, mtfi);
+}
+
+static gboolean ldep_io_cb(GIOChannel *io, GIOCondition condition,
+                           gpointer user_data)
+{
+    MetadataFetchInfo *mtfi = (MetadataFetchInfo*)user_data;
+    DependencyData *dependency_data = mtfi->dependency_data;
+    return dependency_data->io_callback(io, condition,
+                                        dependency_data->user_data);
+}
+
+static void dep_mtdata_finish_cb(gpointer user_data, GError *error)
+{
+    MetadataFetchInfo *mtfi = (MetadataFetchInfo*)user_data;
+    DependencyData *dependency_data = mtfi->dependency_data;
+
+    if (mtfi->tmp_meta != NULL) {
+        DependencyData *newdd = g_slice_dup(DependencyData, dependency_data);
+        newdd->dependencies = mtfi->tmp_meta->dependencies;
+        newdd->repodeps = mtfi->tmp_meta->repodeps;
+        newdd->finish_cb = ldep_finish_cb;
+        newdd->io_callback = ldep_io_cb;
+        newdd->user_data = mtfi;
+        newdd->processed_deps = g_slist_copy_deep(
+                                    dependency_data->processed_deps,
+                                    (GCopyFunc)g_strdup, NULL);
+        restraint_fetch_repodeps(newdd);
+    } else {
+        g_free(mtfi->path);
+        g_slice_free(MetadataFetchInfo, mtfi);
+    }
+}
+
 static void
 fetch_repodeps_finish_callback(GError *error, gpointer user_data)
 {
     RepoDepData *rd_data = (RepoDepData*)user_data;
     DependencyData *dependency_data = rd_data->dependency_data;
 
-    soup_uri_free(rd_data->url);
-    g_free(rd_data->path);
-    g_slice_free(RepoDepData, rd_data);
-
+    GSList *pdep = g_slist_find_custom(dependency_data->processed_deps, rd_data->path, (GCompareFunc)g_strcmp0);
     if (error) {
-        dependency_data->finish_cb (dependency_data->user_data, error);
+        if (dependency_data->finish_cb) {
+            dependency_data->finish_cb (dependency_data->user_data, error);
+        }
+        g_slist_free_full(dependency_data->processed_deps, g_free);
         g_slice_free (DependencyData, dependency_data);
+    } else if (pdep == NULL) {
+        MetadataFetchInfo *mtfi = g_slice_new0(MetadataFetchInfo);
+        dependency_data->processed_deps = g_slist_prepend(
+                                            dependency_data->processed_deps,
+                                            g_strdup(rd_data->path));
+        mtfi->path = g_strdup(rd_data->path);
+        mtfi->dependency_data = dependency_data;
+        restraint_get_metadata(mtfi->path, dependency_data->osmajor,
+                               &mtfi->tmp_meta,
+                               dependency_data->cancellable,
+                               dep_mtdata_finish_cb, mtfi);
     } else {
         dependency_data->repodeps = g_slist_next(dependency_data->repodeps);
         restraint_fetch_repodeps(dependency_data);
     }
+    soup_uri_free(rd_data->url);
+    g_free(rd_data->path);
+    g_slice_free(RepoDepData, rd_data);
 }
 
 static void
@@ -155,7 +235,10 @@ dependency_handler (gpointer user_data)
             dependency_rpm(dependency_data);
             break;
         case DEPENDENCY_DONE:
-            dependency_data->finish_cb(dependency_data->user_data, NULL);
+            if (dependency_data->finish_cb) {
+                dependency_data->finish_cb(dependency_data->user_data, NULL);
+            }
+            g_slist_free_full(dependency_data->processed_deps, g_free);
             g_slice_free (DependencyData, dependency_data);
             break;
         default:
@@ -182,6 +265,7 @@ restraint_install_dependencies (Task *task,
     dependency_data->io_callback = io_callback;
     dependency_data->finish_cb = finish_cb;
     dependency_data->cancellable = cancellable;
+    dependency_data->osmajor = task->recipe->osmajor;
     switch (task->fetch_method) {
         case TASK_FETCH_UNPACK:
             dependency_data->fetch_url = task->fetch.url;

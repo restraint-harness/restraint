@@ -31,6 +31,7 @@ typedef enum {
 typedef struct {
     GSList *dependencies;
     GSList *repodeps;
+    GSList *processed_deps;
     SoupURI *fetch_url;
     gboolean keepchanges;
     const gchar *main_task_name;
@@ -41,6 +42,7 @@ typedef struct {
     GCancellable *cancellable;
     DependencyState state;
     gpointer user_data;
+    char *osmajor;
 } DependencyData;
 
 void restraint_install_dependencies (Task *task, GIOFunc io_callback,

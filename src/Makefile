@@ -77,7 +77,7 @@ test_process: process.o errors.o
 test_process.o: process.h
 
 TEST_PROGS += test_dependency
-test_dependency: dependency.o errors.o process.o fetch.o fetch_http.o fetch_git.o
+test_dependency: dependency.o errors.o process.o fetch.o fetch_http.o fetch_git.o metadata.o utils.o
 test_dependency.o: dependency.h errors.h process.h
 
 TEST_PROGS += test_env
