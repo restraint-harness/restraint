@@ -102,7 +102,7 @@ static void test_dependencies_success (void)
     task->fetch.url = soup_uri_new("git://localhost/repo1?master#restraint/sanity/fetch_git");
     task->rhts_compat = FALSE;
     task->name = "restraint/sanity/fetch_git";
-    task->recipe = g_slice_new(Recipe);
+    task->recipe = g_slice_new0(Recipe);
     task->recipe->base_path = g_dir_make_tmp("test_repodep_git_XXXXXX", NULL);
 
     restraint_install_dependencies (task,
@@ -151,7 +151,7 @@ static void test_dependencies_fail (void)
     task->fetch.url = soup_uri_new("git://localhost/repo1?master#restraint/sanity/fetch_git");
     task->rhts_compat = FALSE;
     task->name = "restraint/sanity/fetch_git";
-    task->recipe = g_slice_new(Recipe);
+    task->recipe = g_slice_new0(Recipe);
     task->recipe->base_path = g_dir_make_tmp("test_repodep_git_XXXXXX", NULL);
 
     restraint_install_dependencies (task,
@@ -200,7 +200,7 @@ static void test_dependencies_ignore_fail (void)
     task->fetch.url = soup_uri_new("git://localhost/repo1?master#restraint/sanity/fetch_git");
     task->rhts_compat = TRUE;
     task->name = "restraint/sanity/fetch_git";
-    task->recipe = g_slice_new(Recipe);
+    task->recipe = g_slice_new0(Recipe);
     task->recipe->base_path = g_dir_make_tmp("test_repodep_git_XXXXXX", NULL);
 
     restraint_install_dependencies (task,
@@ -235,6 +235,7 @@ static void test_git_repodeps_success (void)
     repodeps = g_slist_prepend(repodeps, "restraint/sanity/fetch_git");
 
     run_data = g_slice_new0 (RunData);
+    run_data->output = g_string_new (NULL);
     run_data->loop = g_main_loop_new (NULL, TRUE);
 
     Task *task = g_slice_new0(Task);
@@ -245,7 +246,7 @@ static void test_git_repodeps_success (void)
     task->fetch.url = soup_uri_new("git://localhost/repo1?master#restraint/sanity/fake");
     task->rhts_compat = FALSE;
     task->name = "restraint/sanity/fake";
-    task->recipe = g_slice_new(Recipe);
+    task->recipe = g_slice_new0(Recipe);
     task->recipe->base_path = g_dir_make_tmp("test_repodep_git_XXXXXX", NULL);
 
     restraint_install_dependencies (task,
@@ -290,6 +291,7 @@ static void test_git_repodeps_success (void)
     g_object_unref(base);
     g_free(fullpath);
 
+    g_string_free (run_data->output, TRUE);
     g_slice_free (RunData, run_data);
     g_slist_free (repodeps);
     soup_uri_free(task->fetch.url);
@@ -317,7 +319,7 @@ static void test_git_repodeps_fail (void)
     task->fetch.url = soup_uri_new("git://localhost/repo1?master#restraint/sanity/fake");
     task->rhts_compat = FALSE;
     task->name = "restraint/sanity/fake";
-    task->recipe = g_slice_new(Recipe);
+    task->recipe = g_slice_new0(Recipe);
     task->recipe->base_path = g_dir_make_tmp("test_repodep_git_XXXXXX", NULL);
 
     restraint_install_dependencies (task,
@@ -349,6 +351,7 @@ static void test_http_repodeps_success (void)
     repodeps = g_slist_prepend(repodeps, "restraint/sanity/fetch_git");
 
     run_data = g_slice_new0 (RunData);
+    run_data->output = g_string_new (NULL);
     run_data->loop = g_main_loop_new (NULL, TRUE);
 
     Task *task = g_slice_new0(Task);
@@ -359,7 +362,7 @@ static void test_http_repodeps_success (void)
     task->fetch.url = soup_uri_new("http://localhost:8000/fetch_http.tgz#restraint/sanity/fake");
     task->rhts_compat = FALSE;
     task->name = "restraint/sanity/fake";
-    task->recipe = g_slice_new(Recipe);
+    task->recipe = g_slice_new0(Recipe);
     task->recipe->base_path = g_dir_make_tmp("test_repodep_http_XXXXXX", NULL);
 
     restraint_install_dependencies (task,
@@ -404,6 +407,7 @@ static void test_http_repodeps_success (void)
     g_object_unref(base);
     g_free(fullpath);
 
+    g_string_free (run_data->output, TRUE);
     g_slice_free (RunData, run_data);
     g_slist_free (repodeps);
     soup_uri_free(task->fetch.url);
@@ -431,7 +435,7 @@ static void test_http_repodeps_fail (void)
     task->fetch.url = soup_uri_new("http://localhost:8000/fetch_http.tgz#restraint/sanity/fake");
     task->rhts_compat = FALSE;
     task->name = "restraint/sanity/fake";
-    task->recipe = g_slice_new(Recipe);
+    task->recipe = g_slice_new0(Recipe);
     task->recipe->base_path = g_dir_make_tmp("test_repodep_http_XXXXXX", NULL);
 
     restraint_install_dependencies (task,
