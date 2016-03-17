@@ -232,7 +232,7 @@ static void test_git_repodeps_success (void)
 {
     RunData *run_data;
     GSList *repodeps = NULL;
-    repodeps = g_slist_prepend(repodeps, "restraint/sanity/fetch_git");
+    repodeps = g_slist_prepend(repodeps, "restraint/sanity/common");
 
     run_data = g_slice_new0 (RunData);
     run_data->output = g_string_new (NULL);
@@ -265,7 +265,7 @@ static void test_git_repodeps_success (void)
     gchar *fullpath = g_strdup_printf("%s/%s/%s/%s", task->recipe->base_path,
             soup_uri_get_host(task->fetch.url),
             soup_uri_get_path(task->fetch.url),
-            "restraint/sanity/fetch_git");
+            "restraint/sanity/common");
     GFile *base = g_file_new_for_path(fullpath);
 
     GFile *file = g_file_get_child (base, "Makefile");
@@ -348,7 +348,7 @@ static void test_http_repodeps_success (void)
 {
     RunData *run_data;
     GSList *repodeps = NULL;
-    repodeps = g_slist_prepend(repodeps, "restraint/sanity/fetch_git");
+    repodeps = g_slist_prepend(repodeps, "restraint/sanity/common");
 
     run_data = g_slice_new0 (RunData);
     run_data->output = g_string_new (NULL);
@@ -381,7 +381,7 @@ static void test_http_repodeps_success (void)
     gchar *fullpath = g_strdup_printf("%s/%s/%s/%s", task->recipe->base_path,
             soup_uri_get_host(task->fetch.url),
             soup_uri_get_path(task->fetch.url),
-            "restraint/sanity/fetch_git");
+            "restraint/sanity/common");
     GFile *base = g_file_new_for_path(fullpath);
 
     GFile *file = g_file_get_child (base, "Makefile");
