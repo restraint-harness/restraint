@@ -32,8 +32,6 @@
 #include "fetch.h"
 #include "fetch_http.h"
 
-static SoupSession *session;
-
 static ssize_t
 myread(struct archive *a, void *client_data, const void **abuf)
 {
@@ -61,6 +59,7 @@ myopen(FetchData *fetch_data, GError **error)
     g_return_val_if_fail(fetch_data != NULL, FALSE);
     g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
     SoupRequestHTTP *reqh;
+    SoupSession *session = (SoupSession*)fetch_data->private_data;
 
     GError *tmp_error = NULL;
 
@@ -100,6 +99,7 @@ static gboolean
 archive_finish_callback (gpointer user_data)
 {
     FetchData *fetch_data = (FetchData *) user_data;
+    SoupSession *session = (SoupSession*)fetch_data->private_data;
     gint free_result;
 
     if (fetch_data == NULL) {
@@ -217,7 +217,8 @@ restraint_fetch_http (SoupURI *url,
         rmrf(base_path);
     }
 
-    session = soup_session_new();
+    SoupSession *session = soup_session_new();
+    fetch_data->private_data = session;
 
     fetch_data->a = archive_read_new();
     if (fetch_data->a == NULL) {

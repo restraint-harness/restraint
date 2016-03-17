@@ -43,6 +43,7 @@ typedef struct {
     GError *error;
     uint32_t extracted_cnt;
     gboolean keepchanges;
+    gpointer private_data;
 } FetchData;
 
 #define RESTRAINT_FETCH_ERROR restraint_fetch_error ()
