@@ -63,6 +63,29 @@ static void test_testinfo_repodeps(void) {
     restraint_metadata_free (metadata);
 }
 
+static void test_testinfo_use_pty(void) {
+    GError *error = NULL;
+    MetaData *metadata;
+
+    gchar *filename = "test-data/parse_testinfo/use_pty/true/testinfo.desc";
+
+    metadata = restraint_parse_testinfo (filename, &error);
+
+    g_assert_no_error (error);
+    g_assert_true (metadata->use_pty);
+
+    restraint_metadata_free (metadata);
+
+    filename = "test-data/parse_testinfo/use_pty/false/testinfo.desc";
+
+    metadata = restraint_parse_testinfo (filename, &error);
+
+    g_assert_no_error (error);
+    g_assert_false (metadata->use_pty);
+
+    restraint_metadata_free (metadata);
+}
+
 static void test_testinfo_testtime_day(void) {
     GError *error = NULL;
     MetaData *metadata;
@@ -189,6 +212,28 @@ static void test_metadata_repodeps(void) {
     restraint_metadata_free (metadata);
 }
 
+static void test_metadata_use_pty(void) {
+    GError *error = NULL;
+    MetaData *metadata;
+
+    gchar *filename = "test-data/parse_metadata/use_pty/metadata";
+    gchar *osmajor = "RedHatEnterpriseLinux6";
+
+    metadata = restraint_parse_metadata(filename, osmajor, &error);
+
+    g_assert_no_error (error);
+    g_assert_true (metadata->use_pty);
+
+    restraint_metadata_free (metadata);
+
+    filename = "test-data/parse_metadata/use_pty/metadata-no-use_pty";
+    metadata = restraint_parse_metadata(filename, osmajor, &error);
+    g_assert_no_error (error);
+    g_assert_false (metadata->use_pty);
+
+    restraint_metadata_free (metadata);
+}
+
 static void test_metadata_testtime_day(void) {
     GError *error = NULL;
     MetaData *metadata;
@@ -268,6 +313,7 @@ int main(int argc, char *argv[]) {
     g_test_add_func("/testindo.desc/testtime/second", test_testinfo_testtime_second);
     g_test_add_func("/testinfo.desc/dependencies", test_testinfo_dependencies);
     g_test_add_func("/testinfo.desc/repodeps", test_testinfo_repodeps);
+    g_test_add_func("/testinfo.desc/use_pty", test_testinfo_use_pty);
     g_test_add_func("/metadata/testtime/day", test_metadata_testtime_day);
     g_test_add_func("/metadata/testtime/hour", test_metadata_testtime_hour);
     g_test_add_func("/metadata/testtime/invalid", test_metadata_testtime_invalid);
@@ -275,5 +321,6 @@ int main(int argc, char *argv[]) {
     g_test_add_func("/metadata/testtime/second", test_metadata_testtime_second);
     g_test_add_func("/metadata/dependencies", test_metadata_dependencies);
     g_test_add_func("/metadata/repodeps", test_metadata_repodeps);
+    g_test_add_func("/metadata/use_pty", test_metadata_use_pty);
     return g_test_run();
 }

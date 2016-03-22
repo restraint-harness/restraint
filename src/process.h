@@ -69,6 +69,7 @@ void
 process_run (const gchar *command,
                       const gchar **environ,
                       const gchar *path,
+                      gboolean use_pty,
                       guint64 max_time,
                       GIOFunc io_callback,
                       ProcessFinishCallback finish_callback,

@@ -79,6 +79,7 @@ dependency_rpm(DependencyData *dependency_data)
         process_run ((const gchar *)command,
                      NULL,
                      NULL,
+                     FALSE,
                      0,
                      dependency_io_callback,
                      dependency_callback,

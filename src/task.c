@@ -146,7 +146,7 @@ restraint_task_fetch(AppData *app_data) {
             task_run_data->pass_state = TASK_METADATA_PARSE;
             task_run_data->fail_state = TASK_COMPLETE;
             task_run_data->logpath = LOG_PATH_HARNESS;
-            process_run ((const gchar *)command, NULL, NULL, 0, task_io_callback, task_handler_callback,
+            process_run ((const gchar *)command, NULL, NULL, FALSE, 0, task_io_callback, task_handler_callback,
                          app_data->cancellable, task_run_data);
             g_free (command);
             break;
@@ -280,12 +280,31 @@ task_finish_callback (gint pid_result, gboolean localwatchdog, gpointer user_dat
     process_run ((const gchar *) command,
                  (const gchar **) task->env->pdata,
                  "/usr/share/restraint/plugins",
+                 FALSE,
                  0,
                  task_io_callback,
                  task_finish_plugins_callback,
                  app_data->cancellable,
                  task_run_data);
     g_free (command);
+}
+
+static void
+check_param_for_override (Param *param, Task *task)
+{
+    if (g_strcmp0 (param->name, "KILLTIMEOVERRIDE") == 0 ||
+        g_strcmp0 (param->name, "RSTRNT_MAX_TIME") == 0) {
+        task->remaining_time = parse_time_string (param->value, NULL);
+    }
+    if (g_strcmp0 (param->name, "RSTRNT_USE_PTY") == 0) {
+        gchar *value = g_ascii_strup(param->value, -1);
+        if (g_strcmp0 (value, "TRUE") == 0) {
+            task->metadata->use_pty = TRUE;
+        } else {
+            task->metadata->use_pty = FALSE;
+        }
+        g_free(value);
+    }
 }
 
 void metadata_finish_cb(gpointer user_data, GError *error)
@@ -302,10 +321,20 @@ void metadata_finish_cb(gpointer user_data, GError *error)
     } else {
         task->state = TASK_ENV;
 
-        // If task->remaining_time is not set then set it from metadata
-        if (task->remaining_time == -1) {
-            task->remaining_time = task->metadata->max_time;
-        }
+        // Set values from metadata first
+        task->remaining_time = task->metadata->max_time;
+
+        // Task param can override task metadata
+        g_list_foreach (task->params, (GFunc) check_param_for_override, task);
+
+        // Finally read remaining time from config
+        gint64 remaining_time = restraint_config_get_int64 (app_data->config_file,
+                                                            task->task_id,
+                                                            "remaining_time",
+                                                            NULL);
+
+        task->remaining_time = remaining_time == 0 ? task->remaining_time : remaining_time;
+
         // If task->name is NULL then take name from metadata
         if (task->name == NULL) {
             task->name = task->metadata->name;
@@ -435,6 +464,7 @@ task_run (AppData *app_data)
     process_run ((const gchar *) entry_point,
                  (const gchar **)task->env->pdata,
                  task->path,
+                 task->metadata->use_pty,
                  task->remaining_time,
                  task_io_callback,
                  task_finish_callback,
@@ -587,20 +617,6 @@ gboolean
 parse_task_config (gchar *config_file, Task *task, GError **error)
 {
     GError *tmp_error = NULL;
-
-    gint64 remaining_time = restraint_config_get_int64 (config_file,
-                                                        task->task_id,
-                                                        "remaining_time",
-                                                        &tmp_error);
-
-    task->remaining_time = remaining_time == 0 ? task->remaining_time : remaining_time;
-
-    if (tmp_error) {
-        g_propagate_prefixed_error(error, tmp_error,
-                    "Task %s:  parse_task_config,", task->task_id);
-        goto error;
-    }
-    g_clear_error (&tmp_error);
 
     task->reboots = restraint_config_get_uint64 (config_file,
                                                  task->task_id,

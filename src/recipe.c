@@ -204,15 +204,6 @@ error:
     return NULL;
 }
 
-static void
-check_param_max_time (Param *param, Task *task)
-{
-    if (g_strcmp0 (param->name, "KILLTIMEOVERRIDE") == 0 ||
-        g_strcmp0 (param->name, "RSTRNT_MAX_TIME") == 0) {
-        task->remaining_time = parse_time_string (param->value, NULL);
-    }
-}
-
 static Task *parse_task(xmlNode *task_node, Recipe *recipe, GError **error) {
     g_return_val_if_fail(task_node != NULL, NULL);
     g_return_val_if_fail(error == NULL || *error == NULL, NULL);
@@ -295,8 +286,6 @@ static Task *parse_task(xmlNode *task_node, Recipe *recipe, GError **error) {
                     "Task %s has ", task->task_id);
             goto error;
         }
-        /* Task param can override max_time */
-        g_list_foreach (task->params, (GFunc) check_param_max_time, task);
     }
 
     xmlNode *roles_node = first_child_with_name(task_node, "roles", FALSE);

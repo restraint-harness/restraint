@@ -32,6 +32,8 @@ typedef struct {
     gint64 max_time;
     /* The task can request that no localwatchdog be used. Used for reservesys task */
     gboolean nolocalwatchdog;
+    /* Use pty when running task */
+    gboolean use_pty;
 } MetaData;
 
 typedef void (*metadata_cb) (gpointer user_data, GError *error);

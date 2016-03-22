@@ -178,6 +178,17 @@ restraint_parse_metadata (gchar *filename,
     }
     g_clear_error (&tmp_error);
 
+    metadata->use_pty = g_key_file_get_boolean (keyfile,
+                                                "restraint",
+                                                "use_pty",
+                                                &tmp_error);
+
+    if (tmp_error && tmp_error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND) {
+        g_propagate_error(error, tmp_error);
+        goto error;
+    }
+    g_clear_error (&tmp_error);
+
     g_key_file_free(keyfile);
 
     return metadata;
@@ -213,6 +224,14 @@ static void parse_line(MetaData *metadata,
         metadata->max_time = time;
     } else if(g_strcmp0("NAME", key) == 0) {
         metadata->name = g_strdup(g_strstrip(value));
+    } else if(g_strcmp0("USE_PTY", key) == 0) {
+        gchar *uvalue = g_ascii_strup(value, -1);
+        if (g_strcmp0("TRUE", uvalue) == 0) {
+            metadata->use_pty = TRUE;
+        } else {
+            metadata->use_pty = FALSE;
+        }
+        g_free(uvalue);
     } else if(g_strcmp0("REQUIRES", key) == 0) {
         gchar **dependencies = g_strsplit_set (value,", ", -1);
         gchar **dependency = dependencies;
@@ -442,7 +461,7 @@ gboolean restraint_get_metadata(char *path, char *osmajor, MetaData **metadata,
         mtdata->finish_cb = finish_cb;
         mtdata->user_data = user_data;
 
-        process_run(command, NULL, path, 0, NULL, mktinfo_cb, cancellable,
+        process_run(command, NULL, path, FALSE, 0, NULL, mktinfo_cb, cancellable,
                     mtdata);
     }
 

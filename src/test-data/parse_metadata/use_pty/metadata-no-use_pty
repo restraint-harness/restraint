@@ -1,0 +1,11 @@
+[General]
+name=/restraint/true
+owner=Amit Saha  <asaha@redhat.com>
+description=just return zero
+license=GPLv2
+confidential=no
+destructive=no
+
+[restraint]
+entry_point=./runtest.sh
+max_time=5m

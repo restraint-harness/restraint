@@ -285,6 +285,7 @@ server_msg_complete (SoupSession *session, SoupMessage *server_msg, gpointer use
             process_run ((const gchar *) command,
                          (const gchar **) task->env->pdata,
                          "/usr/share/restraint/plugins",
+                         FALSE,
                          0,
                          server_io_callback,
                          plugin_finish_callback,

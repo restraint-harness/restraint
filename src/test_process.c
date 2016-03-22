@@ -86,6 +86,7 @@ static void test_process_success(void) {
     process_run (command,
                  NULL,
                  NULL,
+                 FALSE,
                  0,
                  NULL,
                  test_process_finish_cb,
@@ -112,6 +113,7 @@ static void test_process_failure(void) {
     process_run (command,
                  NULL,
                  NULL,
+                 FALSE,
                  0,
                  NULL,
                  test_process_finish_cb,
@@ -140,6 +142,7 @@ static void test_watchdog_success(void) {
     process_run (command,
                  NULL,
                  NULL,
+                 FALSE,
                  maximumtime,
                  NULL,
                  test_process_finish_cb,
@@ -170,6 +173,7 @@ static void test_watchdog_failure(void) {
     process_run (command,
                  NULL,
                  NULL,
+                 FALSE,
                  maximumtime,
                  NULL,
                  test_process_finish_cb,
@@ -201,7 +205,7 @@ static void test_no_hang(void) {
     // Watchdog fail to command time > max time
     const guint64 maximumtime = 60;
     const gchar *command = "hang_test";
-    gchar *expected = "hang_test\r\nfoo\r\nbar\r\n";
+    gchar *expected = "use_pty:FALSE hang_test\nfoo\nbar\n";
     GString *output = g_string_new(NULL);
     gchar **outsplit = NULL;
 
@@ -212,6 +216,7 @@ static void test_no_hang(void) {
     process_run (command,
                  NULL,
                  NULL,
+                 FALSE,
                  maximumtime,
                  test_process_io_cb,
                  test_process_finish_cb,
@@ -227,12 +232,12 @@ static void test_no_hang(void) {
     g_assert_no_error (run_data->error);
     g_clear_error (&run_data->error);
     g_source_remove(toid);
-    outsplit = g_strsplit(run_data->output->str, "\r\n", -1);
+    outsplit = g_strsplit(run_data->output->str, "\n", -1);
     for (guint32 i = 0; i < g_strv_length(outsplit); i++) {
         gchar *line = outsplit[i];
         if (g_strcmp0(line, "") != 0 && strncmp(line,
                 "Initializing built-in extension", 31) != 0) {
-            g_string_append_printf(output, "%s\r\n", line);
+            g_string_append_printf(output, "%s\n", line);
         }
     }
     g_strfreev(outsplit);
@@ -245,6 +250,73 @@ static void test_no_hang(void) {
     g_slice_free (RunData, run_data);
 }
 
+static void test_use_pty(void) {
+    RunData *run_data;
+    // Watchdog fail to command time > max time
+    const guint64 maximumtime = 60;
+    const gchar *command = "is_tty";
+    gchar *expected = "use_pty:TRUE is_tty\r\nTrue\r\n";
+
+    run_data = g_slice_new0 (RunData);
+    run_data->loop = g_main_loop_new (NULL, TRUE);
+    run_data->output = g_string_new (NULL);
+
+    process_run (command,
+                 NULL,
+                 NULL,
+                 TRUE,
+                 maximumtime,
+                 test_process_io_cb,
+                 test_process_finish_cb,
+                 NULL,
+                 run_data);
+
+    // run event loop while process is running.
+    g_main_loop_run (run_data->loop);
+
+    // process finished, check our results.
+    g_assert_no_error (run_data->error);
+    g_clear_error (&run_data->error);
+    g_assert_cmpstr(run_data->output->str, == , expected);
+    g_string_free (run_data->output, TRUE);
+    g_assert (!run_data->localwatchdog);
+    g_assert_cmpint (run_data->pid_result, ==, 0);
+    g_slice_free (RunData, run_data);
+}
+
+static void test_dont_use_pty(void) {
+    RunData *run_data;
+    const guint64 maximumtime = 60;
+    const gchar *command = "is_tty";
+    gchar *expected = "use_pty:FALSE is_tty\nFalse\n";
+
+    run_data = g_slice_new0 (RunData);
+    run_data->loop = g_main_loop_new (NULL, TRUE);
+    run_data->output = g_string_new (NULL);
+
+    process_run (command,
+                 NULL,
+                 NULL,
+                 FALSE,
+                 maximumtime,
+                 test_process_io_cb,
+                 test_process_finish_cb,
+                 NULL,
+                 run_data);
+
+    // run event loop while process is running.
+    g_main_loop_run (run_data->loop);
+
+    // process finished, check our results.
+    g_assert_no_error (run_data->error);
+    g_clear_error (&run_data->error);
+    g_assert_cmpstr(run_data->output->str, == , expected);
+    g_string_free (run_data->output, TRUE);
+    g_assert (!run_data->localwatchdog);
+    g_assert_cmpint (run_data->pid_result, !=, 0);
+    g_slice_free (RunData, run_data);
+}
+
 int main(int argc, char *argv[]) {
     g_test_init(&argc, &argv, NULL);
     g_test_add_func("/process/success", test_process_success);
@@ -252,5 +324,7 @@ int main(int argc, char *argv[]) {
     g_test_add_func("/process/watchdog_pass", test_watchdog_success);
     g_test_add_func("/process/watchdog_failure", test_watchdog_failure);
     g_test_add_func("/process/no_hang", test_no_hang);
+    g_test_add_func("/process/use_pty", test_use_pty);
+    g_test_add_func("/process/dont_use_pty", test_dont_use_pty);
     return g_test_run();
 }
