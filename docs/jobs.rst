@@ -105,4 +105,8 @@ The parameter RSTRNT_MAX_TIME allows you to specify a different max time than wh
 is specified in the tasks metadata.  Setting KILLTIMEOVERRIDE also has the same
 affect and is provided for compatibility with legacy RHTS.
 
+The parameter RSTRNT_USE_PTY allows you to either enable or disable using a pty for
+task execution.  Use TRUE to enable and FALSE to disable.  Setting this value here
+will override the settings in metadata or testinfo.desc.
+
 .. [#] `Beaker Job XML <http://beaker-project.org/docs/user-guide/job-xml.html>`_.

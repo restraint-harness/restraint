@@ -25,6 +25,7 @@ for that file is a simple ini file which most people should be familiar with.
  entry_point=./runtest.sh
  max_time=5m
  dependencies=gcc;emacs
+ use_pty=False
 
 The "General" section is mostly used for informational purposes.  The only element
 that restraint will read from here is the name attribute.  If defined this will over write
@@ -94,6 +95,19 @@ valid values.
 
  no_localwatchdog=true
 
+use_pty
+~~~~~~~
+
+Before version 0.1.24 restraint would execute all tasks from a pty.  This meant that programs
+thought they were running in an interactive terminal and might produce ansi codes for coloring
+and line postioning.  Now the default is not to use a pty which will give much cleaner output. 
+If you find your test is failing because it expects a tty you can enable the old behavior by
+setting this.
+
+::
+
+use_pty=True
+
 OSMajor Specific options
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -126,6 +140,7 @@ restraint parses:
  * Name - Same as [General] name
  * TestTime - Same as [restraint] max_time
  * Requires - Same as [restraint] dependencies
+ * USE_PTY - Same as [restraint] use_pty
 
 Please see the beaker documentation for how to populate these fields.
 

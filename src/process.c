@@ -16,6 +16,7 @@
 */
 
 #include <glib.h>
+#include <glib/gstdio.h>
 #include <stdlib.h>
 #include <errno.h>
 #include <sys/types.h>
@@ -71,10 +72,68 @@ process_io_cb (GIOChannel *io, GIOCondition condition, gpointer user_data)
     return process_data->io_callback (io, condition, process_data->user_data);
 }
 
+pid_t
+restraint_fork (gint *fd,
+         gboolean use_pty)
+{
+    pid_t pid = 0;
+    gint pipefd[2];
+    gint devnull;
+
+    //struct termios term;
+    struct winsize win = {
+        .ws_col = 80, .ws_row = 24,
+        .ws_xpixel = 480, .ws_ypixel = 192,
+    };
+
+    if (use_pty) {
+        pid = forkpty (fd, NULL, NULL, &win);
+    } else {
+        if (pipe(pipefd) == -1) {
+            return -1;
+       }
+       pid = fork();
+       if (pid == -1) {
+           return -1;
+       }
+       if (pid == 0) {
+           // close reading side of pipe.
+           close (pipefd[STDIN_FILENO]);
+
+           // explicitly set /dev/null as STDIN fd
+           devnull = g_open("/dev/null", O_RDONLY, 0);
+           if (dup2(devnull, STDIN_FILENO) == -1) {
+               // Handle dup2() error
+               g_warning ("dup2 STDIN failed: %s\n", g_strerror (errno));
+           }
+           g_close(devnull, NULL);
+
+           // Dupe both STDOUT and STDERR to write side of pipe
+           if (dup2(pipefd[STDOUT_FILENO], STDOUT_FILENO) == -1) {
+               /* Handle dup2() error */
+               g_warning ("dup2 STDOUT failed: %s\n", g_strerror (errno));
+           }
+           if (dup2(pipefd[STDOUT_FILENO], STDERR_FILENO) == -1) {
+               /* Handle dup2() error */
+               g_warning ("dup2 STDERR failed: %s\n", g_strerror (errno));
+           }
+           // close the duped pipe
+           close (pipefd[STDOUT_FILENO]);
+       } else {
+           // close writing side of pipe.
+           close (pipefd[STDOUT_FILENO]);
+           *fd = pipefd[STDIN_FILENO];
+       }
+    }
+
+    return pid;
+}
+
 void
 process_run (const gchar *command,
              const gchar **envp,
              const gchar *path,
+             gboolean use_pty,
              guint64 max_time,
              GIOFunc io_callback,
              ProcessFinishCallback finish_callback,
@@ -82,12 +141,6 @@ process_run (const gchar *command,
              gpointer user_data)
 {
     ProcessData *process_data;
-    //struct termios term;
-    struct winsize win = {
-        .ws_col = 80, .ws_row = 24,
-        .ws_xpixel = 480, .ws_ypixel = 192,
-    };
-
     process_data = g_slice_new0 (ProcessData);
     process_data->localwatchdog = FALSE;
     process_data->command = g_strsplit (command, " ", 0);
@@ -104,7 +157,7 @@ process_run (const gchar *command,
     if (fflush (stderr) != 0)
         g_warning ("Failed to flush stderr: %s\n", g_strerror (errno));
 
-    process_data->pid = forkpty (&process_data->fd, NULL, NULL, &win);
+    process_data->pid = restraint_fork (&process_data->fd, use_pty);
     if (process_data->pid < 0) {
         /* Failed to fork */
         g_set_error (&process_data->error, RESTRAINT_PROCESS_ERROR,
@@ -131,7 +184,7 @@ process_run (const gchar *command,
 
         // Print the command being executed.
         gchar *pcommand = g_strjoinv (" ", (gchar **) process_data->command);
-        g_print ("%s\n", pcommand);
+        g_print ("use_pty:%s %s\n", use_pty ? "TRUE" : "FALSE", pcommand);
         g_free (pcommand);
 
         /* Spawn the command */
