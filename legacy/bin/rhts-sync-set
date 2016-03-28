@@ -63,7 +63,8 @@ if [ -z "$state" ]; then
     usage
 fi
 basename=$(basename -- $0)
-if [ "$basename" = "rhts-sync-set" ]; then
+if [ "$basename" = "rhts-sync-set" -o \
+     "$basename" = "rhts_sync_set" ]; then
     XTRA="${TASKORDER}"
 fi
 echo $command

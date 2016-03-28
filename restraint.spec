@@ -177,7 +177,11 @@ ln -s rstrnt-backup $RPM_BUILD_ROOT/usr/bin/rhts-backup
 ln -s rstrnt-restore $RPM_BUILD_ROOT/usr/bin/rhts-restore
 ln -s rstrnt-reboot $RPM_BUILD_ROOT/usr/bin/rhts-reboot
 ln -s rhts-sync-set $RPM_BUILD_ROOT/usr/bin/rhts-recipe-sync-set
+ln -s rhts-sync-set $RPM_BUILD_ROOT/usr/bin/rhts_recipe_sync_set
+ln -s rhts-sync-set $RPM_BUILD_ROOT/usr/bin/rhts_sync_set
 ln -s rhts-sync-block $RPM_BUILD_ROOT/usr/bin/rhts-recipe-sync-block
+ln -s rhts-sync-block $RPM_BUILD_ROOT/usr/bin/rhts_recipe_sync_block
+ln -s rhts-sync-block $RPM_BUILD_ROOT/usr/bin/rhts_sync_block
 ln -s rstrnt-abort $RPM_BUILD_ROOT/usr/bin/rhts-abort
 mkdir -p $RPM_BUILD_ROOT/mnt/scratchspace
 mkdir -p $RPM_BUILD_ROOT/mnt/testarea
@@ -309,18 +313,21 @@ fi
 %attr(0755, root, root)%{_bindir}/rhts-run-simple-test
 %attr(0755, root, root)%{_bindir}/rhts-lint
 %attr(0755, root, root)%{_bindir}/rhts-sync-set
+%attr(0755, root, root)%{_bindir}/rhts_sync_set
 %attr(0755, root, root)%{_bindir}/rhts-sync-block
-
-%{_bindir}/rhts_environment.sh
-%{_bindir}/rhts-reboot
-%{_bindir}/rhts-report-result
-%{_bindir}/rhts-submit-log
-%{_bindir}/rhts_submit_log
-%{_bindir}/rhts-backup
-%{_bindir}/rhts-restore
-%{_bindir}/rhts-recipe-sync-set
-%{_bindir}/rhts-recipe-sync-block
-%{_bindir}/rhts-abort
+%attr(0755, root, root)%{_bindir}/rhts_sync_block
+%attr(0755, root, root)%{_bindir}/rhts_environment.sh
+%attr(0755, root, root)%{_bindir}/rhts-reboot
+%attr(0755, root, root)%{_bindir}/rhts-report-result
+%attr(0755, root, root)%{_bindir}/rhts-submit-log
+%attr(0755, root, root)%{_bindir}/rhts_submit_log
+%attr(0755, root, root)%{_bindir}/rhts-backup
+%attr(0755, root, root)%{_bindir}/rhts-restore
+%attr(0755, root, root)%{_bindir}/rhts-recipe-sync-set
+%attr(0755, root, root)%{_bindir}/rhts_recipe_sync_set
+%attr(0755, root, root)%{_bindir}/rhts-recipe-sync-block
+%attr(0755, root, root)%{_bindir}/rhts_recipe_sync_block
+%attr(0755, root, root)%{_bindir}/rhts-abort
 
 %{_datadir}/rhts/lib/rhts-make.include
 /mnt/scratchspace
