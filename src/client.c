@@ -107,12 +107,14 @@ static void
 init_result_hash (AppData *app_data)
 {
     static gint none = 0;
-    static gint pass = 1;
-    static gint warn = 2;
-    static gint fail = 3;
+    static gint skip = 1;
+    static gint pass = 2;
+    static gint warn = 3;
+    static gint fail = 4;
 
     app_data->result_states_to = g_hash_table_new(g_str_hash, g_str_equal);
     g_hash_table_insert(app_data->result_states_to, "NONE", &none);
+    g_hash_table_insert(app_data->result_states_to, "SKIPPED", &skip);
     g_hash_table_insert(app_data->result_states_to, "PASS", &pass);
     g_hash_table_insert(app_data->result_states_to, "WARN", &warn);
     g_hash_table_insert(app_data->result_states_to, "FAIL", &fail);
@@ -874,7 +876,8 @@ recipe_finish(RecipeData *recipe_data)
         }
         xmlFree(status);
         xmlChar *result = xmlGetNoNsProp (task_node, (xmlChar *)"result");
-        if (g_strcmp0 ((gchar *) result, "PASS") != 0 && !app_data->error) {
+        if (g_strcmp0 ((gchar *) result, "PASS") != 0 && 
+            g_strcmp0 ((gchar *) result, "SKIPPED") != 0 && !app_data->error) {
             g_set_error (&app_data->error, RESTRAINT_ERROR,
                          RESTRAINT_TASK_RUNNER_RESULT_ERROR,
                          "One or more tasks failed");

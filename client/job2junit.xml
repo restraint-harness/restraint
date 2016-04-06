@@ -17,8 +17,9 @@
    <xsl:attribute name="id"><xsl:value-of select="@id"/></xsl:attribute>
    <xsl:attribute name="name"><xsl:value-of select="@whiteboard"/></xsl:attribute>
    <xsl:attribute name="tests"><xsl:value-of select="count(task) + count(task/results/result)"/></xsl:attribute>
-   <xsl:attribute name="failures"><xsl:value-of select="count(task[@status='Aborted'])"/></xsl:attribute>
-   <xsl:attribute name="errors"><xsl:value-of select="count(task[@result='FAIL' or @result='Fail']) + count(task/results/result[@result='FAIL' or @result='Fail'])"/></xsl:attribute>
+   <xsl:attribute name="errors"><xsl:value-of select="count(task[@status='Aborted'])"/></xsl:attribute>
+   <xsl:attribute name="skipped"><xsl:value-of select="count(task[@result='SKIPPED' or @result='Skipped']) + count(task/results/result[@result='SKIPPED' or @result='Skipped'])"/></xsl:attribute>
+   <xsl:attribute name="failures"><xsl:value-of select="count(task[@result='FAIL' or @result='Fail']) + count(task/results/result[@result='FAIL' or @result='Fail'])"/></xsl:attribute>
    <xsl:apply-templates select="task"/>
   </testsuite>
  </xsl:template>
@@ -55,12 +56,15 @@
        <xsl:when test="current() = $last">
         <xsl:choose>
          <xsl:when test="$status = 'Aborted'">
-          <failure type="{$status}">
+          <error type="{$status}">
            <xsl:attribute name="message">
             <xsl:value-of select="message"/>
            </xsl:attribute>
            <xsl:call-template name="logs"/>
-          </failure>
+          </error>
+         </xsl:when>
+         <xsl:when test="@result = 'SKIPPED' or @result = 'Skipped'">
+          <skipped/>
          </xsl:when>
          <xsl:when test="@result = 'FAIL' or @result = 'WARN' or @result = 'Fail' or @result = 'Warn'">
           <error>
@@ -79,13 +83,16 @@
        </xsl:when>
        <xsl:otherwise>
         <xsl:choose>
+         <xsl:when test="@result = 'SKIPPED' or @result = 'Skipped'">
+          <skipped/>
+         </xsl:when>
          <xsl:when test="@result = 'FAIL' or @result = 'WARN' or @result = 'Fail' or @result = 'Warn'">
-          <error>
+          <failure>
            <xsl:attribute name="message">
             <xsl:value-of select="message"/>
            </xsl:attribute>
             <xsl:call-template name="logs"/>
-          </error>
+          </failure>
          </xsl:when>
          <xsl:otherwise>
           <system-out>
