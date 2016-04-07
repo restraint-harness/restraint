@@ -1560,15 +1560,26 @@ int main(int argc, char *argv[]) {
                                             NULL);
 
     if (app_data->run_dir && app_data->port) {
-        g_printerr ("You can't specify both run_dir and port\n");
-        g_printerr ("Try %s --help\n", argv[0]);
+        if (app_data->error == NULL) {
+            g_set_error(&app_data->error, RESTRAINT_ERROR,
+                        RESTRAINT_CMDLINE_ERROR,
+                        "You can't specify both run_dir and port\n"
+                        "Try %s --help", argv[0]);
+        }
         goto cleanup;
     }
 
     guint recipe_id = 1;
-    for (int i = 0; i < g_strv_length(hostarr); i++) {
-        if (!add_recipe_host(hostarr[i], app_data, &recipe_id)) {
-            goto cleanup;
+    if (hostarr != NULL) {
+        for (int i = 0; i < g_strv_length(hostarr); i++) {
+            if (!add_recipe_host(hostarr[i], app_data, &recipe_id)) {
+                if (app_data->error == NULL) {
+                    g_set_error(&app_data->error, RESTRAINT_ERROR,
+                                RESTRAINT_CMDLINE_ERROR,
+                                "Failed to add recipe host.");
+                }
+                goto cleanup;
+            }
         }
     }
 
@@ -1577,7 +1588,12 @@ int main(int argc, char *argv[]) {
         app_data->run_dir = copy_job_as_template(job, novalid, app_data);
     }
     if (!parse_succeeded || !app_data->run_dir) {
-        g_printerr("Try %s --help\n", argv[0]);
+        if (app_data->error == NULL) {
+            g_set_error(&app_data->error, RESTRAINT_ERROR,
+                        RESTRAINT_CMDLINE_ERROR,
+                        "Failed to parse commandline.\n"
+                        "Try %s --help", argv[0]);
+        }
         goto cleanup;
     }
 
