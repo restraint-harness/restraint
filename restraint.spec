@@ -172,7 +172,6 @@ make DESTDIR=%{buildroot} -C legacy install
 ln -s rhts-environment.sh $RPM_BUILD_ROOT/usr/bin/rhts_environment.sh
 ln -s rstrnt-report-log $RPM_BUILD_ROOT/usr/bin/rhts-submit-log
 ln -s rstrnt-report-log $RPM_BUILD_ROOT/usr/bin/rhts_submit_log
-ln -s rstrnt-report-result $RPM_BUILD_ROOT/usr/bin/rhts-report-result
 ln -s rstrnt-backup $RPM_BUILD_ROOT/usr/bin/rhts-backup
 ln -s rstrnt-restore $RPM_BUILD_ROOT/usr/bin/rhts-restore
 ln -s rstrnt-reboot $RPM_BUILD_ROOT/usr/bin/rhts-reboot
