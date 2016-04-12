@@ -1,0 +1,5 @@
+#!/bin/bash
+
+#wrapper to handle rhts-report-result arg order
+
+rstrnt-report-result --outputfile="$3" "$1" "$2" "$4"
