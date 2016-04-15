@@ -9,7 +9,7 @@ LIBARCHIVE = libarchive-3.1.2
 XZ = xz-5.0.4
 LIBSOUP = libsoup-2.48.1
 CMAKE = cmake-3.2.3
-LIBSSH = libssh-0.7.0
+LIBSSH = libssh-0.7.3
 OPENSSL = openssl-1.0.1m
 SQLITE = sqlite-autoconf-3080002
 INTLTOOL = intltool-0.35.5
@@ -233,7 +233,6 @@ $(LIBXML2)/.patches-done: $(LIBXML2)
 
 $(LIBSSH)/.patches-done: $(LIBSSH)
 	patch -d$(LIBSSH) -p1 <libssh_noshared.patch
-	patch -d$(LIBSSH) -p1 <libssh_openssl_path.patch
 	touch $@
 
 .PHONY: clean

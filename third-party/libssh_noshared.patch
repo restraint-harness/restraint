@@ -1,8 +1,8 @@
-Index: libssh-0.7.0/CMakeLists.txt
+Index: b/CMakeLists.txt
 ===================================================================
---- libssh-0.7.0.orig/CMakeLists.txt
-+++ libssh-0.7.0/CMakeLists.txt
-@@ -139,6 +139,7 @@ message(STATUS "Server support : ${WITH_
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -153,6 +153,7 @@ message(STATUS "Server support : ${WITH_
  message(STATUS "GSSAPI support : ${WITH_GSSAPI}")
  message(STATUS "Pcap debugging support : ${WITH_PCAP}")
  message(STATUS "With static library: ${WITH_STATIC_LIB}")
@@ -10,10 +10,10 @@ Index: libssh-0.7.0/CMakeLists.txt
  message(STATUS "Unit testing: ${WITH_TESTING}")
  message(STATUS "Client code Unit testing: ${WITH_CLIENT_TESTING}")
  if (WITH_INTERNAL_DOC)
-Index: libssh-0.7.0/DefineOptions.cmake
+Index: b/DefineOptions.cmake
 ===================================================================
---- libssh-0.7.0.orig/DefineOptions.cmake
-+++ libssh-0.7.0/DefineOptions.cmake
+--- a/DefineOptions.cmake
++++ b/DefineOptions.cmake
 @@ -4,6 +4,7 @@ option(WITH_SSH1 "Build with SSH1 suppor
  option(WITH_SFTP "Build with SFTP support" ON)
  option(WITH_SERVER "Build with SSH server support" ON)
@@ -33,10 +33,10 @@ Index: libssh-0.7.0/DefineOptions.cmake
 +if (WITHOUT_SHARED_LIB)
 +  set(WITH_EXAMPLES OFF)
 +endif (WITHOUT_SHARED_LIB)
-Index: libssh-0.7.0/src/CMakeLists.txt
+Index: b/src/CMakeLists.txt
 ===================================================================
---- libssh-0.7.0.orig/src/CMakeLists.txt
-+++ libssh-0.7.0/src/CMakeLists.txt
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
 @@ -92,10 +92,12 @@ set(LIBSSH_LINK_LIBRARIES
    CACHE INTERNAL "libssh link libraries"
  )
@@ -128,10 +128,10 @@ Index: libssh-0.7.0/src/CMakeLists.txt
  
  if (WITH_STATIC_LIB)
    add_library(${LIBSSH_STATIC_LIBRARY} STATIC ${libssh_SRCS})
-Index: libssh-0.7.0/src/threads/CMakeLists.txt
+Index: b/src/threads/CMakeLists.txt
 ===================================================================
---- libssh-0.7.0.orig/src/threads/CMakeLists.txt
-+++ libssh-0.7.0/src/threads/CMakeLists.txt
+--- a/src/threads/CMakeLists.txt
++++ b/src/threads/CMakeLists.txt
 @@ -11,10 +11,12 @@ set(LIBSSH_THREADS_PRIVATE_INCLUDE_DIRS
      ${CMAKE_BINARY_DIR}
  )
@@ -162,12 +162,12 @@ Index: libssh-0.7.0/src/threads/CMakeLists.txt
 +  )
 +endif (NOT WITHOUT_SHARED_LIB)
  
- set(libssh_threads_SRCS
- )
-@@ -54,35 +58,37 @@ include_directories(
- )
+ message(STATUS "threads library: Threads_FOUND=${Threads_FOUND}")
  
+@@ -59,35 +63,37 @@ include_directories(
  if (libssh_threads_SRCS)
+     set(LIBSSH_THREADS ON CACHE "libssh threads lib" INTERNAL)
+ 
 -    add_library(${LIBSSH_THREADS_SHARED_LIBRARY} SHARED ${libssh_threads_SRCS})
 +    if (NOT WITHOUT_SHARED_LIB)
 +      add_library(${LIBSSH_THREADS_SHARED_LIBRARY} SHARED ${libssh_threads_SRCS})
