@@ -133,12 +133,16 @@ cp %{_sourcedir}/*.tar.* third-party/
 %endif
 
 %build
+export CFLAGS="$RPM_OPT_FLAGS"
+%if 0%{?rhel} == 4 || 0%{?rhel} == 5
 %ifarch i386
-export CFLAGS="-march=i486"
+# glib wants at least i486 for atomic instructions. RHEL6+ is already using i686.
+export CFLAGS="$RPM_OPT_FLAGS -march=i486"
+%endif
 %endif
 %if 0%{?rhel} == 4
 %ifarch ppc64
-export CFLAGS="-mminimal-toc"
+export CFLAGS="$RPM_OPT_FLAGS -mminimal-toc"
 %endif
 %endif
 
