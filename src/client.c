@@ -866,7 +866,7 @@ recipe_finish(RecipeData *recipe_data)
     xmlNodePtr task_node;
 
     g_hash_table_iter_init(&iter, recipe_data->tasks);
-    while (g_hash_table_iter_next(&iter, NULL, (gpointer *)&task_node)) {
+    while (g_hash_table_iter_next(&iter, NULL, (void *)&task_node)) {
         xmlChar *status = xmlGetNoNsProp(task_node, (xmlChar*)"status");
         if (g_strcmp0((gchar *) status, "New") == 0 ||
             g_strcmp0((gchar *) status, "Running") == 0) {
