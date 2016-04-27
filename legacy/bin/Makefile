@@ -1,4 +1,4 @@
-FILES := rhts-environment.sh rhts-run-simple-test rhts-lint rhts-sync-block rhts-sync-set rhts-report-result
+FILES := rhts-environment.sh rhts-run-simple-test rhts-lint rhts-sync-block rhts-sync-set rhts-report-result rhts-flush
 
 .PHONY: install
 install:
