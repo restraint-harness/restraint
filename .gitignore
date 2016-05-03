@@ -44,6 +44,7 @@
 /src/rstrnt-report-log
 /src/rstrnt-adjust-watchdog
 /src/rstrnt-abort
+/src/rstrnt-sync
 /src/*.o
 rel-eng/lib/*.pyc
 /docs/_build
