@@ -119,6 +119,7 @@ tree/lib/pkgconfig/libarchive.pc: $(LIBARCHIVE) $(LIBARCHIVE)/.patches-done \
 				  tree/lib/pkgconfig/liblzma.pc
 	( cd $(LIBARCHIVE) && PKG_CONFIG_PATH=../tree/lib/pkgconfig ./configure --prefix=$(CURDIR)/tree \
 	    --disable-bsdtar --disable-bsdcpio \
+	    --without-nettle \
 	    --enable-static --disable-shared )
 	$(MAKE) -C $(LIBARCHIVE)
 	$(MAKE) -C $(LIBARCHIVE) install
