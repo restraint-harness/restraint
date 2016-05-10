@@ -45,6 +45,10 @@
 #include "env.h"
 
 void
+restraint_task_result (Task *task, AppData *app_data, gchar *result,
+                       gint int_score, gchar *path, gchar *message);
+
+void
 archive_entry_callback (const gchar *entry, gpointer user_data)
 {
     AppData *app_data = (AppData *) user_data;
@@ -233,6 +237,11 @@ task_finish_callback (gint pid_result, gboolean localwatchdog, gpointer user_dat
     // Did the command Succeed?
     if (pid_result == 0) {
         task->state = task_run_data->pass_state;
+
+        // If not running in rhts compat mode report PASS for exit code 0
+        if (!task->rhts_compat) {
+            restraint_task_result(task, app_data, "PASS", 0, "exit_code", NULL);
+        }
     } else {
         task->state = task_run_data->fail_state;
 
@@ -246,9 +255,15 @@ task_finish_callback (gint pid_result, gboolean localwatchdog, gpointer user_dat
                             RESTRAINT_TASK_RUNNER_WATCHDOG_ERROR,
                             "Local watchdog expired!");
         } else {
-            g_set_error(&task->error, RESTRAINT_ERROR,
-                        RESTRAINT_TASK_RUNNER_RC_ERROR,
-                            "Command returned non-zero %i", pid_result);
+            // If not running in rhts compat mode report FAIL if exit code is not 0
+            if (!task->rhts_compat) {
+                restraint_task_result(task, app_data, "FAIL", pid_result, 
+                                      "exit_code", "Command returned non-zero");
+            } else {
+                g_set_error(&task->error, RESTRAINT_ERROR,
+                            RESTRAINT_TASK_RUNNER_RC_ERROR,
+                                "Command returned non-zero %i", pid_result);
+            }
         }
     }
 
@@ -490,6 +505,46 @@ task_message_complete (SoupSession *session, SoupMessage *msg, gpointer user_dat
                                                 task_handler,
                                                 app_data,
                                                 NULL);
+}
+
+void
+restraint_task_result (Task *task, AppData *app_data, gchar *result,
+                       gint int_score, gchar *path, gchar *message)
+{
+    g_return_if_fail(task != NULL);
+
+    gchar *score = g_strdup_printf("%d", int_score);
+    SoupURI *task_results_uri;
+    SoupMessage *server_msg;
+
+    task_results_uri = soup_uri_new_with_base(task->task_uri, "results/");
+    server_msg = soup_message_new_from_uri("POST", task_results_uri);
+
+    soup_uri_free(task_results_uri);
+    g_return_if_fail(server_msg != NULL);
+
+    gchar *data = NULL;
+    if (message == NULL) {
+        data = soup_form_encode("result", result,
+                                "path", path,
+                                "score", score, NULL);
+    } else {
+        data = soup_form_encode("result", result,
+                                "path", path,
+                                "score", score,
+                                "message", message, NULL);
+        g_message("%s task %s due to : %s", result, task->task_id, message);
+    }
+    g_free (score);
+    soup_message_set_request(server_msg, "application/x-www-form-urlencoded",
+            SOUP_MEMORY_TAKE, data, strlen(data));
+
+    app_data->queue_message(soup_session,
+                            server_msg,
+                            app_data->message_data,
+                            task_message_complete,
+                            app_data->cancellable,
+                            app_data);
 }
 
 void

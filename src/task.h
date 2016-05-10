@@ -123,7 +123,6 @@ void
 restraint_task_fetch(AppData *app_data);
 gboolean restraint_build_env(Task *task, GError **error);
 void restraint_task_status (Task *task, AppData *app_data, gchar *, GError *reason);
-void restraint_task_result (Task *task, gchar *result, guint score, gchar *path, gchar *message);
 void restraint_task_run(Task *task);
 void restraint_task_free(Task *task);
 void restraint_init_result_hash (AppData *app_data);
