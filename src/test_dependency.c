@@ -82,6 +82,58 @@ dependency_finish_cb (gpointer user_data, GError *error)
     }
 }
 
+static void test_soft_dependencies_success (void)
+{
+    RunData *run_data;
+    GSList *dependencies = NULL;
+    GSList *softdependencies = NULL;
+    softdependencies = g_slist_prepend (dependencies, "PackageA");
+    softdependencies = g_slist_prepend (softdependencies, "Packagefail");
+    softdependencies = g_slist_prepend (softdependencies, "PackageC");
+    gchar *expected = "use_pty:FALSE rstrnt-package install PackageC\ndummy yum: installing PackageC\nuse_pty:FALSE rstrnt-package install Packagefail\ndummy yum: fail\nuse_pty:FALSE rstrnt-package install PackageA\ndummy yum: installing PackageA\n";
+
+    run_data = g_slice_new0 (RunData);
+    run_data->loop = g_main_loop_new (NULL, TRUE);
+    run_data->output = g_string_new (NULL);
+
+    Task *task = g_slice_new0(Task);
+    task->fetch_method = TASK_FETCH_UNPACK;
+    task->metadata = g_slice_new(MetaData);
+    task->metadata->dependencies = dependencies;
+    task->metadata->softdependencies = softdependencies;
+    task->metadata->repodeps = NULL;
+    task->fetch.url = restraint_parse_url("git://localhost/repo1?master#restraint/sanity/fetch_git");
+    task->rhts_compat = FALSE;
+    task->name = "restraint/sanity/fetch_git";
+    task->recipe = g_slice_new0(Recipe);
+    task->recipe->base_path = g_dir_make_tmp("test_repodep_git_XXXXXX", NULL);
+
+    restraint_install_dependencies (task,
+                                    dependency_io_cb,
+                                    NULL,
+                                    dependency_finish_cb,
+                                    NULL,
+                                    run_data);
+
+    // run event loop while process is running.
+    g_main_loop_run (run_data->loop);
+
+    // process finished, check our results.
+    g_assert_no_error (run_data->error);
+    g_clear_error (&run_data->error);
+    g_assert_cmpstr(run_data->output->str, == , expected);
+    g_string_free (run_data->output, TRUE);
+    g_slice_free (RunData, run_data);
+    g_slist_free (softdependencies);
+
+    restraint_free_url(task->fetch.url);
+    g_remove (task->recipe->base_path);
+    g_free (task->recipe->base_path);
+    g_slice_free(Recipe, task->recipe);
+    g_slice_free(MetaData, task->metadata);
+    g_slice_free(Task, task);
+}
+
 static void test_dependencies_success (void)
 {
     RunData *run_data;
@@ -99,6 +151,7 @@ static void test_dependencies_success (void)
     task->fetch_method = TASK_FETCH_UNPACK;
     task->metadata = g_slice_new(MetaData);
     task->metadata->dependencies = dependencies;
+    task->metadata->softdependencies = NULL;
     task->metadata->repodeps = NULL;
     task->fetch.url = restraint_parse_url("git://localhost/repo1?master#restraint/sanity/fetch_git");
     task->rhts_compat = FALSE;
@@ -149,6 +202,7 @@ static void test_dependencies_fail (void)
     task->fetch_method = TASK_FETCH_UNPACK;
     task->metadata = g_slice_new(MetaData);
     task->metadata->dependencies = dependencies;
+    task->metadata->softdependencies = NULL;
     task->metadata->repodeps = NULL;
     task->fetch.url = restraint_parse_url("git://localhost/repo1?master#restraint/sanity/fetch_git");
     task->rhts_compat = FALSE;
@@ -199,6 +253,7 @@ static void test_dependencies_ignore_fail (void)
     task->fetch_method = TASK_FETCH_UNPACK;
     task->metadata = g_slice_new(MetaData);
     task->metadata->dependencies = dependencies;
+    task->metadata->softdependencies = NULL;
     task->metadata->repodeps = NULL;
     task->fetch.url = restraint_parse_url("git://localhost/repo1?master#restraint/sanity/fetch_git");
     task->rhts_compat = TRUE;
@@ -246,6 +301,7 @@ static void test_git_repodeps_success (void)
     task->fetch_method = TASK_FETCH_UNPACK;
     task->metadata = g_slice_new(MetaData);
     task->metadata->dependencies = NULL;
+    task->metadata->softdependencies = NULL;
     task->metadata->repodeps = repodeps;
     task->fetch.url = restraint_parse_url("git://localhost/repo1?master#restraint/sanity/fake");
     task->rhts_compat = FALSE;
@@ -320,6 +376,7 @@ static void test_git_repodeps_fail (void)
     task->fetch_method = TASK_FETCH_UNPACK;
     task->metadata = g_slice_new(MetaData);
     task->metadata->dependencies = NULL;
+    task->metadata->softdependencies = NULL;
     task->metadata->repodeps = repodeps;
     task->fetch.url = restraint_parse_url("git://localhost/repo1?master#restraint/sanity/fake");
     task->rhts_compat = FALSE;
@@ -364,6 +421,7 @@ static void test_http_repodeps_success (void)
     task->fetch_method = TASK_FETCH_UNPACK;
     task->metadata = g_slice_new(MetaData);
     task->metadata->dependencies = NULL;
+    task->metadata->softdependencies = NULL;
     task->metadata->repodeps = repodeps;
     task->fetch.url = restraint_parse_url("http://localhost:8000/fetch_http.tgz#restraint/sanity/fake");
     task->rhts_compat = FALSE;
@@ -482,6 +540,7 @@ static void test_git_rec_repodeps_success (void)
     task->fetch_method = TASK_FETCH_UNPACK;
     task->metadata = g_slice_new(MetaData);
     task->metadata->dependencies = NULL;
+    task->metadata->softdependencies = NULL;
     task->metadata->repodeps = repodeps;
     task->fetch.url = restraint_parse_url("git://localhost/repo1?master#restraint/sanity/fake");
     task->rhts_compat = FALSE;
@@ -586,6 +645,7 @@ static void test_git_rec_repodeps_fail (void)
     task->fetch_method = TASK_FETCH_UNPACK;
     task->metadata = g_slice_new(MetaData);
     task->metadata->dependencies = NULL;
+    task->metadata->softdependencies = NULL;
     task->metadata->repodeps = repodeps;
     task->fetch.url = restraint_parse_url("git://localhost/repo1?master#restraint/sanity/fake");
     task->rhts_compat = FALSE;
@@ -632,6 +692,7 @@ static void test_http_rec_repodeps_success (void)
     task->fetch_method = TASK_FETCH_UNPACK;
     task->metadata = g_slice_new(MetaData);
     task->metadata->dependencies = NULL;
+    task->metadata->softdependencies = NULL;
     task->metadata->repodeps = repodeps;
     task->fetch.url = restraint_parse_url("http://localhost:8000/fetch_http.tgz#restraint/sanity/fake");
     task->rhts_compat = FALSE;
@@ -736,6 +797,7 @@ static void test_http_rec_repodeps_fail (void)
     task->fetch_method = TASK_FETCH_UNPACK;
     task->metadata = g_slice_new(MetaData);
     task->metadata->dependencies = NULL;
+    task->metadata->softdependencies = NULL;
     task->metadata->repodeps = repodeps;
     task->fetch.url = restraint_parse_url("http://localhost:8000/fetch_http.tgz#restraint/sanity/fake");
     task->rhts_compat = FALSE;
@@ -774,6 +836,7 @@ int main(int argc, char *argv[]) {
     g_test_add_func("/dependencies/success", test_dependencies_success);
     g_test_add_func("/dependencies/failure", test_dependencies_fail);
     g_test_add_func("/dependencies/ignore_failure", test_dependencies_ignore_fail);
+    g_test_add_func("/softdependencies/success", test_soft_dependencies_success);
     g_test_add_func("/repodeps/git/success", test_git_repodeps_success);
     g_test_add_func("/repodeps/git/fail", test_git_repodeps_fail);
     g_test_add_func("/repodeps/http/success", test_http_repodeps_success);

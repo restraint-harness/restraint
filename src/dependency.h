@@ -27,11 +27,13 @@ typedef enum {
     DEPENDENCY_REPO,
     DEPENDENCY_RPM,
     DEPENDENCY_SINGLE_RPM,
+    DEPENDENCY_SOFT_RPM,
     DEPENDENCY_DONE
 } DependencyState;
 
 typedef struct {
     GSList *dependencies;
+    GSList *softdependencies;
     GSList *repodeps;
     GSList *processed_deps;
     struct restraint_url *fetch_url;

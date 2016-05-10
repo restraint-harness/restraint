@@ -191,7 +191,7 @@ static void dependency_batch_install_cb(gint pid_result,
 
             dependency_data->dependencies = NULL;
 
-            dependency_data->state = DEPENDENCY_DONE;
+            dependency_data->state = DEPENDENCY_SOFT_RPM;
             dependency_handler(dependency_data);
         }
     }
@@ -238,7 +238,31 @@ dependency_batch_rpms(DependencyData *dependency_data)
         } else {
             g_string_free(dependency_data->install_rpms, TRUE);
             dependency_data->install_rpms = NULL;
+            dependency_batch_rpms(dependency_data);
         }
+    } else {
+        dependency_data->state = DEPENDENCY_SOFT_RPM;
+        dependency_handler(dependency_data);
+    }
+}
+
+static void
+softdependency_callback (gint pid_result, gboolean localwatchdog, gpointer user_data, GError *error)
+{
+    DependencyData *dependency_data = (DependencyData *) user_data;
+
+    g_cancellable_set_error_if_cancelled (dependency_data->cancellable, &error);
+
+    if (error) {
+        if (dependency_data->finish_cb) {
+            dependency_data->finish_cb (dependency_data->user_data, error);
+        }
+
+        g_slist_free_full(dependency_data->processed_deps, g_free);
+        g_slice_free (DependencyData, dependency_data);
+    } else {
+        dependency_data->softdependencies = dependency_data->softdependencies->next;
+        dependency_handler (dependency_data);
     }
 }
 
@@ -263,6 +287,39 @@ dependency_rpm(DependencyData *dependency_data)
         }
 
         dependency_batch_rpms(dependency_data);
+    } else {
+        // no more packages to install/remove
+        // move on to next stage.
+        dependency_data->state = DEPENDENCY_SOFT_RPM;
+        dependency_handler(dependency_data);
+    }
+    g_clear_error (&error);
+
+}
+
+static void
+dependency_soft_rpm(DependencyData *dependency_data)
+{
+    GError *error = NULL;
+
+    if (dependency_data->softdependencies) {
+        gchar *package_name = dependency_data->softdependencies->data;
+        gchar *command;
+        if (g_str_has_prefix (package_name, "-") == TRUE) {
+            command = g_strdup_printf ("rstrnt-package remove %s", &package_name[1]);
+        } else {
+            command = g_strdup_printf ("rstrnt-package install %s", package_name);
+        }
+        process_run ((const gchar *)command,
+                     NULL,
+                     NULL,
+                     FALSE,
+                     0,
+                     dependency_io_callback,
+                     softdependency_callback,
+                     dependency_data->cancellable,
+                     dependency_data);
+        g_free (command);
     } else {
         // no more packages to install/remove
         // move on to next stage.
@@ -300,7 +357,7 @@ dependency_single_rpm(DependencyData *dependency_data)
     } else {
         // no more packages to install/remove
         // move on to next stage.
-        dependency_data->state = DEPENDENCY_DONE;
+        dependency_data->state = DEPENDENCY_SOFT_RPM;
         dependency_handler(dependency_data);
     }
     g_clear_error (&error);
@@ -444,6 +501,9 @@ dependency_handler (gpointer user_data)
         case DEPENDENCY_SINGLE_RPM:
             dependency_single_rpm(dependency_data);
             break;
+        case DEPENDENCY_SOFT_RPM:
+            dependency_soft_rpm(dependency_data);
+            break;
         case DEPENDENCY_DONE:
             if (dependency_data->finish_cb) {
                 dependency_data->finish_cb(dependency_data->user_data, NULL);
@@ -468,6 +528,7 @@ restraint_install_dependencies (Task *task,
     dependency_data = g_slice_new0 (DependencyData);
     dependency_data->user_data = user_data;
     dependency_data->dependencies = task->metadata->dependencies;
+    dependency_data->softdependencies = task->metadata->softdependencies;
     dependency_data->repodeps = task->metadata->repodeps;
     dependency_data->main_task_name = task->name;
     dependency_data->base_path = task->recipe->base_path;

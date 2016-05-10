@@ -26,6 +26,8 @@ typedef struct {
     gchar *entry_point;
     /* List of dependencies */
     GSList *dependencies;
+    /* List of soft or optional dependencies */
+    GSList *softdependencies;
     /* List of repository dependencies */
     GSList *repodeps;
     /* maximum time task is allowed to run before being killed */

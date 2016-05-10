@@ -65,11 +65,26 @@ dependencies
 ~~~~~~~~~~~~
 
 A semicolon-delimited (``;``) list of additional packages (needed to run this
-task) to be installed on the system.
+task) to be installed on the system.  The task will abort if the dependencies
+fail to install.
 
 ::
 
  dependencies=lib-virt;httpd;postgresql;nfs-utils;net-tools;net-snmp;ethereal;wireshark;tcpdump;rusers;bzip2;gcc
+
+softDependencies
+~~~~~~~~~~~~~~~~
+
+A semicolon-delimited (``;``) list of optional additional packages to be
+installed on the system.  The task will proceed even if the soft dependencies
+fail to install.  This is useful for a task that is intended to run on multiple
+platforms, and the task can test platform-specific features (e.g., NUMA) if the
+appropriate support packages are installed, but the task will not abort on the
+other platforms where the support packages do not exist.
+
+::
+
+ softDependencies=numactl;numactl-devel
 
 repoRequires
 ~~~~~~~~~~~~

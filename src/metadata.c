@@ -48,6 +48,7 @@ restraint_metadata_free (MetaData *metadata)
         g_free(metadata->name);
         g_free(metadata->entry_point);
         g_slist_free_full (metadata->dependencies, g_free);
+        g_slist_free_full (metadata->softdependencies, g_free);
         g_slist_free_full (metadata->repodeps, g_free);
         g_slice_free (MetaData, metadata);
     }
@@ -138,6 +139,29 @@ restraint_parse_metadata (gchar *filename,
     }
     else
       metadata->dependencies = NULL;
+
+    if (tmp_error && tmp_error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND) {
+        g_propagate_error(error, tmp_error);
+        goto error;
+    }
+    g_clear_error (&tmp_error);
+
+    gchar **softdependencies = g_key_file_get_locale_string_list(keyfile,
+                                                                 "restraint",
+                                                                 "softDependencies",
+                                                                 locale,
+                                                                 &length,
+                                                                 &tmp_error);
+    gchar **softdependency = softdependencies;
+    if (softdependency) {
+      while (*softdependency) {
+        metadata->softdependencies = g_slist_prepend (metadata->softdependencies, g_strdup(*softdependency));
+        softdependency++;
+      }
+      g_strfreev (softdependencies);
+    }
+    else
+      metadata->softdependencies = NULL;
 
     if (tmp_error && tmp_error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND) {
         g_propagate_error(error, tmp_error);
