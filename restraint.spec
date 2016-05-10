@@ -331,6 +331,7 @@ fi
 %attr(0755, root, root)%{_bindir}/rhts-recipe-sync-block
 %attr(0755, root, root)%{_bindir}/rhts_recipe_sync_block
 %attr(0755, root, root)%{_bindir}/rhts-abort
+%attr(0755, root, root)%{_bindir}/rhts-flush
 
 %{_datadir}/rhts/lib/rhts-make.include
 /mnt/scratchspace
