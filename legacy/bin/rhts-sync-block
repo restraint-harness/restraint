@@ -33,9 +33,9 @@ if [ "$basename" = "rhts-sync-block" -o \
     XTRA="${TASKORDER}"
 fi
 
-staf=$(which staf)
-if [ -z "$staf" ]; then
-    echo "staf binary missing! - $0 won't work!"
+rsync=$(which rstrnt-sync)
+if [ -z "$rsync" ]; then
+    echo "rstrnt-sync binary missing! - $0 won't work!"
     exit 1
 fi
 
@@ -83,7 +83,7 @@ do
     fail=0
     for machine in $@; do
         for state in $states; do
-            output=$(staf $machine sem wait event ${state} TIMEOUT 10s 2>&1)
+            output=$(rstrnt-sync block ${state} ${machine} 10 2>&1)
             rc=$?
             if [ $rc -eq 0 ]; then
                 if [ $any -eq 1 ]; then

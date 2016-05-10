@@ -69,6 +69,6 @@ if [ "$basename" = "rhts-sync-set" -o \
 fi
 echo $command
 
-staf local sem post event ${XTRA}_${state}
+rstrnt-sync set ${XTRA}_${state}
 # Record the event in case any tests reboot the system
-echo "${XTRA}_${state}" >> /var/lib/restraint/staf_sem_post_event
+echo "${XTRA}_${state}" >> /var/lib/restraint/rstrnt_events
