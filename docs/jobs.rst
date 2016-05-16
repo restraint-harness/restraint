@@ -9,7 +9,7 @@ just the elements required for running in the stand alone configuration.
  <job>
   <recipeSet>
    <recipe>
-    <task name="/kernel/performance/fs_mark">
+    <task name="/kernel/performance/fs_mark" keepchanges="yes">
      <fetch url="git://fedorapeople.org/home/fedora/bpeck/public_git/tests.git?master#kernel/performance/fs_mark" />
      <params>
       <param name="foo" value="bar"/>
@@ -38,6 +38,20 @@ can see that in the following example.
 
 This name will be used when reporting on the status of the task and when reporting
 results.
+
+
+Keeping your task changes intact
+--------------------------------
+
+By default restraint will fetch tasks every time you run a recipe overwriting
+any changes you've done locally. This is not desirable in some cases, e.g. when
+debugging a test. Restraint provides an ability to keep local changes by
+setting task property "keepchanges" to "yes" in the job xml.
+
+::
+
+ <task name="/kernel/performance/fs_mark" keepchanges="yes">
+
 
 Installing Tasks
 ----------------
