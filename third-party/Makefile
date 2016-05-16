@@ -234,6 +234,7 @@ $(LIBXML2)/.patches-done: $(LIBXML2)
 
 $(LIBSSH)/.patches-done: $(LIBSSH)
 	patch -d$(LIBSSH) -p1 <libssh_noshared.patch
+	patch -d$(LIBSSH) -p1 <libssh_malformed_pubkey.patch
 	touch $@
 
 .PHONY: clean
