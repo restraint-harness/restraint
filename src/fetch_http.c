@@ -26,11 +26,22 @@
 #include <archive.h>
 #include <archive_entry.h>
 #include <unistd.h>
-#include <libsoup/soup.h>
 #include <libsoup/soup-uri.h>
+#include <curl/curl.h>
 
 #include "fetch.h"
 #include "fetch_http.h"
+
+static size_t cwrite_callback(char *ptr, size_t size, size_t nmemb,
+                              void *userdata)
+{
+    GMemoryInputStream *stream = (GMemoryInputStream *)userdata;
+
+    g_memory_input_stream_add_data(stream, g_memdup(ptr, size * nmemb),
+                                   size * nmemb, g_free);
+
+    return size * nmemb;
+}
 
 static ssize_t
 myread(struct archive *a, void *client_data, const void **abuf)
@@ -48,8 +59,7 @@ myread(struct archive *a, void *client_data, const void **abuf)
         archive_set_error(fetch_data->a, error->code, "%s", error->message);
         return -1;
     }
-    if (len == 0)
-        return 0;
+
     return len;
 }
 
@@ -58,23 +68,28 @@ myopen(FetchData *fetch_data, GError **error)
 {
     g_return_val_if_fail(fetch_data != NULL, FALSE);
     g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
-    SoupRequestHTTP *reqh;
-    SoupSession *session = (SoupSession*)fetch_data->private_data;
+    CURLcode res;
+    gchar ebuf[CURL_ERROR_SIZE];
+    CURL *curl = (CURL*)fetch_data->private_data;
+    char *url = soup_uri_to_string(fetch_data->url, FALSE);
 
-    GError *tmp_error = NULL;
+    fetch_data->istream = g_memory_input_stream_new();
+    curl_easy_setopt(curl, CURLOPT_URL, url);
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, cwrite_callback);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, fetch_data->istream);
+    curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, ebuf);
+    curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);
 
-    reqh = soup_session_request_http_uri (session, "GET", fetch_data->url, NULL);
-    fetch_data->istream = soup_request_send (SOUP_REQUEST (reqh), NULL, &tmp_error);
+    res = curl_easy_perform(curl);
 
-    if (tmp_error != NULL) {
-        gchar *url = soup_uri_to_string (fetch_data->url, TRUE);
-        g_propagate_prefixed_error(error, tmp_error,
-                "While connecting to %s: ", url);
+    if (res != CURLE_OK) {
+        g_set_error(error, RESTRAINT_FETCH_LIBARCHIVE_ERROR, 0,
+                "Failed to fetch url: %s", ebuf);
         g_free (url);
         return FALSE;
     }
 
-    g_object_unref (reqh);
+    g_free (url);
     return TRUE;
 }
 
@@ -99,7 +114,7 @@ static gboolean
 archive_finish_callback (gpointer user_data)
 {
     FetchData *fetch_data = (FetchData *) user_data;
-    SoupSession *session = (SoupSession*)fetch_data->private_data;
+    CURL *curl = (CURL*)fetch_data->private_data;
     gint free_result;
 
     if (fetch_data == NULL) {
@@ -125,8 +140,7 @@ archive_finish_callback (gpointer user_data)
         g_clear_error(&fetch_data->error);
     }
 
-    soup_session_abort (session);
-    g_object_unref (session);
+    curl_easy_cleanup(curl);
     g_slice_free(FetchData, fetch_data);
     return FALSE;
 }
@@ -217,8 +231,16 @@ restraint_fetch_http (SoupURI *url,
         rmrf(base_path);
     }
 
-    SoupSession *session = soup_session_new();
-    fetch_data->private_data = session;
+    CURL *curl = curl_easy_init();
+
+    if (curl == NULL) {
+        g_set_error(&fetch_data->error, RESTRAINT_FETCH_LIBARCHIVE_ERROR, 0,
+                "failed to init curl");
+        g_idle_add (archive_finish_callback, fetch_data);
+        return;
+    }
+
+    fetch_data->private_data = curl;
 
     fetch_data->a = archive_read_new();
     if (fetch_data->a == NULL) {

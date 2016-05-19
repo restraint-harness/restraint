@@ -2,7 +2,7 @@
 CC = gcc
 CFLAGS ?= -O2 -g
 
-PACKAGES = glib-2.0 gobject-2.0 gio-2.0 gio-unix-2.0 libxml-2.0 libsoup-2.4 libarchive libssh libssh_threads
+PACKAGES = glib-2.0 gobject-2.0 gio-2.0 gio-unix-2.0 libxml-2.0 libsoup-2.4 libarchive libssh libssh_threads libcurl
 CFLAGS += -Wall -Werror -std=c99 $(shell pkg-config --cflags $(PACKAGES))
 ifeq ($(STATIC),1)
     # The right thing to do here is `pkg-config --libs --static`, which would 

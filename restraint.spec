@@ -71,6 +71,7 @@ Requires: selinux-policy
 %{?without_static:BuildRequires:  libxml2-devel}
 %{?without_static:BuildRequires:  libssh-devel}
 %{?without_static:BuildRequires:  openssl-devel}
+%{?without_static:BuildRequires:  libcurl-devel}
 BuildRequires:  make
 BuildRequires:  tar
 
