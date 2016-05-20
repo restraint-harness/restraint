@@ -80,6 +80,10 @@ myopen(FetchData *fetch_data, GError **error)
     curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, ebuf);
     curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);
 
+    if (fetch_data->ssl_verify == FALSE) {
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0);
+    }
+
     res = curl_easy_perform(curl);
 
     if (res != CURLE_OK) {
@@ -208,6 +212,7 @@ void
 restraint_fetch_http (SoupURI *url,
                      const gchar *base_path,
                      gboolean keepchanges,
+                     gboolean ssl_verify,
                      ArchiveEntryCallback archive_entry_callback,
                      FetchFinishCallback finish_callback,
                      gpointer user_data)
@@ -223,6 +228,7 @@ restraint_fetch_http (SoupURI *url,
     fetch_data->base_path = base_path;
     fetch_data->extracted_cnt = 0;
     fetch_data->keepchanges = keepchanges;
+    fetch_data->ssl_verify = ssl_verify;
 
     GError *tmp_error = NULL;
     gint r;

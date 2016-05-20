@@ -48,6 +48,7 @@ typedef struct {
     char *osmajor;
     GString *install_rpms;
     GString *remove_rpms;
+    gboolean ssl_verify;
 } DependencyData;
 
 void restraint_install_dependencies (Task *task, GIOFunc io_callback,

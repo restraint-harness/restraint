@@ -77,6 +77,7 @@ typedef struct {
     } fetch;
     /* Whether to keep task changes */
     gboolean keepchanges;
+    gboolean ssl_verify;
     /* List of Params */
     GList *params;
     /* List of Roles */

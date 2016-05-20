@@ -128,6 +128,7 @@ restraint_task_fetch(AppData *app_data) {
                 restraint_fetch_http (task->fetch.url,
                                       task->path,
                                       task->keepchanges,
+                                      task->ssl_verify,
                                       archive_entry_callback,
                                       fetch_finish_callback,
                                       app_data);

@@ -66,6 +66,7 @@ static void test_fetch_http_nofragment_success(void) {
     restraint_fetch_http (url,
                           path,
                           FALSE,
+                          TRUE,
                           archive_entry_callback,
                           fetch_finish_callback,
                           run_data);
@@ -127,6 +128,7 @@ static void test_fetch_http_nofragment_keepchanges(void) {
     restraint_fetch_http (url,
                           path,
                           FALSE,
+                          TRUE,
                           archive_entry_callback,
                           fetch_finish_callback,
                           run_data);
@@ -167,6 +169,7 @@ static void test_fetch_http_nofragment_keepchanges(void) {
     restraint_fetch_http (url,
                           path,
                           TRUE,
+                          TRUE,
                           archive_entry_callback,
                           fetch_finish_callback,
                           run_data);
@@ -189,6 +192,7 @@ static void test_fetch_http_nofragment_keepchanges(void) {
     restraint_fetch_http (url,
                           path,
                           FALSE,
+                          TRUE,
                           archive_entry_callback,
                           fetch_finish_callback,
                           run_data);
@@ -250,6 +254,7 @@ static void test_fetch_http_nofragment_fail(void) {
     restraint_fetch_http (url,
                          path,
                          FALSE,
+                         TRUE,
                          archive_entry_callback,
                          fetch_finish_callback,
                          run_data);
@@ -286,6 +291,7 @@ static void test_fetch_http_nofragment_bad_archive(void) {
     restraint_fetch_http (url,
                          path,
                          FALSE,
+                         TRUE,
                          archive_entry_callback,
                          fetch_finish_callback,
                          run_data);
@@ -323,6 +329,7 @@ static void test_fetch_http_fragment_success(void) {
     restraint_fetch_http (url,
                           path,
                           FALSE,
+                          TRUE,
                           archive_entry_callback,
                           fetch_finish_callback,
                           run_data);
@@ -379,6 +386,7 @@ static void test_fetch_http_fragment_fail(void) {
     restraint_fetch_http (url,
                          path,
                          FALSE,
+                         TRUE,
                          archive_entry_callback,
                          fetch_finish_callback,
                          run_data);

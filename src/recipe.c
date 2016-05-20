@@ -246,6 +246,15 @@ static Task *parse_task(xmlNode *task_node, Recipe *recipe, GError **error) {
         }
         task->fetch.url = soup_uri_new((char *)url);
         xmlFree(url);
+
+        xmlChar *ssl_verify = xmlGetNoNsProp(fetch, (xmlChar *)"ssl_verify");
+        if (ssl_verify == NULL || g_strcmp0((char*)ssl_verify, "off") != 0) {
+            task->ssl_verify = TRUE;
+        } else {
+            task->ssl_verify = FALSE;
+        }
+        xmlFree(ssl_verify);
+
         task->path = g_build_filename(task->recipe->base_path,
                 soup_uri_get_host(task->fetch.url),
                 soup_uri_get_path(task->fetch.url),

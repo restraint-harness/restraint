@@ -72,7 +72,7 @@ The first example shows fetching a task from git.
 
  OR
 
- <fetch url="http://fedorapeople.org/cgit/bpeck/public_git/tests.git/snapshot/tests-master.tar.gz#kernel/performance/fs_mark" />
+ <fetch ssl_verify="off" url="https://fedorapeople.org/cgit/bpeck/public_git/tests.git/snapshot/tests-master.tar.gz#kernel/performance/fs_mark" />
 
 The fetch node accepts git uri's that conform to the following:
 
@@ -81,6 +81,7 @@ The fetch node accepts git uri's that conform to the following:
 * the path to the git repo.
 * Optionally you can specify a valid reference which can be a branch, tag or SHA-1. ie: ?master
 * Optionally you can specify a sub-dir.  restraint will only extract this sub-dir and run the task from here. ie: #kernel/performance/fs_mark.  Notice that there is not a preceding slash here.
+* If you need to disable ssl certificate checking you can set ssl_verify parameter to "off".
 
 Restraint uses git's archive protocol to retrieve the contents so make sure your git server has enabled
 this.  You can enable this on most servers by putting the following in your git repo config
