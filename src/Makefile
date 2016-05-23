@@ -36,7 +36,7 @@ rstrnt-abort: cmd_abort.o utils.o errors.o
 rstrnt-sync: cmd_sync.o
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
-restraint: client.o multipart.o errors.o xml.o ssh.o
+restraint: client.o multipart.o errors.o xml.o ssh.o utils.o
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 restraintd: server.o recipe.o task.o fetch.o fetch_git.o fetch_http.o param.o role.o metadata.o process.o message.o dependency.o utils.o config.o errors.o xml.o env.o
@@ -67,11 +67,11 @@ test_%: test_%.o
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 TEST_PROGS += test_fetch_git
-test_fetch_git: fetch.o fetch_git.o
+test_fetch_git: fetch.o fetch_git.o utils.o errors.o
 test_fetch_git.o: fetch_git.h
 
 TEST_PROGS += test_fetch_http
-test_fetch_http: fetch.o fetch_http.o
+test_fetch_http: fetch.o fetch_http.o utils.o errors.o
 test_fetch_http.o: fetch_http.h
 
 TEST_PROGS += test_process

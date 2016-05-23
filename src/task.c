@@ -115,7 +115,7 @@ restraint_task_fetch(AppData *app_data) {
     switch (task->fetch_method) {
         case TASK_FETCH_UNPACK:
         {
-            const char *scheme = soup_uri_get_scheme(task->fetch.url);
+            const char *scheme = task->fetch.url->scheme;
             if (g_strcmp0(scheme, "git") == 0) {
                 restraint_fetch_git (task->fetch.url,
                                      task->path,
@@ -135,7 +135,8 @@ restraint_task_fetch(AppData *app_data) {
             } else {
                 g_set_error (&error, RESTRAINT_ERROR,
                              RESTRAINT_TASK_RUNNER_SCHEMA_ERROR,
-                             "Unimplemented schema method %s", soup_uri_get_scheme(task->fetch.url));
+                             "Unimplemented schema method %s",
+                             task->fetch.url->scheme);
                 fetch_finish_callback (error, app_data);
                 return;
             }
@@ -641,7 +642,7 @@ void restraint_task_free(Task *task) {
             g_free(task->fetch.package_name);
             break;
         case TASK_FETCH_UNPACK:
-            soup_uri_free(task->fetch.url);
+            restraint_free_url(task->fetch.url);
             break;
         default:
             g_return_if_reached();

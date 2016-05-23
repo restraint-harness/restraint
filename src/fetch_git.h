@@ -19,7 +19,7 @@
 #define GIT_BRANCH "master"
 #define HDR_LEN_SIZE 4
 
-void restraint_fetch_git (SoupURI *url,
+void restraint_fetch_git (struct restraint_url *url,
                      const gchar *base_path,
                      gboolean keepchanges,
                      ArchiveEntryCallback entry_callback,

@@ -15,7 +15,8 @@
     along with Restraint.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-void restraint_fetch_http (SoupURI *url,
+
+void restraint_fetch_http(struct restraint_url *url,
                      const gchar *base_path,
                      gboolean keepchanges,
                      gboolean ssl_verify,

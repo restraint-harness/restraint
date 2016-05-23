@@ -26,7 +26,6 @@
 #include <archive.h>
 #include <archive_entry.h>
 #include <unistd.h>
-#include <libsoup/soup-uri.h>
 
 #include "fetch.h"
 #include "fetch_git.h"
@@ -398,7 +397,7 @@ git_archive_read_callback (gpointer user_data)
 }
 
 void
-restraint_fetch_git (SoupURI *url,
+restraint_fetch_git (struct restraint_url *url,
                      const gchar *base_path,
                      gboolean keepchanges,
                      ArchiveEntryCallback archive_entry_callback,
@@ -424,7 +423,7 @@ restraint_fetch_git (SoupURI *url,
     }
 
     if (fetch_data->archive_entry_callback) {
-        gchar *url_string = soup_uri_to_string (url, TRUE);
+        gchar *url_string = url->uri;
         gchar *entry = g_strdup_printf ("%s%s", url_string, base_path);
         fetch_data->archive_entry_callback (entry,
                                             fetch_data->user_data);

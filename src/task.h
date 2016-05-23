@@ -26,6 +26,7 @@
 #include "message.h"
 #include "server.h"
 #include "metadata.h"
+#include "utils.h"
 
 #define DEFAULT_MAX_TIME 10 * 60 // default amount of time before local watchdog kills process
 #define HEARTBEAT 1 * 60 // heartbeat every 1 minute
@@ -73,7 +74,7 @@ typedef struct {
     /* Where/what to fetch this task from */
     union {
         gchar *package_name; // when TASK_FETCH_INSTALL_PACKAGE
-        SoupURI *url; // when TASK_FETCH_UNPACK
+        struct restraint_url *url; // when TASK_FETCH_UNPACK
     } fetch;
     /* Whether to keep task changes */
     gboolean keepchanges;

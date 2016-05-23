@@ -23,7 +23,7 @@
 #include "fetch_http.h"
 
 typedef struct {
-    SoupURI *url;
+    struct restraint_url *url;
     gchar *path;
     DependencyData *dependency_data;
 } RepoDepData;
@@ -378,7 +378,7 @@ fetch_repodeps_finish_callback(GError *error, gpointer user_data)
         dependency_data->repodeps = g_slist_next(dependency_data->repodeps);
         restraint_fetch_repodeps(dependency_data);
     }
-    soup_uri_free(rd_data->url);
+    restraint_free_url(rd_data->url);
     g_free(rd_data->path);
     g_slice_free(RepoDepData, rd_data);
 }
@@ -389,15 +389,15 @@ restraint_fetch_repodeps(DependencyData *dependency_data)
     if (dependency_data->repodeps != NULL) {
         RepoDepData *rd_data = g_slice_new0(RepoDepData);
         rd_data->dependency_data = dependency_data;
-        rd_data->url = soup_uri_copy(dependency_data->fetch_url);
-        soup_uri_set_fragment(rd_data->url,
-                              (char *)dependency_data->repodeps->data);
+        rd_data->url = restraint_copy_url(dependency_data->fetch_url);
+        g_free(rd_data->url->fragment);
+        rd_data->url->fragment = g_strdup((char *)dependency_data->repodeps->data);
         rd_data->path = g_build_filename(dependency_data->base_path,
-                                         soup_uri_get_host(rd_data->url),
-                                         soup_uri_get_path(rd_data->url),
-                                         soup_uri_get_fragment(rd_data->url),
+                                         rd_data->url->host,
+                                         rd_data->url->path,
+                                         rd_data->url->fragment,
                                          NULL);
-        if (g_strcmp0(soup_uri_get_scheme(rd_data->url), "git") == 0) {
+        if (g_strcmp0(rd_data->url->scheme, "git") == 0) {
             restraint_fetch_git(rd_data->url, rd_data->path,
                                 dependency_data->keepchanges, repo_dep_data_archive_callback,
                                 fetch_repodeps_finish_callback, rd_data);

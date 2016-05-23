@@ -15,9 +15,11 @@
     along with Restraint.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "utils.h"
+
 #include <stdint.h>
 #include <glib.h>
-#include <libsoup/soup.h>
+#include <gio/gio.h>
 
 #define LARGE_PACKET_MAX 65520
 
@@ -29,7 +31,7 @@ typedef void (*ArchiveEntryCallback) (const gchar *entry,
 
 typedef struct {
     gchar buf[LARGE_PACKET_MAX];
-    SoupURI *url;
+    struct restraint_url *url;
     const gchar *base_path;
     GSocketConnection *connection;
     GSocketClient *client;

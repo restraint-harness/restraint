@@ -100,7 +100,7 @@ static void test_dependencies_success (void)
     task->metadata = g_slice_new(MetaData);
     task->metadata->dependencies = dependencies;
     task->metadata->repodeps = NULL;
-    task->fetch.url = soup_uri_new("git://localhost/repo1?master#restraint/sanity/fetch_git");
+    task->fetch.url = restraint_parse_url("git://localhost/repo1?master#restraint/sanity/fetch_git");
     task->rhts_compat = FALSE;
     task->name = "restraint/sanity/fetch_git";
     task->recipe = g_slice_new0(Recipe);
@@ -124,7 +124,7 @@ static void test_dependencies_success (void)
     g_slice_free (RunData, run_data);
     g_slist_free (dependencies);
 
-    soup_uri_free(task->fetch.url);
+    restraint_free_url(task->fetch.url);
     g_remove (task->recipe->base_path);
     g_free (task->recipe->base_path);
     g_slice_free(Recipe, task->recipe);
@@ -150,7 +150,7 @@ static void test_dependencies_fail (void)
     task->metadata = g_slice_new(MetaData);
     task->metadata->dependencies = dependencies;
     task->metadata->repodeps = NULL;
-    task->fetch.url = soup_uri_new("git://localhost/repo1?master#restraint/sanity/fetch_git");
+    task->fetch.url = restraint_parse_url("git://localhost/repo1?master#restraint/sanity/fetch_git");
     task->rhts_compat = FALSE;
     task->name = "restraint/sanity/fetch_git";
     task->recipe = g_slice_new0(Recipe);
@@ -174,7 +174,7 @@ static void test_dependencies_fail (void)
     g_slice_free (RunData, run_data);
     g_slist_free (dependencies);
 
-    soup_uri_free(task->fetch.url);
+    restraint_free_url(task->fetch.url);
     g_remove (task->recipe->base_path);
     g_free (task->recipe->base_path);
     g_slice_free(Recipe, task->recipe);
@@ -200,7 +200,7 @@ static void test_dependencies_ignore_fail (void)
     task->metadata = g_slice_new(MetaData);
     task->metadata->dependencies = dependencies;
     task->metadata->repodeps = NULL;
-    task->fetch.url = soup_uri_new("git://localhost/repo1?master#restraint/sanity/fetch_git");
+    task->fetch.url = restraint_parse_url("git://localhost/repo1?master#restraint/sanity/fetch_git");
     task->rhts_compat = TRUE;
     task->name = "restraint/sanity/fetch_git";
     task->recipe = g_slice_new0(Recipe);
@@ -224,7 +224,7 @@ static void test_dependencies_ignore_fail (void)
     g_slice_free (RunData, run_data);
     g_slist_free (dependencies);
 
-    soup_uri_free(task->fetch.url);
+    restraint_free_url(task->fetch.url);
     g_remove (task->recipe->base_path);
     g_free (task->recipe->base_path);
     g_slice_free(Recipe, task->recipe);
@@ -247,7 +247,7 @@ static void test_git_repodeps_success (void)
     task->metadata = g_slice_new(MetaData);
     task->metadata->dependencies = NULL;
     task->metadata->repodeps = repodeps;
-    task->fetch.url = soup_uri_new("git://localhost/repo1?master#restraint/sanity/fake");
+    task->fetch.url = restraint_parse_url("git://localhost/repo1?master#restraint/sanity/fake");
     task->rhts_compat = FALSE;
     task->name = "restraint/sanity/fake";
     task->recipe = g_slice_new0(Recipe);
@@ -268,8 +268,8 @@ static void test_git_repodeps_success (void)
     g_clear_error (&run_data->error);
 
     gchar *fullpath = g_strdup_printf("%s/%s/%s/%s", task->recipe->base_path,
-            soup_uri_get_host(task->fetch.url),
-            soup_uri_get_path(task->fetch.url),
+            task->fetch.url->host,
+            task->fetch.url->path,
             "restraint/sanity/common");
     GFile *base = g_file_new_for_path(fullpath);
 
@@ -299,7 +299,7 @@ static void test_git_repodeps_success (void)
     g_string_free (run_data->output, TRUE);
     g_slice_free (RunData, run_data);
     g_slist_free (repodeps);
-    soup_uri_free(task->fetch.url);
+    restraint_free_url(task->fetch.url);
     g_remove (task->recipe->base_path);
     g_free (task->recipe->base_path);
     g_slice_free(Recipe, task->recipe);
@@ -321,7 +321,7 @@ static void test_git_repodeps_fail (void)
     task->metadata = g_slice_new(MetaData);
     task->metadata->dependencies = NULL;
     task->metadata->repodeps = repodeps;
-    task->fetch.url = soup_uri_new("git://localhost/repo1?master#restraint/sanity/fake");
+    task->fetch.url = restraint_parse_url("git://localhost/repo1?master#restraint/sanity/fake");
     task->rhts_compat = FALSE;
     task->name = "restraint/sanity/fake";
     task->recipe = g_slice_new0(Recipe);
@@ -342,7 +342,7 @@ static void test_git_repodeps_fail (void)
     g_clear_error (&run_data->error);
     g_slice_free (RunData, run_data);
     g_slist_free (repodeps);
-    soup_uri_free(task->fetch.url);
+    restraint_free_url(task->fetch.url);
     g_remove (task->recipe->base_path);
     g_free (task->recipe->base_path);
     g_slice_free(Recipe, task->recipe);
@@ -365,7 +365,7 @@ static void test_http_repodeps_success (void)
     task->metadata = g_slice_new(MetaData);
     task->metadata->dependencies = NULL;
     task->metadata->repodeps = repodeps;
-    task->fetch.url = soup_uri_new("http://localhost:8000/fetch_http.tgz#restraint/sanity/fake");
+    task->fetch.url = restraint_parse_url("http://localhost:8000/fetch_http.tgz#restraint/sanity/fake");
     task->rhts_compat = FALSE;
     task->name = "restraint/sanity/fake";
     task->recipe = g_slice_new0(Recipe);
@@ -386,8 +386,8 @@ static void test_http_repodeps_success (void)
     g_clear_error (&run_data->error);
 
     gchar *fullpath = g_strdup_printf("%s/%s/%s/%s", task->recipe->base_path,
-            soup_uri_get_host(task->fetch.url),
-            soup_uri_get_path(task->fetch.url),
+            task->fetch.url->host,
+            task->fetch.url->path,
             "restraint/sanity/common");
     GFile *base = g_file_new_for_path(fullpath);
 
@@ -417,7 +417,7 @@ static void test_http_repodeps_success (void)
     g_string_free (run_data->output, TRUE);
     g_slice_free (RunData, run_data);
     g_slist_free (repodeps);
-    soup_uri_free(task->fetch.url);
+    restraint_free_url(task->fetch.url);
     g_remove (task->recipe->base_path);
     g_free (task->recipe->base_path);
     g_slice_free(Recipe, task->recipe);
@@ -439,7 +439,7 @@ static void test_http_repodeps_fail (void)
     task->metadata = g_slice_new(MetaData);
     task->metadata->dependencies = NULL;
     task->metadata->repodeps = repodeps;
-    task->fetch.url = soup_uri_new("http://localhost:8000/fetch_http.tgz#restraint/sanity/fake");
+    task->fetch.url = restraint_parse_url("http://localhost:8000/fetch_http.tgz#restraint/sanity/fake");
     task->rhts_compat = FALSE;
     task->name = "restraint/sanity/fake";
     task->recipe = g_slice_new0(Recipe);
@@ -460,7 +460,7 @@ static void test_http_repodeps_fail (void)
     g_clear_error (&run_data->error);
     g_slice_free (RunData, run_data);
     g_slist_free (repodeps);
-    soup_uri_free(task->fetch.url);
+    restraint_free_url(task->fetch.url);
     g_remove (task->recipe->base_path);
     g_free (task->recipe->base_path);
     g_slice_free(Recipe, task->recipe);
@@ -483,7 +483,7 @@ static void test_git_rec_repodeps_success (void)
     task->metadata = g_slice_new(MetaData);
     task->metadata->dependencies = NULL;
     task->metadata->repodeps = repodeps;
-    task->fetch.url = soup_uri_new("git://localhost/repo1?master#restraint/sanity/fake");
+    task->fetch.url = restraint_parse_url("git://localhost/repo1?master#restraint/sanity/fake");
     task->rhts_compat = FALSE;
     task->name = "restraint/sanity/fake";
     task->recipe = g_slice_new0(Recipe);
@@ -504,8 +504,8 @@ static void test_git_rec_repodeps_success (void)
     g_clear_error (&run_data->error);
 
     gchar *fullpath = g_strdup_printf("%s/%s/%s/%s", task->recipe->base_path,
-            soup_uri_get_host(task->fetch.url),
-            soup_uri_get_path(task->fetch.url),
+            task->fetch.url->host,
+            task->fetch.url->path,
             "restraint/sanity/fetch_git");
     GFile *base = g_file_new_for_path(fullpath);
 
@@ -533,8 +533,8 @@ static void test_git_rec_repodeps_success (void)
     g_free(fullpath);
 
     fullpath = g_strdup_printf("%s/%s/%s/%s", task->recipe->base_path,
-            soup_uri_get_host(task->fetch.url),
-            soup_uri_get_path(task->fetch.url),
+            task->fetch.url->host,
+            task->fetch.url->path,
             "restraint/sanity/common");
     base = g_file_new_for_path(fullpath);
 
@@ -564,7 +564,7 @@ static void test_git_rec_repodeps_success (void)
     g_string_free (run_data->output, TRUE);
     g_slice_free (RunData, run_data);
     g_slist_free (repodeps);
-    soup_uri_free(task->fetch.url);
+    restraint_free_url(task->fetch.url);
     g_remove (task->recipe->base_path);
     g_free (task->recipe->base_path);
     g_slice_free(Recipe, task->recipe);
@@ -587,7 +587,7 @@ static void test_git_rec_repodeps_fail (void)
     task->metadata = g_slice_new(MetaData);
     task->metadata->dependencies = NULL;
     task->metadata->repodeps = repodeps;
-    task->fetch.url = soup_uri_new("git://localhost/repo1?master#restraint/sanity/fake");
+    task->fetch.url = restraint_parse_url("git://localhost/repo1?master#restraint/sanity/fake");
     task->rhts_compat = FALSE;
     task->name = "restraint/sanity/fake";
     task->recipe = g_slice_new0(Recipe);
@@ -610,7 +610,7 @@ static void test_git_rec_repodeps_fail (void)
     g_string_free (run_data->output, TRUE);
     g_slice_free (RunData, run_data);
     g_slist_free (repodeps);
-    soup_uri_free(task->fetch.url);
+    restraint_free_url(task->fetch.url);
     g_remove (task->recipe->base_path);
     g_free (task->recipe->base_path);
     g_slice_free(Recipe, task->recipe);
@@ -633,7 +633,7 @@ static void test_http_rec_repodeps_success (void)
     task->metadata = g_slice_new(MetaData);
     task->metadata->dependencies = NULL;
     task->metadata->repodeps = repodeps;
-    task->fetch.url = soup_uri_new("http://localhost:8000/fetch_http.tgz#restraint/sanity/fake");
+    task->fetch.url = restraint_parse_url("http://localhost:8000/fetch_http.tgz#restraint/sanity/fake");
     task->rhts_compat = FALSE;
     task->name = "restraint/sanity/fake";
     task->recipe = g_slice_new0(Recipe);
@@ -654,8 +654,8 @@ static void test_http_rec_repodeps_success (void)
     g_clear_error (&run_data->error);
 
     gchar *fullpath = g_strdup_printf("%s/%s/%s/%s", task->recipe->base_path,
-            soup_uri_get_host(task->fetch.url),
-            soup_uri_get_path(task->fetch.url),
+            task->fetch.url->host,
+            task->fetch.url->path,
             "restraint/sanity/fetch_git");
     GFile *base = g_file_new_for_path(fullpath);
 
@@ -683,8 +683,8 @@ static void test_http_rec_repodeps_success (void)
     g_free(fullpath);
 
     fullpath = g_strdup_printf("%s/%s/%s/%s", task->recipe->base_path,
-            soup_uri_get_host(task->fetch.url),
-            soup_uri_get_path(task->fetch.url),
+            task->fetch.url->host,
+            task->fetch.url->path,
             "restraint/sanity/common");
     base = g_file_new_for_path(fullpath);
 
@@ -714,7 +714,7 @@ static void test_http_rec_repodeps_success (void)
     g_string_free (run_data->output, TRUE);
     g_slice_free (RunData, run_data);
     g_slist_free (repodeps);
-    soup_uri_free(task->fetch.url);
+    restraint_free_url(task->fetch.url);
     g_remove (task->recipe->base_path);
     g_free (task->recipe->base_path);
     g_slice_free(Recipe, task->recipe);
@@ -737,7 +737,7 @@ static void test_http_rec_repodeps_fail (void)
     task->metadata = g_slice_new(MetaData);
     task->metadata->dependencies = NULL;
     task->metadata->repodeps = repodeps;
-    task->fetch.url = soup_uri_new("http://localhost:8000/fetch_http.tgz#restraint/sanity/fake");
+    task->fetch.url = restraint_parse_url("http://localhost:8000/fetch_http.tgz#restraint/sanity/fake");
     task->rhts_compat = FALSE;
     task->name = "restraint/sanity/fake";
     task->recipe = g_slice_new0(Recipe);
@@ -760,7 +760,7 @@ static void test_http_rec_repodeps_fail (void)
     g_string_free (run_data->output, TRUE);
     g_slice_free (RunData, run_data);
     g_slist_free (repodeps);
-    soup_uri_free(task->fetch.url);
+    restraint_free_url(task->fetch.url);
     g_remove (task->recipe->base_path);
     g_free (task->recipe->base_path);
     g_slice_free(Recipe, task->recipe);

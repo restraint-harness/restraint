@@ -26,7 +26,6 @@
 #include <archive.h>
 #include <archive_entry.h>
 #include <unistd.h>
-#include <libsoup/soup-uri.h>
 #include <curl/curl.h>
 
 #include "fetch.h"
@@ -83,11 +82,10 @@ myopen(FetchData *fetch_data, GError **error)
     gchar ebuf[CURL_ERROR_SIZE];
     struct curl_data *cd = fetch_data->private_data;
     CURLM *curlm = cd->curlm;
-    char *url = soup_uri_to_string(fetch_data->url, FALSE);
     CURL *curl = curl_easy_init();
 
     fetch_data->istream = g_memory_input_stream_new();
-    curl_easy_setopt(curl, CURLOPT_URL, url);
+    curl_easy_setopt(curl, CURLOPT_URL, fetch_data->url->uri);
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, cwrite_callback);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, fetch_data->istream);
     curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, ebuf);
@@ -102,11 +100,9 @@ myopen(FetchData *fetch_data, GError **error)
     if (res != CURLM_OK) {
         g_set_error(error, RESTRAINT_FETCH_LIBARCHIVE_ERROR, 0,
                 "Failed to fetch url: %s", ebuf);
-        g_free (url);
         return FALSE;
     }
 
-    g_free (url);
     return TRUE;
 }
 
@@ -195,7 +191,7 @@ http_archive_read_callback (gpointer user_data)
                                             fetch_data->user_data);
     }
 
-    const gchar *fragment = soup_uri_get_fragment(fetch_data->url);
+    const gchar *fragment = fetch_data->url->fragment;
     const gchar *entry_path = archive_entry_pathname(entry);
     if (fragment == NULL || (g_strrstr(entry_path, fragment) != NULL &&
             !(fragment[strlen(fragment)] != '/' && strlen(entry_path) ==
@@ -360,7 +356,7 @@ static gboolean start_unpack(gpointer data)
 }
 
 void
-restraint_fetch_http (SoupURI *url,
+restraint_fetch_http (struct restraint_url *url,
                      const gchar *base_path,
                      gboolean keepchanges,
                      gboolean ssl_verify,

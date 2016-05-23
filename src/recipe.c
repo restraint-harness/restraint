@@ -244,7 +244,7 @@ static Task *parse_task(xmlNode *task_node, Recipe *recipe, GError **error) {
                     task->task_id);
             goto error;
         }
-        task->fetch.url = soup_uri_new((char *)url);
+        task->fetch.url = restraint_parse_url((char *)url);
         xmlFree(url);
 
         xmlChar *ssl_verify = xmlGetNoNsProp(fetch, (xmlChar *)"ssl_verify");
@@ -256,9 +256,9 @@ static Task *parse_task(xmlNode *task_node, Recipe *recipe, GError **error) {
         xmlFree(ssl_verify);
 
         task->path = g_build_filename(task->recipe->base_path,
-                soup_uri_get_host(task->fetch.url),
-                soup_uri_get_path(task->fetch.url),
-                soup_uri_get_fragment(task->fetch.url),
+                task->fetch.url->host,
+                task->fetch.url->path,
+                task->fetch.url->fragment,
                 NULL);
     } else {
         task->fetch_method = TASK_FETCH_INSTALL_PACKAGE;
