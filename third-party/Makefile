@@ -109,7 +109,7 @@ tree/lib/pkgconfig/libsoup-2.4.pc: $(LIBSOUP) $(LIBSOUP)/.patches-done tree/lib/
 tree/lib/pkgconfig/libcurl.pc: $(CURL) $(CURL)/.patches-done tree/lib/pkgconfig/zlib.pc tree/lib/pkgconfig/openssl.pc
 	( cd $(CURL) && LIBS="-ldl" PKG_CONFIG_PATH=../tree/lib/pkgconfig ./configure --prefix=$(CURDIR)/tree \
 	    --with-zlib=$(CURDIR)/tree --with-ssl=$(CURDIR)/tree --enable-ipv6 --disable-manual \
-	    --enable-static --disable-shared )
+	    --enable-static --disable-shared --disable-ldap --disable-ldaps --without-libidn)
 	$(MAKE) -C $(CURL)
 	$(MAKE) -C $(CURL) install
 
@@ -194,6 +194,7 @@ tarballs: $(TAR_BALLS)
 
 $(CURL)/.patches-done: $(CURL)
 	patch -d$(CURL) -p1 <curl_add_ppc64le.patch
+	patch -d$(CURL) -p1 <curl_pkgconfig.patch
 	touch $@
 
 $(XZ)/.patches-done: $(XZ)
