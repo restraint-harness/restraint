@@ -1,0 +1,18 @@
+#!/bin/sh
+#
+# Rotate audit log after every task run
+#
+PLUGIN=$(basename $0)
+
+PATH=/bin:/usr/bin:/sbin:/usr/sbin:$PATH
+
+. /usr/share/restraint/plugins/helpers
+
+# Need to zero all logs in audit directory, ausearch goes
+# through all of the .log files in the audit directory to
+# find avc messages.
+for log in /var/log/audit/*; do
+    > $log
+done
+
+rstrnt_info "Rotate audit log(s)"
