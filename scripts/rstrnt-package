@@ -34,7 +34,8 @@ if [ -f "/etc/os-release" ]; then
 fi
 
 operation=$1
-package=$2
+shift
+package=$*
 
 # First use variables provided via xml.
 # Second try os specific variables in /usr/share/restraint/pkg_commands.$ID
@@ -65,6 +66,10 @@ _pkg_cmd() {
 if [ "$operation" = "install" ]; then
     _pkg_cmd $pkg_install
     RC=$?
+    if [[ $RC == 0 && $pkg_cmd == "yum" ]]; then
+       rpm -q $package
+       RC=$?
+    fi
 elif [ "$operation" = "remove" ]; then
     _pkg_cmd $pkg_remove
     RC=$?
@@ -72,6 +77,10 @@ elif [ "$operation" = "reinstall" ]; then
     _pkg_cmd $pkg_remove
     _pkg_cmd $pkg_install
     RC=$?
+    if [[ $RC == 0 && $pkg_cmd == "yum" ]]; then
+       rpm -q $package
+       RC=$?
+    fi
 else
    >&2 echo "Unrecognized operation $operation"
    RC=2

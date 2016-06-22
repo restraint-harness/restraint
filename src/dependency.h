@@ -25,6 +25,7 @@ typedef void (*DependencyCallback)   (gpointer user_data, GError *error);
 typedef enum {
     DEPENDENCY_REPO,
     DEPENDENCY_RPM,
+    DEPENDENCY_SINGLE_RPM,
     DEPENDENCY_DONE
 } DependencyState;
 
@@ -43,6 +44,8 @@ typedef struct {
     DependencyState state;
     gpointer user_data;
     char *osmajor;
+    GString *install_rpms;
+    GString *remove_rpms;
 } DependencyData;
 
 void restraint_install_dependencies (Task *task, GIOFunc io_callback,
