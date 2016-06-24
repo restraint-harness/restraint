@@ -37,6 +37,7 @@ typedef struct {
 
 static void dependency_handler (gpointer user_data);
 static void restraint_fetch_repodeps(DependencyData *dependency_data);
+static void dependency_batch_rpms(DependencyData *dependency_data);
 
 static gboolean
 dependency_io_callback (GIOChannel *io, GIOCondition condition, gpointer user_data)
@@ -45,19 +46,25 @@ dependency_io_callback (GIOChannel *io, GIOCondition condition, gpointer user_da
     return dependency_data->io_callback (io, condition, dependency_data->user_data);
 }
 
-static void
-dependency_callback (gint pid_result, gboolean localwatchdog, gpointer user_data, GError *error)
+static gboolean dependency_process_errors(DependencyData *dependency_data,
+                                          GError *error, gint pid_result)
 {
-    DependencyData *dependency_data = (DependencyData *) user_data;
-
-    g_cancellable_set_error_if_cancelled (dependency_data->cancellable, &error);
-
     if (error) {
         if (dependency_data->finish_cb) {
             dependency_data->finish_cb (dependency_data->user_data, error);
         }
+
+        if (dependency_data->remove_rpms != NULL) {
+            g_string_free(dependency_data->remove_rpms, TRUE);
+            dependency_data->remove_rpms = NULL;
+        }
+        if (dependency_data->install_rpms != NULL) {
+            g_string_free(dependency_data->install_rpms, TRUE);
+            dependency_data->install_rpms = NULL;
+        }
         g_slist_free_full(dependency_data->processed_deps, g_free);
         g_slice_free (DependencyData, dependency_data);
+        return FALSE;
     } else if (dependency_data->ignore_failed_install != TRUE && pid_result != 0) {
         // If running in rhts_compat mode we don't check whether a packge installed
         // or not.
@@ -68,16 +75,180 @@ dependency_callback (gint pid_result, gboolean localwatchdog, gpointer user_data
         if (dependency_data->finish_cb) {
             dependency_data->finish_cb (dependency_data->user_data, error);
         }
+
+        if (dependency_data->remove_rpms != NULL) {
+            g_string_free(dependency_data->remove_rpms, TRUE);
+            dependency_data->remove_rpms = NULL;
+        }
+        if (dependency_data->install_rpms != NULL) {
+            g_string_free(dependency_data->install_rpms, TRUE);
+            dependency_data->install_rpms = NULL;
+        }
         g_slist_free_full(dependency_data->processed_deps, g_free);
         g_slice_free (DependencyData, dependency_data);
+        return FALSE;
     } else {
+        return TRUE;
+    }
+}
+
+static void
+dependency_callback (gint pid_result, gboolean localwatchdog, gpointer user_data, GError *error)
+{
+    DependencyData *dependency_data = (DependencyData *) user_data;
+
+    g_cancellable_set_error_if_cancelled (dependency_data->cancellable, &error);
+
+    if (dependency_process_errors(dependency_data, error, pid_result)) {
         dependency_data->dependencies = dependency_data->dependencies->next;
         dependency_handler (dependency_data);
     }
 }
 
+static void dependency_batch_remove_cb(gint pid_result,
+                                       gboolean localwatchdog,
+                                       gpointer user_data, GError *error)
+{
+    DependencyData *dependency_data = (DependencyData *) user_data;
+
+    g_cancellable_set_error_if_cancelled (dependency_data->cancellable, &error);
+
+    if (dependency_process_errors(dependency_data, error, pid_result)) {
+        if (dependency_data->ignore_failed_install == TRUE &&
+                !error && pid_result != 0) {
+            // Fall back to one-by-one installation mode
+
+            if (dependency_data->remove_rpms != NULL) {
+                g_string_free(dependency_data->remove_rpms, TRUE);
+                dependency_data->remove_rpms = NULL;
+            }
+            if (dependency_data->install_rpms != NULL) {
+                g_string_free(dependency_data->install_rpms, TRUE);
+                dependency_data->install_rpms = NULL;
+            }
+            dependency_data->state = DEPENDENCY_SINGLE_RPM;
+            dependency_handler(dependency_data);
+        } else {
+            g_string_free(dependency_data->remove_rpms, TRUE);
+            dependency_data->remove_rpms = NULL;
+            dependency_batch_rpms(dependency_data);
+        }
+    }
+}
+
+static void dependency_batch_install_cb(gint pid_result,
+                                        gboolean localwatchdog,
+                                        gpointer user_data, GError *error)
+{
+    DependencyData *dependency_data = (DependencyData *) user_data;
+
+    g_cancellable_set_error_if_cancelled (dependency_data->cancellable, &error);
+
+    if (dependency_process_errors(dependency_data, error, pid_result)) {
+        if (dependency_data->ignore_failed_install == TRUE &&
+                !error && pid_result != 0) {
+            // Fall back to one-by-one installation mode
+
+            if (dependency_data->remove_rpms != NULL) {
+                g_string_free(dependency_data->remove_rpms, TRUE);
+                dependency_data->remove_rpms = NULL;
+            }
+            if (dependency_data->install_rpms != NULL) {
+                g_string_free(dependency_data->install_rpms, TRUE);
+                dependency_data->install_rpms = NULL;
+            }
+            dependency_data->state = DEPENDENCY_SINGLE_RPM;
+            dependency_handler(dependency_data);
+        } else {
+            g_string_free(dependency_data->install_rpms, TRUE);
+            dependency_data->install_rpms = NULL;
+
+            dependency_data->dependencies = NULL;
+
+            dependency_data->state = DEPENDENCY_DONE;
+            dependency_handler(dependency_data);
+        }
+    }
+}
+
+static void
+dependency_batch_rpms(DependencyData *dependency_data)
+{
+    if (dependency_data->remove_rpms != NULL) {
+        if (dependency_data->remove_rpms->len > 0) {
+            gchar *command = g_strdup_printf("rstrnt-package remove%s",
+                                             dependency_data->remove_rpms->str);
+
+            process_run ((const gchar *)command,
+                         NULL,
+                         NULL,
+                         FALSE,
+                         0,
+                         dependency_io_callback,
+                         dependency_batch_remove_cb,
+                         dependency_data->cancellable,
+                         dependency_data);
+            g_free (command);
+        } else {
+            g_string_free(dependency_data->remove_rpms, TRUE);
+            dependency_data->remove_rpms = NULL;
+            dependency_batch_rpms(dependency_data);
+        }
+    } else if (dependency_data->install_rpms != NULL) {
+        if (dependency_data->install_rpms->len > 0) {
+            gchar *command = g_strdup_printf("rstrnt-package install%s",
+                                             dependency_data->install_rpms->str);
+
+            process_run ((const gchar *)command,
+                         NULL,
+                         NULL,
+                         FALSE,
+                         0,
+                         dependency_io_callback,
+                         dependency_batch_install_cb,
+                         dependency_data->cancellable,
+                         dependency_data);
+            g_free (command);
+        } else {
+            g_string_free(dependency_data->install_rpms, TRUE);
+            dependency_data->install_rpms = NULL;
+        }
+    }
+}
+
 static void
 dependency_rpm(DependencyData *dependency_data)
+{
+    GError *error = NULL;
+
+    if (dependency_data->dependencies) {
+        dependency_data->install_rpms = g_string_new(NULL);
+        dependency_data->remove_rpms = g_string_new(NULL);
+
+        for (GSList *l = dependency_data->dependencies; l; l = g_slist_next(l)) {
+            gchar *package_name = l->data;
+            if (g_str_has_prefix (package_name, "-") == TRUE) {
+                g_string_append_printf(dependency_data->remove_rpms,
+                                       " %s", package_name + 1);
+            } else {
+                g_string_append_printf(dependency_data->install_rpms,
+                                       " %s", package_name);
+            }
+        }
+
+        dependency_batch_rpms(dependency_data);
+    } else {
+        // no more packages to install/remove
+        // move on to next stage.
+        dependency_data->state = DEPENDENCY_DONE;
+        dependency_handler(dependency_data);
+    }
+    g_clear_error (&error);
+
+}
+
+static void
+dependency_single_rpm(DependencyData *dependency_data)
 {
     GError *error = NULL;
 
@@ -234,6 +405,9 @@ dependency_handler (gpointer user_data)
             break;
         case DEPENDENCY_RPM:
             dependency_rpm(dependency_data);
+            break;
+        case DEPENDENCY_SINGLE_RPM:
+            dependency_single_rpm(dependency_data);
             break;
         case DEPENDENCY_DONE:
             if (dependency_data->finish_cb) {

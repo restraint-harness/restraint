@@ -88,7 +88,7 @@ static void test_dependencies_success (void)
     dependencies = g_slist_prepend (dependencies, "PackageA");
     dependencies = g_slist_prepend (dependencies, "PackageB");
     dependencies = g_slist_prepend (dependencies, "PackageC");
-    gchar *expected = "use_pty:FALSE rstrnt-package install PackageC\ndummy yum: installing PackageC\nuse_pty:FALSE rstrnt-package install PackageB\ndummy yum: installing PackageB\nuse_pty:FALSE rstrnt-package install PackageA\ndummy yum: installing PackageA\n";
+    gchar *expected = "use_pty:FALSE rstrnt-package install PackageC PackageB PackageA\ndummy yum: installing PackageC PackageB PackageA\n";
 
     run_data = g_slice_new0 (RunData);
     run_data->loop = g_main_loop_new (NULL, TRUE);
@@ -137,7 +137,7 @@ static void test_dependencies_fail (void)
     dependencies = g_slist_prepend (dependencies, "PackageA");
     dependencies = g_slist_prepend (dependencies, "Packagefail");
     dependencies = g_slist_prepend (dependencies, "PackageC");
-    gchar *expected = "use_pty:FALSE rstrnt-package install PackageC\ndummy yum: installing PackageC\nuse_pty:FALSE rstrnt-package install Packagefail\ndummy yum: fail\n";
+    gchar *expected = "use_pty:FALSE rstrnt-package install PackageC Packagefail PackageA\ndummy yum: fail\n";
 
     run_data = g_slice_new0 (RunData);
     run_data->loop = g_main_loop_new (NULL, TRUE);
@@ -186,7 +186,7 @@ static void test_dependencies_ignore_fail (void)
     dependencies = g_slist_prepend (dependencies, "PackageA");
     dependencies = g_slist_prepend (dependencies, "Packagefail");
     dependencies = g_slist_prepend (dependencies, "PackageC");
-    gchar *expected = "use_pty:FALSE rstrnt-package install PackageC\ndummy yum: installing PackageC\nuse_pty:FALSE rstrnt-package install Packagefail\ndummy yum: fail\nuse_pty:FALSE rstrnt-package install PackageA\ndummy yum: installing PackageA\n";
+    gchar *expected = "use_pty:FALSE rstrnt-package install PackageC Packagefail PackageA\ndummy yum: fail\nuse_pty:FALSE rstrnt-package install PackageC\ndummy yum: installing PackageC\nuse_pty:FALSE rstrnt-package install Packagefail\ndummy yum: fail\nuse_pty:FALSE rstrnt-package install PackageA\ndummy yum: installing PackageA\n";
 
     run_data = g_slice_new0 (RunData);
     run_data->loop = g_main_loop_new (NULL, TRUE);
