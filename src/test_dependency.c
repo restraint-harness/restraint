@@ -15,7 +15,9 @@
     along with Restraint.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#define _XOPEN_SOURCE 500
 
+#include <stdlib.h>
 #include <glib.h>
 #include <glib/gstdio.h>
 #include <archive.h>
@@ -757,6 +759,7 @@ static void test_http_rec_repodeps_fail (void)
 }
 
 int main(int argc, char *argv[]) {
+    putenv("RSTRNT_PKG_CMD=fakeyum");
     g_test_init(&argc, &argv, NULL);
     g_test_add_func("/dependencies/success", test_dependencies_success);
     g_test_add_func("/dependencies/failure", test_dependencies_fail);
