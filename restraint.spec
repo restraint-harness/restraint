@@ -27,8 +27,8 @@ Source103:      zlib-1.2.8.tar.gz
 Source104:      bzip2-1.0.6.tar.gz
 Source105:      libxml2-2.9.1.tar.gz
 Source106:      curl-7.29.0.tar.bz2
-Source107:      libarchive-3.1.2.tar.gz
-Source108:      xz-5.0.4.tar.gz
+Source107:      libarchive-3.2.1.tar.gz
+Source108:      xz-5.2.2.tar.gz
 Source109:      sqlite-autoconf-3080002.tar.gz
 Source110:      intltool-0.35.5.tar.gz
 Source111:      libsoup-2.48.1.tar.xz

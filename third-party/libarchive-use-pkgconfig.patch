@@ -1,48 +1,35 @@
-diff --git a/configure b/configure
-index f5b6d12..ac31702 100755
+Index: b/configure
+===================================================================
 --- a/configure
 +++ b/configure
-@@ -637,8 +637,15 @@ am__EXEEXT_TRUE
- LTLIBOBJS
- LIBOBJS
- XML2_CONFIG
+@@ -641,8 +641,12 @@ LIBXML2_PC_CFLAGS
+ PKG_CONFIG_LIBDIR
+ PKG_CONFIG_PATH
+ PKG_CONFIG
 +LZMA_LIBS
 +LZMA_CFLAGS
  LTLIBICONV
  LIBICONV
 +ZLIB_LIBS
 +ZLIB_CFLAGS
-+PKG_CONFIG_LIBDIR
-+PKG_CONFIG_PATH
-+PKG_CONFIG
  STATIC_BSDCPIO_FALSE
  STATIC_BSDCPIO_TRUE
  BUILD_BSDCPIO_FALSE
-@@ -809,7 +816,14 @@ CFLAGS
- LDFLAGS
- LIBS
- CPPFLAGS
--CPP'
-+CPP
-+PKG_CONFIG
-+PKG_CONFIG_PATH
-+PKG_CONFIG_LIBDIR
+@@ -824,6 +828,10 @@ CPP
+ PKG_CONFIG
+ PKG_CONFIG_PATH
+ PKG_CONFIG_LIBDIR
 +ZLIB_CFLAGS
 +ZLIB_LIBS
 +LZMA_CFLAGS
-+LZMA_LIBS'
++LZMA_LIBS
+ LIBXML2_PC_CFLAGS
+ LIBXML2_PC_LIBS'
  
- 
- # Initialize some variables set by options.
-@@ -1493,6 +1507,15 @@ Some influential environment variables:
-   CPPFLAGS    (Objective) C/C++ preprocessor flags, e.g. -I<include dir> if
-               you have headers in a nonstandard directory <include dir>
-   CPP         C preprocessor
-+  PKG_CONFIG  path to pkg-config utility
-+  PKG_CONFIG_PATH
-+              directories to add to pkg-config's search path
-+  PKG_CONFIG_LIBDIR
-+              path overriding pkg-config's built-in search path
+@@ -1525,6 +1533,10 @@ Some influential environment variables:
+               C compiler flags for LIBXML2_PC, overriding pkg-config
+   LIBXML2_PC_LIBS
+               linker flags for LIBXML2_PC, overriding pkg-config
 +  ZLIB_CFLAGS C compiler flags for ZLIB, overriding pkg-config
 +  ZLIB_LIBS   linker flags for ZLIB, overriding pkg-config
 +  LZMA_CFLAGS C compiler flags for LZMA, overriding pkg-config
@@ -50,7 +37,7 @@ index f5b6d12..ac31702 100755
  
  Use these variables to override the choices made by `configure' or to help
  it to find libraries and programs with nonstandard names/locations.
-@@ -13075,6 +13098,126 @@ done
+@@ -13255,6 +13267,126 @@ done
  
  # Checks for libraries.
  
@@ -177,7 +164,7 @@ index f5b6d12..ac31702 100755
  # Check whether --with-zlib was given.
  if test "${with_zlib+set}" = set; then :
    withval=$with_zlib;
-@@ -13082,6 +13225,100 @@ fi
+@@ -13262,6 +13394,100 @@ fi
  
  
  if test "x$with_zlib" != "xno"; then
@@ -278,7 +265,7 @@ index f5b6d12..ac31702 100755
    for ac_header in zlib.h
  do :
    ac_fn_c_check_header_mongrel "$LINENO" "zlib.h" "ac_cv_header_zlib_h" "$ac_includes_default"
-@@ -14406,6 +14643,100 @@ fi
+@@ -14663,6 +14889,100 @@ fi
  
  
  if test "x$with_lzma" != "xno"; then
@@ -379,3 +366,17 @@ index f5b6d12..ac31702 100755
    for ac_header in lzma.h
  do :
    ac_fn_c_check_header_mongrel "$LINENO" "lzma.h" "ac_cv_header_lzma_h" "$ac_includes_default"
+@@ -15005,8 +15325,12 @@ if test -n "$LIBXML2_PC_LIBS"; then
+   ($PKG_CONFIG --exists --print-errors "libxml-2.0") 2>&5
+   ac_status=$?
+   $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
++  STATIC=""
++  if test "$enable_static" = "yes"; then
++    STATIC=" --static"
++  fi
+   test $ac_status = 0; }; then
+-  pkg_cv_LIBXML2_PC_LIBS=`$PKG_CONFIG --libs "libxml-2.0" 2>/dev/null`
++  pkg_cv_LIBXML2_PC_LIBS=`$PKG_CONFIG $STATIC --libs "libxml-2.0" 2>/dev/null`
+ 		      test "x$?" != "x0" && pkg_failed=yes
+ else
+   pkg_failed=yes

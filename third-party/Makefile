@@ -5,8 +5,8 @@ LIBFFI = libffi-3.1
 GLIB = glib-2.38.0
 LIBXML2 = libxml2-2.9.1
 CURL = curl-7.29.0
-LIBARCHIVE = libarchive-3.1.2
-XZ = xz-5.0.4
+LIBARCHIVE = libarchive-3.2.1
+XZ = xz-5.2.2
 LIBSOUP = libsoup-2.48.1
 CMAKE = cmake-3.2.3
 LIBSSH = libssh-0.7.3
@@ -119,7 +119,7 @@ tree/lib/pkgconfig/libarchive.pc: $(LIBARCHIVE) $(LIBARCHIVE)/.patches-done \
 				  tree/lib/pkgconfig/liblzma.pc
 	( cd $(LIBARCHIVE) && PKG_CONFIG_PATH=../tree/lib/pkgconfig ./configure --prefix=$(CURDIR)/tree \
 	    --disable-bsdtar --disable-bsdcpio \
-	    --without-nettle \
+	    --without-nettle --disable-acl \
 	    --enable-static --disable-shared )
 	$(MAKE) -C $(LIBARCHIVE)
 	$(MAKE) -C $(LIBARCHIVE) install
