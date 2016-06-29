@@ -10,7 +10,7 @@
 %endif
 
 Name:		restraint
-Version:	0.1.24
+Version:	0.1.25
 Release:	1%{?dist}
 Summary:	Simple test harness which can be used with beaker
 
@@ -345,6 +345,38 @@ fi
 %{__rm} -rf %{buildroot}
 
 %changelog
+* Wed Jun 29 2016 Bill Peck <bpeck@redhat.com> 0.1.25-1
+- fix restraint to report PASS or FAIL based on return code. (bpeck@redhat.com)
+- Update libarchive to 3.2.1. (asavkov@redhat.com)
+- Fix test_dependency. (asavkov@redhat.com)
+- Add batch rpm dependency install. (asavkov@redhat.com)
+- Add in audit rotate as plugin (jburke@redhat.com)
+- check on correct file (bpeck@redhat.com)
+- Add keepchanges documentation. (asavkov@redhat.com)
+- Add libssh malformed pubkey memory corruption patch. (asavkov@redhat.com)
+- build libarchive without nettle support (jbastian@redhat.com)
+- Switch to own remote semaphore implementation. (asavkov@redhat.com)
+- add rhts-flush as a no-op (dcallagh@redhat.com)
+- use $RPM_OPT_FLAGS (dcallagh@redhat.com)
+- re-enable optimizations by default (dcallagh@redhat.com)
+- Update libssh to 0.7.3. (asavkov@redhat.com)
+- Fix for rhts-report-result to accept the correct args (bpeck@redhat.com)
+- add support for reporting tests as skipped (bpeck@redhat.com)
+- Fix client return codes on failures. (asavkov@redhat.com)
+- add missing underscore versions of sync/block commands (bpeck@redhat.com)
+- Add recursive dependency tests. (asavkov@redhat.com)
+- allow process_run to use pty or not. Default to not. Can be enabled via task
+  metadata or in task param. (bpeck@redhat.com)
+- Recursively check repodeps. (asavkov@redhat.com)
+- Add common 'test' to test-data. (asavkov@redhat.com)
+- Prepare test_dependency for recursive repodeps. (asavkov@redhat.com)
+- Fix rt_sigaction valgrind suppression. (asavkov@redhat.com)
+- Get rid of global session in fetch_http. (asavkov@redhat.com)
+- Move metadata processing to metadata.c (asavkov@redhat.com)
+- third-party: fix Makefile deps for patching targets (dcallagh@redhat.com)
+- third-party: fix -Wformat-nonliteral failures with newer gcc
+  (dcallagh@redhat.com)
+
 * Thu Mar 03 2016 Bill Peck <bpeck@redhat.com> 0.1.24-1
 - Relax xml schema validation to ignore unknown fields and attributes that we
   will end up ignoring anyway. (bpeck@redhat.com)
