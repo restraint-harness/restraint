@@ -316,7 +316,13 @@ static void dep_mtdata_finish_cb(gpointer user_data, GError *error)
     MetadataFetchInfo *mtfi = (MetadataFetchInfo*)user_data;
     DependencyData *dependency_data = mtfi->dependency_data;
 
-    if (mtfi->tmp_meta != NULL) {
+    if (error) {
+        if (dependency_data->finish_cb) {
+            dependency_data->finish_cb(dependency_data->user_data, error);
+        }
+        g_free(mtfi->path);
+        g_slice_free(MetadataFetchInfo, mtfi);
+    } else if (mtfi->tmp_meta != NULL) {
         DependencyData *newdd = g_slice_dup(DependencyData, dependency_data);
         newdd->dependencies = mtfi->tmp_meta->dependencies;
         newdd->repodeps = mtfi->tmp_meta->repodeps;
@@ -328,8 +334,10 @@ static void dep_mtdata_finish_cb(gpointer user_data, GError *error)
                                     (GCopyFunc)g_strdup, NULL);
         restraint_fetch_repodeps(newdd);
     } else {
+        g_warning("No metadata for dependency '%s'\n", mtfi->path);
         g_free(mtfi->path);
         g_slice_free(MetadataFetchInfo, mtfi);
+        restraint_fetch_repodeps(dependency_data);
     }
 }
 
