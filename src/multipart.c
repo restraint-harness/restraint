@@ -81,6 +81,7 @@ read_cb (GObject *source, GAsyncResult *async_result, gpointer user_data)
                                         multipart_data->cancellable,
                                         close_base_cb,
                                         user_data);
+            g_string_free(multipart_data->buffer, TRUE);
             return;
         }
         if (multipart_data->callback) {
