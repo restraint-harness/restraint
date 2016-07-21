@@ -542,7 +542,7 @@ restraint_task_result (Task *task, AppData *app_data, gchar *result,
     app_data->queue_message(soup_session,
                             server_msg,
                             app_data->message_data,
-                            task_message_complete,
+                            NULL,
                             app_data->cancellable,
                             app_data);
 }
