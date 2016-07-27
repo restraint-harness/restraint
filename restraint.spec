@@ -11,7 +11,7 @@
 
 Name:		restraint
 Version:	0.1.25
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Simple test harness which can be used with beaker
 
 Group:		Applications/Internet
@@ -345,6 +345,10 @@ fi
 %{__rm} -rf %{buildroot}
 
 %changelog
+* Wed Jul 27 2016 Artem Savkov <asavkov@redhat.com> 0.1.25-2
+- Fix double task_handler calls after reporting result. (asavkov@redhat.com)
+- Properly process no metadata case in repodeps. (asavkov@redhat.com)
+
 * Wed Jun 29 2016 Bill Peck <bpeck@redhat.com> 0.1.25-1
 - fix restraint to report PASS or FAIL based on return code. (bpeck@redhat.com)
 - Update libarchive to 3.2.1. (asavkov@redhat.com)
