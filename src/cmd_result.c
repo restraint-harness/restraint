@@ -165,6 +165,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (app_data->disable_plugin->pdata) {
+        g_ptr_array_add (app_data->disable_plugin, NULL);
         g_hash_table_insert (data_table, "disable_plugin",
                              g_strjoinv (" ", (gchar **)app_data->disable_plugin->pdata));
     }
