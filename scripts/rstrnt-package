@@ -67,7 +67,7 @@ if [ "$operation" = "install" ]; then
     _pkg_cmd $pkg_install
     RC=$?
     if [[ $RC == 0 && $pkg_cmd == "yum" ]]; then
-       rpm -q $package
+       rpm -q --whatprovides $package
        RC=$?
     fi
 elif [ "$operation" = "remove" ]; then
@@ -78,7 +78,7 @@ elif [ "$operation" = "reinstall" ]; then
     _pkg_cmd $pkg_install
     RC=$?
     if [[ $RC == 0 && $pkg_cmd == "yum" ]]; then
-       rpm -q $package
+       rpm -q --whatprovides $package
        RC=$?
     fi
 else
