@@ -26,7 +26,7 @@ static void close_ssh_connection(SshData *ssh_data) {
 void ssh_kill(SshData *ssh_data)
 {
   if (ssh_data->state == SSH_ESTABLISHED) {
-    pthread_kill(ssh_data->fwdt, SIGTERM);
+    pthread_cancel(ssh_data->fwdt);
   } else {
     ssh_data->state = SSH_QUIT;
     pthread_join(ssh_data->fwdt, NULL);
