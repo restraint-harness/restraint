@@ -10,8 +10,8 @@
 %endif
 
 Name:		restraint
-Version:	0.1.25
-Release:	2%{?dist}
+Version:	0.1.26
+Release:	1%{?dist}
 Summary:	Simple test harness which can be used with beaker
 
 Group:		Applications/Internet
@@ -345,6 +345,12 @@ fi
 %{__rm} -rf %{buildroot}
 
 %changelog
+* Mon Aug 08 2016 Bill Peck <bpeck@redhat.com> 0.1.26-1
+- Use --whatprovides to check package installs. (asavkov@redhat.com)
+- Avoid memory bug by NULL-terminating an array (pmuller@redhat.com)
+- Fix suicide by ssh. (asavkov@redhat.com)
+- Fix a memory leak in multipart's read_cb. (asavkov@redhat.com)
+
 * Wed Jul 27 2016 Artem Savkov <asavkov@redhat.com> 0.1.25-2
 - Fix double task_handler calls after reporting result. (asavkov@redhat.com)
 - Properly process no metadata case in repodeps. (asavkov@redhat.com)
