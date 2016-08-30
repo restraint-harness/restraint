@@ -205,6 +205,9 @@ void handler(void)
                                      g_free, NULL);
   int lsock, rsock;
 
+  close(STDOUT_FILENO);
+  close(STDERR_FILENO);
+  close(STDIN_FILENO);
   if ((lsock = listen_local()) < 0) {
     goto lerror;
   }
