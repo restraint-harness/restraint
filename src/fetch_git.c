@@ -423,6 +423,15 @@ restraint_fetch_git (SoupURI *url,
         rmrf(base_path);
     }
 
+    if (fetch_data->archive_entry_callback) {
+        gchar *url_string = soup_uri_to_string (url, TRUE);
+        gchar *entry = g_strdup_printf ("%s%s", url_string, base_path);
+        fetch_data->archive_entry_callback (entry,
+                                            fetch_data->user_data);
+        g_free(url_string);
+        g_free(entry);
+    }
+
     fetch_data->a = archive_read_new();
     if (fetch_data->a == NULL) {
         g_set_error(&fetch_data->error, RESTRAINT_FETCH_LIBARCHIVE_ERROR, 0,

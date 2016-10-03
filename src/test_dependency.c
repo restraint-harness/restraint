@@ -24,7 +24,6 @@
 
 #include "dependency.h"
 #include "errors.h"
-#include "fetch.h"
 
 typedef struct {
     GError *error;
@@ -109,6 +108,7 @@ static void test_dependencies_success (void)
 
     restraint_install_dependencies (task,
                                     dependency_io_cb,
+                                    NULL,
                                     dependency_finish_cb,
                                     NULL,
                                     run_data);
@@ -158,6 +158,7 @@ static void test_dependencies_fail (void)
 
     restraint_install_dependencies (task,
                                     dependency_io_cb,
+                                    NULL,
                                     dependency_finish_cb,
                                     NULL,
                                     run_data);
@@ -207,6 +208,7 @@ static void test_dependencies_ignore_fail (void)
 
     restraint_install_dependencies (task,
                                     dependency_io_cb,
+                                    NULL,
                                     dependency_finish_cb,
                                     NULL,
                                     run_data);
@@ -253,6 +255,7 @@ static void test_git_repodeps_success (void)
 
     restraint_install_dependencies (task,
                                     dependency_io_cb,
+                                    NULL,
                                     dependency_finish_cb,
                                     NULL,
                                     run_data);
@@ -326,6 +329,7 @@ static void test_git_repodeps_fail (void)
 
     restraint_install_dependencies (task,
                                     dependency_io_cb,
+                                    NULL,
                                     dependency_finish_cb,
                                     NULL,
                                     run_data);
@@ -369,6 +373,7 @@ static void test_http_repodeps_success (void)
 
     restraint_install_dependencies (task,
                                     dependency_io_cb,
+                                    NULL,
                                     dependency_finish_cb,
                                     NULL,
                                     run_data);
@@ -442,6 +447,7 @@ static void test_http_repodeps_fail (void)
 
     restraint_install_dependencies (task,
                                     dependency_io_cb,
+                                    NULL,
                                     dependency_finish_cb,
                                     NULL,
                                     run_data);
@@ -485,6 +491,7 @@ static void test_git_rec_repodeps_success (void)
 
     restraint_install_dependencies (task,
                                     dependency_io_cb,
+                                    NULL,
                                     dependency_finish_cb,
                                     NULL,
                                     run_data);
@@ -588,6 +595,7 @@ static void test_git_rec_repodeps_fail (void)
 
     restraint_install_dependencies (task,
                                     dependency_io_cb,
+                                    NULL,
                                     dependency_finish_cb,
                                     NULL,
                                     run_data);
@@ -633,6 +641,7 @@ static void test_http_rec_repodeps_success (void)
 
     restraint_install_dependencies (task,
                                     dependency_io_cb,
+                                    NULL,
                                     dependency_finish_cb,
                                     NULL,
                                     run_data);
@@ -736,6 +745,7 @@ static void test_http_rec_repodeps_fail (void)
 
     restraint_install_dependencies (task,
                                     dependency_io_cb,
+                                    NULL,
                                     dependency_finish_cb,
                                     NULL,
                                     run_data);

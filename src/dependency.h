@@ -19,6 +19,7 @@
 #include <stdint.h>
 #include "recipe.h"
 #include "task.h"
+#include "fetch.h"
 
 typedef void (*DependencyCallback)   (gpointer user_data, GError *error);
 
@@ -39,6 +40,7 @@ typedef struct {
     const gchar *base_path;
     gboolean ignore_failed_install;
     GIOFunc io_callback;
+    ArchiveEntryCallback archive_entry_callback;
     DependencyCallback finish_cb;
     GCancellable *cancellable;
     DependencyState state;
@@ -49,6 +51,7 @@ typedef struct {
 } DependencyData;
 
 void restraint_install_dependencies (Task *task, GIOFunc io_callback,
+                                     ArchiveEntryCallback archive_entry_callback,
                                      DependencyCallback finish_cb,
                                      GCancellable *cancellable,
                                      gpointer user_data);

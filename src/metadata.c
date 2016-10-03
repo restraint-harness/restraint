@@ -243,9 +243,17 @@ static void parse_line(MetaData *metadata,
         }
         // We only want to free the array not the values that it's pointing to
         g_strfreev (dependencies);
-    } else  if (g_strcmp0("REPOREQUIRES", key) == 0) {
-        metadata->repodeps = g_slist_prepend(metadata->repodeps,
-                                             g_strndup(value, strlen(value)));
+    } else  if(g_strcmp0("REPOREQUIRES", key) == 0) {
+        gchar **repodeps = g_strsplit_set (value,", ", -1);
+        gchar **repodep = repodeps;
+        while (*repodep) {
+            if (g_strcmp0 (*repodep, "") != 0) {
+                metadata->repodeps = g_slist_prepend (metadata->repodeps, g_strdup(*repodep));
+            }
+            repodep++;
+        }
+        // We only want to free the array not the values that it's pointing to
+        g_strfreev (repodeps);
     }
     g_free(key);
     g_free(value);

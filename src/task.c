@@ -38,7 +38,6 @@
 #include "dependency.h"
 #include "config.h"
 #include "errors.h"
-#include "fetch.h"
 #include "fetch_git.h"
 #include "fetch_http.h"
 #include "utils.h"
@@ -57,6 +56,13 @@ archive_entry_callback (const gchar *entry, gpointer user_data)
     g_string_printf (message, "** Extracting %s\n", entry);
     connections_write (app_data, LOG_PATH_HARNESS, message->str, message->len);
     g_string_free (message, TRUE);
+}
+
+void
+taskrun_archive_entry_callback (const gchar *entry, gpointer user_data)
+{
+    TaskRunData *task_run_data = (TaskRunData *) user_data;
+    return archive_entry_callback (entry, task_run_data->app_data);
 }
 
 static gboolean fetch_retry (gpointer user_data)
@@ -848,6 +854,7 @@ task_handler (gpointer user_data)
           task_run_data->app_data = app_data;
           task_run_data->logpath = LOG_PATH_HARNESS;
           restraint_install_dependencies (task, task_io_callback,
+                                          taskrun_archive_entry_callback,
                                           dependency_finish_cb,
                                           app_data->cancellable,
                                           task_run_data);

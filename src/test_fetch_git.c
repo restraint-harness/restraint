@@ -54,13 +54,13 @@ static void
 test_fetch_git_success(void) {
     RunData *run_data;
 
-    gchar *expected = "MakefilePURPOSEmetadataruntest.sh";
     run_data = g_slice_new0 (RunData);
     run_data->entry = g_string_new (NULL);
     run_data->loop = g_main_loop_new (NULL, TRUE);
 
     SoupURI *url = soup_uri_new ("git://localhost/repo1?master#restraint/sanity/fetch_git");
     gchar *path = g_dir_make_tmp ("test_fetch_git_XXXXXX", NULL);
+    gchar *expected = g_strdup_printf("/repo1?master%sMakefilePURPOSEmetadataruntest.sh", path);
 
     restraint_fetch_git (url,
                          path,
@@ -108,6 +108,7 @@ test_fetch_git_success(void) {
     g_slice_free (RunData, run_data);
     g_remove (path);
     g_free (path);
+    g_free (expected);
     soup_uri_free (url);
 }
 
@@ -115,13 +116,13 @@ static void
 test_fetch_git_fail(void) {
     RunData *run_data;
 
-    gchar *expected = "";
     run_data = g_slice_new0 (RunData);
     run_data->entry = g_string_new (NULL);
     run_data->loop = g_main_loop_new (NULL, TRUE);
 
     SoupURI *url = soup_uri_new ("git://localhost/repo1?master#restraint/sanity/fetch_gt");
     gchar *path = g_dir_make_tmp ("test_fetch_git_XXXXXX", NULL);
+    gchar *expected = g_strdup_printf("/repo1?master%s", path);
 
     restraint_fetch_git (url,
                          path,
@@ -145,6 +146,7 @@ test_fetch_git_fail(void) {
     g_slice_free (RunData, run_data);
     g_remove (path);
     g_free (path);
+    g_free (expected);
     soup_uri_free (url);
 }
 
@@ -152,12 +154,12 @@ static void
 test_fetch_git_keepchanges(void) {
     RunData *run_data;
 
-    gchar *expected = "MakefilePURPOSEmetadataruntest.sh";
     run_data = g_slice_new0 (RunData);
     run_data->entry = g_string_new (NULL);
 
     SoupURI *url = soup_uri_new ("git://localhost/repo1?master#restraint/sanity/fetch_git");
     gchar *path = g_dir_make_tmp ("test_fetch_git_XXXXXX", NULL);
+    gchar *expected = g_strdup_printf("/repo1?master%sMakefilePURPOSEmetadataruntest.sh", path);
 
     restraint_fetch_git (url,
                          path,
@@ -268,6 +270,7 @@ test_fetch_git_keepchanges(void) {
     g_slice_free (RunData, run_data);
     g_remove (path);
     g_free (path);
+    g_free (expected);
     soup_uri_free (url);
 }
 

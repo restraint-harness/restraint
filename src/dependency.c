@@ -19,7 +19,6 @@
 #include "dependency.h"
 #include "errors.h"
 #include "process.h"
-#include "fetch.h"
 #include "fetch_git.h"
 #include "fetch_http.h"
 
@@ -38,6 +37,16 @@ typedef struct {
 static void dependency_handler (gpointer user_data);
 static void restraint_fetch_repodeps(DependencyData *dependency_data);
 static void dependency_batch_rpms(DependencyData *dependency_data);
+
+static void
+repo_dep_data_archive_callback (const gchar *entry, gpointer user_data)
+{
+    RepoDepData *rd_data = (RepoDepData*)user_data;
+    DependencyData *dependency_data = rd_data->dependency_data;
+    if (dependency_data->archive_entry_callback != NULL) {
+        return dependency_data->archive_entry_callback (entry, dependency_data->user_data);
+    }
+}
 
 static gboolean
 dependency_io_callback (GIOChannel *io, GIOCondition condition, gpointer user_data)
@@ -390,11 +399,11 @@ restraint_fetch_repodeps(DependencyData *dependency_data)
                                          NULL);
         if (g_strcmp0(soup_uri_get_scheme(rd_data->url), "git") == 0) {
             restraint_fetch_git(rd_data->url, rd_data->path,
-                                dependency_data->keepchanges, NULL,
+                                dependency_data->keepchanges, repo_dep_data_archive_callback,
                                 fetch_repodeps_finish_callback, rd_data);
         } else {
             restraint_fetch_http(rd_data->url, rd_data->path,
-                                 dependency_data->keepchanges, NULL,
+                                 dependency_data->keepchanges, repo_dep_data_archive_callback,
                                  fetch_repodeps_finish_callback, rd_data);
         }
     } else {
@@ -432,6 +441,7 @@ dependency_handler (gpointer user_data)
 void
 restraint_install_dependencies (Task *task,
                                 GIOFunc io_callback,
+                                ArchiveEntryCallback archive_entry_callback,
                                 DependencyCallback finish_cb,
                                 GCancellable *cancellable,
                                 gpointer user_data)
@@ -446,6 +456,7 @@ restraint_install_dependencies (Task *task,
     dependency_data->ignore_failed_install = task->rhts_compat;
     dependency_data->keepchanges = task->keepchanges;
     dependency_data->io_callback = io_callback;
+    dependency_data->archive_entry_callback = archive_entry_callback;
     dependency_data->finish_cb = finish_cb;
     dependency_data->cancellable = cancellable;
     dependency_data->osmajor = task->recipe->osmajor;
