@@ -39,6 +39,35 @@ can see that in the following example.
 This name will be used when reporting on the status of the task and when reporting
 results.
 
+Task roles
+----------
+
+Restraint supports role assignment for tasks or whole recipes for use in
+multihost jobs.
+
+::
+
+ <job>
+  <recipeSet>
+   <recipe role="SERVERS">
+    <task name="/kernel/filesystems/nfs/connectathon-mh">
+     <fetch url="git://fedorapeople.org/home/fedora/bpeck/public_git/tests.git?master#kernel/filesystems/nfs/connectathon-mh" />
+    </task>
+   </recipe>
+   <recipe>
+    <task name="/kernel/filesystems/nfs/connectathon-mh" role="CLIENTS">
+     <fetch url="git://fedorapeople.org/home/fedora/bpeck/public_git/tests.git?master#kernel/filesystems/nfs/connectathon-mh" />
+    </task>
+   </recipe>
+  </recipeSet>
+ </job>
+
+The above example results in environment variables "SERVERS" and "CLIENTS"
+containing hostnames assigned to corresponding recipes. The variables will be
+available only to tasks with the same padding withing recipes.
+
+Recipe roles function as default roles for tasks that have no role specified
+and can be overriden by task roles.
 
 Keeping your task changes intact
 --------------------------------

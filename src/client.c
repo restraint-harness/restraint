@@ -1028,7 +1028,7 @@ static RecipeData *new_recipe_data(AppData *app_data, gchar *recipe_id)
 }
 
 static guint get_node_role(xmlNodePtr node, GHashTable *roletable,
-                         RecipeData *recipe_data)
+                             RecipeData *recipe_data)
 {
     xmlChar *role = xmlGetNoNsProp(node, (xmlChar*)"role");
 
@@ -1055,21 +1055,28 @@ static guint get_node_role(xmlNodePtr node, GHashTable *roletable,
     return 0;
 }
 
-static GSList *get_recipe_members(GHashTable *roletable)
+static GSList *get_recipe_members(AppData *app_data, xmlXPathObjectPtr recipe_nodes)
 {
     GSList *allhosts = NULL;
-    GList *rolehosts = g_hash_table_get_values(roletable);
-    for (GList *rolehost = rolehosts; rolehost != NULL;
-            rolehost = g_list_next(rolehost)) {
-        for (GSList *host = (GSList*)rolehost->data; host != NULL;
-                host = g_slist_next(host)) {
-            if (g_slist_find_custom(allhosts, host->data,
-                        (GCompareFunc)g_strcmp0) == NULL) {
-                allhosts = g_slist_prepend(allhosts, host->data);
-            }
+
+    for (guint i = 0; i < recipe_nodes->nodesetval->nodeNr; i++) {
+        char *host = NULL;
+        xmlNodePtr node = recipe_nodes->nodesetval->nodeTab[i];
+        xmlChar *id = xmlGetNoNsProp(node, (xmlChar*)"id");
+        RecipeData *recipe_data = g_hash_table_lookup(app_data->recipes,
+                                                      id);
+        if (recipe_data == NULL) {
+            g_slist_free_full(allhosts, g_free);
+            return NULL;
+        }
+
+        host = recipe_data->ssh_data->rhost;
+
+        if (g_slist_find_custom(allhosts, host,
+                    (GCompareFunc)g_strcmp0) == NULL) {
+            allhosts = g_slist_prepend(allhosts, host);
         }
     }
-    g_list_free(rolehosts);
     return allhosts;
 }
 
@@ -1149,9 +1156,12 @@ static gchar *copy_job_as_template(gchar *job, gboolean novalid,
                                                      (xmlChar *) "recipeSet",
                                                      NULL);
 
-    GHashTable *roletable = g_hash_table_new_full(g_str_hash, g_str_equal,
-                                              g_free,
-                                              (GDestroyNotify)g_slist_free);
+    GHashTable *posroles = g_hash_table_new_full(g_direct_hash, g_direct_equal,
+                                  NULL, (GDestroyNotify)g_hash_table_destroy);
+
+    GHashTable *rroles = g_hash_table_new_full(g_str_hash, g_str_equal,
+                                      g_free, (GDestroyNotify)g_slist_free);
+    g_hash_table_insert(posroles, GINT_TO_POINTER(0), rroles);
 
     for (guint i = 0; i < recipe_nodes->nodesetval->nodeNr; i++) {
         xmlNodePtr node = recipe_nodes->nodesetval->nodeTab[i];
@@ -1169,11 +1179,11 @@ static gchar *copy_job_as_template(gchar *job, gboolean novalid,
         if (recipe_data == NULL) {
             g_printerr ("Unable to find matching host for recipe id:%s did you pass --host on the cmd line?\n", id);
             xmlFreeDoc(template_xml_doc_ptr);
-            g_hash_table_destroy(roletable);
+            g_hash_table_destroy(posroles);
             return NULL;
         }
 
-        guint recipe_role = get_node_role(node, roletable, recipe_data);
+        get_node_role(node, rroles, recipe_data);
         xmlNodePtr new_recipe_ptr = new_recipe(new_xml_doc_ptr, id,
                                        recipe_set_node_ptr, wboard, role, owner);
 
@@ -1186,8 +1196,22 @@ static gchar *copy_job_as_template(gchar *job, gboolean novalid,
 
             for (guint j = 0; j < task_nodes->nodesetval->nodeNr; j++) {
                 xmlNodePtr tnode = task_nodes->nodesetval->nodeTab[j];
-                if (recipe_role == 0) {
-                    get_node_role(tnode, roletable, recipe_data);
+                guint newtable = 0;
+                GHashTable *trole = g_hash_table_lookup(posroles,
+                                        GINT_TO_POINTER(j + 1));
+                if (trole == NULL) {
+                    trole = g_hash_table_new_full(g_str_hash, g_str_equal,
+                                g_free, (GDestroyNotify)g_slist_free);
+                    newtable = 1;
+                }
+                guint insert = get_node_role(tnode, trole, recipe_data);
+                if (newtable) {
+                    if (insert) {
+                        g_hash_table_insert(posroles, GINT_TO_POINTER(j + 1),
+                                            trole);
+                    } else {
+                        g_hash_table_destroy(trole);
+                    }
                 }
             }
         }
@@ -1199,12 +1223,6 @@ static gchar *copy_job_as_template(gchar *job, gboolean novalid,
         xmlFree(owner);
     }
 
-    xmlNodePtr r_params = xmlNewDocNode(new_xml_doc_ptr, NULL,
-                                        (xmlChar*)"params", NULL);
-    g_hash_table_foreach(roletable, (GHFunc)add_r_params, r_params);
-    GSList *recipemembers = get_recipe_members(roletable);
-    add_r_params("RECIPE_MEMBERS", recipemembers, r_params);
-
     xmlXPathFreeObject(recipe_nodes);
     recipe_nodes = get_node_set(new_xml_doc_ptr, NULL,
                                 (xmlChar*)"/job/recipeSet/recipe");
@@ -1212,15 +1230,14 @@ static gchar *copy_job_as_template(gchar *job, gboolean novalid,
     if (recipe_nodes == NULL) {
         g_printerr("Unable to find any recipes in newly created xml.\n");
 
-        g_slist_free(recipemembers);
-        g_hash_table_destroy(roletable);
-        xmlFreeNode(r_params);
+        g_hash_table_destroy(posroles);
         xmlFreeDoc(template_xml_doc_ptr);
         xmlFreeDoc(new_xml_doc_ptr);
 
         return NULL;
     }
 
+    GSList *recipemembers = get_recipe_members(app_data, recipe_nodes);
     for (guint i = 0; i < recipe_nodes->nodesetval->nodeNr; i++) {
         xmlNodePtr rnode = recipe_nodes->nodesetval->nodeTab[i];
 
@@ -1232,20 +1249,25 @@ static gchar *copy_job_as_template(gchar *job, gboolean novalid,
                 xmlNodePtr t_params = first_child_with_name(tnode, "params",
                                                             FALSE);
                 if (t_params == NULL) {
-                    xmlAddChild(tnode, xmlCopyNode(r_params, 1));
-                } else {
-                    g_hash_table_foreach(roletable, (GHFunc)add_r_params,
-                                         t_params);
-                    add_r_params("RECIPE_MEMBERS", recipemembers, t_params);
+                    t_params = xmlNewChild(tnode, NULL, (xmlChar*)"params",
+                                             NULL);
                 }
+
+                GHashTable *lroles = g_hash_table_lookup(posroles,
+                                        GINT_TO_POINTER(j + 1));
+                if (lroles == NULL) {
+                    lroles = g_hash_table_lookup(posroles, GINT_TO_POINTER(0));
+                }
+                g_hash_table_foreach(lroles, (GHFunc)add_r_params,
+                                         t_params);
+                add_r_params("RECIPE_MEMBERS", recipemembers, t_params);
             }
         }
         xmlXPathFreeObject(task_nodes);
     }
 
+    g_hash_table_destroy(posroles);
     g_slist_free(recipemembers);
-    g_hash_table_destroy(roletable);
-    xmlFreeNode(r_params);
 
     // Write out our new job.
     gchar *filename = g_build_filename (run_dir, "job.xml", NULL);
