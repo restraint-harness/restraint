@@ -43,5 +43,6 @@ MetaData* restraint_parse_testinfo (gchar *filename, GError **error);
 void restraint_metadata_free (MetaData *metadata);
 gboolean restraint_get_metadata(char *path, char *osmajor, MetaData **metadata,
                                 GCancellable *cancellable,
-                                metadata_cb finish_cb, void *user_data);
+                                metadata_cb finish_cb, GIOFunc io_callback,
+                                void *user_data);
 #endif
