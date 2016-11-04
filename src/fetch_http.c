@@ -308,6 +308,7 @@ static gboolean timer_cb(gpointer data)
 {
     FetchData *fetch_data = (FetchData*)data;
     struct curl_data *cd = fetch_data->private_data;
+    int cur_timer = cd->to_ev;
     CURLM *curl = cd->curlm;
     CURLMcode res;
     res = curl_multi_socket_action(curl, CURL_SOCKET_TIMEOUT, 0, &cd->running);
@@ -315,9 +316,15 @@ static gboolean timer_cb(gpointer data)
         g_set_error(&fetch_data->error, RESTRAINT_FETCH_LIBARCHIVE_ERROR, res,
                     "curl failed");
         g_idle_add (archive_finish_callback, fetch_data);
+        if (cd->to_ev == cur_timer) {
+            cd->to_ev = 0;
+        }
         return FALSE;
     }
     check_multi_info(fetch_data);
+    if (cd->to_ev == cur_timer) {
+        cd->to_ev = 0;
+    }
     return FALSE;
 }
 
@@ -329,7 +336,15 @@ static int update_timeout_cb(CURLM *multi,    /* multi handle */
     struct curl_data *cd = fetch_data->private_data;
 
     if (timeout_ms >= 0) {
+        if (cd->to_ev != 0) {
+            g_source_remove(cd->to_ev);
+        }
         cd->to_ev = g_timeout_add(timeout_ms, timer_cb, userp);
+    } else {
+        if (cd->to_ev != 0) {
+            g_source_remove(cd->to_ev);
+            cd->to_ev = 0;
+        }
     }
     return 0;
 }
