@@ -39,6 +39,16 @@ static void restraint_fetch_repodeps(DependencyData *dependency_data);
 static void dependency_batch_rpms(DependencyData *dependency_data);
 
 static void
+mtfi_archive_entry_callback (const gchar *entry, gpointer user_data)
+{
+    MetadataFetchInfo *mtfi = (MetadataFetchInfo*)user_data;
+    DependencyData *dependency_data = mtfi->dependency_data;
+    if (dependency_data->archive_entry_callback != NULL) {
+        return dependency_data->archive_entry_callback (entry, dependency_data->user_data);
+    }
+}
+
+static void
 repo_dep_data_archive_callback (const gchar *entry, gpointer user_data)
 {
     RepoDepData *rd_data = (RepoDepData*)user_data;
@@ -337,6 +347,7 @@ static void dep_mtdata_finish_cb(gpointer user_data, GError *error)
         newdd->repodeps = mtfi->tmp_meta->repodeps;
         newdd->finish_cb = ldep_finish_cb;
         newdd->io_callback = ldep_io_cb;
+        newdd->archive_entry_callback = mtfi_archive_entry_callback;
         newdd->user_data = mtfi;
         newdd->processed_deps = g_slist_copy_deep(
                                     dependency_data->processed_deps,
