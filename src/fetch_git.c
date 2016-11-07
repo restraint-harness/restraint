@@ -427,7 +427,6 @@ restraint_fetch_git (struct restraint_url *url,
         gchar *entry = g_strdup_printf ("%s%s", url_string, base_path);
         fetch_data->archive_entry_callback (entry,
                                             fetch_data->user_data);
-        g_free(url_string);
         g_free(entry);
     }
 
