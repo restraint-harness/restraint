@@ -1,5 +1,4 @@
 Todo
 ====
 
-* Multihost doesn't work
-* IPv6 is not implemented yet
+* Nothing currently - `File an RFE <https://bugzilla.redhat.com/enter_bug.cgi?product=Restraint>`__
