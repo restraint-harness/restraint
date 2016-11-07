@@ -39,9 +39,19 @@ The report_result commands above cause the following plugins to be executed::
 
  run_task_plugins
   \
+   05_linger
+   |
    10_bash_login
    |
+   15_beakerlib
+   |
    20_unconfined
+   |
+   25_environment
+   |
+   30_restore_events
+   |
+   35_oom_adj
    |
    run_plugins <- report_result.d
     \
@@ -64,14 +74,17 @@ will be passed to exec in alphabetical order.
 
 Restraint currently ships with two task run plugins:
 
+* 05_linger - Enables session bus for user that restraint is running as.  You can disable this with RSTRNT_DISABLE_LINGER=1
 * 10_bash_login - invoke a login shell.
 * 15_beakerlib - Sets env vars to tell beakerlib how to report results in restraint.
 * 20_unconfined - if selinux is enabled on system run task in unconfined context.
 * 25_environment - Will attempt to guess certain variables if they weren't defined, (OSARCH, OSMAJOR, etc..)
+* 30_restore_events - Restores Multi-host states after a reboot
+* 35_oom_adj - sets out oom score low so we are less likley to be killed
 
 So the above plugins would get called like so::
 
- exec 10_bash_login 15_beakerlib 20_unconfined 25_environment "$@"
+ exec 05_linger 10_bash_login 15_beakerlib 20_unconfined 25_environment 30_restore_events 35_oom_adj "$@"
 
 In order for this to work the task run plugins are required to exec "$@" at the end of the script.
 Although task run plugins can't take any arguments they can make decisions based on environment variables.
