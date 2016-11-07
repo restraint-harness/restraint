@@ -1,0 +1,12 @@
+#!/bin/sh
+#
+# Keep recipeSet tasks in Sync
+#
+PLUGIN=$(basename $0)
+
+. /usr/share/restraint/plugins/helpers
+
+rstrnt_info "**** "$(rstrnt-sync set RSTRNT_DONE)
+for HOST in $RECIPE_MEMBERS; do
+    rstrnt_info "**** "$(rstrnt-sync block RSTRNT_DONE $HOST)
+done
