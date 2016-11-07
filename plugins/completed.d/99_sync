@@ -6,7 +6,23 @@ PLUGIN=$(basename $0)
 
 . /usr/share/restraint/plugins/helpers
 
-rstrnt_info "**** "$(rstrnt-sync set RSTRNT_DONE)
-for HOST in $RECIPE_MEMBERS; do
-    rstrnt_info "**** "$(rstrnt-sync block RSTRNT_DONE $HOST)
+rstrnt_info "**** "$(rstrnt-sync set ${TASKORDER}_RSTRNT_DONE)
+while true
+do
+  fail=0
+  for HOST in $RECIPE_MEMBERS; do
+    rstrnt-sync block ${TASKORDER}_RSTRNT_DONE $HOST
+    rc=$?
+    if [ $rc -ne 0 ]; then
+      fail=1
+      # If we get any error besides the timeout we sleep for a minute
+      if [ $rc -ne 37 ]; then
+        echo $output
+        sleep 60
+      fi
+    fi
+  done
+  if [ $fail -eq 0 ]; then
+    break
+  fi
 done
