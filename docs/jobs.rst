@@ -69,6 +69,11 @@ available only to tasks with the same padding withing recipes.
 Recipe roles function as default roles for tasks that have no role specified
 and can be overriden by task roles.
 
+Apart from role env variables restraint also exports 2 more hostname-related
+vars:
+ * RECIPE_MEMBERS - contains hostnames of all hosts within current recipeSet.
+ * JOB_MEMBERS - contains hostnames of all hosts in current job.
+
 Keeping your task changes intact
 --------------------------------
 
