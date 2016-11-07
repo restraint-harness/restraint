@@ -173,9 +173,8 @@ restraint_task_fetch(AppData *app_data) {
 }
 
 gboolean
-task_io_callback (GIOChannel *io, GIOCondition condition, gpointer user_data) {
-    TaskRunData *task_run_data = (TaskRunData *) user_data;
-    AppData *app_data = task_run_data->app_data;
+io_callback (GIOChannel *io, GIOCondition condition, const gchar *logpath, gpointer user_data) {
+    AppData *app_data = (AppData *) user_data;
     GError *tmp_error = NULL;
 
     gchar buf[10000];
@@ -188,7 +187,7 @@ task_io_callback (GIOChannel *io, GIOCondition condition, gpointer user_data) {
             /* Push data to our connections.. */
             if (fwrite(buf, sizeof(gchar), bytes_read, stdout) != bytes_read)
                 g_warning ("failed to write message");
-            connections_write(app_data, task_run_data->logpath, buf, bytes_read);
+            connections_write(app_data, logpath, buf, bytes_read);
             return TRUE;
 
           case G_IO_STATUS_ERROR:
@@ -214,6 +213,17 @@ task_io_callback (GIOChannel *io, GIOCondition condition, gpointer user_data) {
     }
 
     return FALSE;
+}
+
+gboolean
+task_io_callback (GIOChannel *io, GIOCondition condition, gpointer user_data) {
+    TaskRunData *task_run_data = (TaskRunData *) user_data;
+    return io_callback(io, condition, task_run_data->logpath, task_run_data->app_data);
+}
+
+gboolean
+metadata_io_callback (GIOChannel *io, GIOCondition condition, gpointer user_data) {
+    return io_callback(io, condition, LOG_PATH_HARNESS, user_data);
 }
 
 void
@@ -825,7 +835,7 @@ task_handler (gpointer user_data)
       task->rhts_compat = restraint_get_metadata(task->path,
                             task->recipe->osmajor, &task->metadata,
                             app_data->cancellable, metadata_finish_cb,
-                            app_data);
+                            metadata_io_callback, app_data);
       result=FALSE;
       break;
     case TASK_ENV:

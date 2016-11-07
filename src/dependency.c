@@ -65,6 +65,13 @@ dependency_io_callback (GIOChannel *io, GIOCondition condition, gpointer user_da
     return dependency_data->io_callback (io, condition, dependency_data->user_data);
 }
 
+static gboolean
+mtfi_io_callback (GIOChannel *io, GIOCondition condition, gpointer user_data)
+{
+    MetadataFetchInfo *mtfi_data = (MetadataFetchInfo *) user_data;
+    return dependency_io_callback (io, condition, mtfi_data->dependency_data);
+}
+
 static gboolean dependency_process_errors(DependencyData *dependency_data,
                                           GError *error, gint pid_result)
 {
@@ -384,7 +391,7 @@ fetch_repodeps_finish_callback(GError *error, gpointer user_data)
         restraint_get_metadata(mtfi->path, dependency_data->osmajor,
                                &mtfi->tmp_meta,
                                dependency_data->cancellable,
-                               dep_mtdata_finish_cb, mtfi);
+                               dep_mtdata_finish_cb, mtfi_io_callback, mtfi);
     } else {
         dependency_data->repodeps = g_slist_next(dependency_data->repodeps);
         restraint_fetch_repodeps(dependency_data);

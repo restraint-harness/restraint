@@ -36,6 +36,7 @@ typedef struct _MetadataData {
     char *osmajor;
     MetaData **metadata;
     GCancellable *cancellable;
+    GIOFunc io_callback;
     metadata_cb finish_cb;
     void *user_data;
 } MetadataData;
@@ -421,6 +422,12 @@ restraint_parse_testinfo(gchar *filename,
     return metadata;
 }
 
+gboolean
+mktinfo_io_callback (GIOChannel *io, GIOCondition condition, gpointer user_data) {
+    MetadataData *mtdata = (MetadataData*)user_data;
+    return mtdata->io_callback(io, condition, mtdata->user_data);
+}
+
 static void mktinfo_cb(gint pid_result, gboolean localwatchdog,
                        gpointer user_data, GError *error)
 {
@@ -434,7 +441,7 @@ static void mktinfo_cb(gint pid_result, gboolean localwatchdog,
     } else {
         restraint_get_metadata(mtdata->path, mtdata->osmajor, mtdata->metadata,
                                mtdata->cancellable, mtdata->finish_cb,
-                               mtdata->user_data);
+                               mtdata->io_callback, mtdata->user_data);
     }
     g_free (testinfo_file);
     g_slice_free(MetadataData, mtdata);
@@ -442,7 +449,8 @@ static void mktinfo_cb(gint pid_result, gboolean localwatchdog,
 
 gboolean restraint_get_metadata(char *path, char *osmajor, MetaData **metadata,
                                 GCancellable *cancellable,
-                                metadata_cb finish_cb, void *user_data)
+                                metadata_cb finish_cb,
+                                GIOFunc io_callback, void *user_data)
 {
     GError *error = NULL;
     gboolean ret = TRUE;
@@ -466,10 +474,11 @@ gboolean restraint_get_metadata(char *path, char *osmajor, MetaData **metadata,
         mtdata->osmajor = osmajor;
         mtdata->metadata = metadata;
         mtdata->cancellable = cancellable;
+        mtdata->io_callback = io_callback;
         mtdata->finish_cb = finish_cb;
         mtdata->user_data = user_data;
 
-        process_run(command, NULL, path, FALSE, 0, NULL, mktinfo_cb, cancellable,
+        process_run(command, NULL, path, FALSE, 0, mktinfo_io_callback, mktinfo_cb, cancellable,
                     mtdata);
     }
 
