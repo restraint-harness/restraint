@@ -1,0 +1,34 @@
+#!/bin/bash
+
+#
+# Tell beakerlib what command to use to report results
+#
+. /usr/share/restraint/plugins/helpers
+
+# on Fedora24 and newer the user session bus is only
+# available if that user logs in with either ssh or X
+# Enabling linger will enable the bus right away
+# and without ssh or X.
+
+# To disable this behaviour define RSTRNT_DISABLE_LINGER
+
+rstrnt_info "*** Running Plugin: $0"
+# Is loginctl installed?
+if which loginctl >/dev/null 2>&1; then
+  # What user name are we running as
+  username=$(getent passwd $(id -u) |awk -F: '{ print $1 }')
+  export XDG_RUNTIME_DIR=/run/user/$(id -u)
+
+  # DISABLE
+  if [ -n "$RSTRNT_DISABLE_LINGER" -a -f "/var/lib/systemd/linger/$username" ]; then
+    loginctl disable-linger $username
+    export -n XDG_RUNTIME_DIR
+  fi
+
+  # ENABLE
+  if [ -z "$RSTRNT_DISABLE_LINGER" -a ! -f "/var/lib/systemd/linger/$username" ]; then
+    loginctl enable-linger $username
+  fi
+fi
+
+exec "$@"
