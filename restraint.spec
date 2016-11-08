@@ -10,7 +10,7 @@
 %endif
 
 Name:		restraint
-Version:	0.1.27
+Version:	0.1.28
 Release:	1%{?dist}
 Summary:	Simple test harness which can be used with beaker
 
@@ -346,6 +346,26 @@ fi
 %{__rm} -rf %{buildroot}
 
 %changelog
+* Tue Nov 08 2016 Bill Peck <bpeck@redhat.com> 0.1.28-1
+- rstrnt-sync block doesn't actually block. You need to keep checking on it.
+  (bpeck@redhat.com)
+- New linger plugin to enable session bus testing in Fedora24 and newer.
+  (bpeck@redhat.com)
+- update TODO list (bpeck@redhat.com)
+- Docs: Add *_MEMBERS env var descriptions. (asavkov@redhat.com)
+- Fix doublefree of restraint_url->uri. (asavkov@redhat.com)
+- Unflat recipeSets. (asavkov@redhat.com)
+- Rework roles processing. (asavkov@redhat.com)
+- fix for keeping multi-host recipes in sync (bpeck@redhat.com)
+- Implement timer removal. (asavkov@redhat.com)
+- Capture output of make testinfo.desc (bpeck@redhat.com)
+- MetaDataFetchInfo archive_entry callback. (asavkov@redhat.com)
+- Switch to restraint_url instead of SoupURI. (asavkov@redhat.com)
+- curl: switch to multi mode. (asavkov@redhat.com)
+- Add ssl_verify parameter to fetch tag. (asavkov@redhat.com)
+- Switch fetch_http to use libcurl. (asavkov@redhat.com)
+- Fix rhel4 libcurl. (asavkov@redhat.com)
+
 * Mon Oct 17 2016 Bill Peck <bpeck@redhat.com> 0.1.27-1
 - Print out extracted files for dependencies as well (bpeck@redhat.com)
 - Update restraint standalone to process owner attribute from job.xml  - this
