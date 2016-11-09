@@ -58,7 +58,7 @@ test_fetch_git_success(void) {
 
     struct restraint_url *url = restraint_parse_url("git://localhost/repo1?master#restraint/sanity/fetch_git");
     gchar *path = g_dir_make_tmp ("test_fetch_git_XXXXXX", NULL);
-    gchar *expected = g_strdup_printf("/repo1?master%sMakefilePURPOSEmetadataruntest.sh", path);
+    gchar *expected = g_strdup_printf("git://localhost/repo1?master#restraint/sanity/fetch_git%sMakefilePURPOSEmetadataruntest.sh", path);
 
     restraint_fetch_git (url,
                          path,
@@ -120,7 +120,7 @@ test_fetch_git_fail(void) {
 
     struct restraint_url *url = restraint_parse_url("git://localhost/repo1?master#restraint/sanity/fetch_gt");
     gchar *path = g_dir_make_tmp ("test_fetch_git_XXXXXX", NULL);
-    gchar *expected = g_strdup_printf("/repo1?master%s", path);
+    gchar *expected = g_strdup_printf("git://localhost/repo1?master#restraint/sanity/fetch_gt%s", path);
 
     restraint_fetch_git (url,
                          path,
@@ -157,7 +157,7 @@ test_fetch_git_keepchanges(void) {
 
     struct restraint_url *url = restraint_parse_url("git://localhost/repo1?master#restraint/sanity/fetch_git");
     gchar *path = g_dir_make_tmp ("test_fetch_git_XXXXXX", NULL);
-    gchar *expected = g_strdup_printf("/repo1?master%sMakefilePURPOSEmetadataruntest.sh", path);
+    gchar *expected = g_strdup_printf("git://localhost/repo1?master#restraint/sanity/fetch_git%sMakefilePURPOSEmetadataruntest.sh", path);
 
     restraint_fetch_git (url,
                          path,
