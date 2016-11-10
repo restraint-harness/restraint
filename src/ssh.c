@@ -59,7 +59,6 @@ static gint ssh_establish_connection(SshData *ssh_data) {
     g_printerr("Failed to authenticate by public key: %s\n", ssh_get_error(ssh_data->session));
     password = getpass("Password: ");
     rc = ssh_userauth_password(ssh_data->session, NULL, password);
-    free(password);
     if (rc != SSH_AUTH_SUCCESS) {
       g_printerr("Failed to authenticate by password: %s\n", ssh_get_error(ssh_data->session));
       ssh_disconnect(ssh_data->session);
