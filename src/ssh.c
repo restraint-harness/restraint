@@ -133,6 +133,12 @@ void* fwddata(void *data) {
       return NULL;
     } else if (ssh_data->state == SSH_FAILED) {
       sleep(SSH_RETRY_DELAY);
+
+      // Check if client decided to qiuit trying.
+      if (ssh_data->state == SSH_QUIT) {
+        return NULL;
+      }
+
       // According to libssh docs ssh_disconnect should be enough to recreate a
       // session, but it's not, so we are creating a new session and copying
       // all of the options over to it.
