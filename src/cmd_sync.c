@@ -11,6 +11,7 @@
 #include <sys/un.h>
 #include <unistd.h>
 #include <glib.h>
+#include <glib/gprintf.h>
 #include <glib-unix.h>
 
 #define USOCKET_PATH "/tmp/rstrntsync.sock"
@@ -304,6 +305,11 @@ int main(int argc, char **argv)
     }
 
     he = gethostbyname(argv[3]);
+    if (he == NULL) {
+      g_fprintf(stderr, "Failed to resolve hostname '%s'.\n",
+               argv[3]);
+      return 1;
+    }
     saddr.sin_family = AF_INET;
     saddr.sin_port = htons(PORT);
     memcpy(&(saddr.sin_addr.s_addr), he->h_addr_list[0], he->h_length);
