@@ -268,7 +268,7 @@ remote_hup (GError *error,
     // If we get an error on the first connection then we simply abort
     if (app_data->started && ! tasks_finished(app_data->xml_doc, recipe_data->recipe_node_ptr, (xmlChar *)"task")
                           && ! g_cancellable_is_cancelled(recipe_data->cancellable)
-                          && app_data->conn_retries < CONN_RETRIES) {
+                          && app_data->conn_retries < app_data->max_retries) {
         if (error) {
             g_print ("%s [%s, %d]\n", error->message,
                      g_quark_to_string (error->domain), error->code);
@@ -278,7 +278,7 @@ remote_hup (GError *error,
         recipe_data->remote_uri = continue_uri;
         full_url = soup_uri_to_string (recipe_data->remote_uri, FALSE);
         g_print ("Disconnected.. delaying %d seconds. Retry %d/%d.\n",
-                 DEFAULT_DELAY, app_data->conn_retries + 1, CONN_RETRIES);
+                 DEFAULT_DELAY, app_data->conn_retries + 1, app_data->max_retries);
         recipe_data->ssh_data->soup_disc = TRUE;
         app_data->conn_retries++;
         g_free (full_url);
@@ -1587,6 +1587,8 @@ int main(int argc, char *argv[]) {
         { "host", 't', 0, G_OPTION_ARG_STRING_ARRAY, &hostarr,
             "Set host for a recipe with specific id.",
             "<recipe_id>=[<user>@]<host>[:<port>][/ssh_port]" },
+        {"conn-retries", 'c', 0, G_OPTION_ARG_INT, &app_data->max_retries,
+            "Specify the number of reconnection retries.", NULL},
         { "verbose", 'v', G_OPTION_FLAG_NO_ARG, G_OPTION_ARG_CALLBACK,
             callback_parse_verbose, "Increase verbosity, up to three times.",
             NULL },
@@ -1606,6 +1608,10 @@ int main(int argc, char *argv[]) {
     gboolean parse_succeeded = g_option_context_parse(context, &argc, &argv,
             &app_data->error);
     g_option_context_free(context);
+
+    if (app_data->max_retries == 0) {
+        app_data->max_retries = CONN_RETRIES;
+    }
 
     if (ipv6) {
         app_data->address_family = SOUP_ADDRESS_FAMILY_IPV6;

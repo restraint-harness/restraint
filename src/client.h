@@ -24,7 +24,7 @@
 #include "ssh.h"
 
 #define DEFAULT_DELAY 60
-#define CONN_RETRIES 5
+#define CONN_RETRIES 15
 
 struct _AppData;
 
@@ -69,6 +69,7 @@ typedef struct _AppData {
     gboolean started;
     GSList *regexes;
     guint conn_retries;
+    guint max_retries;
 } AppData;
 
 #endif
