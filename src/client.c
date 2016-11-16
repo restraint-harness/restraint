@@ -267,7 +267,8 @@ remote_hup (GError *error,
 
     // If we get an error on the first connection then we simply abort
     if (app_data->started && ! tasks_finished(app_data->xml_doc, recipe_data->recipe_node_ptr, (xmlChar *)"task")
-                          && ! g_cancellable_is_cancelled(recipe_data->cancellable)) {
+                          && ! g_cancellable_is_cancelled(recipe_data->cancellable)
+                          && app_data->conn_retries < CONN_RETRIES) {
         if (error) {
             g_print ("%s [%s, %d]\n", error->message,
                      g_quark_to_string (error->domain), error->code);
@@ -276,8 +277,10 @@ remote_hup (GError *error,
         soup_uri_free (recipe_data->remote_uri);
         recipe_data->remote_uri = continue_uri;
         full_url = soup_uri_to_string (recipe_data->remote_uri, FALSE);
-        g_print ("Disconnected.. delaying %d seconds.\n", DEFAULT_DELAY);
+        g_print ("Disconnected.. delaying %d seconds. Retry %d/%d.\n",
+                 DEFAULT_DELAY, app_data->conn_retries + 1, CONN_RETRIES);
         recipe_data->ssh_data->soup_disc = TRUE;
+        app_data->conn_retries++;
         g_free (full_url);
         // Try and re-connect to the other host
         g_timeout_add_seconds_full (G_PRIORITY_DEFAULT,
@@ -685,6 +688,7 @@ message_cb (const char *method,
     AppData *app_data = recipe_data->app_data;
     RegexCallback callback;
 
+    app_data->conn_retries = 0;
     // path must be defined in order to dispatch
     if (!path) {
         g_set_error (error, RESTRAINT_ERROR,
