@@ -20,7 +20,6 @@ install:
 	install -m0755 localwatchdog.d/99_reboot $(DESTDIR)/usr/share/restraint/plugins/localwatchdog.d
 	install -m0755 completed.d/97_audit_rotate $(DESTDIR)/usr/share/restraint/plugins/completed.d
 	install -m0755 completed.d/98_restore $(DESTDIR)/usr/share/restraint/plugins/completed.d
-	install -m0755 completed.d/99_sync $(DESTDIR)/usr/share/restraint/plugins/completed.d
 	install -m0755 task_run.d/05_linger $(DESTDIR)/usr/share/restraint/plugins/task_run.d
 	install -m0755 task_run.d/10_bash_login $(DESTDIR)/usr/share/restraint/plugins/task_run.d
 	install -m0755 task_run.d/15_beakerlib $(DESTDIR)/usr/share/restraint/plugins/task_run.d
