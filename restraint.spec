@@ -10,7 +10,7 @@
 %endif
 
 Name:		restraint
-Version:	0.1.28
+Version:	0.1.29
 Release:	1%{?dist}
 Summary:	Simple test harness which can be used with beaker
 
@@ -346,6 +346,16 @@ fi
 %{__rm} -rf %{buildroot}
 
 %changelog
+* Wed Nov 23 2016 Bill Peck <bpeck@redhat.com> 0.1.29-1
+- Remove sync plugin until a solution is found to mixed roles between recipes
+  and guests. (bpeck@redhat.com)
+- Add reconnection retries option. (asavkov@redhat.com)
+- Limit number of reconnection retries. (asavkov@redhat.com)
+- Fix infinite loop on ssh failure. (artem.savkov@gmail.com)
+- Do not free ssh password. (asavkov@redhat.com)
+- Fix segfault on failed hostname resolution. (artem.savkov@gmail.com)
+- fix expected output (bpeck@redhat.com)
+
 * Tue Nov 08 2016 Bill Peck <bpeck@redhat.com> 0.1.28-1
 - rstrnt-sync block doesn't actually block. You need to keep checking on it.
   (bpeck@redhat.com)
