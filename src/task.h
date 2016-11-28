@@ -115,6 +115,7 @@ typedef struct {
     gint heartbeat_handler_id;
     gchar expire_time[80];
     const gchar *logpath;
+    gboolean skip_remaining;
 } TaskRunData;
 
 Task *restraint_task_new(void);

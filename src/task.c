@@ -386,6 +386,12 @@ void dependency_finish_cb (gpointer user_data, GError *error)
     AppData *app_data = (AppData *) task_run_data->app_data;
     Task *task = app_data->tasks->data;
 
+    // Remove Heartbeat Handler
+    if (task_run_data->heartbeat_handler_id) {
+        g_source_remove (task_run_data->heartbeat_handler_id);
+        task_run_data->heartbeat_handler_id = 0;
+    }
+
     if (error) {
         g_propagate_error(&task->error, error);
         task->state = TASK_COMPLETE;
@@ -446,7 +452,8 @@ task_heartbeat_callback (gpointer user_data)
     GString *message = g_string_new(NULL);
     gchar currtime[80];
 
-    if (!task->metadata->nolocalwatchdog)
+    if (!task->metadata->nolocalwatchdog &&
+          task_run_data->skip_remaining == FALSE)
         task->remaining_time -= HEARTBEAT;
     restraint_config_set (app_data->config_file, task->task_id,
                           "remaining_time", NULL,
@@ -463,29 +470,42 @@ task_heartbeat_callback (gpointer user_data)
     return TRUE;
 }
 
-void
-task_run (AppData *app_data)
+void restraint_start_heartbeat(TaskRunData *task_run_data,
+                               gint64 remaining_time)
 {
-    Task *task = (Task *) app_data->tasks->data;
     time_t rawtime = time (NULL);
-    TaskRunData *task_run_data = g_slice_new0 (TaskRunData);
-    task_run_data->app_data = app_data;
-    task_run_data->pass_state = TASK_COMPLETE;
-    task_run_data->fail_state = TASK_COMPLETE;
 
-    if (!task->metadata->nolocalwatchdog) {
+    if (remaining_time != 0) {
         struct tm timeinfo = *localtime (&rawtime);
-        timeinfo.tm_sec += task->remaining_time;
+        timeinfo.tm_sec += remaining_time;
         mktime(&timeinfo);
         strftime(task_run_data->expire_time,
                  sizeof(task_run_data->expire_time),
                  "%a %b %d %H:%M:%S %Y", &timeinfo);
     } else {
-        task->remaining_time = 0;
-        snprintf (task_run_data->expire_time,
+        task_run_data->skip_remaining = TRUE;
+        snprintf(task_run_data->expire_time,
                   sizeof(task_run_data->expire_time),
                   " * Disabled! *");
     }
+
+    // Local heartbeat, log to console and testout.log
+    task_run_data->heartbeat_handler_id = g_timeout_add_seconds_full(
+                                               G_PRIORITY_DEFAULT,
+                                               HEARTBEAT,
+                                               task_heartbeat_callback,
+                                               task_run_data,
+                                               NULL);
+}
+
+void
+task_run (AppData *app_data)
+{
+    Task *task = (Task *) app_data->tasks->data;
+    TaskRunData *task_run_data = g_slice_new0 (TaskRunData);
+    task_run_data->app_data = app_data;
+    task_run_data->pass_state = TASK_COMPLETE;
+    task_run_data->fail_state = TASK_COMPLETE;
 
     gchar *entry_point;
     if (task->metadata->entry_point) {
@@ -493,6 +513,10 @@ task_run (AppData *app_data)
     } else {
         entry_point = g_strdup_printf ("%s %s", TASK_PLUGIN_SCRIPT, DEFAULT_ENTRY_POINT);
     }
+    if (task->metadata->nolocalwatchdog) {
+      task->remaining_time = 0;
+    }
+
     task_run_data->logpath = LOG_PATH_TASK;
     process_run ((const gchar *) entry_point,
                  (const gchar **)task->env->pdata,
@@ -506,12 +530,7 @@ task_run (AppData *app_data)
 
     g_free (entry_point);
 
-    // Local heartbeat, log to console and testout.log
-    task_run_data->heartbeat_handler_id = g_timeout_add_seconds_full (G_PRIORITY_DEFAULT,
-                                                           HEARTBEAT, //every 5 minutes
-                                                           task_heartbeat_callback,
-                                                           task_run_data,
-                                                           NULL);
+    restraint_start_heartbeat(task_run_data, task->remaining_time);
 }
 
 static void
@@ -865,6 +884,7 @@ task_handler (gpointer user_data)
           TaskRunData *task_run_data = g_slice_new0(TaskRunData);
           task_run_data->app_data = app_data;
           task_run_data->logpath = LOG_PATH_HARNESS;
+          restraint_start_heartbeat(task_run_data, 0);
           restraint_install_dependencies (task, task_io_callback,
                                           taskrun_archive_entry_callback,
                                           dependency_finish_cb,
