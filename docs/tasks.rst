@@ -25,7 +25,8 @@ for that file is a simple ini file which most people should be familiar with.
  entry_point=./runtest.sh
  max_time=5m
  dependencies=gcc;emacs
- use_pty=False
+ use_pty=false
+ #use_pty=true # to enable a pty
 
 The "General" section is mostly used for informational purposes.  The only element
 that restraint will read from here is the name attribute.  If defined this will over write
