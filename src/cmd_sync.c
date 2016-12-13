@@ -265,11 +265,14 @@ int main(int argc, char **argv)
       if (pid == 0) {
         handler();
       } else {
-        int i = 0;
+        guint64 i = 0;
         struct stat stbuf;
-        while(stat(USOCKET_PATH, &stbuf) < 0 && errno == ENOENT && i < 2000) {
-          g_usleep(500);
+        while(stat(USOCKET_PATH, &stbuf) < 0 && errno == ENOENT) {
+          g_usleep(50000);
           i++;
+          if (i % 1200 == 0) {
+            g_print("rhts-sync: still trying to connect to local rhts-sync daemon\n");
+          }
         }
         if (connect(sockfd, (struct sockaddr*)&saddr, sizeof(saddr)) < 0) {
           perror("Failed to connect");
