@@ -1085,6 +1085,27 @@ static GSList *get_recipe_members(AppData *app_data, xmlXPathObjectPtr recipe_no
     return allhosts;
 }
 
+static GHashTable *merge_roles(GHashTable *troles, GHashTable *rroles)
+{
+    GHashTableIter iter;
+    gpointer role, hostlist;
+    GHashTable *result = g_hash_table_new(g_str_hash, g_str_equal);
+
+    g_hash_table_iter_init(&iter, troles);
+    while (g_hash_table_iter_next(&iter, &role, &hostlist)) {
+        g_hash_table_insert(result, role, hostlist);
+    }
+
+    g_hash_table_iter_init(&iter, rroles);
+    while (g_hash_table_iter_next(&iter, &role, &hostlist)) {
+        if (!g_hash_table_contains(result, role)) {
+            g_hash_table_insert(result, role, hostlist);
+        }
+    }
+
+    return result;
+}
+
 static gchar *copy_job_as_template(gchar *job, gboolean novalid,
                                    AppData *app_data)
 {
@@ -1274,6 +1295,7 @@ static gchar *copy_job_as_template(gchar *job, gboolean novalid,
                     rnode, (xmlChar*)"task");
             if (task_nodes) {
                 for (guint j = 0; j < task_nodes->nodesetval->nodeNr; j++) {
+                    gboolean tmptable = FALSE;
                     xmlNodePtr tnode = task_nodes->nodesetval->nodeTab[j];
                     xmlNodePtr t_params = first_child_with_name(tnode, "params",
                                                                 FALSE);
@@ -1286,11 +1308,19 @@ static gchar *copy_job_as_template(gchar *job, gboolean novalid,
                                             GINT_TO_POINTER(j + 1));
                     if (lroles == NULL) {
                         lroles = g_hash_table_lookup(rsroles, GINT_TO_POINTER(0));
+                    } else {
+                        lroles = merge_roles(lroles, g_hash_table_lookup(
+                                                       rsroles,
+                                                       GINT_TO_POINTER(0)));
+                        tmptable = TRUE;
                     }
                     g_hash_table_foreach(lroles, (GHFunc)add_r_params,
                                              t_params);
                     add_r_params("JOB_MEMBERS", jobmembers, t_params);
                     add_r_params("RECIPE_MEMBERS", recipemembers, t_params);
+                    if (tmptable) {
+                        g_hash_table_destroy(lroles);
+                    }
                 }
             }
             xmlXPathFreeObject(task_nodes);
