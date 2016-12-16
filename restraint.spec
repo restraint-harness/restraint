@@ -10,7 +10,7 @@
 %endif
 
 Name:		restraint
-Version:	0.1.29
+Version:	0.1.30
 Release:	1%{?dist}
 Summary:	Simple test harness which can be used with beaker
 
@@ -346,6 +346,13 @@ fi
 %{__rm} -rf %{buildroot}
 
 %changelog
+* Fri Dec 16 2016 Bill Peck <bpeck@redhat.com> 0.1.30-1
+- Merge recipe roles into task roles. (asavkov@redhat.com)
+- fix tasks metadata documentation to show correct example. (bpeck@redhat.com)
+- Fix problem with init.d start function BZ 1351663 (jbieren@redhat.com)
+- Fix http timeouts during long dependency installs. (asavkov@redhat.com)
+- sync: adjust set timeouts. (asavkov@redhat.com)
+
 * Wed Nov 23 2016 Bill Peck <bpeck@redhat.com> 0.1.29-1
 - Remove sync plugin until a solution is found to mixed roles between recipes
   and guests. (bpeck@redhat.com)
