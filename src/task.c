@@ -591,6 +591,8 @@ restraint_task_status (Task *task, AppData *app_data, gchar *status, GError *rea
 
     SoupURI *task_status_uri;
     SoupMessage *server_msg;
+    gchar *stime = g_strdup_printf("%ld", task->starttime);
+    gchar *etime = g_strdup_printf("%ld", task->endtime);
 
     task_status_uri = soup_uri_new_with_base(task->task_uri, "status");
     server_msg = soup_message_new_from_uri("POST", task_status_uri);
@@ -600,14 +602,22 @@ restraint_task_status (Task *task, AppData *app_data, gchar *status, GError *rea
 
     gchar *data = NULL;
     if (reason == NULL) {
-        data = soup_form_encode("status", status, NULL);
+        data = soup_form_encode("status", status,
+                                "stime", stime,
+                                "etime", etime,
+                                NULL);
     } else {
         data = soup_form_encode("status", status,
-                "message", reason->message, NULL);
+                                "stime", stime,
+                                "etime", etime,
+                                "message", reason->message, NULL);
         g_message("%s task %s due to error: %s", status, task->task_id, reason->message);
     }
     soup_message_set_request(server_msg, "application/x-www-form-urlencoded",
             SOUP_MEMORY_TAKE, data, strlen(data));
+
+    g_free(etime);
+    g_free(stime);
 
     app_data->queue_message(soup_session,
                             server_msg,
@@ -905,6 +915,7 @@ task_handler (gpointer user_data)
       } else {
           g_string_printf(message, "** Running task: %s [%s]\n", task->task_id, task->name);
           task_run (app_data);
+          task->starttime = time(NULL);
           result=FALSE;
           task->started = TRUE;
           restraint_config_set (app_data->config_file,
@@ -936,6 +947,7 @@ task_handler (gpointer user_data)
       } else {
           g_string_printf(message, "** Completed Task : %s\n", task->task_id);
       }
+      task->endtime = time(NULL);
       task->state = TASK_COMPLETED;
       break;
     case TASK_COMPLETED:

@@ -29,6 +29,8 @@
     <testcase classname="{$classname}">
      <xsl:attribute name="name"><xsl:value-of select="@name"/></xsl:attribute>
      <xsl:attribute name="status"><xsl:value-of select="@status"/></xsl:attribute>
+     <xsl:attribute name="timestamp"><xsl:value-of select="@start_time"/></xsl:attribute>
+     <xsl:attribute name="time"><xsl:value-of select="@duration"/></xsl:attribute>
     <system-out>
      <xsl:call-template name="logs"/>
     </system-out>

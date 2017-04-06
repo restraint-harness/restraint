@@ -22,6 +22,7 @@
 #include <glib.h>
 #include <libsoup/soup.h>
 #include <pty.h>
+#include <time.h>
 #include "recipe.h"
 #include "message.h"
 #include "server.h"
@@ -106,6 +107,9 @@ typedef struct {
     /* reboot count */
     guint64 reboots;
     MetaData *metadata;
+    /* Start stop times */
+    time_t starttime;
+    time_t endtime;
 } Task;
 
 typedef struct {

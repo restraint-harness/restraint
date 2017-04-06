@@ -38,6 +38,8 @@
 #include "errors.h"
 #include "xml.h"
 
+#define TIMESTRLEN 26
+
 static SoupSession *session;
 
 static void recipe_finish(RecipeData *recipe_data);
@@ -402,6 +404,13 @@ recipe_start_cb (const char *method,
     app_data->started = TRUE;
 }
 
+static xmlChar *format_datetime(time_t time) {
+    struct tm *tm = localtime(&time);
+    gchar *timestr = g_malloc0(TIMESTRLEN);
+    strftime(timestr, TIMESTRLEN, "%FT%T%z", tm);
+    return (xmlChar*)timestr;
+}
+
 void
 tasks_status_cb (const char *method,
                  const char *path,
@@ -438,6 +447,28 @@ tasks_status_cb (const char *method,
     table = soup_form_decode (body->data);
     gchar *status = g_hash_table_lookup (table, "status");
     gchar *message = g_hash_table_lookup (table, "message");
+    time_t stime = atoll(g_hash_table_lookup(table, "stime"));
+    time_t etime = atoll(g_hash_table_lookup(table, "etime"));
+
+    if (stime > 0) {
+        xmlChar *stimestr = format_datetime(stime);
+        xmlSetProp (task_node_ptr, (xmlChar *)"start_time", stimestr);
+        g_free(stimestr);
+    }
+
+    if (etime > 0) {
+        xmlChar *etimestr = format_datetime(etime);
+        xmlSetProp (task_node_ptr, (xmlChar *)"end_time", etimestr);
+        g_free(etimestr);
+    }
+
+    if  (stime > 0 && etime > stime) {
+        time_t duration = etime - stime;
+        xmlChar *dstr = (xmlChar*)g_strdup_printf("%02ld", duration);
+        xmlSetProp (task_node_ptr, (xmlChar *)"duration", dstr);
+        g_free(dstr);
+    }
+
     if (app_data->verbose < 2) {
         xmlChar *task_name = xmlGetNoNsProp(task_node_ptr,
                                             (xmlChar *)"name");

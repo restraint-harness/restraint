@@ -48,7 +48,15 @@ xmlns="http://www.w3.org/TR/REC-html40">
      <tr>
       <td class="task">T:<xsl:value-of select="@id"/></td>
       <td class="task"><xsl:value-of select="@name"/></td>
-      <td style="white-space:nowrap;" class="task"></td>
+      <td class="task">
+       <xsl:value-of select="@start_time"/><br/>
+       <xsl:value-of select="@end_time"/><br/>
+
+       <xsl:variable name="seconds" select="@duration" />
+       <xsl:value-of select="format-number(floor($seconds div 3600), '00')" />
+       <xsl:value-of select="format-number(floor($seconds div 60) mod 60, ':00')"/>
+       <xsl:value-of select="format-number($seconds mod 60, ':00')"/>
+      </td>
       <td class="task logs"><ul><xsl:apply-templates select="logs"/></ul></td>
       <td class="task"><xsl:value-of select="@status"/></td>
       <td class="task"><xsl:value-of select="@result"/></td>
