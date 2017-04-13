@@ -36,7 +36,7 @@ tree/lib/pkgconfig/zlib.pc: $(ZLIB)
 	$(MAKE) -C $(ZLIB)
 	$(MAKE) -C $(ZLIB) install
 
-tree/bin/cmake: $(CMAKE)
+tree/bin/cmake: $(CMAKE) $(CMAKE)/.patches-done
 	( cd $(CMAKE) && ./bootstrap --prefix=$(CURDIR)/tree )
 	$(MAKE) -C $(CMAKE)
 	$(MAKE) -C $(CMAKE) PREFIX=$(CURDIR)/tree install
@@ -191,6 +191,10 @@ tarballs: $(TAR_BALLS)
 
 %: %.tar.xz tree/lib/pkgconfig/liblzma.pc
 	$(CURDIR)/tree/bin/xzcat $< | tar -xf -
+
+$(CMAKE)/.patches-done: $(CMAKE)
+	patch -d$(CMAKE) -p1 <cmake-yes-format-security.patch
+	touch $@
 
 $(CURL)/.patches-done: $(CURL)
 	patch -d$(CURL) -p1 <curl_add_ppc64le.patch
