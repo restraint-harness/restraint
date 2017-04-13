@@ -41,6 +41,7 @@ BuildRoot:	%(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 BuildRequires:	pkgconfig
 BuildRequires:	gettext
 BuildRequires:	perl-XML-Parser
+BuildRequires:	python
 BuildRequires:	libselinux-devel
 BuildRequires:	glibc-devel
 %if 0%{?rhel}%{?fedora} > 4
