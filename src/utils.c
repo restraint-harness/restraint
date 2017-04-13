@@ -29,7 +29,7 @@
 
 void cmd_usage(GOptionContext *context) {
     gchar *usage_str = g_option_context_get_help(context, FALSE, NULL);
-    g_print(usage_str);
+    g_print("%s", usage_str);
     g_free(usage_str);
 }
 
