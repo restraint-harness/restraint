@@ -23,7 +23,7 @@ Source0:	https://github.com/p3ck/%{name}/%{name}-%{version}.tar.gz
 # Sources for bundled, statically linked libraries
 Source101:      libffi-3.1.tar.gz
 Source102:      glib-2.38.0.tar.xz
-Source103:      zlib-1.2.8.tar.gz
+Source103:      zlib-1.2.11.tar.gz
 Source104:      bzip2-1.0.6.tar.gz
 Source105:      libxml2-2.9.1.tar.gz
 Source106:      curl-7.29.0.tar.bz2
