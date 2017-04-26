@@ -14,6 +14,8 @@ OPENSSL = openssl-1.0.1m
 SQLITE = sqlite-autoconf-3080002
 INTLTOOL = intltool-0.35.5
 
+arch := $(shell uname -m)
+
 .PHONY: all
 all: \
     tree/lib/pkgconfig/liblzma.pc \
@@ -48,7 +50,11 @@ tree/lib/pkgconfig/libssh.pc: $(LIBSSH) $(LIBSSH)/.patches-done tree/bin/cmake t
 	$(MAKE) -C $(LIBSSH)/build install
 
 tree/lib/pkgconfig/openssl.pc: $(OPENSSL)
+    ifeq ("$(arch)", "ppc64")
+	( cd $(OPENSSL) && ./Configure --prefix=$(CURDIR)/tree -DPURIFY linux-ppc64)
+    else
 	( cd $(OPENSSL) && ./config --prefix=$(CURDIR)/tree -DPURIFY )
+    endif
 	$(MAKE) -C $(OPENSSL)
 	$(MAKE) -C $(OPENSSL) PREFIX=$(CURDIR)/tree install_sw
 
