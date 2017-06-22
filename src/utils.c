@@ -87,13 +87,15 @@ file_exists (gchar *filename)
 
 void restraint_free_url(struct restraint_url *rurl)
 {
-    g_free(rurl->uri);
-    g_free(rurl->scheme);
-    g_free(rurl->host);
-    g_free(rurl->path);
-    g_free(rurl->query);
-    g_free(rurl->fragment);
-    g_free(rurl);
+    if (rurl) {
+        g_free(rurl->uri);
+        g_free(rurl->scheme);
+        g_free(rurl->host);
+        g_free(rurl->path);
+        g_free(rurl->query);
+        g_free(rurl->fragment);
+        g_free(rurl);
+    }
 }
 
 struct restraint_url *restraint_copy_url(struct restraint_url *url)

@@ -245,6 +245,13 @@ static Task *parse_task(xmlNode *task_node, Recipe *recipe, GError **error) {
             goto error;
         }
         task->fetch.url = restraint_parse_url((char *)url);
+
+        if (task->fetch.url == NULL) {
+            unrecognised("'%s' from task %s is not a valid url", url,
+                         task->task_id);
+            xmlFree(url);
+            goto error;
+        }
         xmlFree(url);
 
         xmlChar *ssl_verify = xmlGetNoNsProp(fetch, (xmlChar *)"ssl_verify");
