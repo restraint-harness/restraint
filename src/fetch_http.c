@@ -198,11 +198,15 @@ http_archive_read_callback (gpointer user_data)
                 strlen(fragment) + 1))
             ) {
         // Update pathname
-        gchar *basename = g_path_get_basename(entry_path);
-        newPath = g_build_filename(fetch_data->base_path, basename, NULL);
+        if (fragment != NULL) {
+            newPath = g_build_filename(fetch_data->base_path,
+                                       g_strrstr(entry_path, fragment) +
+                                       strlen(fragment), NULL);
+        } else {
+            newPath = g_build_filename(fetch_data->base_path, entry_path, NULL);
+        }
         archive_entry_set_pathname( entry, newPath );
         g_free(newPath);
-        g_free(basename);
 
         if (fetch_data->keepchanges == FALSE ||
                 access(archive_entry_pathname(entry), F_OK) == -1) {

@@ -51,7 +51,7 @@ fetch_finish_callback (GError *error, gpointer user_data)
 static void test_fetch_http_nofragment_success(void) {
     RunData *run_data;
 
-    gchar *expected = "././runtest.sh./PURPOSE./metadata./Makefile";
+    gchar *expected = "././Makefile./metadata./subdir/./subdir/datafile./PURPOSE./runtest.sh";
     // read archive data in
 
     run_data = g_slice_new0 (RunData);
@@ -114,7 +114,7 @@ static void test_fetch_http_nofragment_success(void) {
 static void test_fetch_http_nofragment_keepchanges(void) {
     RunData *run_data;
 
-    gchar *expected = "././runtest.sh./PURPOSE./metadata./Makefile";
+    gchar *expected = "././Makefile./metadata./subdir/./subdir/datafile./PURPOSE./runtest.sh";
     // read archive data in
 
     run_data = g_slice_new0 (RunData);
@@ -356,6 +356,11 @@ static void test_fetch_http_fragment_success(void) {
     g_object_unref(file);
 
     file = g_file_get_child(base, "runtest.sh");
+    g_assert(g_file_query_exists (file, NULL) != FALSE);
+    g_file_delete (file, NULL, NULL);
+    g_object_unref(file);
+
+    file = g_file_get_child(base, "subdir/data");
     g_assert(g_file_query_exists (file, NULL) != FALSE);
     g_file_delete (file, NULL, NULL);
     g_object_unref(file);
