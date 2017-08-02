@@ -298,6 +298,12 @@ remote_hup (GError *error,
     }
 }
 
+static gboolean _remote_hup(gpointer user_data)
+{
+    remote_hup(NULL, user_data);
+    return G_SOURCE_REMOVE;
+}
+
 void
 tasks_results_cb (const char *method,
                   const char *path,
@@ -938,7 +944,8 @@ run_recipe_handler (gpointer user_data)
 
     if (recipe_data->ssh_data->state != SSH_ESTABLISHED) {
         g_print ("ssh tunnel is not ready.. delaying %d seconds.\n", DEFAULT_DELAY);
-        return G_SOURCE_CONTINUE;
+        g_idle_add(_remote_hup, user_data);
+        return G_SOURCE_REMOVE;
     }
     request = (SoupRequest *)soup_session_request_http_uri(session,
                                                            "POST",
