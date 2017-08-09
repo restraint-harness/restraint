@@ -447,19 +447,24 @@ tasks_status_cb (const char *method,
     table = soup_form_decode (body->data);
     gchar *status = g_hash_table_lookup (table, "status");
     gchar *message = g_hash_table_lookup (table, "message");
-    time_t stime = atoll(g_hash_table_lookup(table, "stime"));
-    time_t etime = atoll(g_hash_table_lookup(table, "etime"));
-
-    if (stime > 0) {
-        xmlChar *stimestr = format_datetime(stime);
-        xmlSetProp (task_node_ptr, (xmlChar *)"start_time", stimestr);
-        g_free(stimestr);
+    time_t stime = 0;
+    time_t etime = 0;
+    if (g_hash_table_contains(table, "stime")) {
+        stime = atoll(g_hash_table_lookup(table, "stime"));
+        if (stime > 0) {
+            xmlChar *stimestr = format_datetime(stime);
+            xmlSetProp (task_node_ptr, (xmlChar *)"start_time", stimestr);
+            g_free(stimestr);
+        }
     }
 
-    if (etime > 0) {
-        xmlChar *etimestr = format_datetime(etime);
-        xmlSetProp (task_node_ptr, (xmlChar *)"end_time", etimestr);
-        g_free(etimestr);
+    if (g_hash_table_contains(table, "etime")) {
+        etime = atoll(g_hash_table_lookup(table, "etime"));
+        if (etime > 0) {
+            xmlChar *etimestr = format_datetime(etime);
+            xmlSetProp (task_node_ptr, (xmlChar *)"end_time", etimestr);
+            g_free(etimestr);
+        }
     }
 
     if  (stime > 0 && etime > stime) {
