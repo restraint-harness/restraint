@@ -10,7 +10,7 @@
 %endif
 
 Name:		restraint
-Version:	0.1.30
+Version:	0.1.31
 Release:	1%{?dist}
 Summary:	Simple test harness which can be used with beaker
 
@@ -347,6 +347,19 @@ fi
 %{__rm} -rf %{buildroot}
 
 %changelog
+* Thu Aug 10 2017 Bill Peck <bpeck@redhat.com> 0.1.31-1
+- Check for stime and etime before trying to access them. (bpeck@redhat.com)
+- Fix connection retry counting (asavkov@redhat.com)
+- If fragment is defined then remove fragment from path. (bpeck@redhat.com)
+- Check url validity in parse_task (asavkov@redhat.com)
+- Fix a segfault in openssl on ppc64. (asavkov@redhat.com)
+- Bump zlib version to 1.2.11. (asavkov@redhat.com)
+- fix error found by -Werror=format-security (dcallagh@redhat.com)
+- third-party: remove -Wno-format in cmake (dcallagh@redhat.com)
+- need python at build time, for libsoup (dcallagh@redhat.com)
+- Add task start/stop times and duration to job.xml (asavkov@redhat.com)
+- add softDependencies metadata (jbastian@redhat.com)
+
 * Fri Dec 16 2016 Bill Peck <bpeck@redhat.com> 0.1.30-1
 - Merge recipe roles into task roles. (asavkov@redhat.com)
 - fix tasks metadata documentation to show correct example. (bpeck@redhat.com)
