@@ -97,7 +97,7 @@ tree/lib/pkgconfig/sqlite3.pc: $(SQLITE) $(SQLITE)/.patches-done
 	$(MAKE) -C $(SQLITE)
 	$(MAKE) -C $(SQLITE) install
 
-tree/bin/intltool-update: $(INTLTOOL)
+tree/bin/intltool-update: $(INTLTOOL) $(INTLTOOL)/.patches-done
 	( cd $(INTLTOOL) && ./configure --prefix=$(CURDIR)/tree \
 	    --enable-static --disable-shared )
 	$(MAKE) -C $(INTLTOOL)
@@ -232,6 +232,10 @@ $(LIBARCHIVE)/.patches-done: $(LIBARCHIVE)
 #	patch -d$(LIBARCHIVE) -p1 <libarchive-rhel3-headers.patch
 	patch -d$(LIBARCHIVE) -p1 <libarchive-use-pkgconfig.patch
 	patch -d$(LIBARCHIVE) -p1 <libarchive_add_ppc64le.patch
+	touch $@
+
+$(INTLTOOL)/.patches-done: $(INTLTOOL)
+	patch -d$(INTLTOOL) -p1 <intltool-perl5.26-regex-fixes.patch
 	touch $@
 
 $(LIBSOUP)/.patches-done: $(LIBSOUP)
