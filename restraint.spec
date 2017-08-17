@@ -30,7 +30,7 @@ Source106:      curl-7.29.0.tar.bz2
 Source107:      libarchive-3.2.1.tar.gz
 Source108:      xz-5.2.2.tar.gz
 Source109:      sqlite-autoconf-3080002.tar.gz
-Source110:      intltool-0.35.5.tar.gz
+Source110:      intltool-0.51.0.tar.gz
 Source111:      libsoup-2.48.1.tar.xz
 Source112:      libssh-0.7.3.tar.xz
 Source113:      cmake-3.2.3.tar.gz

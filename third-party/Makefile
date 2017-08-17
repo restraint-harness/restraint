@@ -12,7 +12,7 @@ CMAKE = cmake-3.2.3
 LIBSSH = libssh-0.7.3
 OPENSSL = openssl-1.0.1m
 SQLITE = sqlite-autoconf-3080002
-INTLTOOL = intltool-0.35.5
+INTLTOOL = intltool-0.51.0
 
 arch := $(shell uname -m)
 
@@ -168,7 +168,7 @@ $(SQLITE).tar.gz:
 
 TAR_BALLS += $(INTLTOOL).tar.gz
 $(INTLTOOL).tar.gz:
-	curl -f -L -O http://ftp.gnome.org/pub/gnome/sources/intltool/0.35/$@
+	curl -f -L -O https://launchpad.net/intltool/trunk/0.51.0/+download/$@
 
 TAR_BALLS += $(LIBSOUP).tar.xz
 $(LIBSOUP).tar.xz:
