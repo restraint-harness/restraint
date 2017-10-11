@@ -19,7 +19,7 @@ License:	GPLv3+ and MIT
 URL:		https://github.com/p3ck/%{name}
 Source0:	https://github.com/p3ck/%{name}/%{name}-%{version}.tar.gz
 
-%if %{?with_static:1}
+%if 0%{?with_static:1}
 # Sources for bundled, statically linked libraries
 Source101:      libffi-3.1.tar.gz
 Source102:      glib-2.38.0.tar.xz
@@ -130,7 +130,7 @@ restAPI allowing all results and logs to be recorded from the test machine.
 
 %prep
 %setup -q
-%if %{?with_static:1}
+%if 0%{?with_static:1}
 cp %{_sourcedir}/*.tar.* third-party/
 %endif
 
