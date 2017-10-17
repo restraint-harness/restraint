@@ -10,7 +10,7 @@
 %endif
 
 Name:		restraint
-Version:	0.1.31
+Version:	0.1.32
 Release:	1%{?dist}
 Summary:	Simple test harness which can be used with beaker
 
@@ -347,6 +347,11 @@ fi
 %{__rm} -rf %{buildroot}
 
 %changelog
+* Tue Oct 17 2017 Bill Peck <bpeck@redhat.com> 0.1.32-1
+- fix without static (bpeck@redhat.com)
+- third-party: fix intltool build with Perl 5.26 (dcallagh@redhat.com)
+- third-party: update to latest intltool release (dcallagh@redhat.com)
+
 * Thu Aug 10 2017 Bill Peck <bpeck@redhat.com> 0.1.31-1
 - Check for stime and etime before trying to access them. (bpeck@redhat.com)
 - Fix connection retry counting (asavkov@redhat.com)
