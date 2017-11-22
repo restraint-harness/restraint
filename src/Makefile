@@ -39,11 +39,11 @@ rstrnt-sync: cmd_sync.o
 restraint: client.o multipart.o errors.o xml.o ssh.o utils.o
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
-restraintd: server.o recipe.o task.o fetch.o fetch_git.o fetch_http.o param.o role.o metadata.o process.o message.o dependency.o utils.o config.o errors.o xml.o env.o
+restraintd: server.o recipe.o task.o fetch.o fetch_git.o fetch_uri.o param.o role.o metadata.o process.o message.o dependency.o utils.o config.o errors.o xml.o env.o
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 fetch_git.o: fetch.h fetch_git.h
-fetch_http.o: fetch.h fetch_http.h
+fetch_uri.o: fetch.h fetch_uri.h
 task.o: task.h
 recipe.o: recipe.h task.h
 param.o: param.h
@@ -70,16 +70,16 @@ TEST_PROGS += test_fetch_git
 test_fetch_git: fetch.o fetch_git.o utils.o errors.o
 test_fetch_git.o: fetch_git.h
 
-TEST_PROGS += test_fetch_http
-test_fetch_http: fetch.o fetch_http.o utils.o errors.o
-test_fetch_http.o: fetch_http.h
+TEST_PROGS += test_fetch_uri
+test_fetch_uri: fetch.o fetch_uri.o utils.o errors.o
+test_fetch_uri.o: fetch_uri.h
 
 TEST_PROGS += test_process
 test_process: process.o errors.o
 test_process.o: process.h
 
 TEST_PROGS += test_dependency
-test_dependency: dependency.o errors.o process.o fetch.o fetch_http.o fetch_git.o metadata.o utils.o
+test_dependency: dependency.o errors.o process.o fetch.o fetch_uri.o fetch_git.o metadata.o utils.o
 test_dependency.o: dependency.h errors.h process.h
 
 TEST_PROGS += test_env

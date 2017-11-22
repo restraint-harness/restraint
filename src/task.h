@@ -125,7 +125,6 @@ typedef struct {
 Task *restraint_task_new(void);
 gboolean task_handler (gpointer user_data);
 void task_finish (gpointer user_data);
-gboolean restraint_task_fetch_http(AppData *app_data, GError **error);
 void
 restraint_task_fetch(AppData *app_data);
 gboolean restraint_build_env(Task *task, GError **error);

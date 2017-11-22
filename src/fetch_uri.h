@@ -16,7 +16,7 @@
 */
 
 
-void restraint_fetch_http(struct restraint_url *url,
+void restraint_fetch_uri(struct restraint_url *url,
                      const gchar *base_path,
                      gboolean keepchanges,
                      gboolean ssl_verify,

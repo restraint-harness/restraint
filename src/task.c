@@ -39,7 +39,7 @@
 #include "config.h"
 #include "errors.h"
 #include "fetch_git.h"
-#include "fetch_http.h"
+#include "fetch_uri.h"
 #include "utils.h"
 #include "env.h"
 
@@ -124,8 +124,9 @@ restraint_task_fetch(AppData *app_data) {
                                      fetch_finish_callback,
                                      app_data);
             } else if (g_strcmp0(scheme, "http") == 0 ||
-                       g_strcmp0(scheme, "https") == 0 ) {
-                restraint_fetch_http (task->fetch.url,
+                       g_strcmp0(scheme, "https") == 0  ||
+                       g_strcmp0(scheme, "file") == 0) {
+                restraint_fetch_uri (task->fetch.url,
                                       task->path,
                                       task->keepchanges,
                                       task->ssl_verify,

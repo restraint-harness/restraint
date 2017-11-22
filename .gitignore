@@ -34,7 +34,7 @@
 /src/test_recipe
 /src/test_task
 /src/test_fetch_git
-/src/test_fetch_http
+/src/test_fetch_uri
 /src/test_process
 /src/test_dependency
 /src/test_env

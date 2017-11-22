@@ -117,7 +117,7 @@ struct restraint_url *restraint_parse_url(gchar *url)
 {
     GMatchInfo *minfo = NULL;
     struct restraint_url *res = NULL;
-    GRegex *url_regex = g_regex_new("^([^:]+)://([^/]+)(:\\d+)?(/[^\\?#]*)?(\\?([^#]*))?(#(.*))?$",
+    GRegex *url_regex = g_regex_new("^([^:]+)://([^/]*)(:\\d+)?(/[^\\?#]*)?(\\?([^#]*))?(#(.*))?$",
                                     G_REGEX_CASELESS, 0, NULL);
 
     if (g_regex_match(url_regex, url, 0, &minfo)) {
@@ -125,7 +125,12 @@ struct restraint_url *restraint_parse_url(gchar *url)
         res = g_new0(struct restraint_url, 1);
         res->uri = g_strdup(url);
         res->scheme = g_match_info_fetch(minfo, 1);
+
         res->host = g_match_info_fetch(minfo, 2);
+        if (g_strcmp0(res->host, "") == 0) {
+            g_free(res->host);
+            res->host = NULL;
+        }
 
         tmp = g_match_info_fetch(minfo, 3);
         if (g_strcmp0(tmp, "") != 0) {

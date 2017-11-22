@@ -29,7 +29,7 @@
 #include <curl/curl.h>
 
 #include "fetch.h"
-#include "fetch_http.h"
+#include "fetch_uri.h"
 
 struct curl_data {
     CURLM *curlm;
@@ -375,7 +375,7 @@ static gboolean start_unpack(gpointer data)
 }
 
 void
-restraint_fetch_http (struct restraint_url *url,
+restraint_fetch_uri (struct restraint_url *url,
                      const gchar *base_path,
                      gboolean keepchanges,
                      gboolean ssl_verify,

@@ -20,7 +20,7 @@
 #include "errors.h"
 #include "process.h"
 #include "fetch_git.h"
-#include "fetch_http.h"
+#include "fetch_uri.h"
 
 typedef struct {
     struct restraint_url *url;
@@ -477,7 +477,7 @@ restraint_fetch_repodeps(DependencyData *dependency_data)
                                 dependency_data->keepchanges, repo_dep_data_archive_callback,
                                 fetch_repodeps_finish_callback, rd_data);
         } else {
-            restraint_fetch_http(rd_data->url, rd_data->path,
+            restraint_fetch_uri(rd_data->url, rd_data->path,
                                  dependency_data->keepchanges, dependency_data->ssl_verify, repo_dep_data_archive_callback,
                                  fetch_repodeps_finish_callback, rd_data);
         }
