@@ -129,7 +129,7 @@ struct restraint_url *restraint_parse_url(gchar *url)
         res->host = g_match_info_fetch(minfo, 2);
         if (g_strcmp0(res->host, "") == 0) {
             g_free(res->host);
-            res->host = NULL;
+            res->host = g_strdup("localhost");
         }
 
         tmp = g_match_info_fetch(minfo, 3);
