@@ -10,7 +10,7 @@
 %endif
 
 Name:		restraint
-Version:	0.1.32
+Version:	0.1.33
 Release:	1%{?dist}
 Summary:	Simple test harness which can be used with beaker
 
@@ -347,6 +347,11 @@ fi
 %{__rm} -rf %{buildroot}
 
 %changelog
+* Wed Dec 13 2017 Bill Peck <bpeck@redhat.com> 0.1.33-1
+- fix file:/// handling.  when host is NULL the full task path is truncated
+  early. (bpeck@redhat.com)
+- Support file:// path (bpeck@redhat.com)
+
 * Tue Oct 17 2017 Bill Peck <bpeck@redhat.com> 0.1.32-1
 - fix without static (bpeck@redhat.com)
 - third-party: fix intltool build with Perl 5.26 (dcallagh@redhat.com)
