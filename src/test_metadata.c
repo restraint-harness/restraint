@@ -32,14 +32,14 @@ static void test_testinfo_dependencies(void) {
 
     g_assert_no_error (error);
     dependency = g_slist_nth_data(metadata->dependencies, 0);
-    g_assert_cmpstr(dependency, ==, "gcc");
+    g_assert_cmpstr(dependency, ==, "test(/and/this/too)");
     dependency = g_slist_nth_data(metadata->dependencies, 1);
-    g_assert_cmpstr(dependency, ==, "bzip2");
+    g_assert_cmpstr(dependency, ==, "test(/this/should/not/be/ignored)");
     dependency = g_slist_nth_data(metadata->dependencies, 2);
-    g_assert_cmpstr(dependency, ==, "rusers");
-    dependency = g_slist_nth_data(metadata->dependencies, 10);
+    g_assert_cmpstr(dependency, ==, "gcc");
+    dependency = g_slist_nth_data(metadata->dependencies, 12);
     g_assert_cmpstr(dependency, ==, "httpd");
-    dependency = g_slist_nth_data(metadata->dependencies, 11);
+    dependency = g_slist_nth_data(metadata->dependencies, 13);
     g_assert_cmpstr(dependency, ==, "lib-virt");
 
     restraint_metadata_free (metadata);

@@ -257,7 +257,8 @@ static void parse_line(MetaData *metadata,
             metadata->use_pty = FALSE;
         }
         g_free(uvalue);
-    } else if(g_strcmp0("REQUIRES", key) == 0) {
+    } else if(g_strcmp0("REQUIRES", key) == 0 ||
+              g_strcmp0("RHTSREQUIRES", key) == 0) {
         gchar **dependencies = g_strsplit_set (value,", ", -1);
         gchar **dependency = dependencies;
         while (*dependency) {
