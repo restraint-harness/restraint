@@ -627,3 +627,14 @@
    fun:g_main_loop_run
    ...
 }
+
+{
+   g_thread_proxy
+   Memcheck:Leak
+   match-leak-kinds: definite
+   ...
+   fun:__resolv_conf_get_current
+   ...
+   fun:getaddrinfo
+   ...
+}
