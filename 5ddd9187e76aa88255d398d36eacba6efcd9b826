@@ -1,0 +1,9 @@
+Ready-for-Checks+1: Bill Peck <bpeck@redhat.com>
+Code-Review+1: Matt Tyson <mtyson@redhat.com>
+Code-Review+2: Roman Joost <rjoost@redhat.com>
+Verified+1: Matt Tyson <mtyson@redhat.com>
+Submitted-by: Matt Tyson <mtyson@redhat.com>
+Submitted-at: Fri, 09 Mar 2018 00:16:48 +0000
+Reviewed-on: https://gerrit.beaker-project.org/6000
+Project: restraint
+Branch: refs/heads/master
