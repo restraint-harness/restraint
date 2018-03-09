@@ -193,14 +193,14 @@ http_archive_read_callback (gpointer user_data)
 
     const gchar *fragment = fetch_data->url->fragment;
     const gchar *entry_path = archive_entry_pathname(entry);
-    if (fragment == NULL || (g_strrstr(entry_path, fragment) != NULL &&
+    if (fragment == NULL || (g_strstr_len(entry_path, -1, fragment) != NULL &&
             !(fragment[strlen(fragment)] != '/' && strlen(entry_path) ==
                 strlen(fragment) + 1))
             ) {
         // Update pathname
         if (fragment != NULL) {
             newPath = g_build_filename(fetch_data->base_path,
-                                       g_strrstr(entry_path, fragment) +
+                                       g_strstr_len(entry_path, -1, fragment) +
                                        strlen(fragment), NULL);
         } else {
             newPath = g_build_filename(fetch_data->base_path, entry_path, NULL);

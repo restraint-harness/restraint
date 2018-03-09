@@ -477,6 +477,100 @@ static void test_fetch_file_fragment_success(void) {
     restraint_free_url(url);
 }
 
+static void test_fetch_file_fragment_no_trailing_slash(void) {
+    RunData *run_data;
+
+    // read archive data in
+
+    run_data = g_slice_new0 (RunData);
+    run_data->entry = g_string_new (NULL);
+    run_data->loop = g_main_loop_new (NULL, TRUE);
+    gchar *cwd = g_get_current_dir();
+    gchar *fulluri = g_strdup_printf("file:///%s/test-data/http-remote/fetch_http.tgz#restraint", cwd);
+
+    struct restraint_url *url = restraint_parse_url(fulluri);
+    g_free (fulluri);
+    g_free (cwd);
+    gchar *path = g_dir_make_tmp ("test_fetch_file_XXXXXX", NULL);
+
+    restraint_fetch_uri (url,
+                          path,
+                          FALSE,
+                          TRUE,
+                          archive_entry_callback,
+                          fetch_finish_callback,
+                          run_data);
+
+    // run event loop while process is running.
+    g_main_loop_run (run_data->loop);
+
+    // check that initial request worked.
+    g_assert_no_error (run_data->error);
+
+    GFile *base = g_file_new_for_path (path);
+
+    GFile *file = g_file_get_child(base, "restraint-runtest.sh");
+    g_assert(g_file_query_exists (file, NULL) != FALSE);
+    g_file_delete (file, NULL, NULL);
+    g_object_unref(file);
+    g_object_unref(base);
+
+    // free our memory
+    g_string_free (run_data->entry, TRUE);
+    g_clear_error (&run_data->error);
+    g_slice_free (RunData, run_data);
+    g_remove (path);
+    g_free (path);
+    restraint_free_url(url);
+}
+
+static void test_fetch_file_fragment_trailing_slash(void) {
+    RunData *run_data;
+
+    // read archive data in
+
+    run_data = g_slice_new0 (RunData);
+    run_data->entry = g_string_new (NULL);
+    run_data->loop = g_main_loop_new (NULL, TRUE);
+    gchar *cwd = g_get_current_dir();
+    gchar *fulluri = g_strdup_printf("file:///%s/test-data/http-remote/fetch_http.tgz#restraint/", cwd);
+
+    struct restraint_url *url = restraint_parse_url(fulluri);
+    g_free (fulluri);
+    g_free (cwd);
+    gchar *path = g_dir_make_tmp ("test_fetch_file_XXXXXX", NULL);
+
+    restraint_fetch_uri (url,
+                          path,
+                          FALSE,
+                          TRUE,
+                          archive_entry_callback,
+                          fetch_finish_callback,
+                          run_data);
+
+    // run event loop while process is running.
+    g_main_loop_run (run_data->loop);
+
+    // check that initial request worked.
+    g_assert_no_error (run_data->error);
+
+    GFile *base = g_file_new_for_path (path);
+
+    GFile *file = g_file_get_child(base, "restraint-runtest.sh");
+    g_assert(g_file_query_exists (file, NULL) != FALSE);
+    g_file_delete (file, NULL, NULL);
+    g_object_unref(file);
+    g_object_unref(base);
+
+    // free our memory
+    g_string_free (run_data->entry, TRUE);
+    g_clear_error (&run_data->error);
+    g_slice_free (RunData, run_data);
+    g_remove (path);
+    g_free (path);
+    restraint_free_url(url);
+}
+
 static void test_fetch_file_fragment_fail(void) {
     RunData *run_data;
 
@@ -523,6 +617,8 @@ int main(int argc, char *argv[]) {
     g_test_add_func("/fetch_http/nofragment/keepchanges", test_fetch_http_nofragment_keepchanges);
     g_test_add_func("/fetch_http/fragment/success", test_fetch_http_fragment_success);
     g_test_add_func("/fetch_http/fragment/fail", test_fetch_http_fragment_fail);
+    g_test_add_func("/fetch_file/fragment/trailing/slash", test_fetch_file_fragment_trailing_slash);
+    g_test_add_func("/fetch_file/fragment/no/trailing/slash", test_fetch_file_fragment_no_trailing_slash);
     g_test_add_func("/fetch_file/fragment/success", test_fetch_file_fragment_success);
     g_test_add_func("/fetch_file/fragment/fail", test_fetch_file_fragment_fail);
     return g_test_run();

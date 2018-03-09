@@ -27,10 +27,10 @@ else
     testargs="-s /fetch_git/success -s /fetch_git/fail $testargs"
 fi
 
-if [[ -f /usr/sbin/thttpd ]] ; then
+if [[ $(which thttpd) ]] ; then
     thttpd -i $PWD/thttpd-daemon.pid -p 8000 -d test-data/http-remote -h 127.0.0.1 -l /dev/null
 else
-    testargs="-s /fetch_http/success -s /fetch_http/fail -s /fetch_http/bad_archive $testargs"
+    testargs="-s /repodeps/recursive/http/fail -s /repodeps/recursive/http/success -s /repodeps/http/success -s /repodeps/http/fail -s /fetch_http/nofragment/keepchanges -s /fetch_http/nofragment/fail -s /fetch_http/nofragment/bad_archive -s /fetch_http/nofragment/success -s /fetch_http/fragment/success -s /fetch_http/fragment/fail -s /fetch_http/fragment/bad_archive $testargs"
 fi
 
 if [[ ! -f /usr/bin/Xvfb ]]; then
