@@ -22,7 +22,7 @@ Type:         Regression
 Type:         Tier1
 Type:         KernelTier1
 License:      GPL v2
-RhtsRequires: test(/this/should/be/ignored)
+RhtsRequires: test(/this/should/not/be/ignored)
 RepoRequires: /kernel/include
 RhtsRequires: test(/and/this/too)
 RepoRequires: /kernel/common
