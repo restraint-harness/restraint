@@ -10,7 +10,7 @@
 %endif
 
 Name:		restraint
-Version:	0.1.33
+Version:	0.1.34
 Release:	1%{?dist}
 Summary:	Simple test harness which can be used with beaker
 
@@ -347,6 +347,12 @@ fi
 %{__rm} -rf %{buildroot}
 
 %changelog
+* Tue Mar 20 2018 Bill Peck <bpeck@redhat.com> 0.1.34-1
+- Search for first match of fragment. (bpeck@redhat.com)
+- valgrind: suppress leak of static buffer in getaddrinfo() (mtyson@redhat.com)
+- Update metadata parser to include RhtsRequires in dependencies.
+  (bpeck@redhat.com)
+
 * Wed Dec 13 2017 Bill Peck <bpeck@redhat.com> 0.1.33-1
 - fix file:/// handling.  when host is NULL the full task path is truncated
   early. (bpeck@redhat.com)
