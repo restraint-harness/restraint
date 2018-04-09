@@ -319,23 +319,24 @@ fi
 %attr(0755, root, root)%{_bindir}/rhts-run-simple-test
 %attr(0755, root, root)%{_bindir}/rhts-lint
 %attr(0755, root, root)%{_bindir}/rhts-sync-set
-%attr(0755, root, root)%{_bindir}/rhts_sync_set
 %attr(0755, root, root)%{_bindir}/rhts-sync-block
-%attr(0755, root, root)%{_bindir}/rhts_sync_block
-%attr(0755, root, root)%{_bindir}/rhts_environment.sh
-%attr(0755, root, root)%{_bindir}/rhts-reboot
 %attr(0755, root, root)%{_bindir}/rhts-report-result
-%attr(0755, root, root)%{_bindir}/rhts-submit-log
-%attr(0755, root, root)%{_bindir}/rhts_submit_log
-%attr(0755, root, root)%{_bindir}/rhts-backup
-%attr(0755, root, root)%{_bindir}/rhts-restore
-%attr(0755, root, root)%{_bindir}/rhts-recipe-sync-set
-%attr(0755, root, root)%{_bindir}/rhts_recipe_sync_set
-%attr(0755, root, root)%{_bindir}/rhts-recipe-sync-block
-%attr(0755, root, root)%{_bindir}/rhts_recipe_sync_block
-%attr(0755, root, root)%{_bindir}/rhts-abort
 %attr(0755, root, root)%{_bindir}/rhts-flush
 
+# Symlinks do not have attributes
+%{_bindir}/rhts_sync_set
+%{_bindir}/rhts_sync_block
+%{_bindir}/rhts_environment.sh
+%{_bindir}/rhts-reboot
+%{_bindir}/rhts-submit-log
+%{_bindir}/rhts_submit_log
+%{_bindir}/rhts-backup
+%{_bindir}/rhts-restore
+%{_bindir}/rhts-recipe-sync-set
+%{_bindir}/rhts_recipe_sync_set
+%{_bindir}/rhts-recipe-sync-block
+%{_bindir}/rhts_recipe_sync_block
+%{_bindir}/rhts-abort
 %{_datadir}/rhts/lib/rhts-make.include
 /mnt/scratchspace
 %attr(1777,root,root)/mnt/testarea
