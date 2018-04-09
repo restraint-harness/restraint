@@ -30,6 +30,8 @@ typedef struct {
     GSList *softdependencies;
     /* List of repository dependencies */
     GSList *repodeps;
+    /* List of environment variables, encoded as 'Param' objects */
+    GSList *envvars;
     /* maximum time task is allowed to run before being killed */
     gint64 max_time;
     /* The task can request that no localwatchdog be used. Used for reservesys task */
