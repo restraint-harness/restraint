@@ -1,6 +1,10 @@
 
 CC = gcc
-CFLAGS ?= -O2 -g
+CFLAGS ?= -g
+
+ifneq ($(DEVEL),1)
+    CFLAGS += -O2
+endif
 
 PACKAGES = glib-2.0 gobject-2.0 gio-2.0 gio-unix-2.0 libxml-2.0 libsoup-2.4 libarchive libssh libssh_threads libcurl
 CFLAGS += -Wall -Werror -std=c99 $(shell pkg-config --cflags $(PACKAGES))
