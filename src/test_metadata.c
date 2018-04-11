@@ -20,6 +20,33 @@
 #include <gio/gio.h>
 
 #include "metadata.h"
+#include "param.h"
+
+/* Helper function for the environment metadata tests */
+static void check_metadata_envvars(GSList *meta_list) {
+    int i = 0;
+
+    /* Should match the 'environment' in the metadata
+       This needs to be the reverse order of metadata due to list prepending */
+    static Param params[] = {
+        {"VARWITHANEQUALS", "THIS=THAT"},
+        {"MYCOOLVARIABLENAME", "MYCOOLVARIABLEVALUE"},
+        {"FOO", "BAR"},
+    };
+    const int param_size = sizeof(params) / sizeof(Param);
+
+    for(
+        ;
+        meta_list != NULL;
+        meta_list = meta_list->next
+    ){
+        g_assert_cmpint(i, <, param_size);
+        Param *p = (Param*) meta_list->data;
+        g_assert_cmpstr(params[i].name, ==, p->name);
+        g_assert_cmpstr(params[i].value, ==, p->value);
+        i++;
+    }
+}
 
 static void test_testinfo_dependencies(void) {
     GError *error = NULL;
@@ -152,6 +179,21 @@ static void test_testinfo_testtime_second(void) {
 
     g_assert_no_error (error);
     g_assert_cmpuint(metadata->max_time, ==, 200);
+
+    restraint_metadata_free (metadata);
+}
+
+static void test_testinfo_environment(void) {
+    GError *error = NULL;
+    MetaData *metadata;
+
+    gchar *filename = "test-data/parse_testinfo/environment/testinfo.desc";
+
+    metadata = restraint_parse_testinfo (filename, &error);
+
+    g_assert_no_error (error);
+
+    check_metadata_envvars(metadata->envvars);
 
     restraint_metadata_free (metadata);
 }
@@ -304,6 +346,22 @@ static void test_metadata_testtime_second(void) {
     restraint_metadata_free (metadata);
 }
 
+static void test_metadata_environment(void) {
+    GError *error = NULL;
+    MetaData *metadata;
+
+    gchar *filename = "test-data/parse_metadata/environment/metadata";
+    gchar *osmajor = "RedHatEnterpriseLinux6";
+
+    metadata = restraint_parse_metadata(filename, osmajor, &error);
+    g_assert_no_error (error);
+    g_assert_nonnull (metadata->envvars);
+
+    check_metadata_envvars(metadata->envvars);
+
+    restraint_metadata_free (metadata);
+}
+
 int main(int argc, char *argv[]) {
     g_test_init(&argc, &argv, NULL);
     g_test_add_func("/testindo.desc/testtime/day", test_testinfo_testtime_day);
@@ -314,6 +372,7 @@ int main(int argc, char *argv[]) {
     g_test_add_func("/testinfo.desc/dependencies", test_testinfo_dependencies);
     g_test_add_func("/testinfo.desc/repodeps", test_testinfo_repodeps);
     g_test_add_func("/testinfo.desc/use_pty", test_testinfo_use_pty);
+    g_test_add_func("/testinfo.desc/environment", test_testinfo_environment);
     g_test_add_func("/metadata/testtime/day", test_metadata_testtime_day);
     g_test_add_func("/metadata/testtime/hour", test_metadata_testtime_hour);
     g_test_add_func("/metadata/testtime/invalid", test_metadata_testtime_invalid);
@@ -322,5 +381,6 @@ int main(int argc, char *argv[]) {
     g_test_add_func("/metadata/dependencies", test_metadata_dependencies);
     g_test_add_func("/metadata/repodeps", test_metadata_repodeps);
     g_test_add_func("/metadata/use_pty", test_metadata_use_pty);
+    g_test_add_func("/metadata/environment", test_metadata_environment);
     return g_test_run();
 }

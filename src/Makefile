@@ -79,8 +79,8 @@ test_process: process.o errors.o
 test_process.o: process.h
 
 TEST_PROGS += test_dependency
-test_dependency: dependency.o errors.o process.o fetch.o fetch_uri.o fetch_git.o metadata.o utils.o
-test_dependency.o: dependency.h errors.h process.h
+test_dependency: dependency.o errors.o process.o fetch.o fetch_uri.o fetch_git.o metadata.o utils.o param.o
+test_dependency.o: dependency.h errors.h process.h param.h
 
 TEST_PROGS += test_env
 test_env: test_env.o errors.o env.o
@@ -97,8 +97,8 @@ test_recipe: recipe.o task.o fetch_git.o param.o role.o metadata.o
 test_recipe.o: recipe.h task.h param.h
 
 TEST_PROGS += test_metadata
-test_metadata: metadata.o utils.o errors.o process.o
-test_metadata.o: metadata.h utils.h errors.h process.h
+test_metadata: metadata.o utils.o errors.o process.o param.o
+test_metadata.o: metadata.h utils.h errors.h process.h param.h
 
 .PHONY: check
 check: $(TEST_PROGS) test-data/git-remote

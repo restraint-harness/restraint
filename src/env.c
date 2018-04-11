@@ -74,6 +74,9 @@ static void build_param_var(Param *param, GPtrArray *env) {
 void build_env(gchar *restraint_url, Task *task) {
     GPtrArray *env = g_ptr_array_new_with_free_func (g_free);
 
+    if (task->metadata != NULL) {
+        g_slist_foreach(task->metadata->envvars, (GFunc) build_param_var, env);
+    }
     g_list_foreach(task->recipe->roles, (GFunc) build_param_var, env);
     g_list_foreach(task->roles, (GFunc) build_param_var, env);
 

@@ -30,6 +30,7 @@
 #include "process.h"
 #include "errors.h"
 #include "utils.h"
+#include "param.h"
 
 typedef struct _MetadataData {
     char *path;
@@ -50,6 +51,7 @@ restraint_metadata_free (MetaData *metadata)
         g_slist_free_full (metadata->dependencies, g_free);
         g_slist_free_full (metadata->softdependencies, g_free);
         g_slist_free_full (metadata->repodeps, g_free);
+        g_slist_free_full (metadata->envvars, (GDestroyNotify)restraint_param_free);
         g_slice_free (MetaData, metadata);
     }
 }
@@ -192,6 +194,37 @@ restraint_parse_metadata (gchar *filename,
     }
     g_clear_error (&tmp_error);
 
+    gchar **envvars = g_key_file_get_locale_string_list(keyfile,
+                                                       "restraint",
+                                                       "environment",
+                                                       locale,
+                                                       &length,
+                                                       &tmp_error);
+    gchar **envvar = envvars;
+    if (envvar) {
+        while (*envvar) {
+            gchar **split = g_strsplit(*envvar, "=", 2);
+            if(split[0] != NULL && split[1] != NULL){
+                Param *p = restraint_param_new();
+                p->name = g_strdup(split[0]);
+                p->value = g_strdup(split[1]);
+                metadata->envvars = g_slist_prepend(metadata->envvars, p);
+            }
+            g_strfreev(split);
+            envvar++;
+        }
+        g_strfreev(envvars);
+    }
+    else {
+        metadata->envvars = NULL;
+    }
+    if (tmp_error && tmp_error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND) {
+        g_propagate_error(error, tmp_error);
+        goto error;
+    }
+
+    g_clear_error (&tmp_error);
+
     metadata->nolocalwatchdog = g_key_file_get_boolean (keyfile,
                                                     "restraint",
                                                     "no_localwatchdog",
@@ -280,6 +313,15 @@ static void parse_line(MetaData *metadata,
         }
         // We only want to free the array not the values that it's pointing to
         g_strfreev (repodeps);
+    } else if(g_strcmp0("ENVIRONMENT", key) == 0) {
+        gchar **envvar = g_strsplit_set (value, "= ", 2);
+        if(envvar[0] != NULL && envvar[1] != NULL){
+            Param *p = restraint_param_new();
+            p->name = g_strdup(envvar[0]);
+            p->value = g_strdup(envvar[1]);
+            metadata->envvars = g_slist_prepend(metadata->envvars, p);
+        }
+        g_strfreev(envvar);
     }
     g_free(key);
     g_free(value);
