@@ -81,7 +81,7 @@ message_complete (SoupSession *sesison, SoupMessage *msg, gpointer user_data)
 
         g_free(uri);
         // push it back onto the queue.
-        g_object_ref (message_data->msg);
+        (void)g_object_ref (message_data->msg);
         g_queue_push_head (message_queue, message_data);
         //g_print ("message_complete->add delay_handler\n");
         g_timeout_add_seconds_full (G_PRIORITY_DEFAULT_IDLE,

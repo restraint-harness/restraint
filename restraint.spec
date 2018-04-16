@@ -22,7 +22,7 @@ Source0:	https://github.com/p3ck/%{name}/%{name}-%{version}.tar.gz
 %if 0%{?with_static:1}
 # Sources for bundled, statically linked libraries
 Source101:      libffi-3.1.tar.gz
-Source102:      glib-2.38.0.tar.xz
+Source102:      glib-2.56.1.tar.xz
 Source103:      zlib-1.2.11.tar.gz
 Source104:      bzip2-1.0.6.tar.gz
 Source105:      libxml2-2.9.1.tar.gz
@@ -87,6 +87,12 @@ BuildRequires:  tar
 %{?with_static:BuildRequires:  perl(Getopt::Long)}
 %endif
 %{?with_static:BuildRequires:  perl(XML::Parser)}
+%if ! 0%{?fedora}
+%if 0%{?rhel} < 7
+# new versions of glib require python2.7 as a build dependency
+%{?with_static:BuildRequires: python27}
+%endif
+%endif
 
 %description
 restraint harness which can run standalone or with beaker.  when provided a recipe xml it will execute
@@ -132,6 +138,10 @@ restAPI allowing all results and logs to be recorded from the test machine.
 %setup -q
 %if 0%{?with_static:1}
 cp %{_sourcedir}/*.tar.* third-party/
+%if 0%{?rhel} != 4
+# Remove the RHEL4 glib patch if this is not RHEL4
+rm -f %{buildroot}/third-party/glib-rhel4.patch
+%endif
 %endif
 
 %build

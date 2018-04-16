@@ -2,7 +2,7 @@
 ZLIB = zlib-1.2.11
 BZIP2 = bzip2-1.0.6
 LIBFFI = libffi-3.1
-GLIB = glib-2.38.0
+GLIB = glib-2.56.1
 LIBXML2 = libxml2-2.9.1
 CURL = curl-7.29.0
 LIBARCHIVE = libarchive-3.2.1
@@ -15,6 +15,19 @@ SQLITE = sqlite-autoconf-3080002
 INTLTOOL = intltool-0.51.0
 
 arch := $(shell uname -m)
+
+# glib2 requires python 2.7 or greater
+# Find a python2.7 or python3 binary.
+ifneq ("$(wildcard /usr/bin/python2.7)","")
+    PYTHON := /usr/bin/python2.7
+else
+ifneq ("$(wildcard /usr/bin/python3)","")
+    PYTHON := /usr/bin/python3
+else
+    # Take a wild stab in the dark.
+    PYTHON := $(shell which python)
+endif
+endif
 
 .PHONY: all
 all: \
@@ -78,11 +91,14 @@ tree/lib/pkgconfig/libffi.pc: $(LIBFFI) $(LIBFFI)/.patches-done
 tree/lib/pkgconfig/glib-2.0.pc: $(GLIB) $(GLIB)/.patches-done tree/lib/pkgconfig/zlib.pc tree/lib/pkgconfig/libffi.pc
 	( cd $(GLIB) && PKG_CONFIG_PATH=../tree/lib/pkgconfig ./configure --prefix=$(CURDIR)/tree \
 	    --disable-libelf --disable-fam --disable-xattr --disable-systemtap \
-	    --disable-gcov --disable-dtrace --disable-gtk-doc --disable-gtk-doc-html \
-	    --disable-man --disable-modular-tests \
+	    --disable-dtrace --disable-gtk-doc --disable-gtk-doc-html \
+	    --disable-man \
+	    --with-python=$(PYTHON) --with-pcre=internal --disable-libmount \
 	    --enable-static --disable-shared )
 	$(MAKE) -C $(GLIB)
 	$(MAKE) -C $(GLIB) install
+#   this is a dirty hack to stop gcc reporting on warnings in the glib headers.
+	sed -i -e 's/\-I/\-isystem/g' $(CURDIR)/tree/lib/pkgconfig/glib-2.0.pc
 
 tree/lib/pkgconfig/libxml-2.0.pc: $(LIBXML2) $(LIBXML2)/.patches-done tree/lib/pkgconfig/zlib.pc
 	( cd $(LIBXML2) && ./configure --prefix=$(CURDIR)/tree \
@@ -136,7 +152,7 @@ $(LIBFFI).tar.gz:
 
 TAR_BALLS += $(GLIB).tar.xz
 $(GLIB).tar.xz:
-	curl -f -L -O http://ftp.gnome.org/pub/gnome/sources/glib/2.38/$@
+	curl -f -L -O https://ftp.gnome.org/pub/gnome/sources/glib/2.56/$@
 
 TAR_BALLS += $(ZLIB).tar.gz
 $(ZLIB).tar.gz:
@@ -221,11 +237,10 @@ $(SQLITE)/.patches-done: $(SQLITE)
 	touch $@
 
 $(GLIB)/.patches-done: $(GLIB)
-	patch -d$(GLIB) -p1 <glib-python2.2.patch
-	patch -d$(GLIB) -p1 <glib-no-pkgconfig-version-check.patch
-	patch -d$(GLIB) -p1 <glib-g_socket_recovery.patch
-#	patch -d$(GLIB) -p1 <glib-gcc3.patch
-	patch -d$(GLIB) -p1 <glib-format-nonliteral.patch
+	@if [ -e glib-rhel4.patch ]; then\
+		patch -d$(GLIB) -p1 < glib-rhel4.patch;\
+	fi
+	patch -d$(GLIB) -p1 < glib-setpipe.patch
 	touch $@
 
 $(LIBARCHIVE)/.patches-done: $(LIBARCHIVE)
