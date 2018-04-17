@@ -90,6 +90,7 @@ int main(int argc, char *argv[]) {
     gchar *server_recipe = NULL;
     gchar *task_id = NULL;
     gchar *task_id_key = NULL;
+    gchar **positional_args = NULL;
     gboolean no_plugins = FALSE;
 
     gchar *form_data;
@@ -106,6 +107,8 @@ int main(int argc, char *argv[]) {
             "don't run plugin on server side", "PLUGIN" },
         { "no-plugins", 0, 0, G_OPTION_ARG_NONE, &no_plugins,
             "don't run any plugins on server side", NULL },
+        { G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_STRING_ARRAY, &positional_args,
+            NULL, NULL},
         { NULL }
     };
     GOptionGroup *option_group = g_option_group_new ("main",
@@ -140,7 +143,10 @@ int main(int argc, char *argv[]) {
         server = g_strdup_printf ("%s/tasks/%s/results/", server_recipe, task_id);
     }
 
-    if (argc < 3 || !server) {
+    if( positional_args == NULL ||
+        server == NULL ||
+        g_strv_length(positional_args) < 3 )
+    {
         cmd_usage(context);
         goto cleanup;
     }
@@ -154,8 +160,8 @@ int main(int argc, char *argv[]) {
     }
     session = soup_session_new_with_options("timeout", 3600, NULL);
 
-    g_hash_table_insert (data_table, "path", argv[1]);
-    g_hash_table_insert (data_table, "result", argv[2]);
+    g_hash_table_insert (data_table, "path", positional_args[0]);
+    g_hash_table_insert (data_table, "result", positional_args[1]);
 
     // if AVC_ERROR=+no_avc_check then disable the selinux check plugin
     // This is for legacy rhts tests.. please use --disable-plugin
@@ -172,7 +178,7 @@ int main(int argc, char *argv[]) {
     if (no_plugins)
       g_hash_table_insert (data_table, "no_plugins", &no_plugins);
     if (argc > 3)
-      g_hash_table_insert (data_table, "score", argv[3]);
+      g_hash_table_insert (data_table, "score", positional_args[2]);
     if (result_msg)
       g_hash_table_insert (data_table, "message", result_msg);
 
@@ -219,6 +225,7 @@ cleanup:
     if (result_uri != NULL) {
         soup_uri_free (result_uri);
     }
+    g_strfreev(positional_args);
     restraint_free_appdata(app_data);
     if (error) {
         int retcode = error->code;
