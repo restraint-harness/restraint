@@ -237,10 +237,10 @@ $(SQLITE)/.patches-done: $(SQLITE)
 	touch $@
 
 $(GLIB)/.patches-done: $(GLIB)
-	@if [ -e glib-rhel4.patch ]; then\
+	patch -d$(GLIB) -p1 < glib-setpipe.patch
+	if [ -e glib-rhel4.patch ]; then\
 		patch -d$(GLIB) -p1 < glib-rhel4.patch;\
 	fi
-	patch -d$(GLIB) -p1 < glib-setpipe.patch
 	touch $@
 
 $(LIBARCHIVE)/.patches-done: $(LIBARCHIVE)

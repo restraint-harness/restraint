@@ -4,6 +4,8 @@ This also reverts the pthread changes that do not exist on RHEL4
 https://github.com/GNOME/glib/commit/1de36e775599e77f2fe47b381f0e5b1b62e93f66.patch
 https://github.com/GNOME/glib/commit/5103c5d643f7e7de7983619204a25c3c774478e8.patch
 
+Set the file buffer size to a lower limit compatable with RHEL4
+
 diff --git a/configure b/configure
 index 12faeef..ff4b96f 100755
 --- a/configure
@@ -17,6 +19,19 @@ index 12faeef..ff4b96f 100755
  	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking pkg-config is at least version $_pkg_min_version" >&5
  $as_echo_n "checking pkg-config is at least version $_pkg_min_version... " >&6; }
  	if $PKG_CONFIG --atleast-pkgconfig-version $_pkg_min_version; then
+diff --git a/gio/gfile.c b/gio/gfile.c
+index daa3223..541897d 100644
+--- a/gio/gfile.c
++++ b/gio/gfile.c
+@@ -3036,7 +3036,7 @@ splice_stream_with_progress (GInputStream           *in,
+    * running on Linux < 2.6.11 (where the capacity was the system page size,
+    * typically 4KiB) because it’s ancient. See pipe(7). */
+ 
+-    buffer_size = 1024 * 64;
++    buffer_size = 1024 * 4;
+ #endif
+ 
+   g_assert (buffer_size > 0);
 diff --git a/glib/gthread-posix.c b/glib/gthread-posix.c
 index 5fff514..8b74709 100644
 --- a/glib/gthread-posix.c
