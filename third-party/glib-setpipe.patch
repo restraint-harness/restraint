@@ -1,5 +1,5 @@
 diff --git a/gio/gfile.c b/gio/gfile.c
-index 334ad8e..bbb776d 100644
+index 334ad8e..daa3223 100644
 --- a/gio/gfile.c
 +++ b/gio/gfile.c
 @@ -3012,6 +3012,7 @@ splice_stream_with_progress (GInputStream           *in,
@@ -10,7 +10,7 @@ index 334ad8e..bbb776d 100644
    /* Try a 1MiB buffer for improved throughput. If that fails, use the default
     * pipe size. See: https://bugzilla.gnome.org/791457 */
    buffer_size = fcntl (buffer[1], F_SETPIPE_SZ, 1024 * 1024);
-@@ -3029,6 +3030,22 @@ splice_stream_with_progress (GInputStream           *in,
+@@ -3029,6 +3030,14 @@ splice_stream_with_progress (GInputStream           *in,
            goto out;
          }
      }
@@ -20,15 +20,7 @@ index 334ad8e..bbb776d 100644
 +   * running on Linux < 2.6.11 (where the capacity was the system page size,
 +   * typically 4KiB) because it’s ancient. See pipe(7). */
 +
-+  /* mtyson: For RHEL4 (kernel 2.6.9) we'll drop the buffer size to 4kb to avoid issues
-+   * As a cheap hack we'll use the version of gcc to detect this, as RHEL4 uses gcc 3.
-+   */
-+
-+  #if __GNUC__ == 3
-+    buffer_size = 1024 * 4;
-+  #else
 +    buffer_size = 1024 * 64;
-+  #endif
 +#endif
  
    g_assert (buffer_size > 0);

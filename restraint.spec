@@ -138,10 +138,6 @@ restAPI allowing all results and logs to be recorded from the test machine.
 %setup -q
 %if 0%{?with_static:1}
 cp %{_sourcedir}/*.tar.* third-party/
-%if 0%{?rhel} != 4
-# Remove the RHEL4 glib patch if this is not RHEL4
-rm -f %{buildroot}/third-party/glib-rhel4.patch
-%endif
 %endif
 
 %build
@@ -160,6 +156,10 @@ export CFLAGS="$RPM_OPT_FLAGS -mminimal-toc"
 
 %if 0%{?with_static:1}
 pushd third-party
+%if 0%{?rhel} != 4
+# Remove the RHEL4 glib patch if this is not RHEL4
+rm glib-rhel4.patch
+%endif
 make
 popd
 %endif
