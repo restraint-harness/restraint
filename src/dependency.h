@@ -36,7 +36,7 @@ typedef struct {
     GSList *softdependencies;
     GSList *repodeps;
     GSList *processed_deps;
-    struct restraint_url *fetch_url;
+    SoupURI *fetch_url;
     gboolean keepchanges;
     const gchar *main_task_name;
     const gchar *base_path;

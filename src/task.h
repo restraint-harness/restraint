@@ -75,7 +75,7 @@ typedef struct {
     /* Where/what to fetch this task from */
     union {
         gchar *package_name; // when TASK_FETCH_INSTALL_PACKAGE
-        struct restraint_url *url; // when TASK_FETCH_UNPACK
+        SoupURI *url; // when TASK_FETCH_UNPACK
     } fetch;
     /* Whether to keep task changes */
     gboolean keepchanges;

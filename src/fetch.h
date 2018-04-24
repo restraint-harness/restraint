@@ -20,6 +20,7 @@
 #include <stdint.h>
 #include <glib.h>
 #include <gio/gio.h>
+#include <libsoup/soup.h>
 
 #define LARGE_PACKET_MAX 65520
 
@@ -31,7 +32,7 @@ typedef void (*ArchiveEntryCallback) (const gchar *entry,
 
 typedef struct {
     gchar buf[LARGE_PACKET_MAX];
-    struct restraint_url *url;
+    SoupURI *url;
     const gchar *base_path;
     GSocketConnection *connection;
     GSocketClient *client;

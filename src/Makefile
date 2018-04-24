@@ -71,11 +71,11 @@ test_%: test_%.o
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 TEST_PROGS += test_fetch_git
-test_fetch_git: fetch.o fetch_git.o utils.o errors.o
+test_fetch_git: fetch.o fetch_git.o errors.o
 test_fetch_git.o: fetch_git.h
 
 TEST_PROGS += test_fetch_uri
-test_fetch_uri: fetch.o fetch_uri.o utils.o errors.o
+test_fetch_uri: fetch.o fetch_uri.o errors.o
 test_fetch_uri.o: fetch_uri.h
 
 TEST_PROGS += test_process

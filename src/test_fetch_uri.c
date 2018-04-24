@@ -58,7 +58,7 @@ static void test_fetch_http_nofragment_success(void) {
     run_data->entry = g_string_new (NULL);
     run_data->loop = g_main_loop_new (NULL, TRUE);
 
-    struct restraint_url *url = restraint_parse_url("http://localhost:8000/fetch_git.tgz");
+    SoupURI *url = soup_uri_new("http://localhost:8000/fetch_git.tgz");
     gchar *path = g_dir_make_tmp ("test_fetch_http_XXXXXX", NULL);
 
     restraint_fetch_uri (url,
@@ -108,7 +108,7 @@ static void test_fetch_http_nofragment_success(void) {
     g_slice_free (RunData, run_data);
     g_remove (path);
     g_free (path);
-    restraint_free_url(url);
+    soup_uri_free(url);
 }
 
 static void test_fetch_http_nofragment_keepchanges(void) {
@@ -120,7 +120,7 @@ static void test_fetch_http_nofragment_keepchanges(void) {
     run_data = g_slice_new0 (RunData);
     run_data->entry = g_string_new (NULL);
 
-    struct restraint_url *url = restraint_parse_url("http://localhost:8000/fetch_git.tgz");
+    SoupURI *url = soup_uri_new("http://localhost:8000/fetch_git.tgz");
     gchar *path = g_dir_make_tmp ("test_fetch_http_XXXXXX", NULL);
 
     restraint_fetch_uri (url,
@@ -235,7 +235,7 @@ static void test_fetch_http_nofragment_keepchanges(void) {
     g_slice_free (RunData, run_data);
     g_remove (path);
     g_free (path);
-    restraint_free_url(url);
+    soup_uri_free(url);
 }
 
 static void test_fetch_http_nofragment_fail(void) {
@@ -246,7 +246,7 @@ static void test_fetch_http_nofragment_fail(void) {
     run_data->entry = g_string_new (NULL);
     run_data->loop = g_main_loop_new (NULL, TRUE);
 
-    struct restraint_url *url = restraint_parse_url("http://localhost:8000/nonexistent");
+    SoupURI *url = soup_uri_new("http://localhost:8000/nonexistent");
     gchar *path = g_dir_make_tmp ("test_fetch_http_XXXXXX", NULL);
 
     restraint_fetch_uri (url,
@@ -272,7 +272,7 @@ static void test_fetch_http_nofragment_fail(void) {
     g_slice_free (RunData, run_data);
     g_remove (path);
     g_free (path);
-    restraint_free_url(url);
+    soup_uri_free(url);
 }
 
 static void test_fetch_http_nofragment_bad_archive(void) {
@@ -283,7 +283,7 @@ static void test_fetch_http_nofragment_bad_archive(void) {
     run_data->entry = g_string_new (NULL);
     run_data->loop = g_main_loop_new (NULL, TRUE);
 
-    struct restraint_url *url = restraint_parse_url("http://localhost:8000/bad_archive");
+    SoupURI *url = soup_uri_new("http://localhost:8000/bad_archive");
     gchar *path = g_dir_make_tmp ("test_fetch_http_XXXXXX", NULL);
 
     restraint_fetch_uri (url,
@@ -309,7 +309,7 @@ static void test_fetch_http_nofragment_bad_archive(void) {
     g_slice_free (RunData, run_data);
     g_remove (path);
     g_free (path);
-    restraint_free_url(url);
+    soup_uri_free(url);
 }
 
 static void test_fetch_http_fragment_success(void) {
@@ -321,7 +321,7 @@ static void test_fetch_http_fragment_success(void) {
     run_data->entry = g_string_new (NULL);
     run_data->loop = g_main_loop_new (NULL, TRUE);
 
-    struct restraint_url *url = restraint_parse_url("http://localhost:8000/fetch_http.tgz#restraint/sanity/fetch_git");
+    SoupURI *url = soup_uri_new("http://localhost:8000/fetch_http.tgz#restraint/sanity/fetch_git");
     gchar *path = g_dir_make_tmp ("test_fetch_http_XXXXXX", NULL);
 
     restraint_fetch_uri (url,
@@ -373,7 +373,7 @@ static void test_fetch_http_fragment_success(void) {
     g_slice_free (RunData, run_data);
     g_remove (path);
     g_free (path);
-    restraint_free_url(url);
+    soup_uri_free(url);
 }
 
 static void test_fetch_http_fragment_fail(void) {
@@ -383,7 +383,7 @@ static void test_fetch_http_fragment_fail(void) {
     run_data->entry = g_string_new (NULL);
     run_data->loop = g_main_loop_new (NULL, TRUE);
 
-    struct restraint_url *url = restraint_parse_url("http://localhost:8000/fetch_http.tgz#nonexistant");
+    SoupURI *url = soup_uri_new("http://localhost:8000/fetch_http.tgz#nonexistant");
     gchar *path = g_dir_make_tmp ("test_fetch_http_XXXXXX", NULL);
 
     restraint_fetch_uri (url,
@@ -406,7 +406,7 @@ static void test_fetch_http_fragment_fail(void) {
     g_slice_free (RunData, run_data);
     g_remove (path);
     g_free (path);
-    restraint_free_url(url);
+    soup_uri_free(url);
 }
 
 static void test_fetch_file_fragment_success(void) {
@@ -420,7 +420,7 @@ static void test_fetch_file_fragment_success(void) {
     gchar *cwd = g_get_current_dir();
     gchar *fulluri = g_strdup_printf("file:///%s/test-data/http-remote/fetch_http.tgz#restraint/sanity/fetch_git", cwd);
 
-    struct restraint_url *url = restraint_parse_url(fulluri);
+    SoupURI *url = soup_uri_new(fulluri);
     g_free (fulluri);
     g_free (cwd);
     gchar *path = g_dir_make_tmp ("test_fetch_file_XXXXXX", NULL);
@@ -474,7 +474,7 @@ static void test_fetch_file_fragment_success(void) {
     g_slice_free (RunData, run_data);
     g_remove (path);
     g_free (path);
-    restraint_free_url(url);
+    soup_uri_free(url);
 }
 
 static void test_fetch_file_fragment_no_trailing_slash(void) {
@@ -488,7 +488,7 @@ static void test_fetch_file_fragment_no_trailing_slash(void) {
     gchar *cwd = g_get_current_dir();
     gchar *fulluri = g_strdup_printf("file:///%s/test-data/http-remote/fetch_http.tgz#restraint", cwd);
 
-    struct restraint_url *url = restraint_parse_url(fulluri);
+    SoupURI *url = soup_uri_new(fulluri);
     g_free (fulluri);
     g_free (cwd);
     gchar *path = g_dir_make_tmp ("test_fetch_file_XXXXXX", NULL);
@@ -521,7 +521,7 @@ static void test_fetch_file_fragment_no_trailing_slash(void) {
     g_slice_free (RunData, run_data);
     g_remove (path);
     g_free (path);
-    restraint_free_url(url);
+    soup_uri_free(url);
 }
 
 static void test_fetch_file_fragment_trailing_slash(void) {
@@ -535,7 +535,7 @@ static void test_fetch_file_fragment_trailing_slash(void) {
     gchar *cwd = g_get_current_dir();
     gchar *fulluri = g_strdup_printf("file:///%s/test-data/http-remote/fetch_http.tgz#restraint/", cwd);
 
-    struct restraint_url *url = restraint_parse_url(fulluri);
+    SoupURI *url = soup_uri_new(fulluri);
     g_free (fulluri);
     g_free (cwd);
     gchar *path = g_dir_make_tmp ("test_fetch_file_XXXXXX", NULL);
@@ -568,7 +568,7 @@ static void test_fetch_file_fragment_trailing_slash(void) {
     g_slice_free (RunData, run_data);
     g_remove (path);
     g_free (path);
-    restraint_free_url(url);
+    soup_uri_free(url);
 }
 
 static void test_fetch_file_fragment_fail(void) {
@@ -581,7 +581,7 @@ static void test_fetch_file_fragment_fail(void) {
     gchar *cwd = g_get_current_dir();
     gchar *fulluri = g_strdup_printf("file:///%s/test-data/http-remote/fetch_http.tgz#nonexistant", cwd);
 
-    struct restraint_url *url = restraint_parse_url(fulluri);
+    SoupURI *url = soup_uri_new(fulluri);
     g_free (fulluri);
     g_free (cwd);
     gchar *path = g_dir_make_tmp ("test_fetch_file_XXXXXX", NULL);
@@ -606,7 +606,7 @@ static void test_fetch_file_fragment_fail(void) {
     g_slice_free (RunData, run_data);
     g_remove (path);
     g_free (path);
-    restraint_free_url(url);
+    soup_uri_free(url);
 }
 
 int main(int argc, char *argv[]) {

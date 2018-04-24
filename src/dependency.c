@@ -16,6 +16,8 @@
 */
 
 #include <string.h>
+#include <libsoup/soup.h>
+
 #include "dependency.h"
 #include "errors.h"
 #include "process.h"
@@ -23,7 +25,7 @@
 #include "fetch_uri.h"
 
 typedef struct {
-    struct restraint_url *url;
+    SoupURI *url;
     gchar *path;
     DependencyData *dependency_data;
 } RepoDepData;
@@ -453,7 +455,7 @@ fetch_repodeps_finish_callback(GError *error, gpointer user_data)
         dependency_data->repodeps = g_slist_next(dependency_data->repodeps);
         restraint_fetch_repodeps(dependency_data);
     }
-    restraint_free_url(rd_data->url);
+    soup_uri_free(rd_data->url);
     g_free(rd_data->path);
     g_slice_free(RepoDepData, rd_data);
 }
@@ -464,7 +466,7 @@ restraint_fetch_repodeps(DependencyData *dependency_data)
     if (dependency_data->repodeps != NULL) {
         RepoDepData *rd_data = g_slice_new0(RepoDepData);
         rd_data->dependency_data = dependency_data;
-        rd_data->url = restraint_copy_url(dependency_data->fetch_url);
+        rd_data->url = soup_uri_copy(dependency_data->fetch_url);
         g_free(rd_data->url->fragment);
         rd_data->url->fragment = g_strdup((char *)dependency_data->repodeps->data);
         rd_data->path = g_build_filename(dependency_data->base_path,

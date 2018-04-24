@@ -16,7 +16,9 @@
 */
 
 
-void restraint_fetch_uri(struct restraint_url *url,
+#include <libsoup/soup.h>
+
+void restraint_fetch_uri(SoupURI *url,
                      const gchar *base_path,
                      gboolean keepchanges,
                      gboolean ssl_verify,

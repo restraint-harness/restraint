@@ -83,13 +83,16 @@ myopen(FetchData *fetch_data, GError **error)
     struct curl_data *cd = fetch_data->private_data;
     CURLM *curlm = cd->curlm;
     CURL *curl = curl_easy_init();
+    gchar *uri = soup_uri_to_string(fetch_data->url, FALSE);
 
     fetch_data->istream = g_memory_input_stream_new();
-    curl_easy_setopt(curl, CURLOPT_URL, fetch_data->url->uri);
+    curl_easy_setopt(curl, CURLOPT_URL, uri);
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, cwrite_callback);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, fetch_data->istream);
     curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, ebuf);
     curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);
+
+    g_free(uri);
 
     if (fetch_data->ssl_verify == FALSE) {
         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0);
@@ -375,7 +378,7 @@ static gboolean start_unpack(gpointer data)
 }
 
 void
-restraint_fetch_uri (struct restraint_url *url,
+restraint_fetch_uri (SoupURI *url,
                      const gchar *base_path,
                      gboolean keepchanges,
                      gboolean ssl_verify,

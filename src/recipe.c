@@ -244,7 +244,7 @@ static Task *parse_task(xmlNode *task_node, Recipe *recipe, GError **error) {
                     task->task_id);
             goto error;
         }
-        task->fetch.url = restraint_parse_url((char *)url);
+        task->fetch.url = soup_uri_new((char *)url);
 
         if (task->fetch.url == NULL) {
             unrecognised("'%s' from task %s is not a valid url", url,

@@ -682,7 +682,7 @@ void restraint_task_free(Task *task) {
             g_free(task->fetch.package_name);
             break;
         case TASK_FETCH_UNPACK:
-            restraint_free_url(task->fetch.url);
+            soup_uri_free(task->fetch.url);
             break;
         default:
             g_return_if_reached();
