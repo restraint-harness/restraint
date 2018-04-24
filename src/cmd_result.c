@@ -91,6 +91,7 @@ int main(int argc, char *argv[]) {
     gchar *task_id = NULL;
     gchar *task_id_key = NULL;
     gchar **positional_args = NULL;
+    guint positional_arg_count = 0;
     gboolean no_plugins = FALSE;
 
     gchar *form_data;
@@ -116,7 +117,7 @@ int main(int argc, char *argv[]) {
                                                     "Various application related options",
                                                     app_data, NULL);
 
-    GOptionContext *context = g_option_context_new("TASK_PATH RESULT SCORE");
+    GOptionContext *context = g_option_context_new("TASK_PATH RESULT [SCORE]");
     g_option_context_set_summary(context,
             "Report results to lab controller. if you don't specify the\n"
             "the server url you must have RECIPEID and TASKID defined.\n"
@@ -143,9 +144,14 @@ int main(int argc, char *argv[]) {
         server = g_strdup_printf ("%s/tasks/%s/results/", server_recipe, task_id);
     }
 
+    if( positional_args != NULL ) {
+        positional_arg_count = g_strv_length(positional_args);
+    }
+
     if( positional_args == NULL ||
         server == NULL ||
-        g_strv_length(positional_args) < 3 )
+        positional_arg_count > 3 ||
+        positional_arg_count < 2 )
     {
         cmd_usage(context);
         goto cleanup;
@@ -177,7 +183,7 @@ int main(int argc, char *argv[]) {
     }
     if (no_plugins)
       g_hash_table_insert (data_table, "no_plugins", &no_plugins);
-    if (argc > 3)
+    if (positional_arg_count > 2)
       g_hash_table_insert (data_table, "score", positional_args[2]);
     if (result_msg)
       g_hash_table_insert (data_table, "message", result_msg);
@@ -188,7 +194,7 @@ int main(int argc, char *argv[]) {
     form_data = soup_form_encode_hash (data_table);
     soup_message_set_request (server_msg, "application/x-www-form-urlencoded",
                               SOUP_MEMORY_TAKE, form_data, strlen (form_data));
-    g_print ("** %s %s Score:%s\n", argv[1], argv[2], argv[3]);
+    g_print ("** %s %s Score:%s\n", positional_args[0], positional_args[1], positional_arg_count > 2 ? positional_args[2] : "N/A");
     ret = soup_session_send_message (session, server_msg);
     if (SOUP_STATUS_IS_SUCCESSFUL (ret)) {
         gchar *location = g_strdup_printf ("%s/logs/",
