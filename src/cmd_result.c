@@ -24,13 +24,7 @@
 #include "utils.h"
 #include "errors.h"
 
-static SoupSession *session;
-
-typedef struct {
-    gchar *filename;
-    gchar *outputfile;
-    GPtrArray *disable_plugin;
-} AppData;
+#include "cmd_result.h"
 
 static gboolean
 callback_disable_plugin (const gchar *option_name, const gchar *value,
@@ -55,93 +49,106 @@ callback_outputfile (const gchar *option_name, const gchar *value,
     return TRUE;
 }
 
-static void restraint_free_appdata(AppData *app_data)
+static gboolean
+callback_server (const gchar *option_name, const gchar *value,
+                 gpointer user_data, GError **error)
 {
-    if (app_data->filename != NULL) {
-        g_free(app_data->filename);
-    }
-    if (app_data->outputfile != NULL) {
-        g_free(app_data->outputfile);
-    }
+    AppData *app_data = (AppData *) user_data;
+
+    g_free(app_data->server);
+    app_data->server = g_strdup(value);
+    return TRUE;
+}
+
+AppData* restraint_create_appdata()
+{
+    AppData *app_data = g_slice_new0 (AppData);
+    return app_data;
+}
+
+void restraint_free_appdata(AppData *app_data)
+{
+    g_free(app_data->filename);
+    g_free(app_data->outputfile);
     g_ptr_array_free(app_data->disable_plugin, TRUE);
+
+    g_free(app_data->server);
+    g_free(app_data->result_msg);
+    g_free(app_data->prefix);
+    g_free(app_data->server_recipe);
+    g_free(app_data->task_id);
+
+    g_free(app_data->test_name);
+    g_free(app_data->test_result);
+    g_free(app_data->score);
+
     g_slice_free(AppData, app_data);
 }
 
-int main(int argc, char *argv[]) {
+/*
+    When parsing arguments we have two modes of operation
+    RHTS compatability mode and normal rstrnt-report-result mode
 
-    AppData *app_data = g_slice_new0 (AppData);
-    app_data->filename = g_strdup("resultoutputfile.log");
-    app_data->outputfile = g_strdup(getenv("OUTPUTFILE"));
-    app_data->disable_plugin = g_ptr_array_new_with_free_func (g_free);
+    We determine which mode we are in based on the filename of the
+    command (argv[0]). See RHTS_COMPAT_FILENAME in cmd_result.h
 
-    GError *error = NULL;
+    In RHTS compat mode we do not accept command line switches
+    and rely on envrionment variables and positional arguments,
+    the same way rhts-report-result works.  Positional arguments
+    starting with a '-' should work without problems.
 
-    gchar *server = NULL;
-    SoupURI *result_uri = NULL;
+    In regular restraint mode we parse the switches and commands
+    as normal.  If the user would like to pass positional arguments
+    that start with a '-' then they must first use a '--' switch
+    to tell glib to stop processing arguments.
+*/
 
-    guint ret = 0;
-
-    SoupMessage *server_msg;
-    SoupRequest *request;
-
-    gchar *result_msg = NULL;
-    gchar *prefix = NULL;
-    gchar *server_recipe_key = NULL;
-    gchar *server_recipe = NULL;
-    gchar *task_id = NULL;
-    gchar *task_id_key = NULL;
+gboolean parse_arguments_rstrnt(AppData *app_data, int argc, char *argv[])
+{
     gchar **positional_args = NULL;
+    GOptionContext *context = NULL;
+    GOptionGroup *option_group = NULL;
+    GError *error = NULL;
+    gboolean rc = FALSE;
     guint positional_arg_count = 0;
-    gboolean no_plugins = FALSE;
 
-    gchar *form_data;
-    GHashTable *data_table = g_hash_table_new (NULL, NULL);
-
-    GOptionEntry entries[] = {
-        {"server", 's', 0, G_OPTION_ARG_STRING, &server,
+    GOptionEntry entry[] = {
+        {"server", 's', 0, G_OPTION_ARG_CALLBACK, callback_server,
             "Server to connect to", "URL" },
-        { "message", 't', 0, G_OPTION_ARG_STRING, &result_msg,
+        { "message", 't', 0, G_OPTION_ARG_STRING, &app_data->result_msg,
             "Short 100 characters or less message", "TEXT" },
         { "outputfile", 'o', 0, G_OPTION_ARG_CALLBACK, callback_outputfile,
             "Log to upload with result, $OUTPUTFILE is used by default", "FILE" },
         { "disable-plugin", 'p', 0, G_OPTION_ARG_CALLBACK, callback_disable_plugin,
             "don't run plugin on server side", "PLUGIN" },
-        { "no-plugins", 0, 0, G_OPTION_ARG_NONE, &no_plugins,
+        { "no-plugins", 0, 0, G_OPTION_ARG_NONE, &app_data->no_plugins,
             "don't run any plugins on server side", NULL },
         { G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_STRING_ARRAY, &positional_args,
             NULL, NULL},
         { NULL }
     };
-    GOptionGroup *option_group = g_option_group_new ("main",
+
+    option_group = g_option_group_new ("main",
                                                     "Application Options",
                                                     "Various application related options",
                                                     app_data, NULL);
 
-    GOptionContext *context = g_option_context_new("TASK_PATH RESULT [SCORE]");
+    g_option_group_add_entries(option_group, entry);
+    context = g_option_context_new("TASK_PATH RESULT [SCORE]");
     g_option_context_set_summary(context,
             "Report results to lab controller. if you don't specify the\n"
-            "the server url you must have RECIPEID and TASKID defined.\n"
+            "the server url you must have RECIPE_URL and TASKID defined.\n"
             "If HARNESS_PREFIX is defined then the value of that must be\n"
-            "prefixed to RECIPEID and TASKID");
-    g_option_group_add_entries(option_group, entries);
+            "prefixed to RECIPE_URL and TASKID");
     g_option_context_set_main_group (context, option_group);
 
-    gboolean parse_succeeded = g_option_context_parse(context, &argc, &argv, &error);
+    gboolean parse_succeeded = g_option_context_parse(context,
+        &argc, &argv, &error);
 
-    if (!parse_succeeded) {
+    if(!parse_succeeded){
+        cmd_usage(context);
+        rc = FALSE;
         goto cleanup;
-    }
-
-    prefix = getenv("HARNESS_PREFIX") ? getenv("HARNESS_PREFIX") : "";
-    server_recipe_key = g_strdup_printf ("%sRECIPE_URL", prefix);
-    server_recipe = getenv(server_recipe_key);
-    task_id_key = g_strdup_printf ("%sTASKID", prefix);
-    task_id = getenv(task_id_key);
-    g_free(task_id_key);
-    g_free(server_recipe_key);
-
-    if (!server && server_recipe && task_id) {
-        server = g_strdup_printf ("%s/tasks/%s/results/", server_recipe, task_id);
     }
 
     if( positional_args != NULL ) {
@@ -149,25 +156,121 @@ int main(int argc, char *argv[]) {
     }
 
     if( positional_args == NULL ||
-        server == NULL ||
-        positional_arg_count > 3 ||
+        app_data->server == NULL ||
+        positional_arg_count > 4 ||
         positional_arg_count < 2 )
     {
         cmd_usage(context);
+        rc = FALSE;
         goto cleanup;
     }
 
-    result_uri = soup_uri_new (server);
+    app_data->test_name = g_strdup(positional_args[0]);
+    app_data->test_result = g_strdup(positional_args[1]);
+    if(positional_arg_count > 2){
+        app_data->score = g_strdup(positional_args[2]);
+    }
+
+    rc = TRUE;
+cleanup:
+    g_option_context_free(context);
+    g_strfreev(positional_args);
+    g_clear_error(&error);
+
+    return rc;
+}
+
+gboolean parse_arguments_rhts(AppData *app_data, int argc, char *argv[])
+{
+    if(
+        argc < 4 || argc > 5 ||
+        !app_data->server_recipe || !app_data->task_id
+    ) {
+        g_print(
+            "rstrnt-report-result running in rhts-report-result compatability mode.\n\n"
+
+            "Report results to lab controller. You must have RECIPE_URL\n"
+            "and TASKID defined.\n"
+            "If HARNESS_PREFIX is defined then the value of that must be\n"
+            "prefixed to RECIPE_URL and TASKID\n\n"
+
+            "Usage:\n"
+            "  %s: TESTNAME TESTRESULT LOGFILE [METRIC]\n",
+            argv[0]
+        );
+        return FALSE;
+    }
+
+    app_data->test_name = g_strdup(argv[1]);
+    app_data->test_result = g_strdup(argv[2]);
+    app_data->outputfile = g_strdup(argv[3]);
+    if(argc > 4){
+        app_data->score = g_strdup(argv[4]);
+    }
+
+    return TRUE;
+}
+
+gboolean parse_arguments(AppData *app_data, int argc, char *argv[])
+{
+    gchar *server_recipe_key = NULL;
+    gchar *task_id_key = NULL;
+
+    /* Work out if we are running in RHTS compatablity mode or not */
+    app_data->rhts_compat =
+        g_str_has_suffix(argv[0], RHTS_COMPAT_FILENAME);
+
+    app_data->filename = g_strdup("resultoutputfile.log");
+    app_data->outputfile = g_strdup(getenv("OUTPUTFILE"));
+    app_data->disable_plugin = g_ptr_array_new_with_free_func (g_free);
+    app_data->prefix = g_strdup(
+            getenv("HARNESS_PREFIX") ? getenv("HARNESS_PREFIX") : ""
+    );
+    server_recipe_key = g_strdup_printf ("%sRECIPE_URL", app_data->prefix);
+    app_data->server_recipe = g_strdup(getenv(server_recipe_key));
+    task_id_key = g_strdup_printf ("%sTASKID", app_data->prefix);
+    app_data->task_id = g_strdup(getenv(task_id_key));
+
+    g_free(task_id_key);
+    g_free(server_recipe_key);
+
+    if (app_data->server_recipe && app_data->task_id) {
+        app_data->server = g_strdup_printf ("%s/tasks/%s/results/",
+            app_data->server_recipe, app_data->task_id);
+    }
+
+    if(app_data->rhts_compat){
+        return parse_arguments_rhts(app_data, argc, argv);
+    }
+    else {
+        return parse_arguments_rstrnt(app_data, argc, argv);
+    }
+}
+
+gboolean upload_results(AppData *app_data) {
+    GError *error = NULL;
+    SoupURI *result_uri = NULL;
+
+    guint ret = 0;
+
+    SoupSession *session;
+    SoupMessage *server_msg;
+    SoupRequest *request;
+
+    gchar *form_data;
+    GHashTable *data_table = g_hash_table_new (NULL, NULL);
+
+    result_uri = soup_uri_new (app_data->server);
     if (result_uri == NULL) {
         g_set_error (&error, RESTRAINT_ERROR,
                      RESTRAINT_PARSE_ERROR_BAD_SYNTAX,
-                     "Malformed server url: %s", server);
+                     "Malformed server url: %s", app_data->server);
         goto cleanup;
     }
     session = soup_session_new_with_options("timeout", 3600, NULL);
 
-    g_hash_table_insert (data_table, "path", positional_args[0]);
-    g_hash_table_insert (data_table, "result", positional_args[1]);
+    g_hash_table_insert (data_table, "path", app_data->test_name);
+    g_hash_table_insert (data_table, "result", app_data->test_result);
 
     // if AVC_ERROR=+no_avc_check then disable the selinux check plugin
     // This is for legacy rhts tests.. please use --disable-plugin
@@ -181,12 +284,12 @@ int main(int argc, char *argv[]) {
         g_hash_table_insert (data_table, "disable_plugin",
                              g_strjoinv (" ", (gchar **)app_data->disable_plugin->pdata));
     }
-    if (no_plugins)
-      g_hash_table_insert (data_table, "no_plugins", &no_plugins);
-    if (positional_arg_count > 2)
-      g_hash_table_insert (data_table, "score", positional_args[2]);
-    if (result_msg)
-      g_hash_table_insert (data_table, "message", result_msg);
+    if (app_data->no_plugins)
+      g_hash_table_insert (data_table, "no_plugins", &app_data->no_plugins);
+    if (app_data->score)
+      g_hash_table_insert (data_table, "score", app_data->score);
+    if (app_data->result_msg)
+      g_hash_table_insert (data_table, "message", app_data->result_msg);
 
     request = (SoupRequest *)soup_session_request_http_uri (session, "POST", result_uri, &error);
     server_msg = soup_request_http_get_message (SOUP_REQUEST_HTTP (request));
@@ -194,7 +297,9 @@ int main(int argc, char *argv[]) {
     form_data = soup_form_encode_hash (data_table);
     soup_message_set_request (server_msg, "application/x-www-form-urlencoded",
                               SOUP_MEMORY_TAKE, form_data, strlen (form_data));
-    g_print ("** %s %s Score:%s\n", positional_args[0], positional_args[1], positional_arg_count > 2 ? positional_args[2] : "N/A");
+    g_print ("** %s %s Score:%s\n", app_data->test_name, app_data->test_result,
+        app_data->score != NULL ? app_data->score : "N/A");
+
     ret = soup_session_send_message (session, server_msg);
     if (SOUP_STATUS_IS_SUCCESSFUL (ret)) {
         gchar *location = g_strdup_printf ("%s/logs/",
@@ -220,26 +325,17 @@ int main(int argc, char *argv[]) {
     g_object_unref(session);
 
 cleanup:
-    if (server != NULL) {
-        g_free(server);
-    }
-    if (result_msg != NULL) {
-        g_free(result_msg);
-    }
-    g_option_context_free(context);
     g_hash_table_destroy(data_table);
     if (result_uri != NULL) {
         soup_uri_free (result_uri);
     }
-    g_strfreev(positional_args);
-    restraint_free_appdata(app_data);
+
     if (error) {
-        int retcode = error->code;
         g_printerr("%s [%s, %d]\n", error->message,
                 g_quark_to_string(error->domain), error->code);
         g_clear_error(&error);
-        return retcode;
+        return FALSE;
     } else {
-        return EXIT_SUCCESS;
+        return TRUE;
     }
 }

@@ -23,10 +23,13 @@ else
 endif
 
 .PHONY: all
-all: restraint restraintd rstrnt-report-result rstrnt-report-log rstrnt-adjust-watchdog rstrnt-abort rstrnt-sync
+all: restraint restraintd rstrnt-report-result rhts-report-result rstrnt-report-log rstrnt-adjust-watchdog rstrnt-abort rstrnt-sync
 
-rstrnt-report-result: cmd_result.o upload.o utils.o errors.o
+rstrnt-report-result: cmd_result.o cmd_result_main.o upload.o utils.o errors.o
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
+
+rhts-report-result: rstrnt-report-result
+	cp $< $@
 
 rstrnt-report-log: cmd_log.o upload.o utils.o errors.o
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
@@ -104,6 +107,10 @@ TEST_PROGS += test_metadata
 test_metadata: metadata.o utils.o errors.o process.o param.o
 test_metadata.o: metadata.h utils.h errors.h process.h param.h
 
+TEST_PROGS += test_cmd_result
+test_cmd_result: cmd_result.o utils.o upload.o errors.o
+test_cmd_result.o: cmd_result.h utils.h upload.h errors.h
+
 .PHONY: check
 check: $(TEST_PROGS) test-data/git-remote
 	./run-tests.sh $(TEST_PROGS)
@@ -118,6 +125,7 @@ install: all
 	install -m0755 restraint $(DESTDIR)/usr/bin
 	install -m0755 restraintd $(DESTDIR)/usr/bin
 	install -m0755 rstrnt-report-result $(DESTDIR)/usr/bin
+	install -m0755 rhts-report-result $(DESTDIR)/usr/bin
 	install -m0755 rstrnt-report-log $(DESTDIR)/usr/bin
 	install -m0755 rstrnt-adjust-watchdog $(DESTDIR)/usr/bin
 	install -m0755 rstrnt-abort $(DESTDIR)/usr/bin
@@ -125,6 +133,6 @@ install: all
 
 .PHONY: clean
 clean:
-	rm -f restraint restraintd rstrnt-report-result \
+	rm -f restraint restraintd rstrnt-report-result rhts-report-result \
               rstrnt-report-log rstrnt-adjust-watchdog rstrnt-abort \
 	      rstrnt-sync $(TEST_PROGS) *.o
