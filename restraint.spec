@@ -16,8 +16,8 @@ Summary:	Simple test harness which can be used with beaker
 
 Group:		Applications/Internet
 License:	GPLv3+ and MIT
-URL:		https://github.com/p3ck/%{name}
-Source0:	https://github.com/p3ck/%{name}/%{name}-%{version}.tar.gz
+URL:		https://github.com/beaker-project/%{name}
+Source0:	https://github.com/beaker-project/%{name}/%{name}-%{version}.tar.gz
 
 %if 0%{?with_static:1}
 # Sources for bundled, statically linked libraries
