@@ -10,7 +10,7 @@
 %endif
 
 Name:		restraint
-Version:	0.1.34
+Version:	0.1.35
 Release:	1%{?dist}
 Summary:	Simple test harness which can be used with beaker
 
@@ -358,6 +358,21 @@ fi
 %{__rm} -rf %{buildroot}
 
 %changelog
+* Tue Jun 12 2018 Matt Tyson <mtyson@redhat.com> 0.1.35-1
+- update Github URLs (dcallagh@redhat.com)
+- make rstrnt-report-result accept rhts-report-result style arguments
+  (mtyson@redhat.com)
+- Segfault in restraint_parse_url for host only git repositories
+  (mtyson@redhat.com)
+- Fix up printf arguments for report-result, make SCORE optional
+  (mtyson@redhat.com)
+- Fix build faults in restraint RHEL4 workarounds. (mtyson@redhat.com)
+- rhts-report-result wrapper breaks on some results (mtyson@redhat.com)
+- Fix glib build errors on rawhide. (mtyson@redhat.com)
+- Add debug mode for makefile build (mtyson@redhat.com)
+- support testinfo.desc Environment setting in Restraint. (mtyson@redhat.com)
+- Restraint rpm specfile sets attributes on symlinks (mtyson@redhat.com)
+
 * Tue Mar 20 2018 Bill Peck <bpeck@redhat.com> 0.1.34-1
 - Search for first match of fragment. (bpeck@redhat.com)
 - valgrind: suppress leak of static buffer in getaddrinfo() (mtyson@redhat.com)
