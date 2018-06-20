@@ -13,8 +13,8 @@ testargs=""
 function kill_daemons() {
     test -f git-daemon.pid && kill -TERM $(cat git-daemon.pid) || :
     test -f git-daemon.pid && rm -f git-daemon.pid || :
-    test -f thttpd-daemon.pid && kill -TERM $(cat thttpd-daemon.pid) || :
-    test -f thttpd-daemon.pid && rm -f thttpd-daemon.pid || :
+    test -f http-daemon.pid && kill -TERM $(cat http-daemon.pid) || :
+    test -f http-daemon.pid && rm -f http-daemon.pid || :
 }
 
 trap kill_daemons EXIT
@@ -27,11 +27,12 @@ else
     testargs="-s /fetch_git/success -s /fetch_git/fail $testargs"
 fi
 
-if [[ $(which thttpd) ]] ; then
-    thttpd -i $PWD/thttpd-daemon.pid -p 8000 -d test-data/http-remote -h 127.0.0.1 -l /dev/null
-else
-    testargs="-s /repodeps/recursive/http/fail -s /repodeps/recursive/http/success -s /repodeps/http/success -s /repodeps/http/fail -s /fetch_http/nofragment/keepchanges -s /fetch_http/nofragment/fail -s /fetch_http/nofragment/bad_archive -s /fetch_http/nofragment/success -s /fetch_http/fragment/success -s /fetch_http/fragment/fail -s /fetch_http/fragment/bad_archive $testargs"
-fi
+function start_httpd() {
+    pidfile=$PWD/http-daemon.pid
+    httpd=$PWD/httpserver.py
+    (cd test-data/http-remote && python2.7 ${httpd} -i ${pidfile} -p 8000 --host 127.0.0.1 &> /dev/null)
+}
+start_httpd
 
 if [[ ! -f /usr/bin/Xvfb ]]; then
     testargs="-s /process/no_hang $testargs"

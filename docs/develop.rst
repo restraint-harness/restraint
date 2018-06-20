@@ -28,9 +28,9 @@ build resraint, you need to install them using ``yum-builddep
 restraint.spec``. Once you have installed these dependencies, running
 a ``make`` at the source directory root will compile and build
 restraint. To also run a quick sanity check, it is a good idea to run
-the unit tests using ``make check``. The unit tests use ``thttpd`` and
-``git-daemon``, so you will need to install these as well (``yum -y
-install thttpd git-daemon``).
+the unit tests using ``make check``. The unit tests use a simple Python http
+server and ``git-daemon``, so you will need to install this as well (``yum -y
+install git-daemon``).
 
 Testing your changes
 ~~~~~~~~~~~~~~~~~~~~
