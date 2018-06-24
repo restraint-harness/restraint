@@ -46,7 +46,7 @@ rstrnt-sync: cmd_sync.o
 restraint: client.o multipart.o errors.o xml.o ssh.o utils.o
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
-restraintd: server.o recipe.o task.o fetch.o fetch_git.o fetch_uri.o param.o role.o metadata.o process.o message.o dependency.o utils.o config.o errors.o xml.o env.o
+restraintd: server.o recipe.o task.o fetch.o fetch_git.o fetch_uri.o param.o role.o metadata.o process.o message.o dependency.o utils.o config.o errors.o xml.o env.o restraint_forkpty.o
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 fetch_git.o: fetch.h fetch_git.h
@@ -68,6 +68,7 @@ utils.o: utils.h
 config.o: config.h
 errors.o: errors.h
 xml.o: xml.h
+restraint_forkpty.o:
 
 TEST_PROGS =
 test_%: test_%.o
@@ -82,11 +83,11 @@ test_fetch_uri: fetch.o fetch_uri.o errors.o
 test_fetch_uri.o: fetch_uri.h
 
 TEST_PROGS += test_process
-test_process: process.o errors.o
+test_process: process.o errors.o restraint_forkpty.o
 test_process.o: process.h
 
 TEST_PROGS += test_dependency
-test_dependency: dependency.o errors.o process.o fetch.o fetch_uri.o fetch_git.o metadata.o utils.o param.o
+test_dependency: dependency.o errors.o process.o fetch.o fetch_uri.o fetch_git.o metadata.o utils.o param.o restraint_forkpty.o
 test_dependency.o: dependency.h errors.h process.h param.h
 
 TEST_PROGS += test_env
@@ -104,7 +105,7 @@ test_recipe: recipe.o task.o fetch_git.o param.o role.o metadata.o
 test_recipe.o: recipe.h task.h param.h
 
 TEST_PROGS += test_metadata
-test_metadata: metadata.o utils.o errors.o process.o param.o
+test_metadata: metadata.o utils.o errors.o process.o param.o restraint_forkpty.o
 test_metadata.o: metadata.h utils.h errors.h process.h param.h
 
 TEST_PROGS += test_cmd_result

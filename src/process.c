@@ -24,6 +24,7 @@
 #include <pty.h>
 #include <fcntl.h>
 #include <stdio.h>
+#include <signal.h>
 #include "process.h"
 
 GQuark restraint_process_error (void)
@@ -32,7 +33,19 @@ GQuark restraint_process_error (void)
 }
 
 static void
+reset_signal_handlers(void);
+
+static void
 process_cancelled_cb (GCancellable *cancellable, gpointer user_data);
+
+/*
+  This is a modified version of forkpty() that will take a setup function
+  that is run in the child process
+*/
+int
+restraint_forkpty (int *amaster, char *name, const struct termios *termp,
+     const struct winsize *winp, void (*setup)(void));
+
 
 void
 process_free (ProcessData *process_data)
@@ -87,7 +100,7 @@ restraint_fork (gint *fd,
     };
 
     if (use_pty) {
-        pid = forkpty (fd, NULL, NULL, &win);
+        pid = restraint_forkpty (fd, NULL, NULL, &win, reset_signal_handlers);
     } else {
         if (pipe(pipefd) == -1) {
             return -1;
@@ -97,6 +110,8 @@ restraint_fork (gint *fd,
            return -1;
        }
        if (pid == 0) {
+           reset_signal_handlers();
+
            // close reading side of pipe.
            close (pipefd[STDIN_FILENO]);
 
@@ -320,4 +335,54 @@ static void
 process_cancelled_cb (GCancellable *cancellable, gpointer user_data)
 {
     process_timeout_callback (user_data);
+}
+
+/*
+  A child process will inherit signal handlers
+  from the parent.  We don't want the child processes
+  to inherit handlers as it can cause strange bugs
+  in the process that is running the test.
+
+  To avoid any future problems we will reset every
+  signal handler to the default.
+
+  Signal names taken from signal(7) man page
+*/
+static void
+reset_signal_handlers(void)
+{
+    signal(SIGHUP,  SIG_DFL);
+    signal(SIGINT,  SIG_DFL);
+    signal(SIGQUIT, SIG_DFL);
+    signal(SIGILL,  SIG_DFL);
+    signal(SIGABRT, SIG_DFL);
+    signal(SIGFPE,  SIG_DFL);
+    signal(SIGSEGV, SIG_DFL);
+    signal(SIGPIPE, SIG_DFL);
+
+    signal(SIGALRM, SIG_DFL);
+    signal(SIGTERM, SIG_DFL);
+    signal(SIGUSR1, SIG_DFL);
+    signal(SIGUSR2, SIG_DFL);
+    signal(SIGCHLD, SIG_DFL);
+    signal(SIGCONT, SIG_DFL);
+    signal(SIGSTOP, SIG_DFL);
+    signal(SIGTSTP, SIG_DFL);
+    signal(SIGTTIN, SIG_DFL);
+    signal(SIGTTOU, SIG_DFL);
+
+    signal(SIGBUS,  SIG_DFL);
+    signal(SIGPOLL, SIG_DFL);
+    signal(SIGPROF, SIG_DFL);
+    signal(SIGSYS,  SIG_DFL);
+    signal(SIGTRAP, SIG_DFL);
+    signal(SIGURG,  SIG_DFL);
+    signal(SIGXCPU, SIG_DFL);
+    signal(SIGXFSZ, SIG_DFL);
+
+    signal(SIGIOT,  SIG_DFL);
+    signal(SIGSTKFLT, SIG_DFL);
+    signal(SIGIO,   SIG_DFL);
+    signal(SIGPWR,  SIG_DFL);
+    signal(SIGWINCH, SIG_DFL);
 }
