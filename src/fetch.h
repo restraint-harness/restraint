@@ -21,6 +21,7 @@
 #include <glib.h>
 #include <gio/gio.h>
 #include <libsoup/soup.h>
+#include <curl/curl.h>
 
 #define LARGE_PACKET_MAX 65520
 
@@ -48,6 +49,7 @@ typedef struct {
     gboolean keepchanges;
     gboolean ssl_verify;
     gpointer private_data;
+    gchar curl_error_buf[CURL_ERROR_SIZE];
 } FetchData;
 
 #define RESTRAINT_FETCH_ERROR restraint_fetch_error ()

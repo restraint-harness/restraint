@@ -79,7 +79,6 @@ myopen(FetchData *fetch_data, GError **error)
     g_return_val_if_fail(fetch_data != NULL, FALSE);
     g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
     CURLMcode res;
-    gchar ebuf[CURL_ERROR_SIZE];
     struct curl_data *cd = fetch_data->private_data;
     CURLM *curlm = cd->curlm;
     CURL *curl = curl_easy_init();
@@ -89,7 +88,7 @@ myopen(FetchData *fetch_data, GError **error)
     curl_easy_setopt(curl, CURLOPT_URL, uri);
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, cwrite_callback);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, fetch_data->istream);
-    curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, ebuf);
+    curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, fetch_data->curl_error_buf);
     curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);
 
     g_free(uri);
@@ -102,7 +101,7 @@ myopen(FetchData *fetch_data, GError **error)
 
     if (res != CURLM_OK) {
         g_set_error(error, RESTRAINT_FETCH_LIBARCHIVE_ERROR, 0,
-                "Failed to fetch url: %s", ebuf);
+                "Failed to fetch url: %s", fetch_data->curl_error_buf);
         return FALSE;
     }
 
