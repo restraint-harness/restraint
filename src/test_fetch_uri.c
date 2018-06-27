@@ -418,7 +418,7 @@ static void test_fetch_file_fragment_success(void) {
     run_data->entry = g_string_new (NULL);
     run_data->loop = g_main_loop_new (NULL, TRUE);
     gchar *cwd = g_get_current_dir();
-    gchar *fulluri = g_strdup_printf("file:///%s/test-data/http-remote/fetch_http.tgz#restraint/sanity/fetch_git", cwd);
+    gchar *fulluri = g_strdup_printf("file://%s/test-data/http-remote/fetch_http.tgz#restraint/sanity/fetch_git", cwd);
 
     SoupURI *url = soup_uri_new(fulluri);
     g_free (fulluri);
@@ -486,7 +486,7 @@ static void test_fetch_file_fragment_no_trailing_slash(void) {
     run_data->entry = g_string_new (NULL);
     run_data->loop = g_main_loop_new (NULL, TRUE);
     gchar *cwd = g_get_current_dir();
-    gchar *fulluri = g_strdup_printf("file:///%s/test-data/http-remote/fetch_http.tgz#restraint", cwd);
+    gchar *fulluri = g_strdup_printf("file://%s/test-data/http-remote/fetch_http.tgz#restraint", cwd);
 
     SoupURI *url = soup_uri_new(fulluri);
     g_free (fulluri);
@@ -533,7 +533,7 @@ static void test_fetch_file_fragment_trailing_slash(void) {
     run_data->entry = g_string_new (NULL);
     run_data->loop = g_main_loop_new (NULL, TRUE);
     gchar *cwd = g_get_current_dir();
-    gchar *fulluri = g_strdup_printf("file:///%s/test-data/http-remote/fetch_http.tgz#restraint/", cwd);
+    gchar *fulluri = g_strdup_printf("file://%s/test-data/http-remote/fetch_http.tgz#restraint/", cwd);
 
     SoupURI *url = soup_uri_new(fulluri);
     g_free (fulluri);
