@@ -1,8 +1,11 @@
 #!/bin/sh
 
+set -e
+shopt -s nullglob
+
 . /usr/share/restraint/plugins/helpers
 
-PLUGIN=$(basename $0)
+PLUGIN=$(basename "$0")
 
 if [ -z "$RSTRNT_RESULT_URL" ]; then
     rstrnt_crit "RSTRNT_RESULT_URL is not defined!"
@@ -10,26 +13,43 @@ if [ -z "$RSTRNT_RESULT_URL" ]; then
 fi
 
 TMPDIR=$(mktemp -d)
+
+clean_up() {
+    rm -rf "$TMPDIR"
+}
+trap clean_up EXIT
+
 DMESG_FILE=$TMPDIR/dmesg.log
 OUTPUTFILE=$TMPDIR/outputfile.log
 
-FAILURESTRINGS=${FAILURESTRINGS:="Oops|BUG|NMI appears to be stuck|cut here|Badness at"}
-FALSESTRINGS=${FALSESTRINGS:="BIOS BUG|DEBUG"}
+FAILURESTRINGS=${FAILURESTRINGS:="Oops|BUG|NMI appears to be stuck|Badness at"}
+FALSESTRINGS=${FALSESTRINGS:="BIOS BUG|DEBUG|mapping multiple BARs.*IBM System X3250 M4"}
 
 # Dump dmesg output into $DMESG_FILE and clear it.
-dmesg -c >$DMESG_FILE
+dmesg -c >"$DMESG_FILE"
 
 # Submit dmesg log if any output
 if [ -s "$DMESG_FILE" ]; then
-    rstrnt-report-log --server $RSTRNT_RESULT_URL -l $DMESG_FILE
+    rstrnt-report-log --server "$RSTRNT_RESULT_URL" -l "$DMESG_FILE"
 fi
+
+# Move 'cut here' traces into their own numbered files trace-*.log
+sed -n '/cut here/,/end trace/p;' "$DMESG_FILE" | \
+    sed '/.*end trace.*/a\\' | \
+    awk -v RS= -v TMPDIR="$TMPDIR" '{print > (TMPDIR"/trace-" NR ".log")}'
+
+for TRACE in "$TMPDIR"/trace*; do
+    if ! paste -s "$TRACE" | grep -q -P "$FALSESTRINGS" ; then
+        cat "$TRACE" >> "$OUTPUTFILE"
+    fi
+done
+
+# Remove all traces
+sed -i -n '/cut here/,/end trace/!p;' "$DMESG_FILE"
 
 # Check for errors
-cat $DMESG_FILE | grep -C 5 -P '^(?:(?!'"$FALSESTRINGS"').)*('"$FAILURESTRINGS"')' > $OUTPUTFILE
-if [ -s "$OUTPUTFILE" ]; then
-    OUTPUTFILE=$OUTPUTFILE rstrnt-report-result --no-plugins $TEST/$PLUGIN FAIL 0
-fi
+grep -C 5 -P '^(?:(?!'"$FALSESTRINGS"').)*('"$FAILURESTRINGS"')' "$DMESG_FILE" >> "$OUTPUTFILE"
 
-rm -f $DMESG_FILE
-rm -f $OUTPUTFILE
-rmdir $TMPDIR
+if [ -s "$OUTPUTFILE" ]; then
+    rstrnt-report-result --server "$RSTRNT_RESULT_URL" -o "$OUTPUTFILE" --no-plugins "$TEST"/"$PLUGIN" FAIL 0
+fi

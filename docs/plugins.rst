@@ -117,20 +117,26 @@ Report Result
 
 Every time a task reports a result to restraint these plugins will execute.
 
-* 01_dmesg_check - This plugin checks for the following failure strings
+* 01_dmesg_check - This plugin checks dmesg output for the following failure strings
 
 ::
 
- Oops|BUG|NMI appears to be stuck|cut here|Badness at
+ Oops|BUG|NMI appears to be stuck|Badness at
 
 But then it runs any matches through an inverted grep which removes the following
 
 ::
 
- BIOS BUG|DEBUG
+ BIOS BUG|DEBUG|mapping multiple BARs.*IBM System X3250 M4
 
 This is an effort to reduce false positives.  Both of the above strings can be overridden from each
 task by passing in your own FAILURESTRINGS or FALSESTRINGS variables.
+
+In some cases the kernel will produce a multi-line error message (including hardware information
+and stack trace) in the dmesg output which is delimited by a "cut here" line at the beginning and
+an "end trace" line at the end. This plugin will capture the entire contents of the multi-line
+trace and considers it as a single failure. The FALSESTRINGS pattern is applied to the whole trace
+to check for false positives.
 
 * 10_avc_check - This plugin seaches for avc errors that have occured since the last time a result was reported.
 * 20_avc_clear - This moves the time stamp used by avc_check forward so that we don't see the same avc's reported again, some tests might generate avc's on purpose and disable the check but you will still want to move the time stamp forward.
