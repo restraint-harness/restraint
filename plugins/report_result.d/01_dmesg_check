@@ -3,7 +3,11 @@
 set -e
 shopt -s nullglob
 
-. /usr/share/restraint/plugins/helpers
+if [ ! -f /usr/share/restraint/plugins/helpers ]; then
+    . ../helpers # For running tests
+else
+    . /usr/share/restraint/plugins/helpers
+fi
 
 PLUGIN=$(basename "$0")
 

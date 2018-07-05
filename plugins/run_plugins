@@ -7,7 +7,11 @@
 # RSTRNT_NOPLUGINS=1, This is defined for report_result.  Otherwise reporting results
 #                     From plugins would cause additional plugins to be called.
 
-. /usr/share/restraint/plugins/helpers
+if [ ! -f /usr/share/restraint/plugins/helpers ]; then
+    . ./../helpers # For running tests
+else
+    . /usr/share/restraint/plugins/helpers
+fi
 
 for PLUGIN_DIR in $RSTRNT_PLUGINS_DIR; do
     pushd $PLUGIN_DIR >/dev/null || continue
