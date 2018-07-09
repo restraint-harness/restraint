@@ -134,11 +134,10 @@ tasks_finished (xmlDocPtr doc, xmlNodePtr node, xmlChar *path)
     }
     for (guint i = 0; i < task_nodes->nodesetval->nodeNr; i++) {
         xmlNodePtr task_node = task_nodes->nodesetval->nodeTab[i];
-        gchar *status = (gchar *)xmlGetNoNsProp(task_node,
-                                                (xmlChar *)"status");
-        finished &= (strcmp (status, "Completed") == 0 || strcmp(status,
-                     "Aborted") == 0);
-        g_free (status);
+        xmlChar *status = xmlGetNoNsProp(task_node, (const xmlChar*) "status");
+        finished &= (strcmp ((const char*)status, "Completed") == 0 ||
+            strcmp((const char*)status, "Aborted") == 0);
+        xmlFree (status);
     }
     xmlXPathFreeObject (task_nodes);
     return finished;
@@ -207,17 +206,17 @@ record_result (xmlNodePtr recipe_node_ptr,
     if (score)
         xmlSetProp (result_node_ptr, (xmlChar *)"score", (xmlChar *) score);
 
-    gchar *recipe_result = (gchar *)xmlGetNoNsProp(recipe_node_ptr,
+    xmlChar *recipe_result = xmlGetNoNsProp(recipe_node_ptr,
                                                    (xmlChar*)"result");
-    gchar *task_result = (gchar *)xmlGetNoNsProp(task_node_ptr,
+    xmlChar *task_result = xmlGetNoNsProp(task_node_ptr,
                                                  (xmlChar*)"result");
 
     // Push higher priority results up the chain, result->task->recipe.
     if (result_to_id(result, app_data->result_states_to) >
-            result_to_id(task_result, app_data->result_states_to))
+            result_to_id((const gchar*)task_result, app_data->result_states_to))
         xmlSetProp(task_node_ptr, (xmlChar *)"result", (xmlChar *) result);
     if (result_to_id(result, app_data->result_states_to) >
-            result_to_id(recipe_result, app_data->result_states_to))
+            result_to_id((const gchar*)recipe_result, app_data->result_states_to))
         xmlSetProp (recipe_node_ptr, (xmlChar*)"result",
                     (xmlChar*)result);
 
@@ -241,8 +240,8 @@ record_result (xmlNodePtr recipe_node_ptr,
             g_print ("[%-20s]           %s\n", trunc_host, message);
         }
     }
-    g_free(recipe_result);
-    g_free(task_result);
+    xmlFree(recipe_result);
+    xmlFree(task_result);
     g_free(trunc_host);
 }
 
@@ -410,11 +409,12 @@ recipe_start_cb (const char *method,
     app_data->started = TRUE;
 }
 
-static xmlChar *format_datetime(time_t time) {
-    struct tm *tm = localtime(&time);
+static gchar *format_datetime(time_t time) {
+    struct tm result;
+    localtime_r(&time, &result);
     gchar *timestr = g_malloc0(TIMESTRLEN);
-    strftime(timestr, TIMESTRLEN, "%FT%T%z", tm);
-    return (xmlChar*)timestr;
+    strftime(timestr, TIMESTRLEN, "%FT%T%z", &result);
+    return timestr;
 }
 
 void
@@ -458,8 +458,8 @@ tasks_status_cb (const char *method,
     if (g_hash_table_contains(table, "stime")) {
         stime = atoll(g_hash_table_lookup(table, "stime"));
         if (stime > 0) {
-            xmlChar *stimestr = format_datetime(stime);
-            xmlSetProp (task_node_ptr, (xmlChar *)"start_time", stimestr);
+            gchar *stimestr = format_datetime(stime);
+            xmlSetProp (task_node_ptr, (xmlChar *)"start_time", (xmlChar*)stimestr);
             g_free(stimestr);
         }
     }
@@ -467,16 +467,16 @@ tasks_status_cb (const char *method,
     if (g_hash_table_contains(table, "etime")) {
         etime = atoll(g_hash_table_lookup(table, "etime"));
         if (etime > 0) {
-            xmlChar *etimestr = format_datetime(etime);
-            xmlSetProp (task_node_ptr, (xmlChar *)"end_time", etimestr);
+            gchar *etimestr = format_datetime(etime);
+            xmlSetProp (task_node_ptr, (xmlChar *)"end_time", (xmlChar*)etimestr);
             g_free(etimestr);
         }
     }
 
     if  (stime > 0 && etime > stime) {
         time_t duration = etime - stime;
-        xmlChar *dstr = (xmlChar*)g_strdup_printf("%02ld", duration);
-        xmlSetProp (task_node_ptr, (xmlChar *)"duration", dstr);
+        gchar *dstr = g_strdup_printf("%02ld", duration);
+        xmlSetProp (task_node_ptr, (xmlChar *)"duration", (xmlChar*)dstr);
         g_free(dstr);
     }
 
@@ -485,7 +485,7 @@ tasks_status_cb (const char *method,
                                             (xmlChar *)"name");
         xmlChar *task_result = xmlGetNoNsProp(task_node_ptr,
                                               (xmlChar *)"result");
-        gint offset = (gint) strlen ((const gchar *) task_name) - 43;
+        const int offset = xmlStrlen (task_name) - 43;
         const gchar *offset_name = NULL;
         if (offset < 0) {
             offset_name = (const gchar *) task_name;
@@ -518,15 +518,15 @@ tasks_status_cb (const char *method,
     }
 
     xmlSetProp (task_node_ptr, (xmlChar *)"status", (xmlChar *) status);
-    gchar *recipe_status = (gchar*)xmlGetNoNsProp(
+    xmlChar *recipe_status = xmlGetNoNsProp(
             recipe_data->recipe_node_ptr, (xmlChar*)"status");
 
     // If recipe status is not already "Aborted" then record push
     // task status to recipe.
-    if (g_strcmp0(recipe_status, "Aborted") != 0)
+    if (g_strcmp0((const gchar*)recipe_status, "Aborted") != 0)
         xmlSetProp(recipe_data->recipe_node_ptr, (xmlChar*)"status",
                    (xmlChar*)status);
-    g_free(recipe_status);
+    xmlFree(recipe_status);
 
     // Write out the current version of the results xml.
     gchar *filename = g_build_filename(app_data->run_dir, "job.xml",
@@ -822,8 +822,8 @@ copy_task_nodes(xmlNodeSetPtr nodeset, xmlDocPtr orig_xml_doc,
         xmlSetProp (task_node_ptr, (xmlChar *) "status", (xmlChar *) "New");
         xmlSetProp (task_node_ptr, (xmlChar *) "result", (xmlChar *) "None");
         g_free(new_id);
-        g_free(name);
-        g_free(keepchanges);
+        xmlFree(name);
+        xmlFree(keepchanges);
     }
 }
 
@@ -1252,7 +1252,11 @@ static gchar *copy_job_as_template(gchar *job, gboolean novalid,
             xmlChar *owner = xmlGetNoNsProp(node, (xmlChar*)"owner");
 
             if (id == NULL) {
-                id = (xmlChar*)g_strdup_printf ("%u", recipe_id++);
+                /* This is so that we know the 'id' pointer is always an
+                   xmlChar* allocated by libxml2 and cleaned up with xmlFree */
+                gchar *id_temp = g_strdup_printf ("%u", recipe_id++);
+                id = xmlStrdup((const xmlChar*) id_temp);
+                g_free(id_temp);
             }
 
             RecipeData *recipe_data = g_hash_table_lookup(app_data->recipes,
@@ -1432,7 +1436,7 @@ parse_new_job (AppData *app_data)
         if (recipe_data == NULL) {
             g_printerr ("Unable to find matching recipe id:%s in job.\n", recipe_id);
             g_free (filename);
-            g_free (recipe_id);
+            xmlFree (recipe_id);
             g_slist_free_full(idlist, g_free);
             xmlXPathFreeObject (recipe_node_ptrs);
             xmlFreeDoc(app_data->xml_doc);
@@ -1441,7 +1445,7 @@ parse_new_job (AppData *app_data)
         recipe_data->recipe_node_ptr = node;
         recipe_data->recipe_id = (gint)g_ascii_strtoll((gchar *)recipe_id,
                                                         NULL, 0);
-        g_free (recipe_id);
+        xmlFree (recipe_id);
 
         if (app_data->addr_get_uri == NULL) {
             app_data->addr_get_uri = recipe_data->remote_uri;
