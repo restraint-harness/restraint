@@ -38,6 +38,8 @@ Source114:      openssl-1.0.1m.tar.gz
 %endif
 
 BuildRoot:	%(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
+BuildRequires:	gcc
+BuildRequires:	gcc-c++
 BuildRequires:	pkgconfig
 BuildRequires:	gettext
 BuildRequires:	perl-XML-Parser
