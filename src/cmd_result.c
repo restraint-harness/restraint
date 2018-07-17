@@ -89,9 +89,6 @@ void restraint_free_appdata(AppData *app_data)
     When parsing arguments we have two modes of operation
     RHTS compatability mode and normal rstrnt-report-result mode
 
-    We determine which mode we are in based on the filename of the
-    command (argv[0]). See RHTS_COMPAT_FILENAME in cmd_result.h
-
     In RHTS compat mode we do not accept command line switches
     and rely on envrionment variables and positional arguments,
     the same way rhts-report-result works.  Positional arguments
@@ -182,8 +179,12 @@ cleanup:
 
 gboolean parse_arguments_rhts(AppData *app_data, int argc, char *argv[])
 {
+    /*
+     * The first argument (that is, argv[1]) will be --rhts, so we need to +1
+     * All the argv indexes.
+     * */
     if(
-        argc < 4 || argc > 5 ||
+        argc < 5 || argc > 6 ||
         !app_data->server_recipe || !app_data->task_id
     ) {
         g_print(
@@ -201,14 +202,27 @@ gboolean parse_arguments_rhts(AppData *app_data, int argc, char *argv[])
         return FALSE;
     }
 
-    app_data->test_name = g_strdup(argv[1]);
-    app_data->test_result = g_strdup(argv[2]);
-    app_data->outputfile = g_strdup(argv[3]);
-    if(argc > 4){
-        app_data->score = g_strdup(argv[4]);
+    app_data->test_name = g_strdup(argv[2]);
+    app_data->test_result = g_strdup(argv[3]);
+    app_data->outputfile = g_strdup(argv[4]);
+    if(argc > 5){
+        app_data->score = g_strdup(argv[5]);
     }
 
     return TRUE;
+}
+
+/*
+ * Work out if we are running in RHTS compatablity mode or not
+ * If the first argument is --rhts, then activate RHTS compat mode
+ * */
+static gboolean is_compat_mode(int argc, char *argv[])
+{
+    if(argc == 1){
+        return FALSE;
+    }
+
+    return strcmp(argv[1], "--rhts") == 0;
 }
 
 gboolean parse_arguments(AppData *app_data, int argc, char *argv[])
@@ -216,9 +230,7 @@ gboolean parse_arguments(AppData *app_data, int argc, char *argv[])
     gchar *server_recipe_key = NULL;
     gchar *task_id_key = NULL;
 
-    /* Work out if we are running in RHTS compatablity mode or not */
-    app_data->rhts_compat =
-        g_str_has_suffix(argv[0], RHTS_COMPAT_FILENAME);
+    app_data->rhts_compat = is_compat_mode(argc, argv);
 
     app_data->filename = g_strdup("resultoutputfile.log");
     app_data->outputfile = g_strdup(getenv("OUTPUTFILE"));

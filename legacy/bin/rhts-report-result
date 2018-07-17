@@ -1,0 +1,5 @@
+#!/bin/bash
+
+# Wrapper to call rstrnt-report-result in RHTS mode.
+
+rstrnt-report-result --rhts "$@"

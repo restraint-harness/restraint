@@ -293,7 +293,6 @@ fi
 %endif
 %attr(0755, root, root)%{_bindir}/%{name}d
 %attr(0755, root, root)%{_bindir}/rstrnt-report-result
-%attr(0755, root, root)%{_bindir}/rhts-report-result
 %attr(0755, root, root)%{_bindir}/rstrnt-report-log
 %attr(0755, root, root)%{_bindir}/rstrnt-backup
 %attr(0755, root, root)%{_bindir}/rstrnt-restore
@@ -333,6 +332,7 @@ fi
 %attr(0755, root, root)%{_bindir}/rhts-lint
 %attr(0755, root, root)%{_bindir}/rhts-sync-set
 %attr(0755, root, root)%{_bindir}/rhts-sync-block
+%attr(0755, root, root)%{_bindir}/rhts-report-result
 %attr(0755, root, root)%{_bindir}/rhts-flush
 
 # Symlinks do not have attributes

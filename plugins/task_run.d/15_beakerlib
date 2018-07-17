@@ -7,7 +7,7 @@
 
 rstrnt_info "*** Running Plugin: $0"
 
-export BEAKERLIB_COMMAND_REPORT_RESULT=/usr/bin/rhts-report-result
+export BEAKERLIB_COMMAND_REPORT_RESULT=/usr/bin/rstrnt-report-result --rhts
 export BEAKERLIB_COMMAND_SUBMIT_LOG=/usr/bin/rstrnt-report-log
 
 # Don't run from PLUGINS

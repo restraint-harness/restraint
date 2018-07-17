@@ -25,7 +25,7 @@
 #include "cmd_result.h"
 
 #define CMD_RSTRNT "rstrnt-report-result"
-#define CMD_RHTS RHTS_COMPAT_FILENAME
+#define RHTS_MODE "--rhts"
 
 /* Environment variables that rstrnt-report-result uses */
 #define OUTPUTFILE "OUTPUTFILE"
@@ -50,7 +50,8 @@ test_rhts_3arg()
     g_setenv(TASK_ID, task_id, TRUE);
 
     char *argv[] = {
-        CMD_RHTS,
+        CMD_RSTRNT,
+        RHTS_MODE,
         test_name,
         test_result,
         logfile
@@ -90,7 +91,8 @@ test_rhts_4arg()
     g_setenv(TASK_ID, task_id, TRUE);
 
     char *argv[] = {
-        CMD_RHTS,
+        CMD_RSTRNT,
+        RHTS_MODE,
         test_name,
         test_result,
         logfile,
@@ -119,7 +121,8 @@ test_rhts_small_argcount()
 {
     AppData *app_data = restraint_create_appdata();
     char *argv[] = {
-        CMD_RHTS,
+        CMD_RSTRNT,
+        RHTS_MODE,
         "foo"
     };
     int argc = sizeof(argv) / sizeof(char*);
@@ -136,7 +139,8 @@ test_rhts_large_argcount()
 {
     AppData *app_data = restraint_create_appdata();
     char *argv[] = {
-        CMD_RHTS,
+        CMD_RSTRNT,
+        RHTS_MODE,
         "foo",
         "bar",
         "baz",
@@ -279,7 +283,8 @@ test_names_with_dashes_rhts()
     g_setenv(TASK_ID, task_id, TRUE);
 
     char *argv[] = {
-        CMD_RHTS,
+        CMD_RSTRNT,
+        RHTS_MODE,
         test_name,
         test_result,
         logfile,

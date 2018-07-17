@@ -23,9 +23,6 @@ typedef struct {
     gboolean rhts_compat;
 } AppData;
 
-/* filename that will activate rhts compatibility mode */
-#define RHTS_COMPAT_FILENAME "rhts-report-result"
-
 gboolean parse_arguments(AppData *app_data, int argc, char *argv[]);
 void restraint_free_appdata(AppData *app_data);
 AppData* restraint_create_appdata();
