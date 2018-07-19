@@ -103,7 +103,7 @@ each task listed in the recipe until done.
 %package rhts
 Summary:	Allow unmodified rhts tests to run under restraint
 Group:		Applications/Internet
-Requires:	restraint = %{version}
+Requires:       %{name}%{?_isa} = %{version}-%{release}
 Requires:       make
 %if 0%{?rhel}%{?fedora} >= 7
 Requires:	/usr/bin/hostname
