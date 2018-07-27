@@ -238,11 +238,11 @@ semodule -i %{_datadir}/selinux/packages/%{name}/restraint.pp || :
 fi
 
 %post rhts
-if [ "$1" -le "1" ] ; then # First install
 %if 0%{?rhel}%{?fedora} > 4
+if [ "$1" -le "1" ] ; then # First install
 semodule -i %{_datadir}/selinux/packages/%{name}/rhts.pp || :
-%endif
 fi
+%endif
 
 %preun
 if [ "$1" -lt "1" ] ; then # Final removal
@@ -257,11 +257,11 @@ semodule -r restraint || :
 fi
 
 %preun rhts
-if [ "$1" -lt "1" ] ; then # Final removal
 %if 0%{?rhel}%{?fedora} > 4
+if [ "$1" -lt "1" ] ; then # Final removal
 semodule -r rhts || :
-%endif
 fi
+%endif
 
 %postun
 if [ "$1" -ge "1" ] ; then # Upgrade
@@ -276,11 +276,11 @@ semodule -i %{_datadir}/selinux/packages/%{name}/restraint.pp || :
 fi
 
 %postun rhts
-if [ "$1" -ge "1" ] ; then # Upgrade
 %if 0%{?rhel}%{?fedora} > 4
+if [ "$1" -ge "1" ] ; then # Upgrade
 semodule -i %{_datadir}/selinux/packages/%{name}/rhts.pp || :
-%endif
 fi
+%endif
 
 %files
 %defattr(-,root,root,-)
