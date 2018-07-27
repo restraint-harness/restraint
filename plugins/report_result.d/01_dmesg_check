@@ -51,5 +51,5 @@ sed -i -n '/cut here/,/end trace/!p;' "$DMESG_FILE"
 grep -C 5 -P '^(?:(?!'"$FALSESTRINGS"').)*('"$FAILURESTRINGS"')' "$DMESG_FILE" >> "$OUTPUTFILE"
 
 if [ -s "$OUTPUTFILE" ]; then
-    rstrnt-report-result --server "$RSTRNT_RESULT_URL" -o "$OUTPUTFILE" --no-plugins "$TEST"/"$PLUGIN" FAIL 0
+    OUTPUTFILE=$OUTPUTFILE rstrnt-report-result --no-plugins "$TEST"/"$PLUGIN" FAIL 0
 fi
