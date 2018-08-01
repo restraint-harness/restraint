@@ -19,7 +19,7 @@ LOCKFILE=/var/lock/subsys/$prog
 start() {
     check_beaker
     echo -n $"Starting $prog: "
-    daemon --check $prog "(( $prog 3>&1 1>&2 2>&3 ) | tee /dev/console ) >> /var/log/restraintd.log 2>&1 &"
+    daemon --check $prog "bash -c '(( $prog 3>&1 1>&2 2>&3 ) | tee /dev/console ) >> /var/log/restraintd.log 2>&1 &'"
     RETVAL=$?
     echo
     if test $RETVAL = 0; then
