@@ -105,7 +105,7 @@ Summary:	Allow unmodified rhts tests to run under restraint
 Group:		Applications/Internet
 Requires:       %{name}%{?_isa} = %{version}-%{release}
 Requires:       make
-%if 0%{?rhel}%{?fedora} >= 7
+%if 0%{?rhel} > 7 || 0%{?fedora} > 16
 Requires:	/usr/bin/hostname
 %else
 Requires:       /bin/hostname
