@@ -34,10 +34,6 @@ function start_httpd() {
 }
 start_httpd
 
-if [[ ! -f /usr/bin/Xvfb ]]; then
-    testargs="-s /process/no_hang $testargs"
-fi
-
 if [[ $1 == "--valgrind" ]] ; then
     shift
     G_DEBUG="gc-friendly $G_DEBUG"
