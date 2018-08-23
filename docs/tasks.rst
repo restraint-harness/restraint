@@ -122,7 +122,7 @@ setting this.
 
 ::
 
-use_pty=True
+    use_pty=True
 
 OSMajor Specific options
 ~~~~~~~~~~~~~~~~~~~~~~~~
