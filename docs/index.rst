@@ -46,6 +46,7 @@ Contents:
    variables
    plugins
    using
+   release-notes
    develop
    todo
 
