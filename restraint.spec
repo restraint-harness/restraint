@@ -10,7 +10,7 @@
 %endif
 
 Name:		restraint
-Version:	0.1.35
+Version:	0.1.36
 Release:	1%{?dist}
 Summary:	Simple test harness which can be used with beaker
 
@@ -360,6 +360,10 @@ fi
 %{__rm} -rf %{buildroot}
 
 %changelog
+* Fri Aug 24 2018 Dan Callaghan <dcallagh@redhat.com> 0.1.36-1
+- Upstream release 0.1.36:
+  https://restraint.readthedocs.io/en/latest/release-notes.html#restraint-0-1-36
+
 * Tue Jun 12 2018 Matt Tyson <mtyson@redhat.com> 0.1.35-1
 - update Github URLs (dcallagh@redhat.com)
 - make rstrnt-report-result accept rhts-report-result style arguments
