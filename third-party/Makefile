@@ -120,7 +120,6 @@ tree/bin/intltool-update: $(INTLTOOL) $(INTLTOOL)/.patches-done
 	$(MAKE) -C $(INTLTOOL) install
 
 tree/lib/pkgconfig/libsoup-2.4.pc: $(LIBSOUP) $(LIBSOUP)/.patches-done tree/lib/pkgconfig/glib-2.0.pc tree/lib/pkgconfig/libxml-2.0.pc
-tree/lib/pkgconfig/libsoup-2.4.pc: $(LIBSOUP) $(LIBSOUP)/.patches-done tree/lib/pkgconfig/glib-2.0.pc tree/lib/pkgconfig/libxml-2.0.pc
 	( cd $(LIBSOUP) && PATH=$(CURDIR)/tree/bin:$(PATH) PKG_CONFIG_PATH=../tree/lib/pkgconfig \
               ./configure --prefix=$(CURDIR)/tree \
 	      --disable-glibtest --disable-tls-check --without-gnome --enable-static \
@@ -256,6 +255,7 @@ $(INTLTOOL)/.patches-done: $(INTLTOOL)
 $(LIBSOUP)/.patches-done: $(LIBSOUP)
 	patch -d$(LIBSOUP) -p1 <libsoup-no-pkgconfig-version-check.patch
 	patch -d$(LIBSOUP) -p1 <libsoup-perl580.patch
+	sed -i -e "/^#!/c\#!$(PYTHON)" $(LIBSOUP)/libsoup/tld-parser.py
 	touch $@
 
 $(LIBXML2)/.patches-done: $(LIBXML2)

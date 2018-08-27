@@ -43,7 +43,6 @@ BuildRequires:	gcc-c++
 BuildRequires:	pkgconfig
 BuildRequires:	gettext
 BuildRequires:	perl-XML-Parser
-BuildRequires:	python
 BuildRequires:	libselinux-devel
 BuildRequires:	glibc-devel
 %if 0%{?rhel}%{?fedora} > 4
@@ -89,8 +88,13 @@ BuildRequires:  tar
 %{?with_static:BuildRequires:  perl(Getopt::Long)}
 %endif
 %{?with_static:BuildRequires:  perl(XML::Parser)}
-%if ! 0%{?fedora}
-%if 0%{?rhel} < 7
+%if 0%{?fedora} || 0%{?rhel} >= 8
+%{?with_static:BuildRequires: python3}
+%{?with_static:BuildRequires: python3-rpm-macros}
+%else
+%if 0%{?rhel} >= 7
+%{?with_static:BuildRequires: python}
+%else
 # new versions of glib require python2.7 as a build dependency
 %{?with_static:BuildRequires: python27}
 %endif
@@ -162,7 +166,11 @@ pushd third-party
 # Remove the RHEL4 glib patch if this is not RHEL4
 rm glib-rhel4.patch
 %endif
+%if 0%{?fedora} || 0%{?rhel} >= 8
+make PYTHON=%{__python3}
+%else
 make
+%endif
 popd
 %endif
 pushd src
