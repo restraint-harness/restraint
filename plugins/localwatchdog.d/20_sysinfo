@@ -6,7 +6,7 @@ SLABLOG=$(mktemp)
 PS_LWD=$(mktemp -d)
 
 # Check to see if journalctl exists.
-if command -v journalctl > /dev/null; then
+if command -v journalctl 2> /dev/null; then
     JOURNALCTL=true
     LOGFILE=/mnt/testarea/journalctl
 else
