@@ -166,6 +166,15 @@ pushd third-party
 # Remove the RHEL4 glib patch if this is not RHEL4
 rm glib-rhel4.patch
 %endif
+%if 0%{?rhel} != 6
+# If this is not RHEL6, remove the patch.
+rm glib-rhel6-s390.patch
+%else
+%ifnarch s390x s390
+# If this is RHEL6, and not a s390 machine, remove the patch.
+rm glib-rhel6-s390.patch
+%endif
+%endif
 %if 0%{?fedora} || 0%{?rhel} >= 8
 make PYTHON=%{__python3}
 %else

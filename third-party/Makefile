@@ -240,6 +240,9 @@ $(GLIB)/.patches-done: $(GLIB)
 	if [ -e glib-rhel4.patch ]; then\
 		patch -d$(GLIB) -p1 < glib-rhel4.patch;\
 	fi
+	if [ -e glib-rhel6-s390.patch ]; then\
+		patch -d$(GLIB) -p1 < glib-rhel6-s390.patch;\
+	fi
 	touch $@
 
 $(LIBARCHIVE)/.patches-done: $(LIBARCHIVE)
