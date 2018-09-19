@@ -1,0 +1,9 @@
+Ready-for-Checks+1: Matt Tyson <mtyson@redhat.com>
+Code-Review+1: Roman Joost <rjoost@redhat.com>
+Code-Review+2: Dan Callaghan <dcallagh@redhat.com>
+Verified+1: Dan Callaghan <dcallagh@redhat.com>
+Submitted-by: Dan Callaghan <dcallagh@redhat.com>
+Submitted-at: Wed, 19 Sep 2018 00:19:11 +0000
+Reviewed-on: https://gerrit.beaker-project.org/6290
+Project: restraint
+Branch: refs/heads/master
