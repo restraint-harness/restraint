@@ -55,13 +55,11 @@ typedef struct {
 #define RESTRAINT_RECIPE_PARSE_ERROR restraint_recipe_parse_error_quark()
 GQuark restraint_recipe_parse_error_quark(void);
 typedef enum {
-    RESTRAINT_RECIPE_PARSE_ERROR_BAD_SYNTAX, /* parse errors from libxml2 */
     RESTRAINT_RECIPE_PARSE_ERROR_UNRECOGNISED, /* xml structure not as we expected */
 } RestraintRecipeParseError;
 
 gboolean recipe_handler (gpointer user_data);
 void restraint_recipe_parse_stream (GInputStream *stream, gpointer user_data);
-void restraint_recipe_parse_request (GObject *source, GAsyncResult *res, gpointer user_data);
 void restraint_recipe_free(Recipe *recipe);
 void recipe_handler_finish (gpointer user_data);
 #endif

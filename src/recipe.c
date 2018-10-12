@@ -32,11 +32,6 @@
 #include "config.h"
 #include "xml.h"
 
-xmlParserCtxt *ctxt = NULL;
-
-const size_t buf_size = 4096;
-gchar buf[4096];
-
 GQuark restraint_recipe_parse_error_quark(void) {
     return g_quark_from_static_string("restraint-recipe-parse-error-quark");
 }
@@ -440,76 +435,6 @@ error:
     return NULL;
 }
 
-static void
-read_finish (GObject *source, GAsyncResult *result, gpointer user_data)
-{
-    GInputStream *stream = G_INPUT_STREAM (source);
-    AppData *app_data = (AppData *) user_data;
-    gssize size;
-
-    size = g_input_stream_read_finish (stream, result, &app_data->error);
-
-    if (app_data->error || size < 0) {
-        g_input_stream_close (stream, NULL, NULL);
-        g_object_unref(stream);
-        app_data->state = RECIPE_COMPLETE;
-        return;
-    } else if (size == 0) {
-        // Finished Reading
-        g_input_stream_close (stream, NULL, NULL);
-        g_object_unref(stream);
-        xmlParserErrors xmlresult = xmlParseChunk(ctxt, buf, 0, /* terminator */ 1);
-        if (xmlresult != XML_ERR_OK) {
-            xmlError *xmlerr = xmlCtxtGetLastError(ctxt);
-            g_set_error_literal(&app_data->error, RESTRAINT_RECIPE_PARSE_ERROR,
-                    RESTRAINT_RECIPE_PARSE_ERROR_BAD_SYNTAX,
-                    xmlerr != NULL ? xmlerr->message : "Unknown libxml error");
-            xmlFreeParserCtxt(ctxt);
-            ctxt = NULL;
-            /* Set us back to idle so we can accept a valid recipe */
-            app_data->state = RECIPE_COMPLETE;
-            return;
-        }
-        app_data->state = RECIPE_PARSE;
-        return;
-    } else {
-        // Read
-        if (!ctxt) {
-            ctxt = xmlCreatePushParserCtxt(NULL, NULL, buf, size, app_data->recipe_url);
-            if (ctxt == NULL) {
-                g_critical("xmlCreatePushParserCtxt failed");
-                /* Set us back to idle so we can accept a valid recipe */
-                app_data->state = RECIPE_COMPLETE;
-                return;
-            }
-        } else {
-            xmlParserErrors xmlresult = xmlParseChunk(ctxt, buf, size,
-                    /* terminator */ 0);
-            if (xmlresult != XML_ERR_OK) {
-                xmlError *xmlerr = xmlCtxtGetLastError(ctxt);
-                g_set_error_literal(&app_data->error, RESTRAINT_RECIPE_PARSE_ERROR,
-                        RESTRAINT_RECIPE_PARSE_ERROR_BAD_SYNTAX,
-                        xmlerr != NULL ? xmlerr->message : "Unknown libxml error");
-                xmlFreeDoc(ctxt->myDoc);
-                xmlFreeParserCtxt(ctxt);
-                ctxt = NULL;
-                g_input_stream_close (stream, NULL, NULL);
-                g_object_unref(stream);
-                /* Set us back to idle so we can accept a valid recipe */
-                app_data->state = RECIPE_COMPLETE;
-                return;
-            }
-        }
-        g_input_stream_read_async (stream,
-                                   buf,
-                                   buf_size,
-                                   G_PRIORITY_DEFAULT,
-                                   /* cancellable */ NULL,
-                                   read_finish, user_data);
-    }
-
-}
-
 static gboolean fetch_retry (gpointer user_data)
 {
     AppData *app_data = (AppData *) user_data;
@@ -519,39 +444,37 @@ static gboolean fetch_retry (gpointer user_data)
     return FALSE;
 }
 
+static void
+fetch_completed(GError *error, xmlDoc *doc, gpointer user_data)
+{
+    AppData *app_data = (AppData *)user_data;
+
+    if (error) {
+        g_warn_if_fail(!doc);
+        if (app_data->fetch_retries < FETCH_RETRIES) {
+            g_print("* RETRY [%d]**:%s\n", ++app_data->fetch_retries,
+                    error->message);
+            g_timeout_add_seconds(FETCH_INTERVAL, fetch_retry, app_data);
+        } else {
+            g_propagate_prefixed_error(&app_data->error, error,
+                    "While fetching recipe XML: ");
+            /* Set us back to idle so we can accept a valid recipe */
+            app_data->state = RECIPE_COMPLETE;
+        }
+        return;
+    }
+
+    g_warn_if_fail(!app_data->recipe_xmldoc);
+    app_data->recipe_xmldoc = doc;
+    app_data->state = RECIPE_PARSE;
+}
+
 void
 restraint_recipe_parse_stream (GInputStream *stream, gpointer user_data)
 {
     AppData *app_data = (AppData *) user_data;
-    if (!stream) {
-        if (app_data->fetch_retries < FETCH_RETRIES) {
-            g_print("* RETRY [%d]**:%s\n", ++app_data->fetch_retries,
-                    app_data->error->message);
-            g_timeout_add_seconds(FETCH_INTERVAL, fetch_retry, app_data);
-        } else {
-            app_data->state = RECIPE_COMPLETE;
-        }
 
-        return;
-    }
-    g_input_stream_read_async (stream,
-                               buf,
-                               buf_size,
-                               G_PRIORITY_DEFAULT,
-                               /* cancellable */ NULL,
-                               read_finish, user_data);
-    return;
-}
-
-void
-restraint_recipe_parse_request (GObject *source, GAsyncResult *res, gpointer user_data)
-{
-    AppData *app_data = (AppData *) user_data;
-    GInputStream *stream;
-
-    stream = soup_request_send_finish (SOUP_REQUEST (source), res, &app_data->error);
-    restraint_recipe_parse_stream (stream, user_data);
-    return;
+    restraint_xml_parse_from_stream(stream, app_data->recipe_url, fetch_completed, app_data);
 }
 
 gboolean
@@ -559,7 +482,6 @@ recipe_handler (gpointer user_data)
 {
     AppData *app_data = (AppData *) user_data;
     SoupURI *recipe_uri = NULL;
-    SoupRequest *request;
     GString *message = g_string_new(NULL);
     gboolean result = TRUE;
 
@@ -567,26 +489,15 @@ recipe_handler (gpointer user_data)
         case RECIPE_FETCH:
             g_string_printf(message, "* Fetching recipe: %s\n", app_data->recipe_url);
             app_data->state = RECIPE_FETCHING;
-            request = soup_session_request(soup_session, app_data->recipe_url, &app_data->error);
-            // restraint_recipe_parse_xml will move us to the next state
-            if (app_data->error) {
-                app_data->state = RECIPE_COMPLETE;
-            } else {
-                soup_request_send_async(request,
-                                        /* cancellable */ NULL,
-                                        restraint_recipe_parse_request,
-                                        app_data);
-            }
-            g_object_unref (request);
+            restraint_xml_parse_from_url(soup_session, app_data->recipe_url,
+                    fetch_completed, app_data);
+            // fetch_completed callback will move us to the next state
             break;
         case RECIPE_PARSE:
             g_string_printf(message, "* Parsing recipe\n");
             if (app_data->recipe_url)
                 recipe_uri = soup_uri_new(app_data->recipe_url);
-            app_data->recipe = recipe_parse(ctxt->myDoc, recipe_uri, &app_data->error);
-            xmlFreeDoc(ctxt->myDoc);
-            xmlFreeParserCtxt(ctxt);
-            ctxt = NULL;
+            app_data->recipe = recipe_parse(app_data->recipe_xmldoc, recipe_uri, &app_data->error);
             if (app_data->recipe && ! app_data->error) {
                 app_data->tasks = app_data->recipe->tasks;
                 app_data->state = RECIPE_RUN;
@@ -621,6 +532,10 @@ recipe_handler (gpointer user_data)
                 if (app_data->close_message && app_data->message_data) {
                     app_data->close_message (app_data->message_data);
                 }
+            }
+            if (app_data->recipe_xmldoc) {
+                xmlFreeDoc(app_data->recipe_xmldoc);
+                app_data->recipe_xmldoc = NULL;
             }
             // free current recipe
             if (app_data->recipe) {

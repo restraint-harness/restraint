@@ -18,6 +18,8 @@
 #ifndef _RESTRAINT_SERVER_H
 #define _RESTRAINT_SERVER_H
 
+#include <libxml/tree.h>
+
 #define VAR_LIB_PATH "/var/lib/restraint"
 #define PLUGIN_SCRIPT "/usr/share/restraint/plugins/run_plugins"
 #define TASK_PLUGIN_SCRIPT "/usr/share/restraint/plugins/run_task_plugins"
@@ -36,6 +38,7 @@ typedef struct {
   guint recipe_handler_id;
   guint task_handler_id;
   gchar *recipe_url;
+  xmlDoc *recipe_xmldoc;
   Recipe *recipe;
   GList *tasks;
   GError *error;
