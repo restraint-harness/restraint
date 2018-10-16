@@ -21,6 +21,7 @@
 
 #include <glib.h>
 #include <libsoup/soup.h>
+#include <libxml/tree.h>
 
 // XXX make this configurable
 #define TASK_LOCATION "/mnt/tests"
@@ -60,6 +61,7 @@ typedef enum {
 
 gboolean recipe_handler (gpointer user_data);
 void restraint_recipe_parse_stream (GInputStream *stream, gpointer user_data);
+void restraint_recipe_update_roles(Recipe *recipe, xmlDoc *doc, GError **error);
 void restraint_recipe_free(Recipe *recipe);
 void recipe_handler_finish (gpointer user_data);
 #endif

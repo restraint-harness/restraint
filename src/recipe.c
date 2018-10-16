@@ -332,6 +332,58 @@ error:
     return NULL;
 }
 
+void restraint_recipe_update_roles(Recipe *recipe, xmlDoc *doc, GError **error) {
+    g_return_if_fail(recipe != NULL);
+    g_return_if_fail(doc != NULL);
+    g_return_if_fail(error == NULL || *error == NULL);
+
+    GError *tmp_error = NULL;
+
+    xmlNodePtr recipe_node = find_recipe(doc);
+    if (recipe_node == NULL) {
+        unrecognised("<recipe/> element not found");
+        return;
+    }
+
+    xmlNode *child = recipe_node->children;
+    GList *tasks = recipe->tasks;
+    while (child != NULL) {
+        if (child->type == XML_ELEMENT_NODE &&
+                g_strcmp0((gchar *)child->name, "roles") == 0) {
+            GList *roles = parse_roles(child, &tmp_error);
+            if (tmp_error != NULL) {
+                g_propagate_prefixed_error(error, tmp_error,
+                        "Recipe %s has ", recipe->recipe_id);
+                return;
+            }
+            g_list_free_full(recipe->roles, (GDestroyNotify) restraint_role_free);
+            recipe->roles = roles;
+        }
+        if (child->type == XML_ELEMENT_NODE &&
+                g_strcmp0((gchar *)child->name, "task") == 0) {
+            g_return_if_fail(tasks != NULL);
+            Task *task = tasks->data;
+            xmlNode *roles_node = first_child_with_name(child, "roles", FALSE);
+            if (roles_node != NULL) {
+                GList *roles = parse_roles(roles_node, &tmp_error);
+                if (tmp_error != NULL) {
+                    g_propagate_prefixed_error(error, tmp_error,
+                            "Task %s has ", task->task_id);
+                    return;
+                }
+                g_list_free_full(task->roles, (GDestroyNotify) restraint_role_free);
+                task->roles = roles;
+            }
+            tasks = tasks->next;
+        }
+        child = child->next;
+    }
+
+    // We should have reached the end of the tasks list. If we didn't it means
+    // there were somehow too few <task/> nodes in the XML.
+    g_warn_if_fail(!tasks);
+}
+
 void restraint_recipe_free(Recipe *recipe) {
     g_return_if_fail(recipe != NULL);
     g_free(recipe->recipe_id);

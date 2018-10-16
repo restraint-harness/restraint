@@ -2,6 +2,9 @@
 #ifndef _RESTRAINT_XML_H
 #define _RESTRAINT_XML_H
 
+#include <libxml/tree.h>
+#include <libxml/xpath.h>
+
 #define RNG_SCHEMA "/usr/share/restraint/client/job_schema.rng"
 
 #define RESTRAINT_XML_PARSE_ERROR restraint_xml_parse_error_quark()

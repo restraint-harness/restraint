@@ -48,7 +48,7 @@ restraintd: server.o recipe.o task.o fetch.o fetch_git.o fetch_uri.o param.o rol
 
 fetch_git.o: fetch.h fetch_git.h
 fetch_uri.o: fetch.h fetch_uri.h
-task.o: task.h param.h role.h metadata.h process.h message.h dependency.h config.h errors.h fetch_git.h fetch_uri.h utils.h env.h
+task.o: task.h param.h role.h metadata.h process.h message.h dependency.h config.h errors.h fetch_git.h fetch_uri.h utils.h env.h xml.h
 recipe.o: recipe.h param.h role.h task.h server.h metadata.h utils.h config.h xml.h
 param.o: param.h
 role.o: role.h

@@ -42,6 +42,7 @@
 #include "fetch_uri.h"
 #include "utils.h"
 #include "env.h"
+#include "xml.h"
 
 void
 restraint_task_result (Task *task, AppData *app_data, gchar *result,
@@ -353,7 +354,7 @@ void metadata_finish_cb(gpointer user_data, GError *error)
     if (task->error || task->metadata == NULL) {
         task->state = TASK_COMPLETE;
     } else {
-        task->state = TASK_ENV;
+        task->state = TASK_REFRESH_ROLES;
 
         // Set values from metadata first
         task->remaining_time = task->metadata->max_time;
@@ -800,6 +801,32 @@ error:
     return FALSE;
 }
 
+static void
+recipe_fetch_complete(GError *error, xmlDoc *doc, gpointer user_data)
+{
+    AppData *app_data = (AppData *)user_data;
+    Task *task = app_data->tasks->data;
+
+    if (error) {
+        g_warn_if_fail(!doc);
+        g_propagate_error(&task->error, error);
+        task->state = TASK_COMPLETE;
+    } else {
+        g_warn_if_fail(doc != NULL);
+        GError *tmp_error = NULL;
+        restraint_recipe_update_roles(app_data->recipe, doc, &tmp_error);
+        if (tmp_error) {
+            g_propagate_error(&task->error, tmp_error);
+            task->state = TASK_COMPLETE;
+        } else {
+            task->state = TASK_ENV;
+        }
+    }
+
+    app_data->task_handler_id = g_idle_add_full(G_PRIORITY_DEFAULT_IDLE,
+            task_handler, app_data, NULL);
+}
+
 gboolean
 task_handler (gpointer user_data)
 {
@@ -867,6 +894,16 @@ task_handler (gpointer user_data)
                             app_data->cancellable, metadata_finish_cb,
                             metadata_io_callback, app_data);
       result=FALSE;
+      break;
+    case TASK_REFRESH_ROLES:
+      if (app_data->recipe_url) {
+          g_string_printf(message, "** Refreshing peer role hostnames\n");
+          restraint_xml_parse_from_url(soup_session, app_data->recipe_url,
+                  recipe_fetch_complete, app_data);
+          result = FALSE;
+      } else {
+          task->state = TASK_ENV;
+      }
       break;
     case TASK_ENV:
       // Build environment to execute task
