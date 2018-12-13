@@ -128,8 +128,16 @@ OSMajor Specific options
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 Any of the above elements can be overridden with OSMajor specific options.  In order for this to work
-the OSMajor attribute must be filled in the job.xml.  If the job was run through beaker this will
-have been filled in for you.  If you ran a stand alone job it is up to you to fill that value in correctly.
+the OSMajor (or "OS family") attribute must be filled in the job.xml.  If the job was run through Beaker this will
+have been filled in for you.  If you ran a stand alone job (with restraint-client) you can set the value in the
+family attribute of the recipe tag.  For example:
+
+::
+
+ <job>
+   <recipeSet>
+     <recipe family="RedHatEnterpriseLinuxServer5">
+       ...
 
 For example, if a task is known
 to take twice as long on RedHatEnterpriseLinuxServer5 then you could use following
