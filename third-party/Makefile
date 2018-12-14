@@ -159,7 +159,7 @@ $(ZLIB).tar.gz:
 
 TAR_BALLS += $(BZIP2).tar.gz
 $(BZIP2).tar.gz:
-	curl -f -L -O http://www.bzip.org/1.0.6/$@
+	curl -f -L -O http://downloads.sourceforge.net/project/bzip2/$@
 
 TAR_BALLS += $(LIBXML2).tar.gz
 $(LIBXML2).tar.gz:
