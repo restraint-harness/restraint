@@ -1,0 +1,9 @@
+Ready-for-Checks+1: Bill Peck <bpeck@redhat.com>
+Verified+1: Jeffrey Bastian <jbastian@redhat.com>
+Code-Review+1: Jeffrey Bastian <jbastian@redhat.com>
+Code-Review+2: Martin Styk <mastyk@redhat.com>
+Submitted-by: Martin Styk <mastyk@redhat.com>
+Submitted-at: Tue, 18 Dec 2018 09:22:44 +0000
+Reviewed-on: https://gerrit.beaker-project.org/6347
+Project: restraint
+Branch: refs/heads/master
