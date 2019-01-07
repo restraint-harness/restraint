@@ -568,6 +568,8 @@ int main(int argc, char *argv[]) {
   app_data->cancellable = g_cancellable_new ();
   app_data->aborted = ABORTED_NONE;
   gint port = 8081;
+  gint ipv6_enabled = FALSE;
+  gint ipv4_enabled = FALSE;
   app_data->config_file = NULL;
   gchar *config_port = g_strdup("config.conf");
   SoupServer *soup_server = NULL;
@@ -633,8 +635,16 @@ int main(int argc, char *argv[]) {
 
   // Tell our soup server to listen on any interface
   // This includes ipv4 and ipv6 if available.
-  if (! soup_server_listen_local (soup_server, port, 0, NULL)) {
-      g_printerr ("Unable to bind to server port %d\n", port);
+  ipv6_enabled = soup_server_listen_local( soup_server, port, SOUP_SERVER_LISTEN_IPV6_ONLY, NULL);
+  ipv4_enabled = soup_server_listen_local( soup_server, port, SOUP_SERVER_LISTEN_IPV4_ONLY, NULL);
+  if (ipv6_enabled) {
+      g_print ("Server listening on port %d for ipV6\n", port);
+  }
+  if (ipv4_enabled) {
+      g_print ("Server listening on port %d for ipV4\n", port);
+  }
+  if (!ipv4_enabled && !ipv6_enabled) {
+      g_printerr ("Unable to listen on either ipV4 or ipV6 protocols, exiting...\n");
       exit (1);
   }
 
