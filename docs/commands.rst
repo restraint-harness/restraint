@@ -6,7 +6,7 @@ restraintd
 
 restraintd is the daemon which executes the tasks.
 
-Both a SysV init script and a systemd unit file are provided.  The included
+Both a SysV init script and a systemd unit file are provided. The included
 spec file will use the correct one when built on RHEL/Fedora based systems.
 
 Logging
@@ -16,8 +16,8 @@ All messages from restraintd will be printed to stderr and all output from
 executing commands will be printed to stdout.
 
 stderr is redirected to /dev/console to help debug when things
-go wrong.  The SysV init script will redirect both stdout + stderr to 
-/var/log/resatraintd.log.  For systemd you can use the journalctl command::
+go wrong. The SysV init script will redirect both stdout + stderr to
+/var/log/restraintd.log. For systemd you can use the journalctl command::
 
  journalctl --unit restraintd
 
@@ -60,25 +60,24 @@ go wrong.  The SysV init script will redirect both stdout + stderr to
 restraint
 ---------
 
-Used for stand alone execution
+Used for stand-alone execution.
 
 Use the restraint command to run a job on a remote test machine running
-restraintd.  You can run them on the same machine but it is not recommended
-since some tasks reboot the system. Hosts are tied to recipe ids inside job
-xml.
+restraintd. You can run jobs on the local machine but it is not recommended
+since some tasks reboot the system. Hosts are tied to recipe IDs inside the
+job XML.
 
 ::
 
  restraint --host 1=addressOfMyTestSystem.example.com:8081 --job /path/to/simple_job.xml
 
 Restraint will look for the next available directory to store the results in.
-In the above example it will see if the directory simple_job.01 exists.  If
-it does, because of a previous run, it will then look in simple_job.02.  It 
-will continue doing this until it finds a directory that doesn't exist.
+In the above example it will see if the directory simple_job.01 exists. If
+it does (because of a previous run) it will then look for simple_job.02. It
+will continue to increment the number until it finds a directory that doesn't
+exist.
 
-By default restraint will report the start and stop of each task run like this
-
-::
+By default Restraint will report the start and stop of each task run like this::
 
  Using ./simple_job.07 for job run
  * Fetching recipe: http://192.168.1.198:8000/recipes/07/
@@ -95,75 +94,83 @@ You can pass -v for more verbose output which will show every task reported.
 If you pass another -v you will get the output from the tasks written to your
 screen as well.
 
-But all of this information is stored in the job.xml which in this case is 
-stored in ./simple_job.07.
+All of this information is also stored in the job.xml which in this case is
+stored in the ./simple_job.07 directory.
 
 rstrnt-report-result
 --------------------
 
-Report Pass/Fail/Warn, optional score
+Report Pass/Fail/Warn, optional score.
 
 Reporting plugins can be disabled by passing the plugin name to the --disable
-option.  Here is an example of reporting a result but disabling the built in avc checker::
+option. Here is an example of reporting a result but disabling the built in
+AVC (Access Vector Cache) checker::
 
  rstrnt-report-result --disable 10_avc_check $RSTRNT_TASKNAME/sub-result PASS 100
 
 Multiple plugins can be disabled by passing in multiple --disable arguments.
 
-To stay compatible with legacy RHTS tasks, restraint also looks to see if
-the environment variable AVC_ERROR is set to +no_avc_check.  If this is
-true then it's the same as the above --disable 10_avc_check argument.
+To stay compatible with legacy RHTS (Red Hat Test System) tasks, Restraint also
+looks to see if the environment variable AVC_ERROR is set to +no_avc_check. If
+this is true then it's the same as the above ``--disable 10_avc_check``
+argument.
 
 rstrnt-report-log
 -----------------
 
-Upload a log or some other file
+Upload a log or some other file.
 
 rstrnt-reboot
 -------------
 
-helper to reboot the system. On UEFI systems it will use efibootmgr to set next boot to what is booted currently.
+Helper to reboot the system. On UEFI systems it will use efibootmgr to set next
+boot to what is booted currently.
 
 rstrnt-backup
 -------------
 
-helper to backup a config file
+Helper to backup a config file.
 
 rstrnt-restore
 --------------
 
-helper to restore a previously backed up file.  There is a plugin which is executed
-at task completion which will call this command for you.
+Helper to restore a previously backed up file. There is a plugin which is
+executed at task completion which will call this command for you.
 
 rstrnt-adjust-watchdog
 ----------------------
 
-If you are running in Beaker this allows you to adjust the external watchdog.  This does not
-modify the localwatchdog, so its usually only useful to tasks that have no_localwatchdog set
-to true in their task metadata.
+If you are running in Beaker this allows you to adjust the external watchdog.
+This does not modify the localwatchdog, so its usually only useful to tasks
+that have no_localwatchdog set to ``true`` in their task metadata.
 
 check_beaker
 ------------
 
-run from init/systemd, will run a beaker job
+Run from init/systemd, will run a Beaker job.
 
 job2html.xml
 ------------
 
-an xslt template to convert the stand alone job.xml results into a html doc.
+An XSLT (eXtensible Stylesheet Language Transformations) template to convert
+the stand-alone job.xml results file into an HTML doc. The template can be
+found in Restraint's ``client`` directory.
 
-Here is an example to convert a job run xml into an html doc.  This html doc can 
-be easily navigated with a browser to investigate results and logs.
+Here is an example command to convert a job run XML file into an HTML doc.
+This HTML doc can be easily navigated with a browser to investigate results and
+logs.
 
 ::
 
  xsltproc job2html.xml simple_job.07/job.xml > simple_job.07/index.html
- 
+
 job2junit.xml
 -------------
-an xslt template to convert the stand alone job.xml into junit results.
 
-Here is an example to covert a job run xml into junit results.
+An XSLT template to convert the stand-alone job.xml file into JUnit results.
+The template can be found in Restraint's ``client`` directory.
+
+Here is an example command to covert a job run XML into JUnit results.
 
 ::
 
@@ -171,34 +178,36 @@ Here is an example to covert a job run xml into junit results.
 
 Legacy RHTS Commands
 --------------------
-If you have the restraint-rhts subpackage installed these commands are provided in order to support legacy tests written for RHTS
+
+If you have the restraint-rhts subpackage installed these commands are provided
+in order to support legacy tests written for RHTS.
 
 rhts-reboot
 ~~~~~~~~~~~
 
-Use rstrnt-reboot instead
+Use rstrnt-reboot instead.
 
 rhts-backup
 ~~~~~~~~~~~
 
-Use rstrnt-backup instead
+Use rstrnt-backup instead.
 
 rhts-restore
 ~~~~~~~~~~~~
 
-Use rstrnt-restore instead
+Use rstrnt-restore instead.
 
 rhts-environment.sh
 ~~~~~~~~~~~~~~~~~~~
 
-deprecated
+Deprecated
 
 rhts-lint
 ~~~~~~~~~
 
-deprecated - only provided so that testinfo.desc can be generated
+Deprecated - only provided so that testinfo.desc can be generated.
 
 rhts-run-simple-test
 ~~~~~~~~~~~~~~~~~~~~
 
-deprecated
+Deprecated

@@ -1,11 +1,12 @@
 :orphan:
 
-restraintd manual page
-======================
+rhts Manual Page
+================
 
 Synopsis
 --------
-These commands are provided in order to support legacy tests written for RHTS.
+These commands are provided in order to support legacy tests written for RHTS
+(Red Hat Test System).
 
 Commands
 --------
@@ -28,15 +29,14 @@ Use rstrnt-restore instead
 rhts-environment.sh
 ~~~~~~~~~~~~~~~~~~~
 
-deprecated
+Deprecated
 
 rhts-lint
 ~~~~~~~~~
 
-deprecated - only provided so that testinfo.desc can be generated
+Deprecated - only provided so that testinfo.desc can be generated
 
 rhts-run-simple-test
 ~~~~~~~~~~~~~~~~~~~~
 
-deprecated
-
+Deprecated

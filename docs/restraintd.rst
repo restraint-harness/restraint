@@ -1,6 +1,6 @@
 :orphan:
 
-restraintd manual page
+restraintd Manual Page
 ======================
 
 Synopsis
@@ -15,8 +15,8 @@ All messages from restraintd will be printed to stderr and all output from
 executing commands will be printed to stdout.
 
 stderr is redirected to /dev/console to help debug when things
-go wrong.  The SysV init script will redirect both stdout + stderr to
-/var/log/resatraintd.log.  For systemd you can use the journalctl command::
+go wrong. The SysV init script will redirect both stdout + stderr to
+/var/log/restraintd.log. For systemd you can use the journalctl command::
 
  journalctl --unit restraintd
 
@@ -66,15 +66,16 @@ rstrnt-report-result
 Report Pass/Fail/Warn, optional score
 
 Reporting plugins can be disabled by passing the plugin name to the --disable
-option.  Here is an example of reporting a result but disabling the built in avc checker::
+option. Here is an example of reporting a result but disabling the built in
+AVC (Access Vector Cache) checker::
 
  rstrnt-report-result --disable 10_avc_check $RSTRNT_TASKNAME/sub-result PASS 100
 
 Multiple plugins can be disabled by passing in multiple --disable arguments.
 
-To stay compatible with legacy RHTS tasks, restraint also looks to see if
-the environment variable AVC_ERROR is set to +no_avc_check.  If this is
-true then it's the same as the above --disable 10_avc_check argument.
+To stay compatible with legacy RHTS (Red Hat Test System) tasks, restraint also
+looks to see if the environment variable AVC_ERROR is set to +no_avc_check. If
+this is true then it's the same as the above --disable 10_avc_check argument.
 
 rstrnt-report-log
 ~~~~~~~~~~~~~~~~~
@@ -84,28 +85,28 @@ Upload a log or some other file
 rstrnt-reboot
 ~~~~~~~~~~~~~
 
-helper to reboot the system. On UEFI systems it will use efibootmgr to set next boot to what is booted currently.
+Helper to reboot the system. On UEFI systems it will use efibootmgr to set next
+boot to what is booted currently.
 
 rstrnt-backup
 ~~~~~~~~~~~~~
 
-helper to backup a config file
+Helper to backup a config file.
 
 rstrnt-restore
 ~~~~~~~~~~~~~~
 
-helper to restore a previously backed up file.  There is a plugin which is executed
-at task completion which will call this command for you.
+Helper to restore a previously backed up file. There is a plugin which is
+executed at task completion which will call this command for you.
 
 rstrnt-adjust-watchdog
 ~~~~~~~~~~~~~~~~~~~~~~
 
-If you are running in Beaker this allows you to adjust the external watchdog.  This does not
-modify the localwatchdog, so its usually only useful to tasks that have no_localwatchdog set
-to true in their task metadata.
+If you are running in Beaker this allows you to adjust the external watchdog.
+This does not modify the localwatchdog, so its usually only useful to tasks
+that have no_localwatchdog set to ``true`` in their task metadata.
 
 check_beaker
 ~~~~~~~~~~~~
 
-run from init/systemd, will run a beaker job
-
+Run from init/systemd, will run a Beaker job.
