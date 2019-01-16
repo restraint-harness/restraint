@@ -200,7 +200,7 @@ Use rstrnt-restore instead.
 rhts-environment.sh
 ~~~~~~~~~~~~~~~~~~~
 
-Deprecated
+Deprecated.
 
 rhts-lint
 ~~~~~~~~~
@@ -210,4 +210,4 @@ Deprecated - only provided so that testinfo.desc can be generated.
 rhts-run-simple-test
 ~~~~~~~~~~~~~~~~~~~~
 
-Deprecated
+Deprecated.

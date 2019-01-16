@@ -13,15 +13,21 @@ Pre-built statically linked versions are available for the following OSes:
 To get the appropriate repo file for your OS, use one of the commands listed
 below:
 
-- RedHatEnterpriseLinux::
+- RedHatEnterpriseLinux
+
+::
 
  # sudo wget -O /etc/yum.repos.d/beaker-harness.repo https://beaker-project.org/yum/beaker-harness-RedHatEnterpriseLinux.repo
 
-- Fedora::
+- Fedora
+
+::
 
  # sudo wget -O /etc/yum.repos.d/beaker-harness.repo https://beaker-project.org/yum/beaker-harness-Fedora.repo
 
-- CentOS::
+- CentOS
+
+::
 
  # sudo wget -O /etc/yum.repos.d/beaker-harness.repo https://beaker-project.org/yum/beaker-harness-CentOS.repo
 
