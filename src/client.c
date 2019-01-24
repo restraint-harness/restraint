@@ -1645,6 +1645,7 @@ int main(int argc, char *argv[]) {
     gboolean ipv6 = FALSE;
     gboolean novalid = FALSE;
     gchar **hostarr = NULL;
+    gint timeout = 300;
 
     AppData *app_data = g_slice_new0 (AppData);
 
@@ -1674,6 +1675,8 @@ int main(int argc, char *argv[]) {
         { "verbose", 'v', G_OPTION_FLAG_NO_ARG, G_OPTION_ARG_CALLBACK,
             callback_parse_verbose, "Increase verbosity, up to three times.",
             NULL },
+        { "timeout", 'w', 0, G_OPTION_ARG_INT, &timeout,
+            "Specify timeout for request in seconds [Default: 300].", NULL },
         { NULL }
     };
     GOptionGroup *option_group = g_option_group_new("main",
@@ -1705,8 +1708,8 @@ int main(int argc, char *argv[]) {
                                                 SOUP_ADDRESS_ANY_PORT);
 
     session = soup_session_new_with_options("local-address", address,
-                                            "timeout", 120,
-                                            "idle-timeout", 120,
+                                            "timeout", timeout,
+                                            "idle-timeout", timeout,
                                             "max-conns", 20,
                                             "max-conns-per-host", 1,
                                             NULL);
