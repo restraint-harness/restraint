@@ -89,7 +89,7 @@ finished:
 
     g_clear_error(&ctxt->error);
     g_free(ctxt->url);
-    g_free(ctxt);
+    g_slice_free(RestraintXmlRequestContext, ctxt);
 }
 
 void
