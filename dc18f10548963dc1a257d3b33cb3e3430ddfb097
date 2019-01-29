@@ -1,0 +1,8 @@
+Ready-for-Checks+1: Martin Styk <mastyk@redhat.com>
+Verified+1: Martin Styk <mastyk@redhat.com>
+Code-Review+2: Tomas Klohna <tklohna@redhat.com>
+Submitted-by: Martin Styk <mastyk@redhat.com>
+Submitted-at: Tue, 29 Jan 2019 07:40:32 +0000
+Reviewed-on: https://gerrit.beaker-project.org/6402
+Project: restraint
+Branch: refs/heads/master
