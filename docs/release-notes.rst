@@ -1,6 +1,15 @@
 Release Notes
 =============
 
+Restraint 0.1.38
+----------------
+
+Released 29 January 2019.
+
+* | FIXED: :bug:`1670111`: Fixed crash of Restraint for ppc64le and aarch64
+    architecture.
+  | (Contributed by Bill Peck)
+
 Restraint 0.1.37
 ----------------
 
