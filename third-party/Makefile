@@ -237,6 +237,7 @@ $(SQLITE)/.patches-done: $(SQLITE)
 
 $(GLIB)/.patches-done: $(GLIB)
 	patch -d$(GLIB) -p1 < glib-setpipe.patch
+	patch -d$(GLIB) -p1 < glib-nullstrings.patch
 	if [ -e glib-rhel4.patch ]; then\
 		patch -d$(GLIB) -p1 < glib-rhel4.patch;\
 	fi
