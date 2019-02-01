@@ -302,6 +302,7 @@ fi
 %attr(0755, root, root)%{_bindir}/rstrnt-report-log
 %attr(0755, root, root)%{_bindir}/rstrnt-backup
 %attr(0755, root, root)%{_bindir}/rstrnt-restore
+%attr(0755, root, root)%{_bindir}/rstrnt-prepare-reboot
 %attr(0755, root, root)%{_bindir}/rstrnt-reboot
 %attr(0755, root, root)%{_bindir}/check_beaker
 %attr(0755, root, root)%{_bindir}/rstrnt-adjust-watchdog

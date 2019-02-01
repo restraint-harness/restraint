@@ -126,6 +126,24 @@ rstrnt-reboot
 Helper to reboot the system. On UEFI systems it will use efibootmgr to set next
 boot to what is booted currently.
 
+rstrnt-prepare-reboot
+---------------------
+
+Prepare the system for rebooting. Similar to rstrnt-reboot,
+but does not actually trigger the reboot.
+
+If machine is UEFI and has efibootmgr installed, sets BootNext to
+BootCurrent and uses :envvar:`NEXTBOOT_VALID_TIME` to determine for
+how long (in seconds) this value is valid. After the specified time,
+BootOrder is reset to previous state. Default value for
+:envvar:`NEXTBOOT_VALID_TIME` is 180 seconds.
+
+Tasks can run this command before triggering a crash or rebooting
+through some other non-standard means. For example::
+
+    rstrnt-prepare-reboot
+    echo c >/proc/sysrq-trigger
+
 rstrnt-backup
 -------------
 
