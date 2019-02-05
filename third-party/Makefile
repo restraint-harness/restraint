@@ -238,16 +238,12 @@ $(SQLITE)/.patches-done: $(SQLITE)
 $(GLIB)/.patches-done: $(GLIB)
 	patch -d$(GLIB) -p1 < glib-setpipe.patch
 	patch -d$(GLIB) -p1 < glib-nullstrings.patch
-	if [ -e glib-rhel4.patch ]; then\
-		patch -d$(GLIB) -p1 < glib-rhel4.patch;\
-	fi
 	if [ -e glib-rhel6-s390.patch ]; then\
 		patch -d$(GLIB) -p1 < glib-rhel6-s390.patch;\
 	fi
 	touch $@
 
 $(LIBARCHIVE)/.patches-done: $(LIBARCHIVE)
-#	patch -d$(LIBARCHIVE) -p1 <libarchive-rhel3-headers.patch
 	patch -d$(LIBARCHIVE) -p1 <libarchive-use-pkgconfig.patch
 	patch -d$(LIBARCHIVE) -p1 <libarchive_add_ppc64le.patch
 	touch $@

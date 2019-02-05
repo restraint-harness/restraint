@@ -115,11 +115,8 @@ Requires:	/usr/bin/hostname
 Requires:       /bin/hostname
 %endif
 Requires:       coreutils
-%if 0%{?rhel} == 4
-Requires:       libselinux
-%else
 Requires:       libselinux-utils
-%endif
+
 # All RHTS-format task RPMs have an unversioned requirement on rhts-test-env.
 # Therefore restraint-rhts provides a very low version of rhts-test-env so that
 # if restraint-rhts is already installed, the dependency is satisfied without
@@ -148,24 +145,15 @@ cp %{_sourcedir}/*.tar.* third-party/
 
 %build
 export CFLAGS="$RPM_OPT_FLAGS"
-%if 0%{?rhel} == 4 || 0%{?rhel} == 5
+%if 0%{?rhel} == 5
 %ifarch i386
 # glib wants at least i486 for atomic instructions. RHEL6+ is already using i686.
 export CFLAGS="$RPM_OPT_FLAGS -march=i486"
 %endif
 %endif
-%if 0%{?rhel} == 4
-%ifarch ppc64
-export CFLAGS="$RPM_OPT_FLAGS -mminimal-toc"
-%endif
-%endif
 
 %if 0%{?with_static:1}
 pushd third-party
-%if 0%{?rhel} != 4
-# Remove the RHEL4 glib patch if this is not RHEL4
-rm glib-rhel4.patch
-%endif
 %if 0%{?rhel} != 6
 # If this is not RHEL6, remove the patch.
 rm glib-rhel6-s390.patch
