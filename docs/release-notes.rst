@@ -1,6 +1,17 @@
 Release Notes
 =============
 
+Restraint 0.1.39
+----------------
+
+Released 27 February 2019.
+
+* | NEW: :bug:`1552199`: Restraint-client now supports changing
+    timeout value for the request.
+  | (Contributed by Martin Styk)
+* | FIXED: :bug:`1670377`: Fixed compilation issues for GCC9/Automake.
+  | (Contributed by Martin Styk)
+
 Restraint 0.1.38
 ----------------
 
@@ -15,7 +26,7 @@ Restraint 0.1.37
 
 Released 11 January 2019.
 
-* | NEW: :bug:`1665390`: Added feature to set family from client XML
+* | NEW: :bug:`1665390`: Added feature to set family from client XML.
   | (Contributed by Bill Peck)
 * | NEW: :bug:`1656466`: Restraint now supports ``@module`` syntax for
     dependencies for RHEL8+.
