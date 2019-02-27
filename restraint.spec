@@ -10,7 +10,7 @@
 %endif
 
 Name:		restraint
-Version:	0.1.38
+Version:	0.1.39
 Release:	1%{?dist}
 Summary:	Simple test harness which can be used with beaker
 
@@ -365,6 +365,9 @@ fi
 %{__rm} -rf %{buildroot}
 
 %changelog
+* Wed Feb 27 2019 Martin Styk <mastyk@redhat.com> 0.1.39-1
+- Upstream release 0.1.39:
+  https://restraint.readthedocs.io/en/latest/release-notes.html#restraint-0-1-39
 * Tue Jan 29 2019 Martin Styk <mastyk@redhat.com> 0.1.38-1
 - Upstream release 0.1.38:
   https://restraint.readthedocs.io/en/latest/release-notes.html#restraint-0-1-38
