@@ -1,6 +1,6 @@
 [Unit]
 Description=The restraint harness.
-After=network.target time-sync.target
+After=network-online.target time-sync.target
 Requires=network-online.target
 
 [Service]
