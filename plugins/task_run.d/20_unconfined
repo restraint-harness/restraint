@@ -47,7 +47,7 @@ function _runcon_unconfined_cmd() {
 
 function runcon_unconfined() {
   local runcon_cmd=$(_runcon_unconfined_cmd)
-  if runcon 2>/dev/null | grep -q ":unconfined_r:unconfined_t:"; then
+  if runcon 2>/dev/null | grep -q "unconfined_u:unconfined_r:unconfined_t:"; then
     # Already in the desired context
     exec "$@"
   elif $runcon_cmd -- true; then
