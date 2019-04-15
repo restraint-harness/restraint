@@ -1,0 +1,11 @@
+#ifndef  _RESTRAINT_COMMON_H
+#define  _RESTRAINT_COMMON_H
+
+#define PARSE_ARGS_FAILED        1
+#define FAILED_GET_CONFIG_FILE   2
+#define FAILED_LISTEN            3
+#define INVALID_COMMAND_PATH     4
+#define SPAWN_COMMAND_FAILED     5
+#define FAILED_SET_PDEATHSIG     6
+
+#endif   // _RESTRAINT_COMMON_H

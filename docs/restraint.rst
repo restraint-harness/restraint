@@ -11,17 +11,19 @@ Used for stand-alone execution
 Description
 -----------
 
-Use the restraint command to run a job on a remote test machine running
-restraintd. You can run them on the same machine but it is not recommended
-since some tasks reboot the system. Hosts are tied to recipe IDs inside job
-XML.
+Use the restraint command to spawn restraintd server on a remote test machine
+containing restraintd image. You can run them on the same machine but it is not
+recommended since some tasks reboot the system. Hosts are tied to recipe IDs
+inside job XML.
 
-::
+.. code-block:: console
 
- restraint --host 1=addressOfMyTestSystem.example.com:8081 --job /path/to/simple_job.xml
+ restraint --host 1=addressOfMyTestSystem.example.com --job /path/to/simple_job.xml --restraint-path /home/userid/restraint/src/restraintd
+
+.. end
 
 Restraint will look for the next available directory to store the results in.
-In the above example it will see if the directory simple_job.01 exists. If
+In the above example, it will see if the directory simple_job.01 exists. If
 it does, because of a previous run, it will then look in simple_job.02. It
 will continue doing this until it finds a directory that doesn't exist.
 
@@ -40,8 +42,12 @@ By default restraint will report the start and stop of each task run like this
  *  T:   3 [restraint/vmstat                                ] Running
  *  T:   3 [restraint/vmstat                                ] Completed
 
-You can pass -v for more verbose output which will show every task reported.
-If you pass another -v you will get the output from the tasks written to your
+It is recommended to specify the location of the restraintd image using
+the ``--restraint-path`` argument.  If not provided, it will attempt to
+execute the installed restraintd server.
+
+You can pass ``-v`` for more verbose output which will show every task reported.
+If you pass another ``-v`` you will get the output from the tasks written to your
 screen as well.
 
 But all of this information is stored in the job.xml which in this case is

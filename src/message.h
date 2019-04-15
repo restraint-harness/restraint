@@ -57,7 +57,7 @@ void restraint_queue_message (SoupSession *session,
                               GCancellable *cancellable,
                               gpointer user_data);
 
-void restraint_append_message (SoupSession *session,
+void restraint_stdout_message (SoupSession *session,
                                SoupMessage *msg,
                                gpointer msg_data,
                                MessageFinishCallback finish_callback,

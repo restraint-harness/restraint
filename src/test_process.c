@@ -92,6 +92,9 @@ static void test_process_success(void) {
                  NULL,
                  test_process_finish_cb,
                  NULL,
+                 0,
+                 FALSE,
+                 NULL,
                  run_data);
 
     // run event loop while process is running.
@@ -119,6 +122,9 @@ static void test_process_failure(void) {
                  NULL,
                  NULL,
                  test_process_finish_cb,
+                 NULL,
+                 0,
+                 FALSE,
                  NULL,
                  run_data);
 
@@ -149,6 +155,9 @@ static void test_watchdog_success(void) {
                  NULL,
                  NULL,
                  test_process_finish_cb,
+                 NULL,
+                 0,
+                 FALSE,
                  NULL,
                  run_data);
 
@@ -182,6 +191,9 @@ static void test_watchdog_failure(void) {
                  NULL,
                  test_process_finish_cb,
                  NULL,
+                 0,
+                 FALSE,
+                 NULL,
                  run_data);
 
     // run event loop while process is running.
@@ -209,7 +221,7 @@ static void test_no_hang(void) {
     // Watchdog fail to command time > max time
     const guint64 maximumtime = 60;
     const gchar *command = "hang_test";
-    gchar *expected = "use_pty:FALSE hang_test\nfoo\nbar\n";
+    gchar *expected = "foo\nbar\n";
     GString *output = g_string_new(NULL);
     gchar **outsplit = NULL;
 
@@ -225,6 +237,9 @@ static void test_no_hang(void) {
                  NULL,
                  test_process_io_cb,
                  test_process_finish_cb,
+                 NULL,
+                 0,
+                 FALSE,
                  NULL,
                  run_data);
 
@@ -260,7 +275,7 @@ static void test_use_pty(void) {
     // Watchdog fail to command time > max time
     const guint64 maximumtime = 60;
     const gchar *command = "is_tty";
-    gchar *expected = "use_pty:TRUE is_tty\r\nTrue\r\n";
+    gchar *expected = "True\r\n";
 
     run_data = g_slice_new0 (RunData);
     run_data->loop = g_main_loop_new (NULL, TRUE);
@@ -274,6 +289,9 @@ static void test_use_pty(void) {
                  NULL,
                  test_process_io_cb,
                  test_process_finish_cb,
+                 NULL,
+                 0,
+                 FALSE,
                  NULL,
                  run_data);
 
@@ -294,7 +312,7 @@ static void test_dont_use_pty(void) {
     RunData *run_data;
     const guint64 maximumtime = 60;
     const gchar *command = "is_tty";
-    gchar *expected = "use_pty:FALSE is_tty\nFalse\n";
+    gchar *expected = "False\n";
 
     run_data = g_slice_new0 (RunData);
     run_data->loop = g_main_loop_new (NULL, TRUE);
@@ -308,6 +326,9 @@ static void test_dont_use_pty(void) {
                  NULL,
                  test_process_io_cb,
                  test_process_finish_cb,
+                 NULL,
+                 0,
+                 FALSE,
                  NULL,
                  run_data);
 

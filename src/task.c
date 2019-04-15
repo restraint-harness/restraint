@@ -106,7 +106,7 @@ fetch_finish_callback (GError *error, guint32 match_cnt,
 
     if (error) {
         if (app_data->fetch_retries < FETCH_RETRIES) {
-            g_print("* RETRY fetch [%d]**:%s\n", ++app_data->fetch_retries,
+            g_warning("* RETRY fetch [%d]**:%s\n", ++app_data->fetch_retries,
                     error->message);
             g_clear_error(&error);
             g_timeout_add_seconds(FETCH_INTERVAL, fetch_retry, app_data);
@@ -188,7 +188,7 @@ restraint_task_fetch(AppData *app_data) {
             task_run_data->logpath = LOG_PATH_HARNESS;
             process_run ((const gchar *)command, NULL, NULL, FALSE, 0,
                          NULL, task_io_callback, task_handler_callback,
-                         app_data->cancellable, task_run_data);
+                         NULL, 0, FALSE, app_data->cancellable, task_run_data);
             g_free (command);
             break;
         default:
@@ -214,18 +214,17 @@ io_callback (GIOChannel *io, GIOCondition condition, const gchar *logpath, gpoin
         switch (g_io_channel_read_chars(io, buf, 10000, &bytes_read, &tmp_error)) {
           case G_IO_STATUS_NORMAL:
             /* Push data to our connections.. */
-            if (fwrite(buf, sizeof(gchar), bytes_read, stdout) != bytes_read)
-                g_warning ("failed to write message");
+            g_debug ("%s", buf);
             connections_write(app_data, logpath, buf, bytes_read);
             return TRUE;
 
           case G_IO_STATUS_ERROR:
-             g_printerr("IO error: %s\n", tmp_error->message);
+             g_error("IO error: %s", tmp_error->message);
              g_clear_error (&tmp_error);
              return FALSE;
 
           case G_IO_STATUS_EOF:
-             g_print("finished!\n");
+             g_message("finished!");
              return FALSE;
 
           case G_IO_STATUS_AGAIN:
@@ -341,6 +340,9 @@ task_finish_callback (gint pid_result, gboolean localwatchdog, gpointer user_dat
                  NULL,
                  task_io_callback,
                  task_finish_plugins_callback,
+                 NULL,
+                 0,
+                 FALSE,
                  app_data->cancellable,
                  task_run_data);
     g_free (command);
@@ -548,8 +550,7 @@ task_heartbeat_callback (gpointer user_data)
                     currtime,
                     (modified_wd) ? " User Adjusted" : "",
                     task_run_data->expire_time);
-    if (fwrite(message->str, sizeof(gchar), message->len, stderr) != message->len)
-        g_warning ("failed to write Localwatchdog message");
+    g_message ("%s", message->str);
     connections_write(app_data, LOG_PATH_HARNESS, message->str, message->len);
     g_string_free(message, TRUE);
     return TRUE;
@@ -601,6 +602,9 @@ task_run (AppData *app_data)
                  task_timeout_cb,
                  task_io_callback,
                  task_finish_callback,
+                 NULL,
+                 0,
+                 FALSE,
                  app_data->cancellable,
                  task_run_data);
 
@@ -916,7 +920,7 @@ task_handler (gpointer user_data)
 
   // No More tasks, return false so this handler gets removed.
   if (app_data->tasks == NULL) {
-      g_print ("no more tasks..\n");
+      g_message ("no more tasks..");
       return FALSE;
   }
 
@@ -998,7 +1002,7 @@ task_handler (gpointer user_data)
       // If not running in rhts_compat mode it will prepend
       // the variables with ENV_PREFIX.
       g_string_printf(message, "** Updating env vars\n");
-      build_env(app_data->restraint_url, task);
+      build_env(app_data->restraint_url, app_data->stdin, task);
       task->state = TASK_WATCHDOG;
       break;
     case TASK_WATCHDOG:
@@ -1105,8 +1109,7 @@ task_handler (gpointer user_data)
       break;
   }
   if (message->len) {
-    if (fwrite(message->str, sizeof(gchar), message->len, stderr) != message->len)
-        g_warning ("failed to write message");
+    g_message ("%s", message->str);
     connections_write(app_data, LOG_PATH_HARNESS, message->str, message->len);
   }
   g_string_free(message, TRUE);

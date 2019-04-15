@@ -6,18 +6,17 @@ ifneq ($(DEVEL),1)
     CFLAGS += -O2
 endif
 
-PACKAGES = glib-2.0 gobject-2.0 gio-2.0 gio-unix-2.0 libxml-2.0 libsoup-2.4 libarchive libssh libssh_threads libcurl
+PACKAGES = glib-2.0 gobject-2.0 gio-2.0 gio-unix-2.0 libxml-2.0 libsoup-2.4 libarchive libcurl json-c
 CFLAGS += -Wall -Werror -std=c99 $(shell pkg-config --cflags $(PACKAGES))
 ifeq ($(STATIC),1)
-    # The right thing to do here is `pkg-config --libs --static`, which would 
+    # The right thing to do here is `pkg-config --libs --static`, which would
     # include Libs.private in the link command.
-    # But really old pkg-config versions don't understand that so let's just 
+    # But really old pkg-config versions don't understand that so let's just
     # hardcode the "private" libs here.
-    # The -( -) grouping means we don't have to worry about getting all the 
-    # dependent libs in the right order (normally pkg-config would do that for 
+    # The -( -) grouping means we don't have to worry about getting all the
+    # dependent libs in the right order (normally pkg-config would do that for
     # us).
     LIBS = -Wl,-Bstatic -Wl,-\( $(shell pkg-config --libs $(PACKAGES)) -lgmodule-2.0 -llzma -lbz2 -lz -lffi -lssl -lcrypto -lselinux -Wl,-\) -Wl,-Bdynamic -lm -pthread -lrt -lresolv -ldl -lutil $(LFLAGS)
-    CFLAGS += -DLIBSSH_STATIC
 else
     LIBS = $(shell pkg-config --libs $(PACKAGES) $(XTRAPKGS)) -lutil -pthread
 endif
@@ -40,7 +39,7 @@ rstrnt-abort: cmd_abort.o utils.o errors.o
 rstrnt-sync: cmd_sync.o
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
-restraint: client.o multipart.o errors.o xml.o ssh.o utils.o
+restraint: client.o errors.o xml.o utils.o process.o restraint_forkpty.o
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 restraintd: server.o recipe.o task.o fetch.o fetch_git.o fetch_uri.o param.o role.o metadata.o process.o message.o dependency.o utils.o config.o errors.o xml.o env.o restraint_forkpty.o
@@ -56,7 +55,6 @@ server.o: recipe.h task.h server.h
 expect_http.o: expect_http.h
 role.o: role.h
 client.o: client.h
-ssh.o: ssh.c ssh.h
 multipart.o: multipart.h
 process.o: process.h
 message.o: message.h

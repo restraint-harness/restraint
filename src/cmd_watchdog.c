@@ -20,6 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <libsoup/soup.h>
+#include <unistd.h>
 #include "utils.h"
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
@@ -39,8 +40,6 @@ int main(int argc, char *argv[]) {
     guint ret = 0;
     guint64 seconds;
 
-    gchar *prefix = NULL;
-    gchar *server_recipe_key = NULL;
     gchar *server_recipe = NULL;
     GHashTable *data_table = g_hash_table_new (NULL, NULL);
 
@@ -72,10 +71,7 @@ int main(int argc, char *argv[]) {
         goto cleanup;
      }
 
-    prefix = getenv("HARNESS_PREFIX") ? getenv("HARNESS_PREFIX") : "";
-    server_recipe_key = g_strdup_printf ("%sRECIPE_URL", prefix);
-    server_recipe = getenv(server_recipe_key);
-    g_free(server_recipe_key);
+    server_recipe = get_recipe_url();
 
     if (!server && server_recipe) {
         server = g_strdup_printf ("%s/watchdog", server_recipe);

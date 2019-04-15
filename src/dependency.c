@@ -215,6 +215,9 @@ dependency_batch_rpms(DependencyData *dependency_data)
                          NULL,
                          dependency_io_callback,
                          dependency_batch_remove_cb,
+                         NULL,
+                         0,
+                         FALSE,
                          dependency_data->cancellable,
                          dependency_data);
             g_free (command);
@@ -236,6 +239,9 @@ dependency_batch_rpms(DependencyData *dependency_data)
                          NULL,
                          dependency_io_callback,
                          dependency_batch_install_cb,
+                         NULL,
+                         0,
+                         FALSE,
                          dependency_data->cancellable,
                          dependency_data);
             g_free (command);
@@ -322,6 +328,9 @@ dependency_soft_rpm(DependencyData *dependency_data)
                      NULL,
                      dependency_io_callback,
                      softdependency_callback,
+                     NULL,
+                     0,
+                     FALSE,
                      dependency_data->cancellable,
                      dependency_data);
         g_free (command);
@@ -357,6 +366,9 @@ dependency_single_rpm(DependencyData *dependency_data)
                      NULL,
                      dependency_io_callback,
                      dependency_callback,
+                     NULL,
+                     0,
+                     FALSE,
                      dependency_data->cancellable,
                      dependency_data);
         g_free (command);

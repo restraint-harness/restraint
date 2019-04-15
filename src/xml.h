@@ -4,6 +4,7 @@
 
 #include <libxml/tree.h>
 #include <libxml/xpath.h>
+#include <libsoup/soup.h>
 
 #define RNG_SCHEMA "/usr/share/restraint/client/job_schema.rng"
 

@@ -32,9 +32,10 @@ Source108:      xz-5.2.2.tar.gz
 Source109:      sqlite-autoconf-3080002.tar.gz
 Source110:      intltool-0.51.0.tar.gz
 Source111:      libsoup-2.48.1.tar.xz
-Source112:      libssh-0.7.3.tar.xz
+Source112:      json-c-0.13.1.tar.gz
 Source113:      cmake-3.2.3.tar.gz
 Source114:      openssl-1.0.1m.tar.gz
+Source115:      autoconf-2.65.tar.gz
 %endif
 
 BuildRoot:	%(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
@@ -46,6 +47,7 @@ BuildRequires:	perl-XML-Parser
 BuildRequires:	libselinux-devel
 BuildRequires:	glibc-devel
 BuildRequires:	make
+BuildRequires:	autoconf
 %if 0%{?rhel}%{?fedora} > 4
 BuildRequires: selinux-policy-devel
 %endif
@@ -72,7 +74,7 @@ Requires: selinux-policy
 %{?without_static:BuildRequires:  libsoup-devel}
 %{?without_static:BuildRequires:  libarchive-devel}
 %{?without_static:BuildRequires:  libxml2-devel}
-%{?without_static:BuildRequires:  libssh-devel}
+%{?without_static:BuildRequires:  json-c-devel}
 %{?without_static:BuildRequires:  openssl-devel}
 %{?without_static:BuildRequires:  libcurl-devel}
 BuildRequires:  make

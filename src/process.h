@@ -22,9 +22,9 @@
 typedef void (*ProcessTimeoutCallback) (gpointer user_data,
                                         guint64 *time_remain);
 
-typedef void (*ProcessFinishCallback)	(gint		pid_result,
-					 gboolean	localwatchdog,
-					 gpointer	user_data,
+typedef void (*ProcessFinishCallback)   (gint           pid_result,
+                                         gboolean       localwatchdog,
+                                         gpointer       user_data,
                                          GError         *error);
 
 #define RESTRAINT_PROCESS_ERROR restraint_process_error()
@@ -44,8 +44,9 @@ typedef struct {
     guint64 max_time;
     // pid of our forked process
     pid_t pid;
-    // file descriptor of our pty
-    gint fd;
+    // file descriptors of our pty
+    gint fd_out;
+    gint fd_in;
     // return code result from command
     gint pid_result;
     // id of the io handler
@@ -80,6 +81,9 @@ process_run (const gchar *command,
                       ProcessTimeoutCallback timeout_callback,
                       GIOFunc io_callback,
                       ProcessFinishCallback finish_callback,
+                      const gchar *content_input,
+                      gssize content_size,
+                      gboolean buffer,
                       GCancellable *cancellable,
                       gpointer user_data);
 //gboolean process_io_callback (GIOChannel *io, GIOCondition condition, gpointer user_data);

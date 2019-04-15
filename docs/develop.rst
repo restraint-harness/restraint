@@ -18,18 +18,23 @@ Getting Started
 ~~~~~~~~~~~~~~~
 
 Restraint is written in C. The source lives in a git repo on
-http://git.beaker-project.org along with other related projects. Let's
-create a local clone of the Restraint source::
+http://git.beaker-project.org along with other related projects. The
+following creates a local clone of the Restraint source.
 
-    $ git clone git://git.beaker-project.org/restraint
+.. code-block:: console
+
+    git clone git://git.beaker-project.org/restraint
+
+.. end
 
 Restraint uses a number of external libraries/tools, so before you can
 build Restraint you need to install the external libraries using
 ``yum-builddep restraint.spec``. Once you have installed these dependencies,
-running a ``make`` at the source directory root will compile and build
-Restraint. To also run a quick sanity check, it is a good idea to run
-the unit tests using ``make check``. The unit tests use a simple Python HTTP
-server and ``git-daemon``, so you will need to install this as well
+running a ``make all`` at the source directory root will compile and build
+restraint, restraintd, and commands. To also run a quick sanity check, it is
+a good idea to run the unit tests using ``make check``. The unit tests use a
+simple Python HTTP server and ``git-daemon``, so you will need to install
+this as well
 (``yum -y install git-daemon``).
 
 Testing Changes
@@ -41,19 +46,20 @@ the ``src/`` directory in the source files with names starting with
 ``test_``.
 
 It may also be a good idea to run a recipe by building the Restraint
-daemon and client from the modified code base. Once you have built the
-binaries using ``make``, run ``make install`` to install the Restraint
-daemon, client and other bits. Start the Restraint daemon in one
-terminal (as ``root`` user)::
+daemon and client from the modified code base. You can build the
+binaries using ``make all`` in the ``src`` directory.
 
-    # restraintd
-    Waiting for client!
+From the same directory, run the restraint client with a reference to a job.xml.
+The following shows how to initiate the restraint client to execute a recipe:
 
-From another terminal, use the Restraint client to execute a recipe::
+.. code-block:: console
 
-    # restraint --host 1=127.0.0.1:8081 --job path/to/recipe
+    restraint --host 1=127.0.0.1 --job /path/to/job.xml --restraint-path /my_development_path/restraint/src/restraintd
 
-More details can be found in :ref:`standalone`.
+.. end
+
+Developers should use the option ``--restraint-path`` to point to the development path
+of the restraintd server.  More details on this can be found in :ref:`standalone`.
 
 Submitting a Patch
 ~~~~~~~~~~~~~~~~~~
@@ -66,6 +72,11 @@ git remote as follows::
     url=git+ssh://gerrit.beaker-project.org:29418/restraint
 
 Once you’re happy with the change and the test you have written for
-it, push your local branch to Gerrit for review::
+it, push your local branch (named `myfeature` in this example) to Gerrit for review:
+
+
+.. code-block:: console
 
     git push restraint-gerrit myfeature:refs/for/master
+
+.. end

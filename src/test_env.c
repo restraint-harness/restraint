@@ -46,7 +46,7 @@ static void test_task_env_role_members_standalone(void)
   task->recipe = g_slice_new0(Recipe);
   task->params = g_list_append(task->params, &rmem);
 
-  build_env("http://localhost", task);
+  build_env("http://localhost", FALSE, task);
   g_ptr_array_foreach(task->env, (GFunc)get_env_rmembers, &rmembers);
 
   g_assert_cmpstr(rmembers, ==, "otherhost localhost");
@@ -82,7 +82,7 @@ static void test_task_env_role_members_beaker(void)
   task->recipe = g_slice_new0(Recipe);
   task->roles = roles;
 
-  build_env("http://localhost", task);
+  build_env("http://localhost", FALSE, task);
   g_ptr_array_foreach(task->env, (GFunc)get_env_rmembers, &rmembers);
 
   g_assert_cmpstr(rmembers, ==, "otherhost localhost");

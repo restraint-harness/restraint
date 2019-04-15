@@ -33,8 +33,6 @@ int main(int argc, char *argv[]) {
     SoupURI *server_uri = NULL;
     guint ret = 0;
 
-    gchar *prefix = NULL;
-    gchar *server_recipe_key = NULL;
     gchar *server_recipe = NULL;
     gchar *type = NULL;
 
@@ -58,10 +56,7 @@ int main(int argc, char *argv[]) {
         goto cleanup;
     }
 
-    prefix = getenv("HARNESS_PREFIX") ? getenv("HARNESS_PREFIX") : "";
-    server_recipe_key = g_strdup_printf ("%sRECIPE_URL", prefix);
-    server_recipe = getenv(server_recipe_key);
-    g_free(server_recipe_key);
+    server_recipe = get_recipe_url();
 
     if (!server && server_recipe) {
         server = g_strdup_printf ("%s/status", server_recipe);

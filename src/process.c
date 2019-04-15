@@ -25,6 +25,7 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <signal.h>
+#include "common.h"
 #include "process.h"
 
 GQuark restraint_process_error (void)
@@ -32,9 +33,55 @@ GQuark restraint_process_error (void)
     return g_quark_from_static_string("restraint-process-error-quark");
 }
 
-static void
-reset_signal_handlers(void);
+/*
+  A child process will inherit signal handlers
+  from the parent.  We don't want the child processes
+  to inherit handlers as it can cause strange bugs
+  in the process that is running the test.
 
+  To avoid any future problems we will reset every
+  signal handler to the default.
+
+  Signal names taken from signal(7) man page
+*/
+static void
+reset_signal_handlers(void)
+{
+    signal(SIGHUP,  SIG_DFL);
+    signal(SIGINT,  SIG_DFL);
+    signal(SIGQUIT, SIG_DFL);
+    signal(SIGILL,  SIG_DFL);
+    signal(SIGABRT, SIG_DFL);
+    signal(SIGFPE,  SIG_DFL);
+    signal(SIGSEGV, SIG_DFL);
+    signal(SIGPIPE, SIG_DFL);
+
+    signal(SIGALRM, SIG_DFL);
+    signal(SIGTERM, SIG_DFL);
+    signal(SIGUSR1, SIG_DFL);
+    signal(SIGUSR2, SIG_DFL);
+    signal(SIGCHLD, SIG_DFL);
+    signal(SIGCONT, SIG_DFL);
+    signal(SIGSTOP, SIG_DFL);
+    signal(SIGTSTP, SIG_DFL);
+    signal(SIGTTIN, SIG_DFL);
+    signal(SIGTTOU, SIG_DFL);
+
+    signal(SIGBUS,  SIG_DFL);
+    signal(SIGPOLL, SIG_DFL);
+    signal(SIGPROF, SIG_DFL);
+    signal(SIGSYS,  SIG_DFL);
+    signal(SIGTRAP, SIG_DFL);
+    signal(SIGURG,  SIG_DFL);
+    signal(SIGXCPU, SIG_DFL);
+    signal(SIGXFSZ, SIG_DFL);
+
+    signal(SIGIOT,  SIG_DFL);
+    signal(SIGSTKFLT, SIG_DFL);
+    signal(SIGIO,   SIG_DFL);
+    signal(SIGPWR,  SIG_DFL);
+    signal(SIGWINCH, SIG_DFL);
+}
 static void
 process_cancelled_cb (GCancellable *cancellable, gpointer user_data);
 
@@ -63,10 +110,14 @@ process_io_finish (gpointer user_data)
 {
     ProcessData *process_data = (ProcessData *) user_data;
 
-    // close the pty
-    if (process_data->fd != -1 ) {
-        close (process_data->fd);
-        process_data->fd = -1;
+    // close the file descriptors
+    if (process_data->fd_out != -1 ) {
+        close (process_data->fd_out);
+        process_data->fd_out = -1;
+    }
+    if (process_data->fd_in != -1 ) {
+        close (process_data->fd_in);
+        process_data->fd_in = -1;
     }
 
     // io handler is no longer active
@@ -86,12 +137,14 @@ process_io_cb (GIOChannel *io, GIOCondition condition, gpointer user_data)
 }
 
 pid_t
-restraint_fork (gint *fd,
-         gboolean use_pty)
+restraint_fork (gint *fd_out,
+                gint *fd_in,
+                gboolean use_pty)
 {
     pid_t pid = 0;
-    gint pipefd[2];
-    gint devnull;
+    gint pipefd1[2];
+    gint pipefd2[2];
+    //gint devnull;
 
     //struct termios term;
     struct winsize win = {
@@ -100,9 +153,12 @@ restraint_fork (gint *fd,
     };
 
     if (use_pty) {
-        pid = restraint_forkpty (fd, NULL, NULL, &win, reset_signal_handlers);
+        pid = restraint_forkpty (fd_out, NULL, NULL, &win, reset_signal_handlers);
     } else {
-        if (pipe(pipefd) == -1) {
+       if (pipe(pipefd1) == -1) {
+            return -1;
+       }
+       if (pipe(pipefd2) == -1) {
             return -1;
        }
        pid = fork();
@@ -112,32 +168,32 @@ restraint_fork (gint *fd,
        if (pid == 0) {
            reset_signal_handlers();
 
-           // close reading side of pipe.
-           close (pipefd[STDIN_FILENO]);
+           close (pipefd1[STDIN_FILENO]);
+           close (pipefd2[STDOUT_FILENO]);
 
-           // explicitly set /dev/null as STDIN fd
-           devnull = g_open("/dev/null", O_RDONLY, 0);
-           if (dup2(devnull, STDIN_FILENO) == -1) {
+           if (dup2(pipefd2[STDIN_FILENO], STDIN_FILENO) == -1) {
                // Handle dup2() error
                g_warning ("dup2 STDIN failed: %s\n", g_strerror (errno));
            }
-           g_close(devnull, NULL);
+           close (pipefd2[STDIN_FILENO]);
 
            // Dupe both STDOUT and STDERR to write side of pipe
-           if (dup2(pipefd[STDOUT_FILENO], STDOUT_FILENO) == -1) {
+           if (dup2(pipefd1[STDOUT_FILENO], STDOUT_FILENO) == -1) {
                /* Handle dup2() error */
                g_warning ("dup2 STDOUT failed: %s\n", g_strerror (errno));
            }
-           if (dup2(pipefd[STDOUT_FILENO], STDERR_FILENO) == -1) {
+           if (dup2(pipefd1[STDOUT_FILENO], STDERR_FILENO) == -1) {
                /* Handle dup2() error */
                g_warning ("dup2 STDERR failed: %s\n", g_strerror (errno));
            }
            // close the duped pipe
-           close (pipefd[STDOUT_FILENO]);
+           close (pipefd1[STDOUT_FILENO]);
        } else {
            // close writing side of pipe.
-           close (pipefd[STDOUT_FILENO]);
-           *fd = pipefd[STDIN_FILENO];
+           close (pipefd1[STDOUT_FILENO]);
+           close (pipefd2[STDIN_FILENO]);
+           *fd_out = pipefd1[STDIN_FILENO];
+           *fd_in = pipefd2[STDOUT_FILENO];
        }
     }
 
@@ -153,6 +209,9 @@ process_run (const gchar *command,
              ProcessTimeoutCallback timeout_callback,
              GIOFunc io_callback,
              ProcessFinishCallback finish_callback,
+             const gchar *content_input,
+             gssize content_size,
+             gboolean buffer,
              GCancellable *cancellable,
              gpointer user_data)
 {
@@ -169,13 +228,14 @@ process_run (const gchar *command,
     process_data->io = NULL;
     process_data->cancellable = cancellable;
     guint64 timeout;
+    gssize results_len;
 
     if (fflush (stdout) != 0)
         g_warning ("Failed to flush stdout: %s\n", g_strerror (errno));
     if (fflush (stderr) != 0)
         g_warning ("Failed to flush stderr: %s\n", g_strerror (errno));
 
-    process_data->pid = restraint_fork (&process_data->fd, use_pty);
+    process_data->pid = restraint_fork (&process_data->fd_out, &process_data->fd_in, use_pty);
     if (process_data->pid < 0) {
         /* Failed to fork */
         g_set_error (&process_data->error, RESTRAINT_PROCESS_ERROR,
@@ -195,25 +255,25 @@ process_run (const gchar *command,
         if (process_data->path && (chdir (process_data->path) == -1)) {
             /* command_path was supplied and we failed to chdir to it. */
             g_warning ("Failed to chdir() to %s: %s\n", process_data->path, g_strerror (errno));
-            exit (1);
+            exit (INVALID_COMMAND_PATH);
         }
         if (envp)
             environ = (gchar **) envp;
 
-        // Print the command being executed.
-        gchar *pcommand = g_strjoinv (" ", (gchar **) process_data->command);
-        g_print ("use_pty:%s %s\n", use_pty ? "TRUE" : "FALSE", pcommand);
-        g_free (pcommand);
-
         /* Spawn the command */
         if (execvp (*process_data->command, (gchar **) process_data->command) == -1) {
-            g_warning ("Failed to exec() %s, %s error:%s\n",
+            g_error ("Failed to exec() %s, %s error:%s\n",
                        *process_data->command,
                        process_data->path, g_strerror (errno));
-            exit (1);
+            exit (SPAWN_COMMAND_FAILED);
         }
     }
     /* Parent process. */
+
+    // Print the command being executed.
+    gchar *pcommand = g_strjoinv (" ", (gchar **) process_data->command);
+    g_message ("use_pty:%s %s\n", use_pty ? "TRUE" : "FALSE", pcommand);
+    g_free (pcommand);
 
     // If we get the cancel signal kill any running process
     if (process_data->cancellable) {
@@ -224,8 +284,11 @@ process_run (const gchar *command,
     }
 
     // close file descriptors on exec.  Should prevent leaking fd's to child processes.
-    if (fcntl (process_data->fd, F_SETFD, FD_CLOEXEC) < 0) {
-        g_warning("Failed to set close on exec");
+    if (fcntl (process_data->fd_out, F_SETFD, FD_CLOEXEC) < 0) {
+        g_warning("Failed to set close on exec for fd_out");
+    }
+    if (fcntl (process_data->fd_in, F_SETFD, FD_CLOEXEC) < 0) {
+        g_warning("Failed to set close on exec for fd_in");
     }
 
     // Localwatchdog handler
@@ -242,14 +305,23 @@ process_run (const gchar *command,
                                                                NULL);
     }
 
+    if (content_size > 0) {
+        results_len = write(process_data->fd_in, content_input, content_size);
+        if (results_len != content_size) {
+            g_warning("Error writing to STDIN: %s", g_strerror (errno));
+        }
+    }
+
+    close(process_data->fd_in);
+
     // IO handler
     if (io_callback != NULL) {
-        GIOChannel *io = g_io_channel_unix_new (process_data->fd);
+        GIOChannel *io = g_io_channel_unix_new (process_data->fd_out);
         g_io_channel_set_flags (io, G_IO_FLAG_NONBLOCK, NULL);
         // Set Encoding to NULL to keep g_io_channel from trying to decode it.
         g_io_channel_set_encoding (io, NULL, NULL);
-        // Disable Buffering
-        g_io_channel_set_buffered (io, FALSE);
+        // Confgure Buffering
+        g_io_channel_set_buffered (io, buffer);
 
         process_data->io = io;
         process_data->io_handler_id = g_io_add_watch_full (io,
@@ -274,9 +346,13 @@ process_pid_callback (GPid pid, gint status, gpointer user_data)
 
     process_data->pid_result = status;
     process_data->pid = 0;
-    if (process_data->fd != -1 ) {
-        close (process_data->fd);
-        process_data->fd = -1;
+    if (process_data->fd_out != -1 ) {
+        close (process_data->fd_out);
+        process_data->fd_out = -1;
+    }
+    if (process_data->fd_in != -1 ) {
+        close (process_data->fd_in);
+        process_data->fd_in = -1;
     }
     if (process_data->finish_handler_id == 0) {
         process_data->finish_handler_id = g_idle_add (process_pid_finish, process_data);
@@ -394,54 +470,4 @@ process_cancelled_cb (GCancellable *cancellable, gpointer user_data)
         g_source_remove(process_data->timeout_handler_id);
         process_data->timeout_handler_id = 0;
     }
-}
-
-/*
-  A child process will inherit signal handlers
-  from the parent.  We don't want the child processes
-  to inherit handlers as it can cause strange bugs
-  in the process that is running the test.
-
-  To avoid any future problems we will reset every
-  signal handler to the default.
-
-  Signal names taken from signal(7) man page
-*/
-static void
-reset_signal_handlers(void)
-{
-    signal(SIGHUP,  SIG_DFL);
-    signal(SIGINT,  SIG_DFL);
-    signal(SIGQUIT, SIG_DFL);
-    signal(SIGILL,  SIG_DFL);
-    signal(SIGABRT, SIG_DFL);
-    signal(SIGFPE,  SIG_DFL);
-    signal(SIGSEGV, SIG_DFL);
-    signal(SIGPIPE, SIG_DFL);
-
-    signal(SIGALRM, SIG_DFL);
-    signal(SIGTERM, SIG_DFL);
-    signal(SIGUSR1, SIG_DFL);
-    signal(SIGUSR2, SIG_DFL);
-    signal(SIGCHLD, SIG_DFL);
-    signal(SIGCONT, SIG_DFL);
-    signal(SIGSTOP, SIG_DFL);
-    signal(SIGTSTP, SIG_DFL);
-    signal(SIGTTIN, SIG_DFL);
-    signal(SIGTTOU, SIG_DFL);
-
-    signal(SIGBUS,  SIG_DFL);
-    signal(SIGPOLL, SIG_DFL);
-    signal(SIGPROF, SIG_DFL);
-    signal(SIGSYS,  SIG_DFL);
-    signal(SIGTRAP, SIG_DFL);
-    signal(SIGURG,  SIG_DFL);
-    signal(SIGXCPU, SIG_DFL);
-    signal(SIGXFSZ, SIG_DFL);
-
-    signal(SIGIOT,  SIG_DFL);
-    signal(SIGSTKFLT, SIG_DFL);
-    signal(SIGIO,   SIG_DFL);
-    signal(SIGPWR,  SIG_DFL);
-    signal(SIGWINCH, SIG_DFL);
 }

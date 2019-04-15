@@ -62,22 +62,24 @@ restraint
 
 Used for stand-alone execution.
 
-Use the restraint command to run a job on a remote test machine running
-restraintd. You can run jobs on the local machine but it is not recommended
-since some tasks reboot the system. Hosts are tied to recipe IDs inside the
-job XML.
+Use the restraint command to spawn a restraintd server process to run a job on a
+remote test machine.  You can run jobs on the local machine but it is not
+recommended since some tasks reboot the system. Hosts are tied to recipe IDs
+inside the job XML.
 
-::
+.. code-block:: console
 
- restraint --host 1=addressOfMyTestSystem.example.com:8081 --job /path/to/simple_job.xml
+ restraint --host 1=addressOfMyTestSystem.example.com --job /path/to/simple_job.xml --restraint-path /home/userid/restraint/src/restraintd
+
+.. end
 
 Restraint will look for the next available directory to store the results in.
-In the above example it will see if the directory simple_job.01 exists. If
+In the above example, it will see if the directory simple_job.01 exists. If
 it does (because of a previous run) it will then look for simple_job.02. It
 will continue to increment the number until it finds a directory that doesn't
 exist.
 
-By default Restraint will report the start and stop of each task run like this::
+By default, Restraint will report the start and stop of each task run like this::
 
  Using ./simple_job.07 for job run
  * Fetching recipe: http://192.168.1.198:8000/recipes/07/
@@ -90,8 +92,13 @@ By default Restraint will report the start and stop of each task run like this::
  *  T:   3 [restraint/vmstat                                ] Running
  *  T:   3 [restraint/vmstat                                ] Completed
 
-You can pass -v for more verbose output which will show every task reported.
-If you pass another -v you will get the output from the tasks written to your
+The argument ``--restraint-path`` passes the directory from which to run
+`restraintd` from.  By default, the installed image is executed but it is
+best to provide a path where your restraint repo is pulled and
+``restraintd`` image is built.
+
+You can pass ``-v`` for more verbose output which will show every task reported.
+If you pass another ``-v`` you will get the output from the tasks written to your
 screen as well.
 
 All of this information is also stored in the job.xml which in this case is

@@ -74,7 +74,6 @@ void restraint_free_appdata(AppData *app_data)
 
     g_free(app_data->server);
     g_free(app_data->result_msg);
-    g_free(app_data->prefix);
     g_free(app_data->server_recipe);
     g_free(app_data->task_id);
 
@@ -227,24 +226,13 @@ static gboolean is_compat_mode(int argc, char *argv[])
 
 gboolean parse_arguments(AppData *app_data, int argc, char *argv[])
 {
-    gchar *server_recipe_key = NULL;
-    gchar *task_id_key = NULL;
-
     app_data->rhts_compat = is_compat_mode(argc, argv);
 
     app_data->filename = g_strdup("resultoutputfile.log");
     app_data->outputfile = g_strdup(getenv("OUTPUTFILE"));
     app_data->disable_plugin = g_ptr_array_new_with_free_func (g_free);
-    app_data->prefix = g_strdup(
-            getenv("HARNESS_PREFIX") ? getenv("HARNESS_PREFIX") : ""
-    );
-    server_recipe_key = g_strdup_printf ("%sRECIPE_URL", app_data->prefix);
-    app_data->server_recipe = g_strdup(getenv(server_recipe_key));
-    task_id_key = g_strdup_printf ("%sTASKID", app_data->prefix);
-    app_data->task_id = g_strdup(getenv(task_id_key));
-
-    g_free(task_id_key);
-    g_free(server_recipe_key);
+    app_data->server_recipe = g_strdup(get_recipe_url());
+    app_data->task_id = g_strdup(get_taskid());
 
     if (app_data->server_recipe && app_data->task_id) {
         app_data->server = g_strdup_printf ("%s/tasks/%s/results/",

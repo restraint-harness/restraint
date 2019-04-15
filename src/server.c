@@ -18,14 +18,17 @@
 #include <glib.h>
 #include <glib/gstdio.h>
 #include <glib-unix.h>
+#include <gio/gunixinputstream.h>
 #include <libsoup/soup.h>
 #include <stdlib.h>
 #include <string.h>
 #include <fcntl.h>
+#include <sys/prctl.h>
 #include <sys/socket.h>
 #include "recipe.h"
 #include "task.h"
 #include "errors.h"
+#include "common.h"
 #include "config.h"
 #include "process.h"
 #include "message.h"
@@ -33,6 +36,7 @@
 
 SoupSession *soup_session;
 GMainLoop *loop;
+char *strsignal(int sig);
 
 static void
 copy_header (SoupURI *uri, const char *name, const char *value, gpointer dest_headers)
@@ -152,19 +156,17 @@ server_io_callback (GIOChannel *io, GIOCondition condition, gpointer user_data) 
         //switch (g_io_channel_read_line_string(io, s, NULL, &tmp_error)) {
         switch (g_io_channel_read_chars(io, buf, 10000, &bytes_read, &tmp_error)) {
           case G_IO_STATUS_NORMAL:
-            if (fwrite(buf, sizeof(gchar), bytes_read, stdout) != bytes_read)
-                g_warning ("failed to write message");
+            g_message ("%s", buf);
             /* Push data to our connections.. */
             connections_write(app_data, LOG_PATH_HARNESS, buf, bytes_read);
             return TRUE;
 
           case G_IO_STATUS_ERROR:
-             g_printerr("IO error: %s\n", tmp_error->message);
+             g_error("IO error: %s\n", tmp_error->message);
              g_clear_error (&tmp_error);
              return FALSE;
 
           case G_IO_STATUS_EOF:
-             g_print("finished!\n");
              return FALSE;
 
           case G_IO_STATUS_AGAIN:
@@ -290,6 +292,9 @@ server_msg_complete (SoupSession *session, SoupMessage *server_msg, gpointer use
                          NULL,
                          server_io_callback,
                          plugin_finish_callback,
+                         NULL,
+                         0,
+                         FALSE,
                          app_data->cancellable,
                          client_data);
             g_free (command);
@@ -477,7 +482,7 @@ client_disconnected (SoupMessage *client_msg, gpointer data)
     AppData *app_data = (AppData *) data;
     ClientData *client_data = (ClientData *) app_data->message_data;
 
-    g_print ("[%p] Client disconnected\n", client_msg);
+    g_message ("[%p] Client disconnected\n", client_msg);
     if (app_data->finished_handler_id != 0) {
         g_signal_handler_disconnect (client_msg, app_data->finished_handler_id);
         app_data->finished_handler_id = 0;
@@ -509,53 +514,23 @@ client_cb (GIOChannel *io, GIOCondition condition, gpointer user_data)
 }
 
 static void
-server_control_callback (SoupServer *server, SoupMessage *client_msg,
-                     const char *path, GHashTable *query,
-                     SoupClientContext *context, gpointer data)
+read_job_xml (AppData *app_data, SoupServer *soup_server)
 {
-    AppData *app_data = (AppData *) data;
 
-    // Only accept POST requests for running recipes
-    if (client_msg->method != SOUP_METHOD_POST ) {
-        soup_message_set_status_full (client_msg, SOUP_STATUS_BAD_REQUEST, "only POST accepted");
-        return;
-    }
+    SoupMessage *client_msg = soup_message_new ("POST", "http://localhost");
+    const gchar *path = "/run";
 
-    if (app_data->state != RECIPE_IDLE) {
-        soup_message_set_status_full (client_msg, SOUP_STATUS_BAD_REQUEST, "Already running a recipe.");
-        return;
-    }
-
-    // Attempt to run or continue a recipe if requested.
-    if (g_str_has_suffix (path, "/run")) {
-        restraint_config_trunc (app_data->config_file, NULL);
-    }
-
-    // Monitor the socket, if the client disconnects
-    // it sets G_IO_IN, without this we won't notice
-    // the client going away until we try to write to it
-    GSocket *socket = soup_client_context_get_gsocket (context);
-    gint fd = g_socket_get_fd (socket);
-    app_data->io_chan = g_io_channel_unix_new(fd);
-    app_data->io_handler_id = g_io_add_watch (app_data->io_chan,
-                    G_IO_IN,
-                    client_cb,
-                    app_data);
-
-    soup_message_body_set_accumulate (client_msg->response_body, FALSE);
     // Record our client data..
     ClientData *client_data = g_slice_new0 (ClientData);
     client_data->path = path;
     client_data->client_msg = client_msg;
-    client_data->server = server;
+    client_data->server = soup_server;
     app_data->message_data = client_data;
-    app_data->queue_message = (QueueMessage) restraint_append_message;
+    app_data->queue_message = (QueueMessage) restraint_stdout_message;
     app_data->close_message = (CloseMessage) restraint_close_message;
     app_data->state = RECIPE_FETCHING;
 
-    GInputStream *stream = g_memory_input_stream_new_from_data (client_msg->request_body->data,
-                                                                client_msg->request_body->length,
-                                                                NULL);
+    GInputStream *stream = g_unix_input_stream_new (0, FALSE);
     // parse the xml from the stream
     restraint_recipe_parse_stream (stream, app_data);
 
@@ -564,24 +539,6 @@ server_control_callback (SoupServer *server, SoupMessage *client_msg,
                                                   recipe_handler,
                                                   app_data,
                                                   recipe_handler_finish);
-
-    // If the client disconnects we stop running the recipe.
-    app_data->finished_handler_id = g_signal_connect (client_msg,
-                                                      "finished",
-                                                      G_CALLBACK (client_disconnected),
-                                                      app_data);
-
-    soup_message_headers_set_encoding (client_msg->response_headers,
-                                       SOUP_ENCODING_EOF);
-    soup_message_headers_append (client_msg->response_headers,
-                                 "Content-Type", "multipart/x-mixed-replace; boundary=--cut-here");
-    soup_message_headers_append (client_msg->response_headers,
-                                 "rstrnt-path", "/start");
-
-    // pause message until we start the recipe.
-    // if anything goes wrong we set the status to BAD_REQUEST and close
-    // the connection
-    soup_server_pause_message (server, client_msg);
 }
 
 gboolean
@@ -593,9 +550,8 @@ quit_loop_handler (gpointer user_data)
 }
 
 static gboolean
-on_signal_term (gpointer user_data)
+on_signal_term (AppData *app_data)
 {
-  AppData *app_data = (AppData *) user_data;
   if (app_data->close_message && app_data->message_data) {
       app_data->close_message(app_data->message_data);
   }
@@ -604,24 +560,55 @@ on_signal_term (gpointer user_data)
                    quit_loop_handler,
                    NULL,
                    NULL);
-  return FALSE;
+  return G_SOURCE_REMOVE;
+}
+
+static gboolean
+on_sighup_term (gpointer user_data)
+{
+  AppData *app_data = (AppData *) user_data;
+  app_data->last_signal = SIGHUP;
+  return(on_signal_term(app_data));
+}
+
+static gboolean
+on_sigterm_term (gpointer user_data)
+{
+  AppData *app_data = (AppData *) user_data;
+  app_data->last_signal = SIGTERM;
+  return(on_signal_term(app_data));
+}
+
+static gboolean
+on_sigint_term (gpointer user_data)
+{
+  AppData *app_data = (AppData *) user_data;
+  app_data->last_signal = SIGINT;
+  return(on_signal_term(app_data));
+}
+
+static GLogWriterOutput
+null_log_writer (GLogLevelFlags   log_level,
+                 const GLogField *fields,
+                 gsize            n_fields,
+                 gpointer         user_data)
+{
+  return G_LOG_WRITER_HANDLED;
 }
 
 int main(int argc, char *argv[]) {
   AppData *app_data = g_slice_new0(AppData);
   app_data->cancellable = g_cancellable_new ();
   app_data->aborted = ABORTED_NONE;
-  gint port = 8081;
-  gint ipv6_enabled = FALSE;
-  gint ipv4_enabled = FALSE;
   app_data->config_file = NULL;
-  gchar *config_port = g_strdup("config.conf");
+  const gchar *config = "config.conf";
   SoupServer *soup_server = NULL;
   GError *error = NULL;
+  GSList *uris;
 
   GOptionEntry entries [] = {
-        { "port", 'p', 0, G_OPTION_ARG_INT, &port,
-            "Use the following config file", "CONFIGFILE" },
+        { "stdin", 's', 0, G_OPTION_ARG_NONE, &app_data->stdin,
+            "Run from STDIN/STDOUT", NULL},
         { NULL }
   };
   GOptionContext *context = g_option_context_new(NULL);
@@ -632,25 +619,24 @@ int main(int argc, char *argv[]) {
   g_option_context_free(context);
 
   if (!parse_succeeded) {
-    exit (1);
+    exit (PARSE_ARGS_FAILED);
   }
 
-  // port option passed in.
-  if (port != 8081) {
-      g_free(config_port);
-      config_port = g_strdup_printf ("config_%d.conf", port);
+  if (app_data->stdin) {
+      g_set_printerr_handler (NULL);
+      g_log_set_writer_func (null_log_writer, NULL, NULL);
+  } else {
+      app_data->config_file = g_build_filename (VAR_LIB_PATH, config, NULL);
+      app_data->recipe_url = restraint_config_get_string (app_data->config_file,
+                                                          "restraint",
+                                                          "recipe_url", &error);
   }
-  app_data->restraint_url = g_strdup_printf ("http://localhost:%d", port);
-  app_data->config_file = g_build_filename (VAR_LIB_PATH, config_port, NULL);
 
-  app_data->recipe_url = restraint_config_get_string (app_data->config_file,
-                                                      "restraint",
-                                                      "recipe_url", &error);
   if (error) {
-      g_printerr ("%s [%s, %d]\n", error->message,
+      g_error ("%s [%s, %d]\n", error->message,
                   g_quark_to_string (error->domain), error->code);
       g_clear_error(&error);
-      exit (1);
+      exit (FAILED_GET_CONFIG_FILE);
   }
 
   if (app_data->recipe_url) {
@@ -669,37 +655,43 @@ int main(int argc, char *argv[]) {
   // Define a soup server
   soup_server = soup_server_new(SOUP_SERVER_SERVER_HEADER, "restraint ", NULL);
 
-  // Add the handlers
-  soup_server_add_handler (soup_server, "/run",
-                           server_control_callback, app_data, NULL);
-  soup_server_add_handler (soup_server, "/continue",
-                           server_control_callback, app_data, NULL);
   soup_server_add_handler (soup_server, "/recipes",
                            server_recipe_callback, app_data, NULL);
 
   // Tell our soup server to listen on any interface
   // This includes ipv4 and ipv6 if available.
-  ipv6_enabled = soup_server_listen_local( soup_server, port, SOUP_SERVER_LISTEN_IPV6_ONLY, NULL);
-  ipv4_enabled = soup_server_listen_local( soup_server, port, SOUP_SERVER_LISTEN_IPV4_ONLY, NULL);
-  if (ipv6_enabled) {
-      g_print ("Server listening on port %d for ipV6\n", port);
+  if (!soup_server_listen_local( soup_server, 0, 0, NULL)) {
+      g_error ("Unable to listen on either ipV4 or ipV6 protocols, exiting...\n");
+      exit (FAILED_LISTEN);
   }
-  if (ipv4_enabled) {
-      g_print ("Server listening on port %d for ipV4\n", port);
-  }
-  if (!ipv4_enabled && !ipv6_enabled) {
-      g_printerr ("Unable to listen on either ipV4 or ipV6 protocols, exiting...\n");
-      exit (1);
+  uris = soup_server_get_uris (soup_server);
+  SoupURI *uri = uris->data;
+  app_data->restraint_url = g_strdup_printf ("http://localhost:%d", uri->port);
+  g_print ("Listening on %s\n", app_data->restraint_url);
+  g_slist_free (uris);
+
+  g_unix_signal_add (SIGINT, on_sigint_term, app_data);
+  g_unix_signal_add (SIGTERM, on_sigterm_term, app_data);
+  g_unix_signal_add (SIGHUP, on_sighup_term, app_data);
+  int r = prctl(PR_SET_PDEATHSIG, SIGHUP);
+  if (r == -1) {
+     g_error ("Unable to set Parent Death Signal to SIGHUP: %s\n", g_strerror (errno));
+     exit (FAILED_SET_PDEATHSIG);
   }
 
-  g_unix_signal_add (SIGINT, on_signal_term, app_data);
-  g_unix_signal_add (SIGTERM, on_signal_term, app_data);
+  // Read job.xml from STDIN
+  if (app_data->stdin) {
+      read_job_xml(app_data, soup_server);
+  }
 
   /* enter mainloop */
-  g_print ("Waiting for client!\n");
-
   loop = g_main_loop_new (NULL, FALSE);
   g_main_loop_run (loop);
+
+  if (app_data->last_signal != 0) {
+      g_error("restraintd quit on received signal %s\n",
+              strsignal(app_data->last_signal));
+  }
 
   soup_session_abort(soup_session);
   soup_session_remove_feature_by_type (soup_session, SOUP_TYPE_CONTENT_SNIFFER);
@@ -710,7 +702,6 @@ int main(int argc, char *argv[]) {
   g_object_unref(soup_server);
 
   restraint_free_app_data(app_data);
-  g_free(config_port);
 
   g_main_loop_unref(loop);
 

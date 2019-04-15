@@ -72,29 +72,37 @@ Here is an example where we run three tests directly from git::
    </recipeSet>
  </job>
 
-Tell Restraint to run a job::
+Tell Restraint client to run a job:
 
- % restraint --job /path/to/job.xml
+.. code-block:: console
 
-You probably don't want to run restraintd on the machine you use for day to day
+ restraint --job /path/to/job.xml
+
+.. end
+
+You probably don't want to run the restraintd server on the machine you use for day to day
 activity. Some tests can be destructive or just make unfriendly changes to your
-system. Restraint allows you to run tasks on a remote system. This means you
+system. Restraint client allows you to run tasks on a remote system. This means you
 can have the task git repo on your development workstation and verify the
 results on your test system. In order for this to work your git repo and the
 recipe XML need to be accessible to your test system. Be sure to have the
 restraint-client package installed on the machine you will be running the
-restraint command from
+restraint client command from
 
-Here is an example::
+Here is an example:
 
- % restraint --host 1=addressOfMyTestSystem.example.com:8081 --job /path/to/job.xml
+.. code-block:: console
 
-This will connect to restraintd running on addressOfMyTestSystem.example.com
-and tell it to run the recipe with id="1" from this machine. Also remember that
-the tasks which are referenced inside of the recipe need to be accessible a
-well. Here is the output::
+    restraint --host 1=addressOfMyTestSystem.example.com --job /path/to/job.xml --restraint-path /home/userid/restraint/src/restraintd -v
 
- restraint --host 1=addressOfRemoteSystem:8081 --job simple_job.xml -v
+.. end
+
+This will spawn the restraintd server from the path specified in ``--restraint-path``
+on host addressOfMyTestSystem.example.com and tell it to run the recipe with id="1" from
+this machine. Also remember that the tasks which are referenced inside of the recipe
+need to be accessible a well. Here is the output::
+
+ restraint --host 1=addressOfRemoteSystem --job simple_job.xml --restraint-path /home/userid/restraint/src/restraintd -v
  Using ./simple_job.07 for job run
  * Fetching recipe: http://192.168.1.198:8000/recipes/07/
  * Parsing recipe
@@ -115,9 +123,13 @@ well. Here is the output::
 All results will be stored in the job run directory which is 'simple_job.07'
 for this run. In this directory you will find 'job.xml' which has all the
 results and references to all the task logs. You can convert this into HTML
-with the following command::
+with the following command:
 
- % xsltproc job2html.xml simple_job.07/job.xml >simple_job.07/index.html
+.. code-block:: console
+
+  xsltproc job2html.xml simple_job.07/job.xml >simple_job.07/index.html
+
+.. end
 
 ``job2html.xml`` is found in Restraint's ``client`` directory.
 
@@ -157,11 +169,27 @@ This will reserve a ppc64 system running Fedora20. The /distribution/reservesys
 task will email the submitter of the job when run so you know the system is
 available. By default the reservesys task will give you access to the system
 for 24 hours, after that the external watchdog will reclaim the system. You can
-extend it using extendtesttime.sh on the system. Finally It will also run a
-second instance of restraintd on port 8082 which you can then connect to with
-the Restraint client running on your developer machine.::
+extend it using extendtesttime.sh on the system.
 
- % restraint --host 1=FQDN.example.com:8082 --job simple_job.xml
+You can spawn a second instance of restraintd server using the client command below.  It will
+generate an instance with a different port than the static port used by beaker.
+
+.. code-block:: console
+
+ restraint --host 1=FQDN.example.com --job simple_job.xml --restraint-path /home/userid/restraint/src/restraintd -v
+
+.. end
+
+If you want to run restraint commands such as ``rstrnt-adjust-watchdog nn`` or
+``rstrnt-abort`` against this test set-up, you must first export the environment
+variables which includes the dynamically created communication port.  To do this, run
+the following:
+
+.. code-block:: console
+
+ export $(cat /etc/profile.d/rstrnt-commands-env.sh)
+
+.. end
 
 If the task you are developing doesn't work as expected you can make changes
 and try again. Just remember to push your changes to git, the system under test

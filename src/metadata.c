@@ -551,7 +551,7 @@ gboolean restraint_get_metadata(char *path, char *osmajor, MetaData **metadata,
 
         process_run(command, NULL, path, FALSE, 0,
                     NULL, mktinfo_io_callback, mktinfo_cb,
-                    cancellable, mtdata);
+                    NULL, 0, FALSE, cancellable, mtdata);
     }
 
     g_free (testinfo_file);

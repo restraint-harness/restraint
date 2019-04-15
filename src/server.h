@@ -53,6 +53,8 @@ typedef struct {
   GIOChannel *io_chan;
   StateAborted aborted;
   guint fetch_retries;
+  gboolean stdin;
+  guint last_signal;
 } AppData;
 
 void connections_write (AppData *app_data, const gchar *path,

@@ -15,9 +15,38 @@
     along with Restraint.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include <glib.h>
+#include <glib/gstdio.h>
 
 #include "env.h"
 #include "param.h"
+
+/*
+ * update_env_script()
+ *
+ * When restraintd paired with client, the environment variables
+ * RECIPE_URL and TASKID need to be put somewhere if the user
+ * wants to run the commands which work with the client.
+ * If user wants to run commands in this case, they should first do:
+ *    export $(cat /etc/profile.d/rstrnt-commands-env.sh)
+ * to acquire the current environment variables.
+ */
+static void update_env_script(gchar *prefix, gchar *restraint_url,
+                              gchar *recipe_id, gchar *task_id)
+{
+    FILE *env_file;
+
+    env_file = g_fopen(CMD_ENV_FILE, "w");
+
+    if (env_file == NULL) {
+        return;
+    }
+
+    g_fprintf(env_file, "HARNESS_PREFIX=%s\n", prefix);
+    g_fprintf(env_file, "%sURL=%s\n", ENV_PREFIX, restraint_url);
+    g_fprintf(env_file, "%sRECIPE_URL=%s/recipes/%s\n", ENV_PREFIX, restraint_url, recipe_id);
+    g_fprintf(env_file, "%sTASKID=%s\n", ENV_PREFIX, task_id);
+    fclose(env_file);
+}
 
 static void get_recipe_members(GSList **hosts, GList *rolehosts)
 {
@@ -71,7 +100,7 @@ static void build_param_var(Param *param, GPtrArray *env) {
     g_ptr_array_add(env, g_strdup_printf("%s=%s", param->name, param->value));
 }
 
-void build_env(gchar *restraint_url, Task *task) {
+void build_env(gchar *restraint_url, gboolean stdin, Task *task) {
     GPtrArray *env = g_ptr_array_new_with_free_func (g_free);
 
     if (task->metadata != NULL) {
@@ -148,7 +177,7 @@ void build_env(gchar *restraint_url, Task *task) {
     g_list_foreach(task->recipe->params, (GFunc) build_param_var, env);
     // Override with task level params
     g_list_foreach(task->params, (GFunc) build_param_var, env);
-    // Leave four NULL slots for PLUGIN varaibles.
+    // Leave four NULL slots for PLUGIN variables.
     g_ptr_array_add(env, NULL);
     g_ptr_array_add(env, NULL);
     g_ptr_array_add(env, NULL);
@@ -156,4 +185,9 @@ void build_env(gchar *restraint_url, Task *task) {
     // This terminates the array
     g_ptr_array_add(env, NULL);
     task->env = env;
+    // When restraintd paired with test client, environment variables needs to be made
+    // available to user who wants to run the commands against the client.
+    if (stdin) {
+        update_env_script(ENV_PREFIX, restraint_url, task->recipe->recipe_id, task->task_id);
+    }
 }

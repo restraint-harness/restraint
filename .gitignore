@@ -20,8 +20,10 @@
 /third-party/sqlite-autoconf-3080002/
 /third-party/zlib-1.2.11.tar.gz
 /third-party/zlib-1.2.11/
-/third-party/libssh-0.7.3.tar.xz
-/third-party/libssh-0.7.3
+/third-party/autoconf-2.65.tar.gz
+/third-party/autoconf-2.65/
+/third-party/json-c-0.13.1.tar.gz
+/third-party/json-c-0.13.1/
 /third-party/cmake-3.2.3.tar.gz
 /third-party/cmake-3.2.3
 /third-party/openssl-1.0.1m.tar.gz

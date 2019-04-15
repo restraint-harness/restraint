@@ -9,10 +9,11 @@ LIBARCHIVE = libarchive-3.2.1
 XZ = xz-5.2.2
 LIBSOUP = libsoup-2.48.1
 CMAKE = cmake-3.2.3
-LIBSSH = libssh-0.7.3
 OPENSSL = openssl-1.0.1m
 SQLITE = sqlite-autoconf-3080002
 INTLTOOL = intltool-0.51.0
+LIBJSONC = json-c-0.13.1
+AUTOCONF = autoconf-2.65
 
 arch := $(shell uname -m)
 
@@ -44,7 +45,8 @@ all: \
     tree/lib/pkgconfig/libsoup-2.4.pc \
     tree/bin/cmake \
     tree/lib/pkgconfig/openssl.pc \
-    tree/lib/pkgconfig/libssh.pc 
+    tree/bin/autoheader \
+    tree/lib/pkgconfig/libjson-c.pc
 
 tree/lib/pkgconfig/zlib.pc: $(ZLIB)
 	( cd $(ZLIB) && ./configure --prefix=$(CURDIR)/tree --static )
@@ -57,10 +59,15 @@ tree/bin/cmake: $(CMAKE) $(CMAKE)/.patches-done
 	$(MAKE) -C $(CMAKE) PREFIX=$(CURDIR)/tree install
 	touch $@
 
-tree/lib/pkgconfig/libssh.pc: $(LIBSSH) $(LIBSSH)/.patches-done tree/bin/cmake tree/lib/pkgconfig/openssl.pc tree/lib/pkgconfig/zlib.pc
-	( mkdir -p $(LIBSSH)/build && cd $(LIBSSH)/build && PATH=$(CURDIR)/tree/bin:$(CURDIR)/tree:$(PATH) PKG_CONFIG_PATH=../tree/lib/pkgconfig cmake -DCMAKE_INSTALL_PREFIX=$(CURDIR)/tree -DWITH_STATIC_LIB=ON -DWITHOUT_SHARED_LIB=ON -DWITH_GSSAPI=OFF -DOPENSSL_ROOT_DIR=$(CURDIR)/tree -DZLIB_ROOT_DIR=$(CURDIR)/tree .. )
-	$(MAKE) -C $(LIBSSH)/build
-	$(MAKE) -C $(LIBSSH)/build install
+tree/bin/autoheader: $(AUTOCONF)
+	( cd $(AUTOCONF) && ./configure --prefix=$(CURDIR)/tree )
+	$(MAKE) -C $(AUTOCONF)
+	$(MAKE) -C $(AUTOCONF) install
+
+tree/lib/pkgconfig/libjson-c.pc: $(AUTOCONF) $(LIBJSONC)
+	( cd $(LIBJSONC) && ./configure --prefix=$(CURDIR)/tree --enable-shared=no )
+	( PATH=$(CURDIR)/tree/bin:$(PATH) $(MAKE) -C $(LIBJSONC) )
+	$(MAKE) -C $(LIBJSONC) install
 
 tree/lib/pkgconfig/openssl.pc: $(OPENSSL)
     ifeq ("$(arch)", "ppc64")
@@ -189,9 +196,13 @@ TAR_BALLS += $(LIBSOUP).tar.xz
 $(LIBSOUP).tar.xz:
 	curl -f -L -O http://ftp.gnome.org/pub/GNOME/sources/libsoup/2.48/$@
 
-TAR_BALLS += $(LIBSSH).tar.xz
-$(LIBSSH).tar.xz:
-	curl -f -L -O https://git.libssh.org/projects/libssh.git/snapshot/$@
+TAR_BALLS += $(AUTOCONF).tar.gz
+$(AUTOCONF).tar.gz:
+	curl -f -L -O http://ftp.gnu.org/gnu/autoconf/$@
+
+TAR_BALLS += $(LIBJSONC).tar.gz
+$(LIBJSONC).tar.gz:
+	curl -f -L -O https://s3.amazonaws.com/json-c_releases/releases/$@
 
 TAR_BALLS += $(OPENSSL).tar.gz
 $(OPENSSL).tar.gz:
@@ -262,11 +273,6 @@ $(LIBXML2)/.patches-done: $(LIBXML2)
 	patch -d$(LIBXML2) -p1 <libxml2_add_ppc64le.patch
 	touch $@
 
-$(LIBSSH)/.patches-done: $(LIBSSH)
-	patch -d$(LIBSSH) -p1 <libssh_noshared.patch
-	patch -d$(LIBSSH) -p1 <libssh_malformed_pubkey.patch
-	touch $@
-
 .PHONY: clean
 clean:
-	rm -rf $(XZ) $(ZLIB) $(BZIP2) $(LIBFFI) $(GLIB) $(LIBXML2) $(CURL) $(LIBARCHIVE) $(LIBSOUP) $(SQLITE) $(INTLTOOL) $(CMAKE) $(LIBSSH) $(OPENSSL) tree
+	rm -rf $(XZ) $(ZLIB) $(BZIP2) $(LIBFFI) $(GLIB) $(LIBXML2) $(CURL) $(LIBARCHIVE) $(LIBSOUP) $(SQLITE) $(INTLTOOL) $(CMAKE) $(OPENSSL) $(AUTOCONF) $(LIBJSONC) tree

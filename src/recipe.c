@@ -402,7 +402,7 @@ void restraint_recipe_free(Recipe *recipe) {
 }
 
 static Recipe *
-recipe_parse (xmlDoc *doc, SoupURI *recipe_uri, GError **error)
+recipe_parse (xmlDoc *doc, SoupURI *recipe_uri, GError **error, gchar **cfg_file)
 {
     g_return_val_if_fail(doc != NULL, NULL);
     g_return_val_if_fail(error == NULL || *error == NULL, NULL);
@@ -426,17 +426,19 @@ recipe_parse (xmlDoc *doc, SoupURI *recipe_uri, GError **error)
     result->job_id = get_attribute(recipe, "job_id");
     result->recipe_set_id = get_attribute(recipe, "recipe_set_id");
     result->recipe_id = get_attribute(recipe, "id");
-    // Hack to make soup_uri_new happy.
-    if (! recipe_uri) {
-        gchar *recipe_url = g_strdup_printf ("http://localhost/recipes/%s/", result->recipe_id);
-        recipe_uri = soup_uri_new (recipe_url);
-        g_free (recipe_url);
-    }
     result->osarch = get_attribute(recipe, "arch");
     result->osdistro = get_attribute(recipe, "distro");
     result->osmajor = get_attribute(recipe, "family");
     result->osvariant = get_attribute(recipe, "variant");
     result->owner = get_attribute(job, "owner");
+    if (! recipe_uri) {
+        *cfg_file = get_attribute(job, "checkpoint_file");
+        *cfg_file = g_build_filename (VAR_LIB_PATH, *cfg_file, NULL);
+        // Hack to make soup_uri_new happy.
+        gchar *recipe_url = g_strdup_printf ("http://localhost/recipes/%s/", result->recipe_id);
+        recipe_uri = soup_uri_new (recipe_url);
+        g_free (recipe_url);
+    }
     result->recipe_uri = recipe_uri;
     result->base_path = TASK_LOCATION;
 
@@ -549,7 +551,8 @@ recipe_handler (gpointer user_data)
             g_string_printf(message, "* Parsing recipe\n");
             if (app_data->recipe_url)
                 recipe_uri = soup_uri_new(app_data->recipe_url);
-            app_data->recipe = recipe_parse(app_data->recipe_xmldoc, recipe_uri, &app_data->error);
+            app_data->recipe = recipe_parse(app_data->recipe_xmldoc, recipe_uri,
+                                            &app_data->error, &app_data->config_file);
             if (app_data->recipe && ! app_data->error) {
                 app_data->tasks = app_data->recipe->tasks;
                 app_data->state = RECIPE_RUN;
@@ -612,8 +615,7 @@ recipe_handler (gpointer user_data)
 
     // write message out to stderr
     if (message->len) {
-      if (fwrite(message->str, sizeof(gchar), message->len, stderr) != message->len)
-          g_warning ("failed to write message");
+      g_message ("recipe: %s", message->str);
     }
 
     g_string_free(message, TRUE);

@@ -19,34 +19,29 @@
 #define _CLIENT_H
 
 #include <libxml/parser.h>
-#include <libsoup/soup.h>
 #include <regex.h>
-#include "ssh.h"
+#include <json.h>
 
 #define DEFAULT_DELAY 60
 #define CONN_RETRIES 15
 
 struct _AppData;
 
-typedef void (*RegexCallback) (const char *method,
-                               const char *path,
-                               GCancellable *cancellable,
-                               GError **error,
-                               SoupMessageHeaders *headers,
-                               SoupBuffer *body,
+typedef void (*RegexCallback) (const char *path,
+                               GHashTable *headers,
+                               struct json_object *body,
                                gpointer user_data);
 
 typedef struct {
     xmlNodePtr recipe_node_ptr;
     GHashTable *tasks;
     guint recipe_id;
-    SoupURI *remote_uri;
-    SoupMessage *remote_msg;
     struct _AppData *app_data;
     GString *body;
     GCancellable *cancellable;
     guint timeout_handler_id;
-    SshData *ssh_data;
+    gchar *rhost;
+    gchar *connect_uri;
 } RecipeData;
 
 typedef struct {
@@ -62,14 +57,13 @@ typedef struct _AppData {
     GHashTable *result_states_to;
     GHashTable *recipes;
     gint verbose;
-    guint port;
-    SoupAddressFamily address_family;
-    SoupURI *addr_get_uri;
     GCancellable *cancellable;
     gboolean started;
     GSList *regexes;
     guint conn_retries;
     guint max_retries;
+    gchar *rsh_cmd;
+    gchar *restraint_path;
 } AppData;
 
 #endif

@@ -34,13 +34,11 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include "client.h"
-#include "multipart.h"
 #include "errors.h"
 #include "xml.h"
+#include "process.h"
 
 #define TIMESTRLEN 26
-
-static SoupSession *session;
 
 static void recipe_finish(RecipeData *recipe_data);
 static gboolean run_recipe_handler (gpointer user_data);
@@ -50,10 +48,7 @@ static void restraint_free_recipe_data(RecipeData *recipe_data)
     if (recipe_data->tasks != NULL) {
         g_hash_table_destroy(recipe_data->tasks);
     }
-    soup_uri_free(recipe_data->remote_uri);
     g_string_free(recipe_data->body, TRUE);
-    ssh_kill(recipe_data->ssh_data);
-    g_slice_free(SshData, recipe_data->ssh_data);
     g_slice_free(RecipeData, recipe_data);
 }
 
@@ -81,6 +76,66 @@ static void restraint_free_app_data(AppData *app_data)
     g_slist_free_full (app_data->regexes, clear_regex);
 
     g_slice_free(AppData, app_data);
+}
+
+gboolean
+headers_get_content_range (GHashTable *headers,
+                   goffset    *start,
+                   goffset    *end,
+                   goffset    *total_length)
+{
+    const char *header = g_hash_table_lookup (headers, "Content-Range");
+    goffset length;
+    char *p;
+
+    if (!header || strncmp (header, "bytes ", 6) != 0)
+                return FALSE;
+
+    header += 6;
+    while (g_ascii_isspace (*header))
+        header++;
+    if (!g_ascii_isdigit (*header))
+        return FALSE;
+
+    *start = g_ascii_strtoull (header, &p, 10);
+    if (*p != '-')
+        return FALSE;
+    *end = g_ascii_strtoull (p + 1, &p, 10);
+    if (*p != '/')
+        return FALSE;
+    p++;
+    if (*p == '*') {
+        length = -1;
+        p++;
+    } else
+        length = g_ascii_strtoull (p, &p, 10);
+
+    if (total_length)
+        *total_length = length;
+    return *p == '\0';
+}
+
+GHashTable *
+json_to_hashtable (struct json_object *jobj) {
+    GHashTable *form_data_set;
+    int val_type;
+    form_data_set = g_hash_table_new_full(g_str_hash, g_str_equal,
+                                          g_free, NULL);
+    json_object_object_foreach(jobj, key, val) {
+        val_type = json_object_get_type(val);
+        switch (val_type) {
+            case json_type_null:
+                g_hash_table_replace (form_data_set, key, NULL);
+                break;
+
+            case json_type_string:
+                g_hash_table_replace (form_data_set, key, (char *) json_object_get_string(val));
+                break;
+
+        }
+    }
+
+    return form_data_set;
 }
 
 static void
@@ -258,13 +313,13 @@ put_doc (xmlDocPtr xml_doc, gchar *filename)
 }
 
 void
-remote_hup (GError *error,
-             gpointer user_data)
+remote_process_finish (gint pid_result,
+                gboolean localwatchdog,
+                gpointer user_data,
+                GError *error)
 {
     RecipeData *recipe_data = (RecipeData *) user_data;
     AppData *app_data = recipe_data->app_data;
-    gchar *full_url = NULL;
-    SoupURI *continue_uri = NULL;
 
     // If we get an error on the first connection then we simply abort
     if (app_data->started && ! tasks_finished(app_data->xml_doc, recipe_data->recipe_node_ptr, (xmlChar *)"task")
@@ -274,15 +329,9 @@ remote_hup (GError *error,
             g_print ("%s [%s, %d]\n", error->message,
                      g_quark_to_string (error->domain), error->code);
         }
-        continue_uri = soup_uri_new_with_base (recipe_data->remote_uri, "/continue");
-        soup_uri_free (recipe_data->remote_uri);
-        recipe_data->remote_uri = continue_uri;
-        full_url = soup_uri_to_string (recipe_data->remote_uri, FALSE);
         g_print ("Disconnected.. delaying %d seconds. Retry %d/%d.\n",
                  DEFAULT_DELAY, app_data->conn_retries + 1, app_data->max_retries);
-        recipe_data->ssh_data->soup_disc = TRUE;
         app_data->conn_retries++;
-        g_free (full_url);
         // Try and re-connect to the other host
         g_timeout_add_seconds_full (G_PRIORITY_DEFAULT,
                                     DEFAULT_DELAY,
@@ -297,29 +346,20 @@ remote_hup (GError *error,
     }
 }
 
-static gboolean _remote_hup(gpointer user_data)
-{
-    remote_hup(NULL, user_data);
-    return G_SOURCE_REMOVE;
-}
-
 void
-tasks_results_cb (const char *method,
-                  const char *path,
-                  GCancellable *cancellable,
-                  GError **error,
-                  SoupMessageHeaders *headers,
-                  SoupBuffer *body,
+tasks_results_cb (const char *path,
+                  GHashTable *headers,
+                  struct json_object *json_body,
                   gpointer user_data)
 {
     RecipeData *recipe_data = (RecipeData*) user_data;
     AppData *app_data = recipe_data->app_data;
-    GHashTable *table;
+    GHashTable *body;
     gchar *task_id = NULL;
     gchar *recipe_id = NULL;
     gchar **entries = NULL;
 
-    const gchar *transaction_id = soup_message_headers_get_one (headers, "transaction-id");
+    const gchar *transaction_id = g_hash_table_lookup (headers, "transaction-id");
     // Pull some values out of the path.
     entries = g_strsplit (path, "/", 0);
     task_id = g_strdup (entries[4]);
@@ -335,17 +375,17 @@ tasks_results_cb (const char *method,
     }
 
     // Record results
-    table = soup_form_decode (body->data);
-    gchar *result = g_hash_table_lookup (table, "result");
-    gchar *message = g_hash_table_lookup (table, "message");
-    gchar *result_path = g_hash_table_lookup (table, "path");
-    gchar *score = g_hash_table_lookup (table, "score");
+    body = json_to_hashtable (json_body);
+    gchar *result = g_hash_table_lookup (body, "result");
+    gchar *message = g_hash_table_lookup (body, "message");
+    gchar *result_path = g_hash_table_lookup (body, "path");
+    gchar *score = g_hash_table_lookup (body, "score");
 
     // Record the result
     record_result(recipe_data->recipe_node_ptr, task_node_ptr, transaction_id, result, message,
-                  result_path, score, app_data, (const gchar *) recipe_data->ssh_data->rhost);
+                  result_path, score, app_data, (const gchar *) recipe_data->rhost);
 
-    g_hash_table_destroy(table);
+    g_hash_table_destroy(body);
 cleanup:
     g_free (task_id);
     g_free (recipe_id);
@@ -368,22 +408,19 @@ watchdog_timeout_cb (gpointer user_data)
 }
 
 void
-watchdog_cb (const char *method,
-             const char *path,
-             GCancellable *cancellable,
-             GError **error,
-             SoupMessageHeaders *headers,
-             SoupBuffer *body,
+watchdog_cb (const char *path,
+             GHashTable *headers,
+             struct json_object *json_body,
              gpointer user_data)
 {
     RecipeData *recipe_data = (RecipeData*) user_data;
-    GHashTable *table;
+    GHashTable *body;
 
-    table = soup_form_decode (body->data);
-    gchar *seconds_string = g_hash_table_lookup (table, "seconds");
+    body = json_to_hashtable (json_body);
+    gchar *seconds_string = g_hash_table_lookup (body, "seconds");
     guint64 max_time = 0;
     max_time = g_ascii_strtoull(seconds_string, NULL, 10); // XXX check errno
-    g_hash_table_destroy(table);
+    g_hash_table_destroy(body);
     if (recipe_data->timeout_handler_id != 0) {
         g_source_remove (recipe_data->timeout_handler_id);
     }
@@ -395,12 +432,9 @@ watchdog_cb (const char *method,
 }
 
 void
-recipe_start_cb (const char *method,
-                 const char *path,
-                 GCancellable *cancellable,
-                 GError **error,
-                 SoupMessageHeaders *headers,
-                 SoupBuffer *body,
+recipe_start_cb (const char *path,
+                 GHashTable *headers,
+                 struct json_object *json_body,
                  gpointer user_data)
 {
     RecipeData *recipe_data = (RecipeData*) user_data;
@@ -418,28 +452,25 @@ static gchar *format_datetime(time_t time) {
 }
 
 void
-tasks_status_cb (const char *method,
-                 const char *path,
-                 GCancellable *cancellable,
-                 GError **error,
-                 SoupMessageHeaders *headers,
-                 SoupBuffer *body,
+tasks_status_cb (const char *path,
+                 GHashTable *headers,
+                 struct json_object *json_body,
                  gpointer user_data)
 {
     RecipeData *recipe_data = (RecipeData*) user_data;
     AppData *app_data = recipe_data->app_data;
-    GHashTable *table;
+    GHashTable *body;
     gchar *task_id = NULL;
     gchar *recipe_id = NULL;
     gchar **entries = NULL;
     gchar *trunc_host = NULL;
 
-    const gchar *transaction_id = soup_message_headers_get_one (headers, "transaction-id");
+    const gchar *transaction_id = g_hash_table_lookup (headers, "transaction-id");
     // Pull some values out of the path.
     entries = g_strsplit (path, "/", 0);
     task_id = g_strdup (entries[4]);
     recipe_id = g_strdup (entries[2]);
-    trunc_host = g_strndup ((const gchar *) recipe_data->ssh_data->rhost, 20);
+    trunc_host = g_strndup ((const gchar *) recipe_data->rhost, 20);
 
     app_data->started = TRUE;
 
@@ -450,17 +481,17 @@ tasks_status_cb (const char *method,
         goto cleanup;
     }
 
-    table = soup_form_decode (body->data);
-    gchar *status = g_hash_table_lookup (table, "status");
-    gchar *message = g_hash_table_lookup (table, "message");
-    gchar *version = g_hash_table_lookup (table, "version");
+    body = json_to_hashtable (json_body);
+    gchar *status = g_hash_table_lookup (body, "status");
+    gchar *message = g_hash_table_lookup (body, "message");
+    gchar *version = g_hash_table_lookup (body, "version");
     if (version) {
         xmlSetProp (task_node_ptr, (xmlChar *)"version", (xmlChar *) version);
     }
     time_t stime = 0;
     time_t etime = 0;
-    if (g_hash_table_contains(table, "stime")) {
-        stime = atoll(g_hash_table_lookup(table, "stime"));
+    if (g_hash_table_contains(body, "stime")) {
+        stime = atoll(g_hash_table_lookup(body, "stime"));
         if (stime > 0) {
             gchar *stimestr = format_datetime(stime);
             xmlSetProp (task_node_ptr, (xmlChar *)"start_time", (xmlChar*)stimestr);
@@ -468,8 +499,8 @@ tasks_status_cb (const char *method,
         }
     }
 
-    if (g_hash_table_contains(table, "etime")) {
-        etime = atoll(g_hash_table_lookup(table, "etime"));
+    if (g_hash_table_contains(body, "etime")) {
+        etime = atoll(g_hash_table_lookup(body, "etime"));
         if (etime > 0) {
             gchar *etimestr = format_datetime(etime);
             xmlSetProp (task_node_ptr, (xmlChar *)"end_time", (xmlChar*)etimestr);
@@ -518,7 +549,7 @@ tasks_status_cb (const char *method,
                       "/",
                       NULL,
                       app_data,
-                      (const gchar *) recipe_data->ssh_data->rhost);
+                      (const gchar *) recipe_data->rhost);
     }
 
     xmlSetProp (task_node_ptr, (xmlChar *)"status", (xmlChar *) status);
@@ -538,8 +569,8 @@ tasks_status_cb (const char *method,
     put_doc (app_data->xml_doc, filename);
 
     g_free(filename);
+    g_hash_table_destroy(body);
 
-    g_hash_table_destroy(table);
 cleanup:
     g_free (task_id);
     g_free (recipe_id);
@@ -548,23 +579,21 @@ cleanup:
 }
 
 void
-tasks_logs_cb (const char *method,
-               const char *path,
-               GCancellable *cancellable,
-               GError **error,
-               SoupMessageHeaders *headers,
-               SoupBuffer *body,
+tasks_logs_cb (const char *path,
+               GHashTable *headers,
+               struct json_object *json_body,
                gpointer user_data)
 {
     RecipeData *recipe_data = (RecipeData*) user_data;
     AppData *app_data = recipe_data->app_data;
-    GHashTable *table;
     gchar *task_id = NULL;
     gchar *recipe_id = NULL;
     gchar **entries = NULL;
     gchar **lines = NULL;
     gint i = 0;
     gchar *trunc_host = NULL;
+    gchar *body_data = NULL;
+    gsize body_length;
 
     // Pull some values out of the path.
     entries = g_strsplit (path, "/", 0);
@@ -580,7 +609,6 @@ tasks_logs_cb (const char *method,
         goto cleanup;
     }
 
-    table = soup_form_decode (body->data);
     goffset start;
     goffset end;
     goffset total_length;
@@ -605,24 +633,21 @@ tasks_logs_cb (const char *method,
         g_free(fpath);
     }
 
-    gboolean content_range = soup_message_headers_get_content_range(
+    gboolean content_range = headers_get_content_range(
             headers, &start, &end, &total_length);
 
     gchar *basedir = g_path_get_dirname (filename);
     g_mkdir_with_parents (basedir, 0755 /* drwxr-xr-x */);
     g_free (basedir);
 
+    body_data = (gchar *) g_base64_decode (json_object_get_string(json_body), &body_length);
     if (content_range) {
-        if (body->length != (end - start + 1)) {
-//              soup_message_set_status_full(remote_msg,
-//                    SOUP_STATUS_BAD_REQUEST,
-//                    "Content length does not match range length");
+        if (body_length != (end - start + 1)) {
+            g_warning("Content length does not match range length");
             goto logs_cleanup;
         }
         if (total_length > 0 && total_length < end ) {
-//            soup_message_set_status_full(remote_msg,
-//                    SOUP_STATUS_BAD_REQUEST,
-//                    "Total length is smaller than range end");
+            g_warning("Total length is smaller than range end");
             goto logs_cleanup;
         }
         if (total_length > 0 && access( filename, F_OK ) != -1 ) {
@@ -640,10 +665,10 @@ tasks_logs_cb (const char *method,
             }
             xmlXPathFreeObject (logs_node_ptrs);
         }
-        update_chunk (filename, body->data, body->length, start);
+        update_chunk (filename, body_data, body_length, start);
     } else {
         if (access( filename, F_OK ) != -1 ) {
-            int result = truncate ((const char *)filename, body->length);
+            int result = truncate ((const char *)filename, body_length);
             g_warn_if_fail(result == 0);
         }
         // Record log in xml
@@ -654,14 +679,14 @@ tasks_logs_cb (const char *method,
                         short_path);
         }
         xmlXPathFreeObject (logs_node_ptrs);
-        update_chunk (filename, body->data, body->length, (goffset) 0);
+        update_chunk (filename, body_data, body_length, (goffset) 0);
     }
-    trunc_host = g_strndup ((const gchar *) recipe_data->ssh_data->rhost, 20);
-    const gchar *log_level_char = soup_message_headers_get_one(headers, "log-level");
+    trunc_host = g_strndup ((const gchar *) recipe_data->rhost, 20);
+    const gchar *log_level_char = g_hash_table_lookup (headers, "log-level");
     if (log_level_char) {
         gint log_level = g_ascii_strtoll (log_level_char, NULL, 0);
         if (app_data->verbose >= log_level) {
-            lines = g_strsplit_set (body->data, "\r\n", 0);
+            lines = g_strsplit_set (body_data, "\r\n", 0);
             for (i = 0; lines[i] != NULL; i++) {
                 if (strlen(lines[i]) > 0) {
                     g_print ("[%-20s] %s\n", trunc_host, lines[i]);
@@ -675,8 +700,8 @@ logs_cleanup:
     g_free (logs_xpath);
     g_free (log_path);
     g_free (filename);
+    g_free (body_data);
 
-    g_hash_table_destroy(table);
 cleanup:
     g_free (task_id);
     g_free (recipe_id);
@@ -715,44 +740,87 @@ process_path (GSList *regexes, const char *path)
     return NULL;
 }
 
-gboolean chk_ssh_state(gpointer user_data)
-{
-    RecipeData *recipe_data = (RecipeData*) user_data;
-    return recipe_data->ssh_data->state == SSH_FAILED;
+struct json_object * find_object (struct json_object *jobj, const char *key) {
+        struct json_object *tmp;
+
+        json_object_object_get_ex(jobj, key, &tmp);
+
+        return tmp;
 }
 
 void
-message_cb (const char *method,
-            const char *path,
-            GCancellable *cancellable,
-            GError **error,
-            SoupMessageHeaders *headers,
-            SoupBuffer *body,
-            gpointer user_data)
+handle_message (const char *message,
+                gpointer user_data)
 {
     RecipeData *recipe_data = (RecipeData*) user_data;
     AppData *app_data = recipe_data->app_data;
     RegexCallback callback;
+    GHashTable *headers;
+    char *rstrnt_path = NULL;
+    struct json_object *jobj, *json_headers, *json_body;
 
-    app_data->conn_retries = 0;
-    // path must be defined in order to dispatch
-    if (!path) {
-        g_set_error (error, RESTRAINT_ERROR,
-                     RESTRAINT_TASK_RUNNER_RESULT_ERROR,
-                     "Invalid message! path not defined");
+    jobj = json_tokener_parse(message);
+    json_headers = find_object(jobj, "headers");
+    if (!json_headers) {
+        g_message("%s", message);
         return;
     }
-    callback = process_path (app_data->regexes, path);
-    if (callback)
-        callback (method,
-                  path,
-                  cancellable,
-                  error,
+    json_body = find_object(jobj, "body");
+    headers = json_to_hashtable(json_headers);
+    rstrnt_path = g_hash_table_lookup (headers, "rstrnt-path");
+
+    // rstrnt_path must be defined in order to dispatch
+    if (!rstrnt_path) {
+        g_message("Invalid message! rstrnt-path not defined");
+        return;
+    }
+    callback = process_path (app_data->regexes, rstrnt_path);
+    if (callback) {
+        // Valid message, reset connection retries.
+        app_data->conn_retries = 0;
+        callback (rstrnt_path,
                   headers,
-                  body,
+                  json_body,
                   user_data);
-    else
-        g_printerr ("no registered callback matches %s\n", path);
+    } else
+        g_message ("no registered callback matches %s", rstrnt_path);
+    g_hash_table_destroy(headers);
+}
+
+gboolean
+remote_io_callback (GIOChannel *io, GIOCondition condition, gpointer user_data) {
+    GError *tmp_error = NULL;
+
+    gchar *s;
+    gsize bytes_read;
+
+    if (condition & G_IO_IN) {
+        switch (g_io_channel_read_line(io, &s, &bytes_read, NULL, &tmp_error)) {
+          case G_IO_STATUS_NORMAL:
+            handle_message(s, user_data);
+            g_free(s);
+            return TRUE;
+
+          case G_IO_STATUS_ERROR:
+             g_warning ("IO Error: %s", tmp_error->message);
+             g_clear_error (&tmp_error);
+             return FALSE;
+
+          case G_IO_STATUS_EOF:
+             return FALSE;
+
+          case G_IO_STATUS_AGAIN:
+             return TRUE;
+
+          default:
+             g_return_val_if_reached(FALSE);
+             break;
+        }
+    }
+    if (condition & G_IO_HUP){
+        return FALSE;
+    }
+    return FALSE;
 }
 
 xmlDocPtr
@@ -947,39 +1015,35 @@ run_recipe_handler (gpointer user_data)
 {
     RecipeData *recipe_data = (RecipeData*)user_data;
     AppData *app_data = recipe_data->app_data;
-    gchar *full_url = NULL;
-    // Tell restraintd to run our recipe
-    SoupRequest *request;
-
-    if (recipe_data->ssh_data->state != SSH_ESTABLISHED) {
-        g_print ("ssh tunnel is not ready.. delaying %d seconds.\n", DEFAULT_DELAY);
-        g_idle_add(_remote_hup, user_data);
-        return G_SOURCE_REMOVE;
-    }
-    request = (SoupRequest *)soup_session_request_http_uri(session,
-                                                           "POST",
-                                                           recipe_data->remote_uri,
-                                                           NULL);
-    recipe_data->remote_msg = soup_request_http_get_message(
-            SOUP_REQUEST_HTTP(request));
+    const gchar **env = NULL;
 
     // return the xml doc
     xmlBufferPtr buffer = xmlBufferCreate();
-    gint size = xmlNodeDump(buffer, app_data->xml_doc, recipe_data->recipe_node_ptr, 0, 1);
+    gssize size = xmlNodeDump(buffer, app_data->xml_doc, recipe_data->recipe_node_ptr, 0, 1);
 
-    full_url = soup_uri_to_string (recipe_data->remote_uri, FALSE);
-    g_print ("Connecting to %s for host: %s:%d, recipe id:%d\n", full_url,
-             recipe_data->ssh_data->rhost, recipe_data->ssh_data->rport,
-             recipe_data->recipe_id);
-    g_free (full_url);
-    soup_message_set_request (recipe_data->remote_msg,
-                              "text/xml",
-                              SOUP_MEMORY_COPY, (const char *) buffer->content, size);
+    g_print ("Connecting to host: %s, recipe id:%d\n",
+             recipe_data->connect_uri, recipe_data->recipe_id);
+
+    gchar *command = g_strdup_printf ("%s %s -- %s --stdin",
+            app_data->rsh_cmd,
+            recipe_data->connect_uri,
+            app_data->restraint_path);
+    process_run ((const gchar *) command,
+                  env,
+                  NULL,
+                  FALSE,
+                  0,
+                  NULL,
+                  remote_io_callback,
+                  remote_process_finish,
+                  (const gchar *) buffer->content,
+                  size,
+                  TRUE,
+                  recipe_data->cancellable,
+                  recipe_data);
+
+    g_free (command);
     xmlBufferFree (buffer);
-
-    // turn off message body accumulating
-    soup_message_body_set_accumulate (recipe_data->remote_msg->response_body, FALSE);
-    multipart_request_send_async (request, recipe_data->cancellable, message_cb, remote_hup, chk_ssh_state, recipe_data);
 
     return G_SOURCE_REMOVE;
 }
@@ -995,6 +1059,26 @@ new_job ()
     return xml_doc_ptr;
 }
 
+static char *
+gen_new_filename(char *prefix, char *suffix, int random_byte_size)
+{
+    int result, buf_size;
+    char *buffer1, *buffer2;
+
+    srand(time(0));
+    result = rand();
+
+    buf_size = sizeof(prefix) + sizeof(suffix) + random_byte_size + 1;
+    buffer1 = g_malloc(random_byte_size+1);
+    buffer2 = g_malloc(buf_size);
+
+    g_snprintf(buffer1, random_byte_size+1, "%d", result);
+    g_snprintf(buffer2, buf_size, "%s%s%s", prefix, buffer1, suffix);
+    g_free(buffer1);
+
+    return buffer2;
+}
+
 static xmlNodePtr
 new_recipe (xmlDocPtr xml_doc_ptr, xmlChar *recipe_id,
             xmlNodePtr recipe_set_node_ptr, const xmlChar *wboard,
@@ -1007,6 +1091,14 @@ new_recipe (xmlDocPtr xml_doc_ptr, xmlChar *recipe_id,
     xmlSetProp (recipe_node_ptr, (xmlChar *)"id", (xmlChar *) recipe_id);
     xmlSetProp (recipe_node_ptr, (xmlChar *)"status", (xmlChar *) "New");
     xmlSetProp (recipe_node_ptr, (xmlChar *)"result", (xmlChar *) "None");
+
+    // Make random filename
+    char *filename = gen_new_filename("checkpoint_", ".conf", 6);
+
+    xmlSetProp (recipe_node_ptr, (xmlChar *)"checkpoint_file",
+                (const xmlChar *)filename);
+    g_free(filename);
+
     if (wboard != NULL) {
         xmlSetProp(recipe_node_ptr, (xmlChar *)"whiteboard", wboard);
     }
@@ -1087,7 +1179,7 @@ static guint get_node_role(xmlNodePtr node, GHashTable *roletable,
     xmlChar *role = xmlGetNoNsProp(node, (xmlChar*)"role");
 
     if (role != NULL) {
-        gchar *host = recipe_data->ssh_data->rhost;
+        gchar *host = recipe_data->rhost;
         GSList *hostlist = g_hash_table_lookup(roletable, role);
         if (hostlist == NULL) {
             hostlist = g_slist_prepend(hostlist, host);
@@ -1124,7 +1216,7 @@ static GSList *get_recipe_members(AppData *app_data, xmlXPathObjectPtr recipe_no
             return NULL;
         }
 
-        host = recipe_data->ssh_data->rhost;
+        host = recipe_data->rhost;
 
         if (g_slist_find_custom(allhosts, host,
                     (GCompareFunc)g_strcmp0) == NULL) {
@@ -1456,10 +1548,6 @@ parse_new_job (AppData *app_data)
                                                         NULL, 0);
         xmlFree (recipe_id);
 
-        if (app_data->addr_get_uri == NULL) {
-            app_data->addr_get_uri = recipe_data->remote_uri;
-        }
-
         // find task nodes
         xmlXPathObjectPtr task_nodes = get_node_set(app_data->xml_doc, node,
                                                     (xmlChar*)"task");
@@ -1587,50 +1675,49 @@ cleanup:
         g_free (std_err);
 }
 
+gchar *
+parse_host (const gchar *connect_uri)
+{
+    gchar *host = NULL;
+    GRegex *regex;
+    GMatchInfo *match_info;
+
+    regex = g_regex_new("^(([\\w\\.\\-]+)@)?([\\w\\.\\-]+)(:(\\d+))?$", 0, 0, NULL);
+    if (g_regex_match(regex, connect_uri, 0, &match_info)) {
+        while (g_match_info_matches(match_info)) {
+            host = g_match_info_fetch(match_info, 3);
+            g_match_info_next(match_info, NULL);
+        }
+    } else {
+        g_printerr("Malformed host: %s, see help for reference\n", connect_uri);
+    }
+    g_match_info_free(match_info);
+    g_regex_unref(regex);
+    return host;
+}
+
 static gboolean add_recipe_host(const gchar *value, AppData *app_data,
                                 guint *recipe_id) {
     gchar **args;
-    gchar *remote = NULL;
-    gchar *host = NULL;
+    gchar *connect_uri = NULL;
     gchar *id = NULL;
     gboolean result = TRUE;
-    SoupURI *remote_uri;
 
     args = g_strsplit(value, "=", 2);
     if (g_strv_length(args) != 2) {
         id = g_strdup_printf("%u", (*recipe_id)++);
-        host = args[0];
+        connect_uri = g_strdup (args[0]);
     } else {
         id = g_strdup(args[0]);
-        host = args[1];
-    }
-
-    SshData *ssh_data = ssh_start(host);
-    if (ssh_data == NULL) {
-        g_set_error (&app_data->error, RESTRAINT_ERROR,
-                     RESTRAINT_SSH_ERROR,
-                     "Failed to establish ssh tunnel");
-        g_strfreev(args);
-        return FALSE;
-    }
-    remote = g_strdup_printf("http://localhost:%d/run", ssh_data->lport);
-
-    remote_uri = soup_uri_new(remote);
-    if (remote_uri == NULL) {
-        g_set_error(&app_data->error, G_OPTION_ERROR, G_OPTION_ERROR_FAILED,
-            "Wrong URI format: %s.", remote);
-        result = FALSE;
-        goto cleanup;
+        connect_uri = g_strdup (args[1]);
     }
 
     RecipeData *recipe_data = new_recipe_data(app_data, id);
-    recipe_data->remote_uri = remote_uri;
-    recipe_data->ssh_data = ssh_data;
+    recipe_data->connect_uri = connect_uri;
+    recipe_data->rhost = parse_host(recipe_data->connect_uri);
 
-cleanup:
-    g_free(id);
-    g_free(remote);
-    g_strfreev(args);
+    g_free (id);
+    g_strfreev (args);
     return result;
 }
 
@@ -1646,25 +1733,18 @@ static void recipe_init(gchar *id, RecipeData *recipe_data,
 
 int main(int argc, char *argv[]) {
     gchar *job = NULL;
-    gboolean ipv6 = FALSE;
     gboolean novalid = FALSE;
     gchar **hostarr = NULL;
-    gint timeout = 300;
 
     AppData *app_data = g_slice_new0 (AppData);
+    app_data->rsh_cmd = "ssh";
+    app_data->restraint_path = "restraintd";
 
     init_result_hash (app_data);
     app_data->recipes = g_hash_table_new_full(g_str_hash, g_str_equal,
             g_free, (GDestroyNotify)&restraint_free_recipe_data);
 
-    ssh_threads_set_callbacks(ssh_threads_get_pthread());
-    ssh_init();
-
     GOptionEntry entries[] = {
-        {"ipv6", '6', 0, G_OPTION_ARG_NONE, &ipv6,
-            "Use IPV6 for communication", NULL },
-        {"port", 'p', 0, G_OPTION_ARG_INT, &app_data->port,
-            "Specify the port to listen on", "PORT" },
         { "job", 'j', 0, G_OPTION_ARG_STRING, &job,
             "Run job from file", "FILE" },
         { "run", 'r', 0, G_OPTION_ARG_STRING, &app_data->run_dir,
@@ -1673,14 +1753,16 @@ int main(int argc, char *argv[]) {
             "Do not perform xml validation", NULL },
         { "host", 't', 0, G_OPTION_ARG_STRING_ARRAY, &hostarr,
             "Set host for a recipe with specific id.",
-            "<recipe_id>=[<user>@]<host>[:<port>][/ssh_port]" },
+            "<recipe_id>=[<user>@]<host>[:ssh_port]" },
         {"conn-retries", 'c', 0, G_OPTION_ARG_INT, &app_data->max_retries,
             "Specify the number of reconnection retries.", NULL},
         { "verbose", 'v', G_OPTION_FLAG_NO_ARG, G_OPTION_ARG_CALLBACK,
             callback_parse_verbose, "Increase verbosity, up to three times.",
             NULL },
-        { "timeout", 'w', 0, G_OPTION_ARG_INT, &timeout,
-            "Specify timeout for request in seconds [Default: 300].", NULL },
+        { "rsh", 'e', 0, G_OPTION_ARG_STRING, &app_data->rsh_cmd,
+            "Command to use make remote connection [Default: ssh].", NULL },
+        { "restraint-path", 0, 0, G_OPTION_ARG_STRING, &app_data->restraint_path,
+            "specify the restraintd to run on the remote machine", NULL },
         { NULL }
     };
     GOptionGroup *option_group = g_option_group_new("main",
@@ -1700,32 +1782,6 @@ int main(int argc, char *argv[]) {
 
     if (app_data->max_retries == 0) {
         app_data->max_retries = CONN_RETRIES;
-    }
-
-    if (ipv6) {
-        app_data->address_family = SOUP_ADDRESS_FAMILY_IPV6;
-    } else {
-        app_data->address_family = SOUP_ADDRESS_FAMILY_IPV4;
-    }
-
-    SoupAddress *address = soup_address_new_any(app_data->address_family,
-                                                SOUP_ADDRESS_ANY_PORT);
-
-    session = soup_session_new_with_options("local-address", address,
-                                            "timeout", timeout,
-                                            "idle-timeout", timeout,
-                                            "max-conns", 20,
-                                            "max-conns-per-host", 1,
-                                            NULL);
-
-    if (app_data->run_dir && app_data->port) {
-        if (app_data->error == NULL) {
-            g_set_error(&app_data->error, RESTRAINT_ERROR,
-                        RESTRAINT_CMDLINE_ERROR,
-                        "You can't specify both run_dir and port\n"
-                        "Try %s --help", argv[0]);
-        }
-        goto cleanup;
     }
 
     guint recipe_id = 1;
@@ -1802,9 +1858,6 @@ int main(int argc, char *argv[]) {
 
 
 cleanup:
-    soup_session_abort(session);
-    g_object_unref(session);
-    g_object_unref(address);
     g_strfreev(hostarr);
     if (job != NULL) {
         g_free(job);
@@ -1815,11 +1868,9 @@ cleanup:
                 g_quark_to_string(app_data->error->domain),
                 app_data->error->code);
         restraint_free_app_data(app_data);
-        ssh_finalize();
         return retcode;
     } else {
         restraint_free_app_data(app_data);
-        ssh_finalize();
         return EXIT_SUCCESS;
     }
 }

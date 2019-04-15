@@ -19,6 +19,7 @@
 #include <libsoup/soup.h>
 #include <time.h>
 #include <stdint.h>
+#include <json.h>
 #include "message.h"
 
 static GQueue *message_queue = NULL;
@@ -148,27 +149,29 @@ restraint_queue_message (SoupSession *session,
 }
 
 static void
-append_header (const char *name, const char *value, gpointer user_data)
+ghash_append_json_header (gpointer data_name, gpointer data_value, gpointer user_data)
 {
-    GString *body = (GString *) user_data;
-    g_string_append_printf (body, "%s: %s\n", name, value);
+    const char *name = (const char *) data_name;
+    const char *value = (const char *) data_value;
+    json_object *headers = (json_object *) user_data;
+    json_object_object_add (headers, name, json_object_new_string(value));
+}
+
+static void
+soup_append_json_header (const char *name, const char *value, gpointer user_data)
+{
+    json_object *headers = (json_object *) user_data;
+    json_object_object_add (headers, name, json_object_new_string(value));
 }
 
 void
 restraint_close_message (gpointer msg_data)
 {
-    ClientData *client_data = (ClientData *) msg_data;
-    g_print ("[%p] Closing client\n", client_data->client_msg);
-    soup_message_body_append (client_data->client_msg->response_body,
-                              SOUP_MEMORY_STATIC,
-                              "\r\n--cut-here--\r\n",
-                              16);
-    soup_message_body_complete (client_data->client_msg->response_body);
-    soup_server_unpause_message (client_data->server, client_data->client_msg);
+        exit(0);
 }
 
 void
-restraint_append_message (SoupSession *session,
+restraint_stdout_message (SoupSession *session,
                           SoupMessage *msg,
                           gpointer msg_data,
                           MessageFinishCallback finish_callback,
@@ -176,6 +179,7 @@ restraint_append_message (SoupSession *session,
                           gpointer user_data)
 {
     ClientData *client_data = (ClientData *) msg_data;
+    GHashTable *table;
     time_t result;
     result = time(NULL);
     static time_t transaction_id = 0;
@@ -191,45 +195,62 @@ restraint_append_message (SoupSession *session,
     message_data->finish_callback = finish_callback;
 
     if (client_data != NULL) {
-        GString *body = g_string_new("");
+        struct json_object *jobj;
+        struct json_object *jobj_headers;
+        struct json_object *jobj_body;
+
+        jobj = json_object_new_object();
+        jobj_headers = json_object_new_object();
+        jobj_body = json_object_new_object();
+        json_object_object_add(jobj, "headers", jobj_headers);
+
         SoupURI *uri = soup_message_get_uri (msg);
-        soup_message_headers_foreach (msg->request_headers, append_header,
-                                      body);
+
+        soup_message_headers_foreach (msg->request_headers, soup_append_json_header,
+                                      jobj_headers);
         // if we are doing a POST transaction
         // increment transaction_id and add it to headers
         // populate Location header in msg->reponse_headers
         const gchar *path = soup_uri_get_path (uri);
         if (g_strcmp0 (msg->method, "POST") == 0) {
-            g_string_append_printf (body,
-                                    "transaction-id: %jd\n", (intmax_t) transaction_id);
-            gchar *location_url = g_strdup_printf ("%s%jd", path, (intmax_t) transaction_id);
+            gchar *transaction_id_string = g_strdup_printf("%jd", (intmax_t) transaction_id);
+            json_object_object_add (jobj_headers,
+                            "transaction-id",
+                            json_object_new_string(transaction_id_string));
+
+            gchar *location_url = g_strdup_printf ("%s%s", path, transaction_id_string);
             soup_message_headers_append (msg->response_headers, "Location", location_url);
+            g_free (transaction_id_string);
             g_free (location_url);
+
             transaction_id++;
         }
         soup_message_set_status (msg, SOUP_STATUS_OK);
-        g_string_append_printf (body,
-                                "rstrnt-path: %s\n"
-                                "rstrnt-method: %s\n"
-                                "Content-Length: %d\r\n\r\n",
-                                path,
-                                msg->method,
-                                (guint) msg->request_body->length);
         SoupBuffer *request = soup_message_body_flatten (msg->request_body);
-        body = g_string_append_len (body, request->data,
-                                          request->length);
-        g_string_append_printf (body,
-                           "\r\n--cut-here\n");
+        json_object_object_add (jobj_headers, "rstrnt-path", json_object_new_string(path));
+        json_object_object_add (jobj_headers, "rstrnt-method", json_object_new_string(msg->method));
+        json_object_object_add (jobj_headers, "body-length", json_object_new_int(request->length));
+
+        if (g_strrstr (path, "/logs/")) {
+            // base64 encode the body for logs
+            gchar *encoded = g_base64_encode ((unsigned char*) request->data, request->length);
+            json_object_object_add (jobj, "body", json_object_new_string(encoded));
+            g_free (encoded);
+        } else {
+            table = soup_form_decode (request->data);
+            // translate form_data into json body->keys->values
+            g_hash_table_foreach (table, ghash_append_json_header, jobj_body);
+            json_object_object_add (jobj, "body", jobj_body);
+            g_hash_table_destroy (table);
+        }
+
+        // Print json_root to STDOUT
+        const gchar *json_text = json_object_to_json_string_ext(jobj, JSON_C_TO_STRING_PLAIN);
+        //g_print ("%010lu", strlen(json_text));
+        g_print ("%s\n",json_text);
 
         soup_buffer_free (request);
-
-        soup_message_body_append (client_data->client_msg->response_body,
-                                  SOUP_MEMORY_TAKE,
-                                  body->str, body->len);
-
-        g_string_free (body, FALSE);
-
-        soup_server_unpause_message (client_data->server, client_data->client_msg);
+        json_object_put (jobj); // Delete the json object
     }
 
     if (finish_callback) {
