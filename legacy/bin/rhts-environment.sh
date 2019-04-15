@@ -26,8 +26,16 @@ if [ -z "$FAMILY" ]; then
         FAMILY=$(cat /etc/redhat-release | sed -e 's/\(.*\)release\s\([0-9]*\).*/\1\2/; s/\s//g')
 fi
 
+# Set well-known logname so users can easily find
+# current tasks log file.
+if [ -h /mnt/testarea/current.log ]; then
+        ln -sf $OUTPUTFILE /mnt/testarea/current.log
+else
+        ln -s $OUTPUTFILE /mnt/testarea/current.log
+fi
+
 function report_result {
-	# Pass OUTPUTFILE to rstrnt-report-result in case the variable wasn't exported
+        # Pass OUTPUTFILE to rstrnt-report-result in case the variable wasn't exported
         OUTPUTFILE=$OUTPUTFILE rstrnt-report-result "$@"
 }
 
