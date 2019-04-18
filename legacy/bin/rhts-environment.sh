@@ -27,7 +27,9 @@ if [ -z "$FAMILY" ]; then
 fi
 
 # Set well-known logname so users can easily find
-# current tasks log file.
+# current tasks log file.  This well-known file is also
+# used by the local watchdog to upload the log
+# of the current task.
 if [ -h /mnt/testarea/current.log ]; then
         ln -sf $OUTPUTFILE /mnt/testarea/current.log
 else

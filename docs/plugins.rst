@@ -162,11 +162,19 @@ Local Watchdog
 --------------
 
 These plugins will only be executed if the task runs beyond its expected time
-limit. Restraint currently ships with two plugins:
+limit. Restraint currently ships with three plugins:
 
-* 01_sysinfo - Collect information about the system, issues sysrq m, t and w.
-  Uploads slabinfo and /var/log/messages. It will also upload any logs listed
-  in $TESTPATH/logs2get.
+* 10_localwatchdog - uploads the resultoutputfile.log of the running task.
+* 20_sysinfo - Collects and uploads system information.
+
+  * Uploads system log which contains a collection of system information
+    such as slabinfo, list of blocked tasks derived from ``sysrq m, t and w``,
+    and pre-existing system log messages.  Depending if journalctl exists,
+    file journalctl or /var/log/messages is uploaded.
+  * Uploads ps-lwd.log which contains a verbose list of running processes.
+  * Uploads dmesg log if it contains any output.
+  * Uploads user logs listed in $TESTPATH/logs2get.
+
 * 99_reboot - Simply reboots the system to try and get the system back to a
   sane state.
 
