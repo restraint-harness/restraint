@@ -76,6 +76,16 @@ fail to install.
 
  dependencies=lib-virt;httpd;postgresql;nfs-utils;net-tools;net-snmp;ethereal;wireshark;tcpdump;rusers;bzip2;gcc
 
+environment
+~~~~~~~~~~~
+
+A semicolon-delimited (``;``) list of task environment variables to be set
+on the system.
+
+::
+
+ environment=META_VAR1=var1value;META_VAR2=var2value;META_VAR3=var3value
+
 softDependencies
 ~~~~~~~~~~~~~~~~
 
@@ -171,8 +181,11 @@ understand all the fields in this file. The following are the ones Restraint
 parses:
 
  * Name - Same as [General] name
+ * Environment- Same as [restraint] environment
  * TestTime - Same as [restraint] max_time
  * Requires - Same as [restraint] dependencies
+ * RhtsRequires - Same as [restraint] dependencies
+ * RepoRequires - Same as [restraint] repoRequires
  * USE_PTY - Same as [restraint] use_pty
 
 Please see the Beaker documentation for how to populate these fields.
