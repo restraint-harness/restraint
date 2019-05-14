@@ -160,10 +160,12 @@ following snippet from our example would create an environment variable named
   <param name="foo" value="bar"/>
  </params>
 
-The parameter RSTRNT_MAX_TIME allows you to specify a different max time than
-what is specified in the tasks metadata. Setting KILLTIMEOVERRIDE also has the
-same effect and is provided for compatibility with legacy RHTS (Red Hat Test
-System).
+The parameter KILLTIMEOVERRIDE allows you to specify a different max time than
+what is specified in the tasks metadata. KILLTIMEOVERRIDE is provided for
+compatibility with legacy RHTS (Red Hat Test System).
+
+As of 0.1.40, the parameter RSTRNT_MAX_TIME has been deprecated in favor of KILLTIMEOVERRIDE
+because of confusion with RSTRNT_MAXTIME
 
 The parameter RSTRNT_USE_PTY allows you to either enable or disable using a pty
 for task execution. Use ``true`` to enable and ``false`` to disable. Setting
