@@ -150,6 +150,7 @@ process_run (const gchar *command,
              const gchar *path,
              gboolean use_pty,
              guint64 max_time,
+             ProcessTimeoutCallback timeout_callback,
              GIOFunc io_callback,
              ProcessFinishCallback finish_callback,
              GCancellable *cancellable,
@@ -161,11 +162,13 @@ process_run (const gchar *command,
     process_data->command = g_strsplit (command, " ", 0);
     process_data->path = path;
     process_data->max_time = max_time;
+    process_data->timeout_callback = timeout_callback;
     process_data->io_callback = io_callback;
     process_data->finish_callback = finish_callback;
     process_data->user_data = user_data;
     process_data->io = NULL;
     process_data->cancellable = cancellable;
+    guint64 timeout;
 
     if (fflush (stdout) != 0)
         g_warning ("Failed to flush stdout: %s\n", g_strerror (errno));
@@ -226,9 +229,14 @@ process_run (const gchar *command,
     }
 
     // Localwatchdog handler
+    if (process_data->max_time < HEARTBEAT) {
+        timeout = process_data->max_time;
+    } else {
+        timeout = HEARTBEAT;
+    }
     if (process_data->max_time != 0) {
         process_data->timeout_handler_id = g_timeout_add_seconds_full (G_PRIORITY_DEFAULT,
-                                                               process_data->max_time,
+                                                               timeout,
                                                                process_timeout_callback,
                                                                process_data,
                                                                NULL);
@@ -305,7 +313,7 @@ process_pid_finish (gpointer user_data)
 }
 
 gboolean
-process_timeout_callback (gpointer user_data)
+process_timeout (gpointer user_data)
 {
     ProcessData *process_data = (ProcessData *) user_data;
 
@@ -331,10 +339,51 @@ process_timeout_callback (gpointer user_data)
     return FALSE;
 }
 
+gboolean
+process_timeout_callback (gpointer user_data)
+{
+    ProcessData *process_data = (ProcessData *) user_data;
+
+    /* Execute user timeout_callback and
+     * check if timeout was changed by user. */
+    if (process_data->timeout_callback != NULL) {
+        process_data->timeout_callback(
+            process_data->user_data, &process_data->max_time);
+    } else {
+        /* if no user timeout_callback, 'process' code manages
+         * timeout period.
+         */
+        if (process_data->max_time < HEARTBEAT) {
+            process_data->max_time = 0;
+        } else {
+            process_data->max_time -= HEARTBEAT;
+        }
+    }
+
+    if (process_data->max_time > 0) {
+        // Restart new timer for remaining seconds. Release old timer.
+        if (process_data->max_time < HEARTBEAT) {
+            process_data->timeout_handler_id = g_timeout_add_seconds_full (
+                G_PRIORITY_DEFAULT,
+                process_data->max_time,
+                process_timeout_callback,
+                process_data,
+                NULL);
+            // return False to release current timeout
+            return FALSE;
+        } else {
+            return TRUE;
+        }
+    }
+
+    return process_timeout(user_data);
+
+}
+
 static void
 process_cancelled_cb (GCancellable *cancellable, gpointer user_data)
 {
-    process_timeout_callback (user_data);
+    (void)process_timeout(user_data);
 }
 
 /*

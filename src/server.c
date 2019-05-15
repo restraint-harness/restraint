@@ -287,6 +287,7 @@ server_msg_complete (SoupSession *session, SoupMessage *server_msg, gpointer use
                          "/usr/share/restraint/plugins",
                          FALSE,
                          0,
+                         NULL,
                          server_io_callback,
                          plugin_finish_callback,
                          app_data->cancellable,
@@ -316,6 +317,11 @@ server_recipe_callback (SoupServer *server, SoupMessage *client_msg,
     SoupURI *server_uri;
     SoupMessageHeadersIter iter;
     const gchar *name, *value;
+    GHashTable *data_table, *new_table;
+    gchar *seconds_string;
+    guint64 max_time = 0;
+    gchar *form_data;
+    gchar *form_seconds;
 
     ClientData *client_data = g_slice_new0 (ClientData);
     client_data->path = path;
@@ -342,9 +348,45 @@ server_recipe_callback (SoupServer *server, SoupMessage *client_msg,
         g_free (uri);
         server_msg = soup_message_new_from_uri ("PUT", server_uri);
     } else if (g_str_has_suffix (path, "watchdog")) {
-        // This does *not* update the localwatchdog.
+        // Extract the number of watchdog seconds
+        data_table = soup_form_decode(client_msg->request_body->data);
+        seconds_string = g_hash_table_lookup(data_table, "seconds");
+        max_time = g_ascii_strtoull(seconds_string, NULL, BASE10);
+
+        // Update the number of watchdog seconds for External watchdog
+        // by increasing it by EWD_TIME
+        form_seconds = g_strdup_printf("%" G_GUINT64_FORMAT,
+                                       (max_time + EWD_TIME));
+        new_table = g_hash_table_new (NULL, NULL);
+        g_hash_table_insert(new_table, "seconds", form_seconds);
+        form_data = soup_form_encode_hash (new_table);
+
+        // Update client_msg with new data which gets copied
+        // to server_msg further down
+        soup_message_body_truncate(client_msg->request_body);
+        soup_message_set_request (client_msg, "application/x-www-form-urlencoded",
+                          SOUP_MEMORY_TAKE, form_data, strlen (form_data));
+        g_free (form_seconds);
+        g_hash_table_destroy(new_table);
+
+        // Start msg to send adjusted external watchdog timer to the lab controller
+        // Client msg content gets copied further below.
         server_uri = soup_uri_new_with_base (task->recipe->recipe_uri, "watchdog");
         server_msg = soup_message_new_from_uri ("POST", server_uri);
+
+        // This updates the local watchdog
+        if (task->metadata->nolocalwatchdog) {
+            g_warning("Adjustment to local watchdog ignored since 'no_localwatchdog'"
+                      " metadata is set\n");
+        } else {
+            task->remaining_time = 0;
+            if (max_time > 0) {
+                task->remaining_time = max_time;
+            }
+            time_t rawtime;
+            time(&rawtime);
+            task->time_chged = g_memdup(&rawtime, sizeof(time_t));
+        }
     } else if (g_str_has_suffix(path, "status")) {
         gchar **splitpath = g_strsplit(path, "/", -1);
         guint pathlen = g_strv_length(splitpath);

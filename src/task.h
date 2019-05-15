@@ -30,7 +30,6 @@
 #include "utils.h"
 
 #define DEFAULT_MAX_TIME 10 * 60 // default amount of time before local watchdog kills process
-#define HEARTBEAT 1 * 60 // heartbeat every 1 minute
 #define DEFAULT_ENTRY_POINT "make run"
 #define ENV_PREFIX "RSTRNT_"
 #define EWD_TIME 30 * 60 // amount of time to add to local watchdog for externl watchdog
@@ -95,6 +94,8 @@ typedef struct {
     gboolean rhts_compat;
     /* remaining time task is allowed to run before being killed */
     gint64 remaining_time;
+    /* Captures the time watchdog time was adjusted */
+    time_t *time_chged;
     /* task order needed for multi-host tasks */
     gint order;
     /* environment variables that will be passed on to task */
@@ -117,7 +118,6 @@ typedef struct {
     AppData *app_data;
     TaskSetupState pass_state;
     TaskSetupState fail_state;
-    gint heartbeat_handler_id;
     gchar expire_time[80];
     const gchar *logpath;
     gboolean skip_remaining;

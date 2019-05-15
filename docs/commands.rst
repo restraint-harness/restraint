@@ -140,9 +140,46 @@ executed at task completion which will call this command for you.
 rstrnt-adjust-watchdog
 ----------------------
 
-If you are running in Beaker this allows you to adjust the external watchdog.
-This does not modify the localwatchdog, so its usually only useful to tasks
-that have no_localwatchdog set to ``true`` in their task metadata.
+This command allows you to adjust both the external watchdog (if running with beaker)
+and the local watchdog.  The time provided with the command replaces the current
+watchdog time and does not add to or remove from current watchdog time.  This time can be
+configured in seconds, minutes, and hours as
+similarly described as ``TestTime`` metadata in
+`Beaker User Guide <https://beaker-project.org/docs/user-guide/task-metadata.html>`_.
+Once set, it will take up to ``HEARTBEAT`` (1 minute) time for the local watchdog
+thread to wake up and see the changes (provided the metadata ``no_localwatch``
+is false); however, the effective time is as soon as the command is executed since
+current time is captured.  The external watchdog is increased by
+``EWD_TIME`` (30 minutes) from the time you provide while the local watchdog
+uses the exact time provided.
+
+The following log entries appear in the harness.log file as watchdog's
+heartbeat progresses every minute.::
+
+*** Current Time: Fri May 17 15:15:49 2019 Localwatchdog at: Fri May 17 15:15:59 2019
+
+When a user runs this command, you can expect to see the following log entry once
+the change is first recognized.  Notice it is prefixed with 'User Adjusted'.
+Also notice in this example the expire time is less than current time.  This can
+occur if the command was run with number of seconds less than 1 minute.  There is a
+delay waiting for the watchdog thread to wake up to handle the changes.  The thread
+can recognize a change occurred at a previous point in time and will expire
+the task immediately if the expired time is earlier than now.::
+
+*** Current Time: Fri May 17 15:15:49 2019 User Adjusted Localwatchdog at: Fri May 17 15:15:02 2019
+
+If the command is run with time less than the ``HEARTBEAT`` time, the following
+warning will appear when the command is executed::
+
+    Expect up to a 1 minute delay for watchdog thread to notice change.
+
+If the task metadata has ``no_localwatchdog`` set to ``true``, the
+local watchdog time is not adjusted with this new time.  However,
+the external watchdog will continue to be adjusted. The log file
+will show the following warning when this occurs::
+
+    Adjustment to local watchdog ignored since 'no_localwatchdog'
+    metadata is set
 
 check_beaker
 ------------

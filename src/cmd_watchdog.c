@@ -24,6 +24,7 @@
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
 #include "errors.h"
+#include "process.h"
 
 static SoupSession *session;
 
@@ -103,8 +104,12 @@ int main(int argc, char *argv[]) {
 
     ret = soup_session_send_message (session, server_msg);
     if (SOUP_STATUS_IS_SUCCESSFUL (ret)) {
+        if (seconds < HEARTBEAT) {
+            g_warning ("Expect up to a 1 minute delay for watchdog thread to notice change.\n");
+        }
     } else {
-        g_warning ("Failed to adjust watchdog, status: %d Message: %s\n", ret, server_msg->reason_phrase);
+        g_warning ("Failed to adjust watchdog, status: %d Message: %s\n", ret,
+                   server_msg->reason_phrase);
     }
     g_object_unref(server_msg);
 

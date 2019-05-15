@@ -17,6 +17,11 @@
 
 #include <gio/gio.h>
 
+#define HEARTBEAT 1 * 60 // heartbeat every 1 minute
+
+typedef void (*ProcessTimeoutCallback) (gpointer user_data,
+                                        guint64 *time_remain);
+
 typedef void (*ProcessFinishCallback)	(gint		pid_result,
 					 gboolean	localwatchdog,
 					 gpointer	user_data,
@@ -56,6 +61,7 @@ typedef struct {
     // True if localwatch kicked in for this process
     gboolean localwatchdog;
     // IO handler to call
+    ProcessTimeoutCallback timeout_callback;
     GIOFunc io_callback;
     // next handler to call.
     ProcessFinishCallback finish_callback;
@@ -71,6 +77,7 @@ process_run (const gchar *command,
                       const gchar *path,
                       gboolean use_pty,
                       guint64 max_time,
+                      ProcessTimeoutCallback timeout_callback,
                       GIOFunc io_callback,
                       ProcessFinishCallback finish_callback,
                       GCancellable *cancellable,

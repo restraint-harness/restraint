@@ -19,6 +19,7 @@
 #define __UTILS_H
 
 #include <glib.h>
+#define BASE10 10
 
 guint64 parse_time_string (gchar *time_string, GError **error);
 gboolean file_exists (gchar *filename);
