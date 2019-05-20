@@ -1,0 +1,8 @@
+Ready-for-Checks+1: Tomas Klohna <tklohna@redhat.com>
+Verified+1: Tomas Klohna <tklohna@redhat.com>
+Code-Review+2: Carol Bouchard <cbouchar@redhat.com>
+Submitted-by: Tomas Klohna <tklohna@redhat.com>
+Submitted-at: Mon, 20 May 2019 11:46:45 +0000
+Reviewed-on: https://gerrit.beaker-project.org/6545
+Project: restraint
+Branch: refs/heads/master
