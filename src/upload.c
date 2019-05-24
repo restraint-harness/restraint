@@ -29,6 +29,7 @@ static gint
 upload_chunk (SoupSession *session,
               GInputStream *in,
               guint64 filesize,
+              guint64 bytes_left,
               SoupURI *result_log_uri,
               GError **error)
 {
@@ -37,7 +38,9 @@ upload_chunk (SoupSession *session,
     gssize bytes_read;
     gint ret;
     GError *tmp_error = NULL;
-    bytes_read = g_input_stream_read (in, input_buf, READ_BUFFER_SIZE, NULL, &tmp_error);
+    bytes_read = g_input_stream_read (
+        in, input_buf, (bytes_left < READ_BUFFER_SIZE) ? bytes_left : READ_BUFFER_SIZE,
+        NULL, &tmp_error);
     if (tmp_error) {
         g_propagate_error (error, tmp_error);
         return -1;
@@ -105,7 +108,9 @@ upload_file (SoupSession *session,
                         g_uri_escape_string(filename, NULL, FALSE));
     uploaded = 0;
     while (uploaded < filesize) {
-        ret = upload_chunk (session, G_INPUT_STREAM (fis), filesize, result_log_uri, &tmp_error);
+        ret = upload_chunk (
+            session, G_INPUT_STREAM (fis), filesize, (filesize - uploaded),
+            result_log_uri, &tmp_error);
         if (ret < 0) {
             break;
         } else {
