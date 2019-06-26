@@ -158,6 +158,9 @@ to check for false positives.
   purpose and disable the check but you will still want to move the time stamp
   forward.
 
+If you need to skip error checking, refer to RSTRNT_DISABLED as described
+in the environment variable section (see :ref:`env-variables`).
+
 Local Watchdog
 --------------
 
@@ -176,7 +179,8 @@ limit. Restraint currently ships with three plugins:
   * Uploads user logs listed in $TESTPATH/logs2get.
 
 * 99_reboot - Simply reboots the system to try and get the system back to a
-  sane state.
+  sane state.  If you need to skip this step, you can use RSTRNT_DISABLED
+  as described in (see :ref:`env-variables`).
 
 Completed
 ---------
@@ -198,3 +202,7 @@ To finish our tcpdump example from above we can add the following::
  rstrnt-report-log -l $RUNPATH/tcpdump.cap
  EOF
  chmod a+x /usr/share/restraint/plugins/completed.d/80_upload_tcpdump
+
+If you need to skip file restoration, refer to RSTRNT_DISABLED as described
+in the environment variable section (see :ref:`env-variables`).
+

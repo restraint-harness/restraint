@@ -1,8 +1,18 @@
-Variables
-=========
+.. _env-variables:
 
-The following variables are available to tasks.
+Environment Variables
+=====================
 
+The following environment variables are available to tasks.  They can be
+set using the environment variable of the `metadata` file or
+`testinfo.desc` file (see :ref:`tasks`).
+
+* RSTRNT_DISABLED - User populated to disable a plugin from running.
+      For example, to prevent `99_reboot` plugin from running after
+      local watchdog expires do `RSTRNT_DISABLED="99_reboot"`. Add
+      a space inbetween if there are multiple plugins.
+      For example, do `RSTRNT_DISABLED="01_dmesg_check 10_avc_check"`.
+      to prevent error checking (though not advised).
 * RSTRNT_JOBID - Populated from the job_id attribute of the recipe node.
 * RSTRNT_OWNER - Populated from the owner attribute of the job node.
 * RSTRNT_RECIPESETID - Populated from the recipe_set_id attribute of the recipe
