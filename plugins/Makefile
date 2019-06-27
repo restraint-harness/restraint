@@ -36,4 +36,4 @@ clean:
 .PHONY: check
 check:
 	make -C ../src
-	cd tests && py.test-3 .
+	cd tests && pytest-3 .
