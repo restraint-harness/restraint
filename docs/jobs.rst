@@ -19,7 +19,7 @@ showing just the elements required for running in the stand-alone configuration.
        .
        .
     <task name="/kernel/foo/checker">
-     <rpm name="rh-tests-kernel-foo-checker"/>
+     <rpm name="rh-tests-kernel-foo-checker" path="/mnt/tests/kernel/foo/checker"/>
     </task>
    </recipe>
   </recipeSet>
@@ -140,12 +140,14 @@ The second example will attempt to install the task via yum/rpm.
 
 ::
 
- <rpm name="rh-tests-kernel-foo-checker"/>
+ <rpm name="rh-tests-kernel-foo-checker" path="/mnt/tests/kernel/foo/checker"/>
 
 Currently Restraint does not attempt to set up any repos that you may have
 specified in your job.xml. This means that in order for it to install the
 above task you must have already configured the task repo on the machine
 running restraintd.
+
+The path attribute tells restraint where the task scripts are installed.
 
 Parameters
 ----------
