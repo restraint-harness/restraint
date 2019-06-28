@@ -6,37 +6,42 @@ import threading
 import labcontroller
 import shutil
 
-class TestDmesgCheck(unittest.TestCase):
+TEST_FAIL_FILE = os.path.abspath('./failurestrings')
+TEST_FALSE_FILE = os.path.abspath('./falsestrings')
 
-    @classmethod
-    def setUpClass(self):
+class DmesgCheckBase(unittest.TestCase):
+
+    def _setUpClass(self, port):
         self.maxDiff = None
 
-        self.fake_dmesg_path       = os.path.abspath('./bin')
-        self.restraint_bins_path   = os.path.abspath('../../src')
-        self.server_output_path    = os.path.abspath('./server_output')
+        self.restraint_bins_path = os.path.abspath('../../src')
+        self.server_output_path = os.path.abspath('./server_output')
         self.restraint_plugins_dir = os.path.abspath('../report_result.d')
 
         if not os.path.exists(self.server_output_path):
             os.makedirs(self.server_output_path)
 
         self.env = {
+            'FAILUREFILENM'     : TEST_FAIL_FILE,
+            'FALSEFILENM'       : TEST_FALSE_FILE,
             'PATH':':'.join([self.fake_dmesg_path, self.restraint_bins_path, os.environ['PATH']]),
-            'RSTRNT_RESULT_URL' :'http://localhost:8001/recipes/1/tasks/1/results/1',
+            'RSTRNT_RESULT_URL' :'http://localhost:%s/recipes/1/tasks/1/results/1' % port,
             'RSTRNT_PLUGINS_DIR': self.restraint_plugins_dir,
             'RSTRNT_DISABLED'   : "10_avc_check 20_avc_clear",
-            'RECIPE_URL'        : "http://localhost:8001/recipes/1",
+            'RECIPE_URL'        : "http://localhost:%s/recipes/1" % port,
             'TASKID'            : "1"
         }
+
+        self.t = threading.Thread(target=labcontroller.app.run, name='HTTP server', kwargs={'port': port})
+        self.t.daemon = True
+        self.t.start()
+
+    def _setUpStrings(self):
 
         if 'FALSESTRINGS' in os.environ:
             del os.environ['FALSESTRINGS']
         if 'FAILURESTRINGS' in os.environ:
             del os.environ['FAILURESTRINGS']
-
-        t = threading.Thread(target=labcontroller.app.run, name='HTTP server', kwargs={'port': 8001})
-        t.daemon = True
-        t.start()
 
     def setUp(self):
         shutil.rmtree(self.server_output_path)
@@ -44,7 +49,18 @@ class TestDmesgCheck(unittest.TestCase):
 
         self.assertEqual(os.listdir(self.server_output_path), [], 'Server output was not emptied!')
 
+        self._setUpStrings()
+
         output = subprocess.call(['./../run_plugins'], env=self.env)
+
+
+class TestDmesgCheckHardcodeDflt(DmesgCheckBase):
+
+    @classmethod
+    def setUpClass(self):
+        self.fake_dmesg_path = os.path.abspath('./bin')
+
+        self._setUpClass(self, 8002)
 
     def test_dmesg_check_for_correct_output(self):
         expected = """------------[ cut here ]------------
@@ -75,6 +91,127 @@ blip blop
             with open(self.server_output_path + '/dmesg.log') as f2:
                 self.assertMultiLineEqual(f1.read(), f2.read())
 
+
+class TestDmesgCheckFileDflt(DmesgCheckBase):
+
+    @classmethod
+    def setUpClass(self):
+        self.fake_dmesg_path = os.path.abspath('./bin2')
+        self._setUpClass(self, 8003)
+
+    def _setUpStrings(self):
+
+        with open(TEST_FAIL_FILE, "w") as f_file:
+            f_file.write("Something is stuck\n")
+            f_file.write("    \n")
+            f_file.write("Coolness at\n")
+            f_file.write("\n")
+
+        with open(TEST_FALSE_FILE, "w") as f_file:
+            f_file.write("DEBUG\n")
+            f_file.write("    \n")
+            f_file.write("mark_hardware_unsupported")
+            f_file.write("\n")
+
+    def tearDown(self):
+        os.remove(TEST_FAIL_FILE);
+        os.remove(TEST_FALSE_FILE);
+
+    def test_dmesg_check_for_correct_output(self):
+        expected = """------------[ cut here ]------------
+WARNING: at arch/x86/mm/ioremap.c:195 __ioremap_caller+0x286/0x370()
+Info: mapping multiple BARs. Your kernel is fine.
+Hardware name: IBM IBM System X3250 M4 -[2583AC1]-/00D3729, BIOS -[JQE164AUS-1.07]- 12/09/2013
+ ffff88023241ba88 00000000653d7f8a ffff88023241ba40 ffffffff816350c1
+ ffff88023241ba78 ffffffff8107b200 ffffc90004e50000 ffffc90004e50000
+ 00000000fed18000 ffffc90004e50000 0000000000008000 ffff88023241bae0
+Call Trace:
+ [<ffffffff816350c1>] dump_stack+0x19/0x1b
+ [<ffffffff8107b200>] warn_slowpath_common+0x70/0xb0
+ [<ffffffff810ed4ae>] load_module+0x134e/0x1b50
+ [<ffffffff813166b0>] ? ddebug_proc_write+0xf0/0xf0
+ [<ffffffff810e9743>] ? copy_module_from_fd.isra.42+0x53/0x150
+ [<ffffffff810ede66>] SyS_finit_module+0xa6/0xd0
+ [<ffffffff816457c9>] system_call_fastpath+0x16/0x1b
+---[ end trace 5fcf161d6e45465f ]---
+Initializing cgroup subsys cpuset
+Initializing cgroup subsys cpu
+Something is stuck
+Blah blah
+Coolness at
+blah bloop
+Something is stuck
+blip blop
+"""
+        with open(self.server_output_path + '/resultoutputfile.log', 'r') as f:
+            outputfile_text = f.read()
+        self.assertMultiLineEqual(outputfile_text, expected)
+
+    def test_rstrnt_report_log_sends_dmesg_log(self):
+        with open(self.fake_dmesg_path + '/dmesg.log') as f1:
+            with open(self.server_output_path + '/dmesg.log') as f2:
+                self.assertMultiLineEqual(f1.read(), f2.read())
+
+
+class TestDmesgCheckVariableSetting(DmesgCheckBase):
+
+    @classmethod
+    def setUpClass(self):
+        self.fake_dmesg_path = os.path.abspath('./bin3')
+        self.port = 8084
+        self._setUpClass(self, self.port)
+
+    def _setUpStrings(self):
+
+        self.env = {
+            'FAILUREFILENM'     : TEST_FAIL_FILE,
+            'FALSEFILENM'       : TEST_FALSE_FILE,
+            'FAILURESTRINGS'    : "My Head Hurts|My feet hurt",
+            'FALSESTRINGS'      : "get aspirin|My System X3250 M4",
+            'PATH':':'.join([self.fake_dmesg_path, self.restraint_bins_path, os.environ['PATH']]),
+            'RSTRNT_RESULT_URL' :'http://localhost:%s/recipes/1/tasks/1/results/1' % self.port,
+            'RSTRNT_PLUGINS_DIR': self.restraint_plugins_dir,
+            'RSTRNT_DISABLED'   : "10_avc_check 20_avc_clear",
+            'RECIPE_URL'        : "http://localhost:%s/recipes/1" % self.port,
+            'TASKID'            : "1"
+        }
+
+        ## Let's make sure variables take precedence over files
+        ## and hardcoded defaults.
+        with open(TEST_FAIL_FILE, "w") as f_file:
+            f_file.write("Something is stuck\n")
+            f_file.write("    \n")
+            f_file.write("Coolness at\n")
+            f_file.write("\n")
+
+        with open(TEST_FALSE_FILE, "w") as f_file:
+            f_file.write("DEBUG\n")
+            f_file.write("    \n")
+            f_file.write("mark_hardware_unsupported")
+            f_file.write("\n")
+
+    def tearDown(self):
+        os.remove(TEST_FAIL_FILE);
+        os.remove(TEST_FALSE_FILE);
+
+    def test_dmesg_check_for_correct_output(self):
+        expected = """Initializing cgroup subsys cpuset
+Initializing cgroup subsys cpu
+My Head Hurts
+Blah blah
+My feet hurt
+blah bloop
+My Head Hurts
+blip blop
+"""
+        with open(self.server_output_path + '/resultoutputfile.log', 'r') as f:
+            outputfile_text = f.read()
+        self.assertMultiLineEqual(outputfile_text, expected)
+
+    def test_rstrnt_report_log_sends_dmesg_log(self):
+        with open(self.fake_dmesg_path + '/dmesg.log') as f1:
+            with open(self.server_output_path + '/dmesg.log') as f2:
+                self.assertMultiLineEqual(f1.read(), f2.read())
 
 if __name__ == '__main__':
     unittest.main()

@@ -26,8 +26,25 @@ trap clean_up EXIT
 DMESG_FILE=$TMPDIR/dmesg.log
 OUTPUTFILE=$TMPDIR/outputfile.log
 
-FAILURESTRINGS=${FAILURESTRINGS:="Oops|BUG|NMI appears to be stuck|Badness at"}
-FALSESTRINGS=${FALSESTRINGS:="BIOS BUG|DEBUG|mapping multiple BARs.*IBM System X3250 M4"}
+# Order of precedence for FAILURE & FALSESTRINGS:
+# 1) Use User defined Task variable if present
+# 2) else use content of failure or falsestrings files
+# 3) else use hardcoded defaults.
+FAILUREFILENM=${FAILUREFILENM:-"/usr/share/rhts/failurestrings"}
+if [ ! -f ${FAILUREFILENM} ]; then
+    FAILURESTRINGS=${FAILURESTRINGS:-"Oops|BUG|NMI appears to be stuck|Badness at"}
+else
+    # Remove space filled or empty lines and join lines with "|"
+    FAILURESTRINGS=${FAILURESTRINGS:-$(sed '/^ *$/d' ${FAILUREFILENM} | paste -sd "|")}
+fi
+
+FALSEFILENM=${FALSEFILENM:-"/usr/share/rhts/falsestrings"}
+if [ ! -f ${FALSEFILENM} ]; then
+    FALSESTRINGS=${FALSESTRINGS:-"BIOS BUG|DEBUG|mapping multiple BARs.*IBM System X3250 M4"}
+else
+    # Remove space filled or empty lines and join lines with "|"
+    FALSESTRINGS=${FALSESTRINGS:-$(sed '/^ *$/d' ${FALSEFILENM} | paste -sd "|")}
+fi
 
 # Dump dmesg output into $DMESG_FILE and clear it.
 dmesg -c >"$DMESG_FILE"

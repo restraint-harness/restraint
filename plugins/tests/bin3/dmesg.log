@@ -1,0 +1,36 @@
+Initializing cgroup subsys cpuset
+Initializing cgroup subsys cpu
+------------[ cut here ]------------
+My Head Hurts - get aspirin
+WARNING: at kernel/rh_taint.c:13 mark_hardware_unsupported+0x39/0x40() (Not tainted)
+Call Trace:
+[<ffffffff8106e2e7>] ? warn_slowpath_common+0x87/0xc0
+[<ffffffff8106e37f>] ? warn_slowpath_fmt_taint+0x3f/0x50
+[<ffffffff8109f399>] ? mark_hardware_unsupported+0x39/0x40,[<ffffffff81c2d9e2>] ? setup_arch+0xb57/0xb7a
+[<ffffffff8150d0d1>] ? printk+0x41/0x48
+[<ffffffff81c27c33>] ? start_kernel+0xdc/0x430
+[<ffffffff81c2733a>] ? x86_64_start_reservations+0x125/0x129
+[<ffffffff81c27438>] ? x86_64_start_kernel+0xfa/0x109
+---[ end trace a7919e7f17c0a725 ]---
+My Head Hurts
+Blah blah
+My feet hurt
+blah bloop
+My Head Hurts
+blip blop
+------------[ cut here ]------------
+WARNING: at arch/x86/mm/ioremap.c:195 __ioremap_caller+0x286/0x370()
+Info: mapping multiple BARs. Your kernel is fine.
+Hardware name: IBM My System X3250 M4 -[2583AC1]-/00D3729, BIOS -[JQE164AUS-1.07]- 12/09/2013
+ ffff88023241ba88 00000000653d7f8a ffff88023241ba40 ffffffff816350c1
+ ffff88023241ba78 ffffffff8107b200 ffffc90004e50000 ffffc90004e50000
+ 00000000fed18000 ffffc90004e50000 0000000000008000 ffff88023241bae0
+Call Trace:
+ [<ffffffff816350c1>] dump_stack+0x19/0x1b
+ [<ffffffff8107b200>] warn_slowpath_common+0x70/0xb0
+ [<ffffffff810ed4ae>] load_module+0x134e/0x1b50
+ [<ffffffff813166b0>] ? ddebug_proc_write+0xf0/0xf0
+ [<ffffffff810e9743>] ? copy_module_from_fd.isra.42+0x53/0x150
+ [<ffffffff810ede66>] SyS_finit_module+0xa6/0xd0
+ [<ffffffff816457c9>] system_call_fastpath+0x16/0x1b
+---[ end trace 5fcf161d6e45465f ]---

@@ -141,10 +141,39 @@ following:
  BIOS BUG|DEBUG|mapping multiple BARs.*IBM System X3250 M4
 
 This is an effort to reduce false positives. Both of the above strings can be
-overridden from each task by passing in your own FAILURESTRINGS or FALSESTRINGS
-variables.
+overridden from each task by passing in your own `FAILURESTRINGS` or `FALSESTRINGS`
+environment variables. This can be done for each task.
 
-In some cases the kernel will produce a multi-line error message (including
+If you want all tasks in a recipe to use the same `FAILURESTRINGS` or `FALSESTRINGS`,
+you could start your recipe with a task which creates the following files respectively:
+
+::
+
+  /usr/share/rhts/failurestrings
+  /usr/share/rhts/falsestrings
+
+When configuring the files, each string should be on a separate line instead of
+separated with '|'.  For example, failurestrings would contain something like the
+following:
+
+::
+
+  Oops
+  BUG
+  NMI appears to be stuck
+  Badness at
+
+The order of precedence for these variables/files is follows::
+
+  1) Task environment variable
+  2) User defined files
+  3) and Hardcoded defaults as defined earlier in this section.
+
+FAILURESTRINGS and FALSESTRINGS are processed separately so you could
+define failure strings as an environment variable while maintaining
+hardcoded defaults for false strings.
+
+In some cases, the kernel will produce a multi-line error message (including
 hardware information and stack trace) in the dmesg output which is delimited by
 a "cut here" line at the beginning and an "end trace" line at the end. This
 plugin will capture the entire contents of the multi-line trace and considers
