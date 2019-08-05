@@ -121,6 +121,8 @@ a TCP capture::
  EOF
  chmod a+x /usr/share/restraint/plugins/task_run.d/30_tcpdump
 
+Refer to section (:ref:`completed`) for how to report these results.
+
 Report Result
 -------------
 
@@ -211,6 +213,8 @@ limit. Restraint currently ships with three plugins:
   sane state.  If you need to skip this step, you can use RSTRNT_DISABLED
   as described in (see :ref:`env-variables`).
 
+.. _completed:
+
 Completed
 ---------
 
@@ -218,8 +222,11 @@ These plugins will get executed at the end of every task, regardless if the
 localwatchdog triggered or not. The only plugin currently shipped with
 Restraint is:
 
-* 98_restore - any files backed up by either rhts-backup or rstrnt-backup will
-  be restored.
+* 85_sync_multihost_tasks - Synchronizes tasks between SERVER/CLIENT
+  jobs on multihost machines.
+* 97_audit_rotate - Searches log files in audit directory to find
+  avc messages.
+* 98_restore - Restores files backed up by either rhts-backup or rstrnt-backup.
 
 To finish our tcpdump example from above we can add the following::
 

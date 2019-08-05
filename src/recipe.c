@@ -452,7 +452,7 @@ recipe_parse (xmlDoc *doc, SoupURI *recipe_uri, GError **error)
             }
             /* link task to recipe for additional attributes */
             task->recipe = result;
-            task->order = i++;
+            task->order = i++*2;
             tasks = g_list_prepend(tasks, task);
         } else
         if (child->type == XML_ELEMENT_NODE &&

@@ -1,0 +1,8 @@
+#!/bin/sh -x
+#
+# Synchronize tasks between SERVER/Client jobs
+# on multihost machines.
+#
+export TASKORDER=$(expr $TASKORDER + 1)
+rhts-sync-set -s DONE
+rhts-sync-block -s DONE $SERVERS $CLIENTS $DRIVER
