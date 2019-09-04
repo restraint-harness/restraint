@@ -10,7 +10,7 @@
 %endif
 
 Name:		restraint
-Version:	0.1.39
+Version:	0.1.40
 Release:	1%{?dist}
 Summary:	Simple test harness which can be used with beaker
 
@@ -365,6 +365,24 @@ fi
 %{__rm} -rf %{buildroot}
 
 %changelog
+* Wed Sep 04 2019 Martin Styk <mastyk@redhat.com> 0.1.40-1
+- Multihost Task Sync does not work (cbouchar@redhat.com)
+- Update tito branches (mastyk@redhat.com)
+- Restraint to support fail/false strings files (cbouchar@redhat.com)
+- Document RSTRNT_DISABLED to disabled 99_reboot (cbouchar@redhat.com)
+- Document path attribute for rpm element (jbastian@redhat.com)
+- Fix typo in plugins/Makefile (mastyk@redhat.com)
+- rstrnt-adjust-watchdog CMD to update local watchdog (cbouchar@redhat.com)
+- Xfer of messages file fails on bad size (cbouchar@redhat.com)
+- Deprecated RSTRNT_MAX_TIME in favor of KILLTIMEOVERRIDE (tklohna@redhat.com)
+- Update metadata/testinfo data in restraint doc (cbouchar@redhat.com)
+- When local watchdog expires, upload task's log (cbouchar@redhat.com)
+- RFC Restraint missing link to current tasks log file named 'current.log'
+  (cbouchar@redhat.com)
+- Update verification in 20_unconfined (mastyk@redhat.com)
+- third-party: Remove libssh2 usage from libcurl (mastyk@redhat.com)
+- Update service file to depend on network-online (mastyk@redhat.com)
+
 * Wed Feb 27 2019 Martin Styk <mastyk@redhat.com> 0.1.39-1
 - Upstream release 0.1.39:
   https://restraint.readthedocs.io/en/latest/release-notes.html#restraint-0-1-39
