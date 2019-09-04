@@ -1,6 +1,64 @@
 Release Notes
 =============
 
+Restraint 0.1.40
+----------------
+
+Released 4 September 2019.
+
+* | FIXED: :bug:`1609330`: Restraint should have a log similar to
+    beah's /mnt/testarea/current.log.  This file points to unique
+    task file named /tmp/tmp.XXXX (where XXXX is random).  As tasks
+    change, the link changes to new tmp.XXXX file.  File
+    current.log makes it convenient to find current task log file
+    as the job is running.
+  | (Contributed by Carol Bouchard)
+* | NEW: :bug:`1713313`: Provide an option for not rebooting the
+    test box after localwatchdog killed a task. No new code was
+    written for this since an option already existed.  This
+    changeset documents the option `RSTRNT_DISABLED` which allows
+    the user to disable specified plugins.
+  | (Contributed by Carol Bouchard)
+* | FIXED: :bug:`1678549`: Restraint starts too early for the system
+    to get ready for testing.  Instead, wait until network is up
+    before starting restraint.
+  | (Contributed by Martin Styk)
+* | FIXED: :bug:`1694221`: SELinux tests break. The `20_unconfined` plugin
+    currently checks if process running with SELinux role and domain but
+    was missing check if user is SELinux user.
+  | (Contributed by Martin Styk)
+* | FIXED: :bug:`1478653`: [RESTRAINT] Error uploading
+    /var/log/messages. Seeing error Bad Request [soup_http_error_quark, 400].
+    This error occurs because restraint reports the number of bytes to send
+    but then sends more as the file continues to grow.  Now we only send the
+    number of bytes from the point the transmission began and ignore
+    subsequent lines in the log as they are just extra noise.
+  | (Contributed by Carol Bouchard)
+* | FIXED: :bug:`1700886`: Restraint not uploading resultoutputfile.log
+    when local watchdog expires. The variable OUTPUTFILE was not
+    being set.  It is now set to the tasks current.log (ref: 1609330) so
+    it is now reported.
+  | (Contributed by Carol Bouchard)
+* | FIXED: :bug:`1730617`: Multihost: Task execution synchronization
+    does not work in restraint. As documented in Beaker's Multihost Tasks
+    section, Task 1 on both server and client must complete before moving
+    on to Task 2 and so on.  A new plugin `85_sync_multihost_tasks` was
+    added to cause synchronization between client and server tasks.
+  | (Contributed by Carol Bouchard)
+* | FIXED: :bug:`1700915`: Resolve inconsistency of MAXTIME vs MAX_TIME
+    variables.  To resolve confusion, `RSTRNT_MAX_TIME` is being deprecated
+    with an existing variable `KILLTIMEOVERRIDE`. This changeset documents
+    this deprecation.
+  | (Contributed by Tomas Klohna)
+* | NEW: :bug:`1700926`: Allow task to adjust local watchdog.  The command
+    rstrnt-adjust-watchdog only affects the external watchdog.  To be
+    compatible with beah, this commmand also works for the local watchdog.
+  | (Contributed by Carol Bouchard)
+* | FIXED: :bug:`1705223`: Incomplete doc in regards to metadata/testinfo.desc.
+    This is a spinoff from BZ1120496 but for restraint.  This changeset
+    identified and documented variables in metadata and testinfo file.
+  | (Contributed by Carol Bouchard)
+
 Restraint 0.1.39
 ----------------
 
