@@ -366,6 +366,8 @@ server_recipe_callback (SoupServer *server, SoupMessage *client_msg,
         soup_message_body_truncate(client_msg->request_body);
         soup_message_set_request (client_msg, "application/x-www-form-urlencoded",
                           SOUP_MEMORY_TAKE, form_data, strlen (form_data));
+        // Init header length to force soup to reset it when sending message.
+        soup_message_headers_set_content_length(client_msg->request_headers, 0);
         g_free (form_seconds);
         g_hash_table_destroy(new_table);
 
