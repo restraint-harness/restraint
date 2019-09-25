@@ -81,6 +81,16 @@ Badness at
 blah bloop
 NMI appears to be stuck
 blip blop
+====================================================
+DMESG Selectors:
+Used Default FAILURESTRINGS and Default FALSESTRINGS
+====================================================
+FAILURESTRINGS: Oops|BUG|NMI appears to be stuck|Badness at
+FailureStrings file not found.
+====================================================
+FALSESTRINGS: BIOS BUG|DEBUG|mapping multiple BARs.*IBM System X3250 M4
+FalseStrings file not found.
+====================================================
 """
         with open(self.server_output_path + '/resultoutputfile.log', 'r') as f:
             outputfile_text = f.read()
@@ -142,6 +152,23 @@ Coolness at
 blah bloop
 Something is stuck
 blip blop
+====================================================
+DMESG Selectors:
+Used failurestrings file and falsestrings file
+====================================================
+FAILURESTRINGS: Something is stuck|Coolness at
+FailureStrings file found and contains:
+Something is stuck
+    
+Coolness at
+
+====================================================
+FALSESTRINGS: DEBUG|mark_hardware_unsupported
+FalseStrings file found and contains:
+DEBUG
+    
+mark_hardware_unsupported
+====================================================
 """
         with open(self.server_output_path + '/resultoutputfile.log', 'r') as f:
             outputfile_text = f.read()
@@ -203,6 +230,23 @@ My feet hurt
 blah bloop
 My Head Hurts
 blip blop
+====================================================
+DMESG Selectors:
+Used FAILURESTRINGS Environment Variable and FALSESTRINGS Environment Variable
+====================================================
+FAILURESTRINGS: My Head Hurts|My feet hurt
+FailureStrings file found and contains:
+Something is stuck
+    
+Coolness at
+
+====================================================
+FALSESTRINGS: get aspirin|My System X3250 M4
+FalseStrings file found and contains:
+DEBUG
+    
+mark_hardware_unsupported
+====================================================
 """
         with open(self.server_output_path + '/resultoutputfile.log', 'r') as f:
             outputfile_text = f.read()
