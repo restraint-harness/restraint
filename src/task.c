@@ -66,12 +66,28 @@ taskrun_archive_entry_callback (const gchar *entry, gpointer user_data)
     return archive_entry_callback (entry, task_run_data->app_data);
 }
 
-static gboolean fetch_retry (gpointer user_data)
+static gboolean
+fetch_retry (gpointer user_data)
 {
     AppData *app_data = (AppData *) user_data;
     Task *task = (Task *) app_data->tasks->data;
 
     task->state = TASK_FETCH;
+
+    app_data->task_handler_id = g_idle_add_full(G_PRIORITY_DEFAULT_IDLE,
+                                                task_handler,
+                                                app_data,
+                                                NULL);
+    return FALSE;
+}
+
+static gboolean
+refresh_role_retry (gpointer user_data)
+{
+    AppData *app_data = (AppData *) user_data;
+    Task *task = (Task *) app_data->tasks->data;
+
+    task->state = TASK_REFRESH_ROLES;
 
     app_data->task_handler_id = g_idle_add_full(G_PRIORITY_DEFAULT_IDLE,
                                                 task_handler,
@@ -88,7 +104,7 @@ fetch_finish_callback (GError *error, gpointer user_data)
 
     if (error) {
         if (app_data->fetch_retries < FETCH_RETRIES) {
-            g_print("* RETRY [%d]**:%s\n", ++app_data->fetch_retries,
+            g_print("* RETRY fetch [%d]**:%s\n", ++app_data->fetch_retries,
                     error->message);
             g_clear_error(&error);
             g_timeout_add_seconds(FETCH_INTERVAL, fetch_retry, app_data);
@@ -351,6 +367,7 @@ void metadata_finish_cb(gpointer user_data, GError *error)
         task->state = TASK_COMPLETE;
     } else {
         task->state = TASK_REFRESH_ROLES;
+        app_data->fetch_retries = 0;
 
         // Set values from metadata first
         task->remaining_time = task->metadata->max_time;
@@ -847,9 +864,17 @@ recipe_fetch_complete(GError *error, xmlDoc *doc, gpointer user_data)
     Task *task = app_data->tasks->data;
 
     if (error) {
-        g_warn_if_fail(!doc);
-        g_propagate_error(&task->error, error);
-        task->state = TASK_COMPLETE;
+        if (app_data->fetch_retries < FETCH_RETRIES) {
+            g_print("* RETRY refresh roles [%d]**:%s\n", ++app_data->fetch_retries,
+                    error->message);
+            g_clear_error(&error);
+            g_timeout_add_seconds(FETCH_INTERVAL, refresh_role_retry, app_data);
+            return;
+        } else {
+            g_warn_if_fail(!doc);
+            g_propagate_error(&task->error, error);
+            task->state = TASK_COMPLETE;
+        }
     } else {
         g_warn_if_fail(doc != NULL);
         GError *tmp_error = NULL;
@@ -882,7 +907,7 @@ task_handler (gpointer user_data)
   gboolean result = TRUE;
 
   /*
-   *  - Fecth the task
+   *  - Fetch the task
    *  - Update metadata
    *  - Build env variables
    *  - Update external Watchdog
@@ -923,6 +948,10 @@ task_handler (gpointer user_data)
       break;
     case TASK_FETCH:
       // Fetch Task from rpm or url
+      if (app_data->fetch_retries > 0) {
+          g_string_printf(message, "** Fetching task: Retries %" G_GINT32_FORMAT "\n",
+                          app_data->fetch_retries);
+      }
       restraint_task_fetch (app_data);
       result=FALSE;
       break;
@@ -936,7 +965,8 @@ task_handler (gpointer user_data)
       break;
     case TASK_REFRESH_ROLES:
       if (app_data->recipe_url) {
-          g_string_printf(message, "** Refreshing peer role hostnames\n");
+          g_string_printf(message, "** Refreshing peer role hostnames: Retries %"
+                                     G_GINT32_FORMAT "\n", app_data->fetch_retries);
           restraint_xml_parse_from_url(soup_session, app_data->recipe_url,
                   recipe_fetch_complete, app_data);
           result = FALSE;
