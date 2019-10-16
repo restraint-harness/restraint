@@ -435,7 +435,13 @@ task_handler_callback (gint pid_result, gboolean localwatchdog, gpointer user_da
     TaskRunData *task_run_data = (TaskRunData *) user_data;
     AppData *app_data = task_run_data->app_data;
     Task *task = app_data->tasks->data;
+    GError *tmp_error = NULL;
 
+    task->version = get_package_version(task->fetch.package_name, &tmp_error);
+    if (tmp_error) {  // Error: However, report and continue on
+        g_print("FAILED Get RPM version: %s", tmp_error->message);
+        g_clear_error(&tmp_error);
+    }
     if (error) {
         task->error = g_error_copy (error);
         task->state = task_run_data->fail_state;
@@ -653,7 +659,8 @@ restraint_task_result (Task *task, AppData *app_data, gchar *result,
 }
 
 void
-restraint_task_status (Task *task, AppData *app_data, gchar *status, GError *reason)
+restraint_task_status (Task *task, AppData *app_data, gchar *status,
+                       gchar *taskversion, GError *reason)
 {
     g_return_if_fail(task != NULL);
 
@@ -669,21 +676,23 @@ restraint_task_status (Task *task, AppData *app_data, gchar *status, GError *rea
     g_return_if_fail(server_msg != NULL);
 
     gchar *data = NULL;
-    if (reason == NULL) {
-        data = soup_form_encode("status", status,
-                                "stime", stime,
-                                "etime", etime,
-                                NULL);
-    } else {
-        data = soup_form_encode("status", status,
-                                "stime", stime,
-                                "etime", etime,
-                                "message", reason->message, NULL);
+    GHashTable *data_table = g_hash_table_new (NULL, NULL);
+    g_hash_table_insert(data_table, "status", status);
+    g_hash_table_insert(data_table, "stime", stime);
+    g_hash_table_insert(data_table, "etime", etime);
+    if (taskversion != NULL) {
+        g_hash_table_insert(data_table, "version", taskversion);
+    }
+    if (reason != NULL) {
+        g_hash_table_insert(data_table, "etime", etime);
         g_message("%s task %s due to error: %s", status, task->task_id, reason->message);
     }
+    data = soup_form_encode_hash(data_table);
+
     soup_message_set_request(server_msg, "application/x-www-form-urlencoded",
             SOUP_MEMORY_TAKE, data, strlen(data));
 
+    g_hash_table_destroy(data_table);
     g_free(etime);
     g_free(stime);
 
@@ -946,7 +955,7 @@ task_handler (gpointer user_data)
               task->state = TASK_METADATA_PARSE;
           } else {
               // If neither started nor finished then fetch the task
-              restraint_task_status (task, app_data, "Running", NULL);
+              restraint_task_status (task, app_data, "Running", NULL, NULL);
               result = FALSE;
               g_string_printf(message, "** Fetching task: %s [%s]\n", task->task_id, task->path);
               app_data->fetch_retries = 0;
@@ -1071,10 +1080,10 @@ task_handler (gpointer user_data)
     {
       // Some step along the way failed.
       if (task->error) {
-        restraint_task_status(task, app_data, "Aborted", task->error);
+        restraint_task_status(task, app_data, "Aborted", task->version, task->error);
         g_clear_error(&task->error);
       } else {
-        restraint_task_status(task, app_data, "Completed", NULL);
+        restraint_task_status(task, app_data, "Completed", task->version, NULL);
       }
       // Rmeove the entire [task] section from the config.
       restraint_config_set (app_data->config_file, task->task_id, NULL, NULL, -1);

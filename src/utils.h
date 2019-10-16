@@ -24,5 +24,6 @@
 guint64 parse_time_string (gchar *time_string, GError **error);
 gboolean file_exists (gchar *filename);
 void cmd_usage(GOptionContext *context);
+gchar *get_package_version(gchar *pkg_name, GError **error);
 
 #endif

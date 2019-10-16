@@ -84,6 +84,8 @@ typedef struct {
     GList *params;
     /* List of Roles */
     GList *roles;
+    /* RPM Version of this task */
+    gchar *version;
     /* Has this task been started already? */
     gboolean started;
     /* Has this task finished already? */
@@ -129,7 +131,7 @@ void task_finish (gpointer user_data);
 void
 restraint_task_fetch(AppData *app_data);
 gboolean restraint_build_env(Task *task, GError **error);
-void restraint_task_status (Task *task, AppData *app_data, gchar *, GError *reason);
+void restraint_task_status (Task *task, AppData *app_data, gchar *, gchar *, GError *reason);
 void restraint_task_run(Task *task);
 void restraint_task_free(Task *task);
 void restraint_init_result_hash (AppData *app_data);

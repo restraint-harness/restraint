@@ -84,3 +84,44 @@ file_exists (gchar *filename)
         return FALSE;
     }
 }
+
+gchar *get_package_version(gchar *pkg_name, GError **error_out) {
+    GError *gerror = NULL;
+    gchar* std_out = NULL;
+    gchar* std_err = NULL;
+    gchar* err_out = NULL;
+    gint exitstat = 0;
+
+    gchar *command = g_strdup_printf("rpm -q --qf '%s' %s",
+                                     "%{Version}",
+                                     pkg_name);
+
+    if (!g_spawn_command_line_sync(command, &std_out, &std_err,
+                                   &exitstat, &gerror)) {
+        g_set_error(error_out, RESTRAINT_ERROR,
+                    RESTRAINT_CMDLINE_ERROR,
+                    "Failed to spawn command: %s due to %s",
+                    command, gerror->message);
+    } else if (exitstat != 0) {
+        if (std_err != NULL && (strlen(std_err) > 0)) {
+            err_out = std_err;
+        } else if (std_out != NULL && strlen(std_out) > 0) {
+            err_out = std_out;
+            std_out = NULL;
+        }
+        g_set_error(error_out, RESTRAINT_ERROR,
+                    RESTRAINT_CMDLINE_ERROR,
+                    "Get version command: %s, returned error: %s",
+                    command, (err_out == NULL) ? "None" : err_out );
+    }
+
+    g_free(command);
+    g_clear_error(&gerror);
+    if (err_out != NULL) {
+        g_free(err_out);
+    } else if (std_err != NULL) {
+        g_free(std_err);
+    }
+
+    return std_out;
+}

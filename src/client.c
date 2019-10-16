@@ -453,6 +453,10 @@ tasks_status_cb (const char *method,
     table = soup_form_decode (body->data);
     gchar *status = g_hash_table_lookup (table, "status");
     gchar *message = g_hash_table_lookup (table, "message");
+    gchar *version = g_hash_table_lookup (table, "version");
+    if (version) {
+        xmlSetProp (task_node_ptr, (xmlChar *)"version", (xmlChar *) version);
+    }
     time_t stime = 0;
     time_t etime = 0;
     if (g_hash_table_contains(table, "stime")) {
