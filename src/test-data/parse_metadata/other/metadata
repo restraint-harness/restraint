@@ -1,0 +1,16 @@
+[General]
+name=/restraint/sanity/fetch_git
+owner=Bill Peck <bpeck@redhat.com>
+description=Verifies restraint harness can fetch tasks over git://
+license=GPLv2
+confidential=no
+destructive=no
+
+[restraint]
+entry_point=make run
+dependencies=lib-virt;httpd;postgresql;nfs-utils;net-tools;net-snmp;ethereal;wireshark;tcpdump;rusers;bzip2;gcc
+dependencies[RedHatEnterpriseLinuxServer5]=apache;mysql
+max_time=2d
+repoRequires=restraint/sanity/common;kernel/include
+no_localwatchdog=true
+use_pty=true

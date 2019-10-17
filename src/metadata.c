@@ -78,14 +78,18 @@ restraint_parse_metadata (gchar *filename,
         goto error;
     }
 
-    metadata->name = g_strstrip(g_key_file_get_locale_string(keyfile,
-                                                      "General",
-                                                      "name",
-                                                      locale,
-                                                      &tmp_error));
+    metadata->name = g_key_file_get_locale_string(keyfile,
+                                                  "General",
+                                                  "name",
+                                                  locale,
+                                                  &tmp_error);
     if (tmp_error != NULL && tmp_error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND) {
         g_propagate_error(error, tmp_error);
         goto error;
+    }
+    // metadata->name is present
+    if (tmp_error == NULL) {
+        metadata->name = g_strstrip(metadata->name);
     }
     g_clear_error (&tmp_error);
 

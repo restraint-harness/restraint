@@ -198,35 +198,63 @@ static void test_testinfo_environment(void) {
     restraint_metadata_free (metadata);
 }
 
+static void test_testinfo_other(void) {
+    GError *error = NULL;
+    MetaData *metadata;
+
+    gchar *filename = "test-data/parse_testinfo/other/testinfo.desc";
+
+    metadata = restraint_parse_testinfo(filename, &error);
+
+    g_assert_no_error(error);
+    g_assert_cmpstr(metadata->name, ==, "/TOPLEVEL/filesystems/nfs/testsuite");
+
+    restraint_metadata_free (metadata);
+}
+
+static void check_dependencies(GSList *dependencies) {
+    gchar *dependency;
+
+    dependency = g_slist_nth_data(dependencies, 0);
+    g_assert_cmpstr(dependency, ==, "gcc");
+    dependency = g_slist_nth_data(dependencies, 1);
+    g_assert_cmpstr(dependency, ==, "bzip2");
+    dependency = g_slist_nth_data(dependencies, 2);
+    g_assert_cmpstr(dependency, ==, "rusers");
+    dependency = g_slist_nth_data(dependencies, 10);
+    g_assert_cmpstr(dependency, ==, "httpd");
+    dependency = g_slist_nth_data(dependencies, 11);
+    g_assert_cmpstr(dependency, ==, "lib-virt");
+
+}
+
 static void test_metadata_dependencies(void) {
     GError *error = NULL;
     MetaData *metadata;
 
     gchar *filename = "test-data/parse_metadata/dependencies/metadata";
     gchar *osmajor = "RedHatEnterpriseLinux6";
-    gchar *dependency;
 
     metadata = restraint_parse_metadata(filename, osmajor, &error);
 
-    g_assert_no_error (error);
-    dependency = g_slist_nth_data(metadata->dependencies, 0);
-    g_assert_cmpstr(dependency, ==, "gcc");
-    dependency = g_slist_nth_data(metadata->dependencies, 1);
-    g_assert_cmpstr(dependency, ==, "bzip2");
-    dependency = g_slist_nth_data(metadata->dependencies, 2);
-    g_assert_cmpstr(dependency, ==, "rusers");
-    dependency = g_slist_nth_data(metadata->dependencies, 10);
-    g_assert_cmpstr(dependency, ==, "httpd");
-    dependency = g_slist_nth_data(metadata->dependencies, 11);
-    g_assert_cmpstr(dependency, ==, "lib-virt");
+    g_assert_no_error(error);
+    check_dependencies(metadata->dependencies);
+    g_assert(metadata->softdependencies==NULL);
+    restraint_metadata_free(metadata);
 
-    restraint_metadata_free (metadata);
+    filename = "test-data/parse_metadata/dependencies/metadata-soft";
+    metadata = restraint_parse_metadata(filename, osmajor, &error);
+
+    g_assert_no_error(error);
+    check_dependencies(metadata->softdependencies);
+    g_assert(metadata->dependencies==NULL);
+    restraint_metadata_free(metadata);
 
     filename = "test-data/parse_metadata/dependencies/metadata-no-deps";
     metadata = restraint_parse_metadata(filename, osmajor, &error);
-    g_assert_no_error (error);
+    g_assert_no_error(error);
 
-    restraint_metadata_free (metadata);
+    restraint_metadata_free(metadata);
 }
 
 static void test_metadata_repodeps(void) {
@@ -251,7 +279,7 @@ static void test_metadata_repodeps(void) {
     metadata = restraint_parse_metadata(filename, osmajor, &error);
     g_assert_no_error (error);
 
-    restraint_metadata_free (metadata);
+    restraint_metadata_free(metadata);
 }
 
 static void test_metadata_use_pty(void) {
@@ -274,6 +302,53 @@ static void test_metadata_use_pty(void) {
     g_assert_false (metadata->use_pty);
 
     restraint_metadata_free (metadata);
+}
+
+static void test_metadata_no_localwatchdog(void) {
+    GError *error = NULL;
+    MetaData *metadata;
+
+    gchar *filename = "test-data/parse_metadata/no_localwatchdog/no_localwatchdog";
+    gchar *osmajor = "RedHatEnterpriseLinux6";
+
+    metadata = restraint_parse_metadata(filename, osmajor, &error);
+
+    g_assert_no_error(error);
+    g_assert_true(metadata->nolocalwatchdog);
+
+    restraint_metadata_free(metadata);
+
+    filename = "test-data/parse_metadata/no_localwatchdog/localwatchdog_on";
+    metadata = restraint_parse_metadata(filename, osmajor, &error);
+
+    g_assert_no_error(error);
+    g_assert_false(metadata->nolocalwatchdog);
+
+    restraint_metadata_free(metadata);
+
+    filename = "test-data/parse_metadata/no_localwatchdog/no_localwatchdog_dflt";
+    metadata = restraint_parse_metadata(filename, osmajor, &error);
+    g_assert_no_error(error);
+    g_assert_false(metadata->use_pty);
+
+    restraint_metadata_free(metadata);
+}
+
+static void test_metadata_other(void) {
+    GError *error = NULL;
+    MetaData *metadata;
+
+    gchar *filename = "test-data/parse_metadata/other/metadata";
+    gchar *osmajor = "RedHatEnterpriseLinux6";
+
+    metadata = restraint_parse_metadata(filename, osmajor, &error);
+
+    g_assert_no_error(error);
+    g_assert_cmpstr(metadata->name, ==, "/restraint/sanity/fetch_git");
+    g_assert_cmpstr(metadata->entry_point, ==, "make run");
+
+    restraint_metadata_free(metadata);
+
 }
 
 static void test_metadata_testtime_day(void) {
@@ -373,6 +448,7 @@ int main(int argc, char *argv[]) {
     g_test_add_func("/testinfo.desc/repodeps", test_testinfo_repodeps);
     g_test_add_func("/testinfo.desc/use_pty", test_testinfo_use_pty);
     g_test_add_func("/testinfo.desc/environment", test_testinfo_environment);
+    g_test_add_func("/testinfo.desc/other", test_testinfo_other);
     g_test_add_func("/metadata/testtime/day", test_metadata_testtime_day);
     g_test_add_func("/metadata/testtime/hour", test_metadata_testtime_hour);
     g_test_add_func("/metadata/testtime/invalid", test_metadata_testtime_invalid);
@@ -380,7 +456,9 @@ int main(int argc, char *argv[]) {
     g_test_add_func("/metadata/testtime/second", test_metadata_testtime_second);
     g_test_add_func("/metadata/dependencies", test_metadata_dependencies);
     g_test_add_func("/metadata/repodeps", test_metadata_repodeps);
+    g_test_add_func("/metadata/other", test_metadata_other);
     g_test_add_func("/metadata/use_pty", test_metadata_use_pty);
+    g_test_add_func("/metadata/no_localwatchdog", test_metadata_no_localwatchdog);
     g_test_add_func("/metadata/environment", test_metadata_environment);
     return g_test_run();
 }
