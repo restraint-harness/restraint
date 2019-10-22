@@ -45,6 +45,7 @@ BuildRequires:	gettext
 BuildRequires:	perl-XML-Parser
 BuildRequires:	libselinux-devel
 BuildRequires:	glibc-devel
+BuildRequires:	make
 %if 0%{?rhel}%{?fedora} > 4
 BuildRequires: selinux-policy-devel
 %endif
