@@ -1,6 +1,36 @@
 Release Notes
 =============
 
+Restraint 0.1.41
+----------------
+* | FIXED: :bug:`1753336`: The cli rstrnt-adjust-watchdog command
+    was producing random results.  The message from restraintd
+    to the lab controller was getting truncated when the number
+    of digits for time increased.  There is an extra 30 minutes
+    added to this message for external watchdog so it is possible
+    for it to increase by 1 byte. Since restraintd used the same
+    message received for the request, the message length was
+    already set so the soup library didn't try to recalculate it.
+    The solution is to initialize the length to 0 to force the
+    soup library to recalculate it.
+  | (Contributed by Carol Bouchard)
+* | FIXED: :bug:`1751074`: Rlse 0.1.40 seeing a lot of invalid
+    dmesg failures.  This behavior only occurs on x86_64 arch.
+    The rpm task /distribution/install, method VirtWorkaround()
+    is setting an empty /usr/share/rhts/failurestrings file.
+    As a result, every line is treated as a failure. Solution
+    is to make sure the failurestrings file has content
+    before using it.
+    Included in this changeset is detail output for next triage.
+    This output is written to the bottom of resultoutputfile.log when
+    01_dmesg_check reports failure.  This debug code reports which
+    set of failure and falsestring data was used: environment vars,
+    files, or hardcoded defaults.  It shows content of the
+    failure/falsestrings variables and if the files exist, if there
+    is data in them or the files content is also dumped into the
+    bottom of the log file.
+  | (Contributed by Carol Bouchard)
+
 Restraint 0.1.40
 ----------------
 
