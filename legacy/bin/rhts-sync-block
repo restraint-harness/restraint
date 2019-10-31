@@ -1,7 +1,7 @@
 #!/bin/sh
 
 command="$0 $*"
-params="$(getopt -o s:r:t:R: -l state:,any,timeout: --name "$(basename -- "$0")" -- "$@")"
+params="$(getopt -o s:r:t:R: -l state:,any,timeout:,retry: --name "$(basename -- "$0")" -- "$@")"
 
 function usage ()
 {
@@ -19,6 +19,7 @@ Application Options:
  -t, --testorder=ORDER  override the task/test order
      --any		If any machine matches exit
      --timeout=TIMEOUT	Set a timeout
+     --retry=TIME       Time to pause between retries
 EOF
 
     exit 1
@@ -41,6 +42,7 @@ fi
 
 any=0
 states=""
+pause=60
 while true
 do
     case $1 in
@@ -56,6 +58,11 @@ do
         --timeout)
             shift
             timeout=$(date +%s --date "+$1 seconds")
+            shift
+            ;;
+        --retry)
+            shift
+            pause=$1
             shift
             ;;
         -t|--testorder)
@@ -103,13 +110,18 @@ do
             fi
             # If we get any error besides the timeout we sleep for a minute
             if [ $rc -ne 37 ]; then
-		echo $output
-                sleep 60
+                if [ -z "$output" ]; then
+                    echo "Failed rstrnt-sync block ${state} ${machine} result: $rc"
+                else
+                    echo $output
+                fi
+                sleep $pause
             fi
         fi
     done
     if [ $fail -eq 0 ]; then
         break
     fi
+    echo "Retrying rhts-sync-block for state ${state}"
 done
 exit $rc

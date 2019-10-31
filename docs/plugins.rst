@@ -222,8 +222,10 @@ These plugins will get executed at the end of every task, regardless if the
 localwatchdog triggered or not. The only plugin currently shipped with
 Restraint is:
 
-* 85_sync_multihost_tasks - Synchronizes tasks between SERVER/CLIENT
-  jobs on multihost machines.
+* 85_sync_multihost_tasks - Synchronizes tasks between client/server jobs
+  on multihost machines.  This will synchronize only if there exists
+  recipes with role=SERVERS as well as role=CLIENTS. For further details
+  on this feature, refer to Beaker Multihost documentation [#]_.
 * 97_audit_rotate - Searches log files in audit directory to find
   avc messages.
 * 98_restore - Restores files backed up by either rhts-backup or rstrnt-backup.
@@ -242,3 +244,4 @@ To finish our tcpdump example from above we can add the following::
 If you need to skip file restoration, refer to RSTRNT_DISABLED as described
 in the environment variable section (see :ref:`env-variables`).
 
+.. [#] `Beaker Multihost documentation <https://beaker-project.org/docs/user-guide/multihost.html>`_.

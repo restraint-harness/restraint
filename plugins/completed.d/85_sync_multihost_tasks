@@ -4,5 +4,9 @@
 # on multihost machines.
 #
 export TASKORDER=$(expr $TASKORDER + 1)
-rhts-sync-set -s DONE
-rhts-sync-block -s DONE $SERVERS $CLIENTS $DRIVER
+if [ -z "$SERVERS" ] || [ -z "$CLIENTS" ]; then
+    echo "Skipping Multihost sync .. SERVERS/CLIENTS roles not set"
+else
+    rhts-sync-set -s DONE
+    rhts-sync-block -s DONE --retry 30 $SERVERS $CLIENTS $DRIVER
+fi

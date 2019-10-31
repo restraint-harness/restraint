@@ -318,7 +318,8 @@ int main(int argc, char **argv)
     memcpy(&(saddr.sin_addr.s_addr), he->h_addr_list[0], he->h_length);
 
     if (connect(sockfd, (struct sockaddr*)&saddr, sizeof(saddr)) < 0) {
-      perror("Failed to connect to remote server");
+      g_fprintf(stderr, "Failed to connect to remote server %s: %s\n",
+                argv[3], strerror(errno));
       close(sockfd);
       return 1;
     }
@@ -334,7 +335,13 @@ int main(int argc, char **argv)
       recv(sockfd, buf, BUFSIZE, 0);
     }
 
-    return g_strcmp0(argv[2], buf) ? 1 : 0;
+    if (g_strcmp0(argv[2], buf)) {
+      g_fprintf(stderr, "Server %s not reported state %s for Multihost Sync\n",
+                argv[3], argv[2]);
+        return 1;
+    } else {
+        return 0;
+    }
   }
 
   return 0;
