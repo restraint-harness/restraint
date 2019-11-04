@@ -73,14 +73,9 @@ Call Trace:
 [<ffffffff81c2733a>] ? x86_64_start_reservations+0x125/0x129
 [<ffffffff81c27438>] ? x86_64_start_kernel+0xfa/0x109
 ---[ end trace a7919e7f17c0a725 ]---
-Initializing cgroup subsys cpuset
-Initializing cgroup subsys cpu
 NMI appears to be stuck
-Blah blah
 Badness at
-blah bloop
 NMI appears to be stuck
-blip blop
 ====================================================
 DMESG Selectors:
 Used Default FAILURESTRINGS and Default FALSESTRINGS
@@ -144,14 +139,9 @@ Call Trace:
  [<ffffffff810ede66>] SyS_finit_module+0xa6/0xd0
  [<ffffffff816457c9>] system_call_fastpath+0x16/0x1b
 ---[ end trace 5fcf161d6e45465f ]---
-Initializing cgroup subsys cpuset
-Initializing cgroup subsys cpu
 Something is stuck
-Blah blah
 Coolness at
-blah bloop
 Something is stuck
-blip blop
 ====================================================
 DMESG Selectors:
 Used failurestrings file and falsestrings file
@@ -222,14 +212,9 @@ class TestDmesgCheckVariableSetting(DmesgCheckBase):
         os.remove(TEST_FALSE_FILE);
 
     def test_dmesg_check_for_correct_output(self):
-        expected = """Initializing cgroup subsys cpuset
-Initializing cgroup subsys cpu
-My Head Hurts
-Blah blah
+        expected = """My Head Hurts
 My feet hurt
-blah bloop
 My Head Hurts
-blip blop
 ====================================================
 DMESG Selectors:
 Used FAILURESTRINGS Environment Variable and FALSESTRINGS Environment Variable

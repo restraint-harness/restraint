@@ -89,7 +89,7 @@ done
 sed -i -n '/cut here/,/end trace/!p;' "$DMESG_FILE"
 
 # Check for errors
-grep -C 5 -P '^(?:(?!'"$FALSESTRINGS"').)*('"$FAILURESTRINGS"')' "$DMESG_FILE" >> "$OUTPUTFILE"
+grep -E -v "$FALSESTRINGS" "$DMESG_FILE" | grep -E "$FAILURESTRINGS" >> "$OUTPUTFILE"
 
 if [ -s "$OUTPUTFILE" ]; then
     # print FAILURE/FALSESTRINGS used at bottom of file
