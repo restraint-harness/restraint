@@ -1,6 +1,32 @@
 Release Notes
 =============
 
+Restraint 0.1.42
+----------------
+* | FIXED: :bug:`1753652`: Multihost Sync Improvements
+    A number of improvements have been made to the Multihost
+    synchronization feature.
+    * Only perform multihost sync when roles SERVERS and CLIENTS
+      are defined in the environment.
+    * Add the ability to tune the amount of time to pause before
+      another retry attempt.
+    * Restraint's retry pause time reduced to 30 from 60.
+    * Improve log entries to provide insight to multihost sync
+      operations.
+  | (Contributed by Carol Bouchard)
+* | FIXED: :bug:`1756515`: FALSESTRINGS not provide consistent results
+    If a dmesg log contains  "falsestring failurestring", then
+    falsestring will override failurestring.  If they were
+    swapped where "failurestring falsestring", then falsestring
+    does not override failurestring which is a bug.  This
+    changeset resolves this inconsistency.  It also removed
+    printing of surrounding 5 lines around the matching line.
+    This will make it easier for users to identify which line
+    has matched.  The full dmesg log file is also provided so
+    user can easily search through the full dmesg log if they
+    need to see surrounding lines.
+  | (Contributed by Carol Bouchard)
+
 Restraint 0.1.41
 ----------------
 * | FIXED: :bug:`1753336`: The cli rstrnt-adjust-watchdog command
