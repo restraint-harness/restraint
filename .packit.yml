@@ -7,8 +7,7 @@ upstream_project_name: restraint
 - job: copr_build
   trigger: pull_request
   metadata:
-    targets:
-    - fedora-rawhide-x86_64
-    - fedora-31-x86_64
-    - fedora-30-x86_64
-    - fedora-29-x86_64
+  - fedora-rawhide-x86_64
+  - fedora-31-x86_64
+  - fedora-30-x86_64
+  - fedora-29-x86_64
