@@ -1,13 +1,19 @@
 # https://packit.dev/docs/configuration/
 
 specfile_path: restraint.spec
-upstream_project_name: restraint
+upstream_package_name: restraint
+
+actions:
+  create-archive:
+    - tito build --tgz --test -o . | tail -1 | awk -F'/' '{print $NF}'
 
 # for packit service
+jobs:
 - job: copr_build
   trigger: pull_request
   metadata:
-  - fedora-rawhide-x86_64
-  - fedora-31-x86_64
-  - fedora-30-x86_64
-  - fedora-29-x86_64
+    targets:
+    - fedora-rawhide-x86_64
+    - fedora-31-x86_64
+    - fedora-30-x86_64
+    - fedora-29-x86_64
