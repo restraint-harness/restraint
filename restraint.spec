@@ -367,13 +367,8 @@ fi
 
 %changelog
 * Thu Oct 24 2019 Martin Styk <mastyk@redhat.com> 0.1.41-1
-- Restraint Release Notes for 0.1.41 (cbouchar@redhat.com)
-- Add make as build requirement (mastyk@redhat.com)
-- Plugin 01_dmesg_check fails in rlse 0.1.40 (cbouchar@redhat.com)
-- Random results with rstrnt-adjust-watchdog cmd (cbouchar@redhat.com)
-- Restraint Release Notes for 0.1.40 (cbouchar@redhat.com)
-- Fix specfile to refer changelog for release 0.1.40 (mastyk@redhat.com)
-- Add __pycache__ to .gitignore (mastyk@redhat.com)
+- Upstream release 0.1.41:
+  https://restraint.readthedocs.io/en/latest/release-notes.html#restraint-0-1-41
 
 * Wed Sep 04 2019 Martin Styk <mastyk@redhat.com> 0.1.40-1
 - Upstream release 0.1.40:
