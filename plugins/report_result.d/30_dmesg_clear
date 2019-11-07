@@ -1,0 +1,4 @@
+#!/bin/sh
+# Simple clear dmesg so next task doesn't get previous tasks
+# dmesg output when dmesg_check is skipped
+dmesg -C

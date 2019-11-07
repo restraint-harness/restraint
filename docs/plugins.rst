@@ -61,6 +61,8 @@ The report_result commands above cause the following plugins to be executed::
      10_avc_check
      |
      20_avc_clear
+     |
+     30_dmesg_clear
 
 These plugins do not run from the task under test. They run from restraintd
 process. This allows for greater flexibility if your task is running as a
@@ -128,52 +130,61 @@ Report Result
 
 Every time a task reports a result to Restraint these plugins will execute.
 
-* 01_dmesg_check - This plugin checks dmesg output for the following failure
-  strings.
+* 01_dmesg_check - This plugin checks dmesg output for lines containing
+  certain values and also allows lines to be omitted.  If any lines
+  are selected, this indicates an error so the task will conclude with failed
+  results.
+* 30_dmesg_clear - This plugin clears dmesg log so the next task will
+  start with a fresh log.
 
-::
+There are 2 variables which manage selection of dmesg output. They are
+`FAILURESTRINGS` and `FALSESTRINGS`.  The `FAILURESTRINGS` variable contain
+values which allow you to select those lines considered in error.  The
+`FALSESTRINGS` variable contain values allowing you to omit some lines.
+This enables you to omit false positives.
+
+There are 3 ways `FAILURESTRINGS` and `FALSESTRINGS` configuration are provided.
+They can be configured by way of environment variables, as files, or defaults.
+The order of precedence for these variables/files is follows::
+
+  1) Task environment variable
+  2) User defined files
+  3) and defaults.
+
+`FAILURESTRINGS` and `FALSESTRINGS` are processed separately so you could
+define `FAILURESTRINGS` as an environment variable while maintaining
+defaults for `FALSESTRINGS`.
+
+The default values for `FAILURESTRINGS` are as follows::
 
  Oops|BUG|NMI appears to be stuck|Badness at
 
-But then it runs any matches through an inverted grep which removes the
-following:
-
-::
+The default values for `FALSESTRINGS` are as follows::
 
  BIOS BUG|DEBUG|mapping multiple BARs.*IBM System X3250 M4
 
-This is an effort to reduce false positives. Both of the above strings can be
-overridden from each task by passing in your own `FAILURESTRINGS` or `FALSESTRINGS`
-environment variables. This can be done for each task.
+Both of the above strings can be overridden for each task by passing
+in your own `FAILURESTRINGS` or `FALSESTRINGS` environment variables.
+This is configured for each task.  To define environment variables,
+refer to instructions for `metadata` or `testinfo.desc` files in
+(see :ref:`tasks`).
 
-If you want all tasks in a recipe to use the same `FAILURESTRINGS` or `FALSESTRINGS`,
-you could start your recipe with a task which creates the following files respectively:
-
-::
+If you want all tasks in a recipe to use the same set of your
+user-defined `FAILURESTRINGS` or `FALSESTRINGS`, you could start
+your recipe with a task which creates the following files
+respectively::
 
   /usr/share/rhts/failurestrings
   /usr/share/rhts/falsestrings
 
-When configuring the files, each string should be on a separate line instead of
+When configuring these files, each string should be on a separate line instead of
 separated with '|'.  For example, failurestrings would contain something like the
-following:
-
-::
+following::
 
   Oops
   BUG
   NMI appears to be stuck
   Badness at
-
-The order of precedence for these variables/files is follows::
-
-  1) Task environment variable
-  2) User defined files
-  3) and Hardcoded defaults as defined earlier in this section.
-
-FAILURESTRINGS and FALSESTRINGS are processed separately so you could
-define failure strings as an environment variable while maintaining
-hardcoded defaults for false strings.
 
 In some cases, the kernel will produce a multi-line error message (including
 hardware information and stack trace) in the dmesg output which is delimited by

@@ -67,7 +67,7 @@ else
 fi
 
 # Dump dmesg output into $DMESG_FILE and clear it.
-dmesg -c >"$DMESG_FILE"
+dmesg > "$DMESG_FILE"
 
 # Submit dmesg log if any output
 if [ -s "$DMESG_FILE" ]; then
