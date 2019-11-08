@@ -1,4 +1,4 @@
-#!/bin/sh -x
+#!/bin/sh
 #
 # Synchronize tasks between SERVER/Client jobs
 # on multihost machines.
@@ -7,6 +7,7 @@ export TASKORDER=$(expr $TASKORDER + 1)
 if [ -z "$SERVERS" ] || [ -z "$CLIENTS" ]; then
     echo "Skipping Multihost sync .. SERVERS/CLIENTS roles not set"
 else
-    rhts-sync-set -s DONE
-    rhts-sync-block -s DONE --retry 30 $SERVERS $CLIENTS $DRIVER
+    echo "Multihost synchronization for Servers=$SERVERS Clients=$CLIENTS"
+    rstrnt-sync-set -s DONE
+    rstrnt-sync-block -s DONE --retry 30 $SERVERS $CLIENTS $DRIVER
 fi

@@ -30,7 +30,8 @@ unset params
 
 basename=$(basename -- $0)
 if [ "$basename" = "rhts-sync-block" -o \
-     "$basename" = "rhts_sync_block" ]; then
+     "$basename" = "rhts_sync_block" -o \
+     "$basename" = "rstrnt-sync-block" ]; then
     XTRA="${TASKORDER}"
 fi
 
@@ -83,7 +84,7 @@ if [ -z "$*" ]; then
     usage
 fi
 
-echo $command
+echo "$command -- Blocking state(s) = $states"
 
 while true
 do
@@ -122,6 +123,6 @@ do
     if [ $fail -eq 0 ]; then
         break
     fi
-    echo "Retrying rhts-sync-block for state ${state}"
+    echo "Retrying rstrnt-sync-block for state ${state}"
 done
 exit $rc

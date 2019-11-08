@@ -155,6 +155,75 @@ rstrnt-restore
 Helper to restore a previously backed up file. There is a plugin which is
 executed at task completion which will call this command for you.
 
+.. _rstrnt-sync-block:
+
+rstrnt-sync-block
+---------------
+
+Block the task until the given systems in this recipe set have reached
+a certain state.  Use this command, along with `rstrnt-sync-set` to
+synchronize between systems in a multihost recipe set.
+
+::
+
+    rstrnt-sync-block -s <state> [--timeout <timeout>] [--retry <time>] [--any] <fqdn> [<fqdn> ...]
+
+For a more detailed guide on multihosting, refer to
+`Beaker Multihost documentation <https://beaker-project.org/docs/user-guide/multihost.html>`__.
+
+.. option:: -s <state>
+
+   Wait for the given state. If this option is repeated, the command will
+   return when any of the states has been reached. This option is required.
+
+.. option:: --retry <time>
+
+   `rstrnt-sync-block` sleeps inbetween check for machine(s) states.
+    If you'd like increase or decrease the frequency of checks, you can alter
+    sleep time using the option `retry`.  The default is 60 seconds.
+
+.. option:: --timeout <timeout>
+
+   Return a non-zero exit status after *timeout* seconds if the state has
+   not been reached. By default no timeout is enforced and the command will
+   block until either the given state is reached on all specified systems
+   or the recipe is aborted by the local or external watchdog.
+
+.. option:: --any
+
+   Return when any of the systems has reached the given state. By default, this
+   command blocks until *all* systems have reached the state.
+
+.. describe:: <fqdn> [<fqdn> ...]
+
+   FQDN of the systems to wait for. At least one FQDN must be given. Use the
+   role environment variables to determine which FQDNs to pass.
+
+.. _rstrnt-sync-set:
+
+rstrnt-sync-set
+---------------
+
+Sets the given state for this system. Other systems in the recipe set can use
+`rstrnt-sync-block` to wait for a state to be set on other systems. The
+syntax for this command is as follows:
+
+::
+
+    rstrnt-sync-set -s STATE
+
+States are scoped to the current task. That is, states set by the current task
+will have no effect in subsequent tasks.
+
+On execution of the first `set` operation, a background process `rstrnt-sync`
+is spawned which collects these states and responds to block requests.  This
+server listens for events received on `TCP port 6776`.  All subsequent `set`
+and `block` operations are forwarded to the `rstrnt-sync` server by way of
+this socket.
+
+This script also writes the states to the file named `/var/lib/restraint/rstrnt_events`.
+This file is used when the system reboots enabling the states to be restored.
+
 rstrnt-adjust-watchdog
 ----------------------
 
@@ -240,17 +309,17 @@ in order to support legacy tests written for RHTS.
 rhts-reboot
 ~~~~~~~~~~~
 
-Use rstrnt-reboot instead.
+Use `rstrnt-reboot` instead.
 
 rhts-backup
 ~~~~~~~~~~~
 
-Use rstrnt-backup instead.
+Use `rstrnt-backup` instead.
 
 rhts-restore
 ~~~~~~~~~~~~
 
-Use rstrnt-restore instead.
+Use `rstrnt-restore` instead.
 
 rhts-environment.sh
 ~~~~~~~~~~~~~~~~~~~
@@ -266,3 +335,14 @@ rhts-run-simple-test
 ~~~~~~~~~~~~~~~~~~~~
 
 Deprecated.
+
+rhts-sync-set
+~~~~~~~~~~~~~
+
+Use `rstrnt-sync-set` instead.
+
+rhts-sync-block
+~~~~~~~~~~~~~~~
+
+Use `rstrnt-sync-block` instead.
+

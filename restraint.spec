@@ -199,26 +199,28 @@ ln -s rstrnt-report-log $RPM_BUILD_ROOT/usr/bin/rhts_submit_log
 ln -s rstrnt-backup $RPM_BUILD_ROOT/usr/bin/rhts-backup
 ln -s rstrnt-restore $RPM_BUILD_ROOT/usr/bin/rhts-restore
 ln -s rstrnt-reboot $RPM_BUILD_ROOT/usr/bin/rhts-reboot
-ln -s rhts-sync-set $RPM_BUILD_ROOT/usr/bin/rhts-recipe-sync-set
-ln -s rhts-sync-set $RPM_BUILD_ROOT/usr/bin/rhts_recipe_sync_set
-ln -s rhts-sync-set $RPM_BUILD_ROOT/usr/bin/rhts_sync_set
-ln -s rhts-sync-block $RPM_BUILD_ROOT/usr/bin/rhts-recipe-sync-block
-ln -s rhts-sync-block $RPM_BUILD_ROOT/usr/bin/rhts_recipe_sync_block
-ln -s rhts-sync-block $RPM_BUILD_ROOT/usr/bin/rhts_sync_block
+ln -s rstrnt-sync-set $RPM_BUILD_ROOT/usr/bin/rhts-recipe-sync-set
+ln -s rstrnt-sync-set $RPM_BUILD_ROOT/usr/bin/rhts_recipe_sync_set
+ln -s rstrnt-sync-set $RPM_BUILD_ROOT/usr/bin/rhts-sync-set
+ln -s rstrnt-sync-set $RPM_BUILD_ROOT/usr/bin/rhts_sync_set
+ln -s rstrnt-sync-block $RPM_BUILD_ROOT/usr/bin/rhts-recipe-sync-block
+ln -s rstrnt-sync-block $RPM_BUILD_ROOT/usr/bin/rhts_recipe_sync_block
+ln -s rstrnt-sync-block $RPM_BUILD_ROOT/usr/bin/rhts-sync-block
+ln -s rstrnt-sync-block $RPM_BUILD_ROOT/usr/bin/rhts_sync_block
 ln -s rstrnt-abort $RPM_BUILD_ROOT/usr/bin/rhts-abort
 mkdir -p $RPM_BUILD_ROOT/mnt/scratchspace
 mkdir -p $RPM_BUILD_ROOT/mnt/testarea
 
 %if 0%{?rhel}%{?fedora} > 4
-# Build RHTS Selinux Testing Policy 
+# Build RHTS Selinux Testing Policy
 pushd legacy/selinux
 # If dist specific selinux module is present use that.
 # Why:
 #  newer releases may introduce new selinux macros which are not present in
 #  older releases.  This means that a module built under the newer release
-#  will no longer load on an older release.  
+#  will no longer load on an older release.
 # How:
-#  Simply issue the else statement on the older release and commit the 
+#  Simply issue the else statement on the older release and commit the
 #  policy to git with the appropriate dist tag.
 if [ -e "rhts%{?dist}.pp" ]; then
     install -p -m 644 -D rhts%{?dist}.pp $RPM_BUILD_ROOT%{_datadir}/selinux/packages/%{name}/rhts.pp
@@ -304,6 +306,8 @@ fi
 %attr(0755, root, root)%{_bindir}/rstrnt-restore
 %attr(0755, root, root)%{_bindir}/rstrnt-prepare-reboot
 %attr(0755, root, root)%{_bindir}/rstrnt-reboot
+%attr(0755, root, root)%{_bindir}/rstrnt-sync-set
+%attr(0755, root, root)%{_bindir}/rstrnt-sync-block
 %attr(0755, root, root)%{_bindir}/check_beaker
 %attr(0755, root, root)%{_bindir}/rstrnt-adjust-watchdog
 %attr(0755, root, root)%{_bindir}/rstrnt-abort
@@ -337,12 +341,12 @@ fi
 %attr(0755, root, root)%{_bindir}/rhts-environment.sh
 %attr(0755, root, root)%{_bindir}/rhts-run-simple-test
 %attr(0755, root, root)%{_bindir}/rhts-lint
-%attr(0755, root, root)%{_bindir}/rhts-sync-set
-%attr(0755, root, root)%{_bindir}/rhts-sync-block
 %attr(0755, root, root)%{_bindir}/rhts-report-result
 %attr(0755, root, root)%{_bindir}/rhts-flush
 
 # Symlinks do not have attributes
+%{_bindir}/rhts-sync-set
+%{_bindir}/rhts-sync-block
 %{_bindir}/rhts_sync_set
 %{_bindir}/rhts_sync_block
 %{_bindir}/rhts_environment.sh

@@ -64,10 +64,11 @@ if [ -z "$state" ]; then
 fi
 basename=$(basename -- $0)
 if [ "$basename" = "rhts-sync-set" -o \
-     "$basename" = "rhts_sync_set" ]; then
+     "$basename" = "rhts_sync_set" -o \
+     "$basename" = "rstrnt-sync-set" ]; then
     XTRA="${TASKORDER}"
 fi
-echo $command
+echo "$command -- State set = ${XTRA}_${state}"
 
 rstrnt-sync set ${XTRA}_${state}
 # Record the event in case any tests reboot the system
