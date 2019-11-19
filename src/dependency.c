@@ -427,6 +427,7 @@ static void dep_mtdata_finish_cb(gpointer user_data, GError *error)
         g_warning("No metadata for dependency '%s'\n", mtfi->path);
         g_free(mtfi->path);
         g_slice_free(MetadataFetchInfo, mtfi);
+        dependency_data->repodeps = g_slist_next(dependency_data->repodeps);
         restraint_fetch_repodeps(dependency_data);
     }
 }
