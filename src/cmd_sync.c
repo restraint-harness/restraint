@@ -56,16 +56,30 @@ static gboolean on_term_signal(gpointer data)
   return FALSE;
 }
 
+/*
+ * handle_rconn
+ * ------------
+ * Handles receipt of 'block' operations.
+ * If a set operation was previous called, respond back to client.
+ * If set operation not previously called, put this client
+ *   on a pending list so we can respond back when the 'set'
+ *   comes in.
+ * Before we do any of this checking, make sure there are no
+ * stale 'blocked clients' sockets since these can timeout
+ * and go away.
+ */
 static gboolean handle_rconn(GIOChannel *source, GIOCondition condition,
                              gpointer data)
 {
   struct sdata *sd = (struct sdata*)data;
   int sockfd = g_io_channel_unix_get_fd(source);
   ssize_t rcv = 0;
+  ssize_t bytes_sent = 0;
   char buf[BUFSIZE];
   int rsock;
   struct sockaddr addr;
   unsigned int len = sizeof(addr);
+  GSList *rlist = NULL;
 
   if ((rsock = accept(sockfd, &addr, &len)) < 0) {
     perror("Failed to accept connection");
@@ -79,8 +93,23 @@ static gboolean handle_rconn(GIOChannel *source, GIOCondition condition,
     return TRUE;
   }
 
+  /* Verify current sockets are still active */
+  for (GSList *l = sd->wlist; l; l = g_slist_next(l)) {
+    struct wentry *w = (struct wentry*)l->data;
+    bytes_sent = send(w->sockfd, "PING", 5, MSG_NOSIGNAL);
+    if (bytes_sent == -1) {
+        rlist = g_slist_prepend(rlist, w);
+    }
+  }
+  for (GSList *l = rlist; l; l = g_slist_next(l)) {
+    sd->wlist = g_slist_remove(sd->wlist, l->data);
+    wentry_free((struct wentry*)l->data);
+  }
+  g_slist_free(rlist);
+
+  /* Now check for match */
   if (g_hash_table_contains(sd->events, buf)) {
-    send(rsock, buf, rcv, 0);
+    send(rsock, buf, rcv, MSG_NOSIGNAL);
     close(rsock);
   } else {
     struct wentry *w = malloc(sizeof(struct wentry));
@@ -92,6 +121,17 @@ static gboolean handle_rconn(GIOChannel *source, GIOCondition condition,
   return TRUE;
 }
 
+/*
+ * handle_lconn
+ * ------------
+ *
+ * This handles receipt of 'set' operations.
+ * This stores the 'set state' which is transmitted by the client.
+ * Afterwards, it checks to determine if there are clients
+ * 'blocked' waiting for this 'state' to be 'set'.
+ * If there are, we acknowledge back to those clients and
+ * remove it from the 'block pending' list.
+ */
 static gboolean handle_lconn(GIOChannel *source, GIOCondition condition,
                              gpointer data)
 {
@@ -123,14 +163,14 @@ static gboolean handle_lconn(GIOChannel *source, GIOCondition condition,
   for (GSList *l = sd->wlist; l; l = g_slist_next(l)) {
     struct wentry *w = (struct wentry*)l->data;
     if (g_strcmp0(w->event, buf) == 0) {
-      send(w->sockfd, buf, rcv, 0);
-      wentry_free(w);
+      send(w->sockfd, buf, rcv, MSG_NOSIGNAL);
       rlist = g_slist_prepend(rlist, w);
     }
   }
 
   for (GSList *l = rlist; l; l = g_slist_next(l)) {
     sd->wlist = g_slist_remove(sd->wlist, l->data);
+    wentry_free((struct wentry*)l->data);
   }
   g_slist_free(rlist);
 
@@ -199,6 +239,14 @@ static int listen_remote(void)
 }
 
 
+/*
+ * handler()
+ *
+ * This is the rstrnt-sync server which is spawned on first call
+ * to rstrnt-sync.  It is responsible for saving 'set state'
+ * and storing client socket info of those clients waiting
+ * for 'set state' operation coming in.
+ */
 void handler(void)
 {
   struct sdata *sd = g_new0(struct sdata, 1);
@@ -206,6 +254,7 @@ void handler(void)
                                      g_free, NULL);
   int lsock, rsock;
 
+  signal(SIGPIPE, SIG_IGN);
   close(STDOUT_FILENO);
   close(STDERR_FILENO);
   close(STDIN_FILENO);
@@ -289,9 +338,11 @@ int main(int argc, char **argv)
     char buf[BUFSIZE] = "";
     struct sockaddr_in saddr;
     struct hostent *he;
-    int sockfd, ret;
+    int sockfd, ret, result, bytes=0, time_rcvd=0;
     fd_set rset;
     struct timeval timeout = { 0, 0 };
+    time_t start_time, end_time;
+    double seconds, diff_time=0;
 
     if (argc < 4) {
       usage(argv[0]);
@@ -299,7 +350,11 @@ int main(int argc, char **argv)
     }
 
     if (argc == 5) {
-      timeout.tv_sec = atoi(argv[4]);
+      time_rcvd = atoi(argv[4]);
+      timeout.tv_sec = time_rcvd;
+      time(&start_time);
+      time(&end_time);
+      diff_time = time_rcvd;
     }
 
     if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
@@ -325,23 +380,40 @@ int main(int argc, char **argv)
     }
 
     send(sockfd, argv[2], strlen(argv[2]) + 1, 0);
-    if (timeout.tv_sec > 0) {
-      FD_SET(sockfd, &rset);
-      ret = select(sockfd + 1, &rset, NULL, NULL, &timeout);
-      if (ret > 0) {
-        recv(sockfd, buf, BUFSIZE, 0);
-      }
-    } else {
-      recv(sockfd, buf, BUFSIZE, 0);
-    }
 
-    if (g_strcmp0(argv[2], buf)) {
-      g_fprintf(stderr, "Server %s not reported state %s for Multihost Sync\n",
-                argv[3], argv[2]);
-        return 1;
-    } else {
-        return 0;
+    result = 1;
+    while ((time_rcvd == 0) || (diff_time > 0)) {
+        if (timeout.tv_sec > 0) {
+          FD_SET(sockfd, &rset);
+          ret = select(sockfd + 1, &rset, NULL, NULL, &timeout);
+          if (ret > 0) {
+            bytes = recv(sockfd, buf, BUFSIZE, 0);
+          }
+        } else {
+          bytes = recv(sockfd, buf, BUFSIZE, 0);
+        }
+
+        // if server not testing the socket with PING
+        // and we match the state, quit with success.
+        if ((g_strcmp0("PING", buf) != 0)  &&
+             (g_strcmp0(argv[2], buf) == 0)) {
+            result = 0;
+            break;
+        }
+        if (time_rcvd != 0) {
+          time(&end_time);
+          seconds = difftime(end_time, start_time);
+          diff_time = (double)time_rcvd - seconds;
+          timeout.tv_sec = diff_time;
+        }
     }
+    close(sockfd);
+    if (result == 1) {
+          g_fprintf(stderr, "Server %s not reported state %s for Multihost Sync rcvd %d bytes\n",
+                    argv[3], argv[2], bytes);
+     }
+    return(result);
+
   }
 
   return 0;
