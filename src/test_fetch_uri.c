@@ -39,7 +39,8 @@ archive_entry_callback (const gchar *entry, gpointer user_data)
 }
 
 void
-fetch_finish_callback (GError *error, gpointer user_data)
+fetch_finish_callback (GError *error, guint32 extracted_cnt,
+                       guint32 nonmatch_cnt, gpointer user_data)
 {
     RunData *run_data = (RunData *) user_data;
     if (error)

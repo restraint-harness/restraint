@@ -151,6 +151,8 @@ archive_finish_callback (gpointer user_data)
 
     if (fetch_data->finish_callback) {
         fetch_data->finish_callback (fetch_data->error,
+                                     fetch_data->match_cnt,
+                                     fetch_data->nonmatch_cnt,
                                      fetch_data->user_data);
     } else {
         g_clear_error(&fetch_data->error);
@@ -173,7 +175,7 @@ http_archive_read_callback (gpointer user_data)
 
     r = archive_read_next_header(fetch_data->a, &entry);
     if (r == ARCHIVE_EOF) {
-        if (fetch_data->extracted_cnt == 0) {
+        if (fetch_data->match_cnt == 0) {
             g_set_error(&fetch_data->error, RESTRAINT_FETCH_LIBARCHIVE_ERROR, ARCHIVE_WARN,
                     "Nothing was extracted from archive");
         }
@@ -186,11 +188,6 @@ http_archive_read_callback (gpointer user_data)
                 "archive_read_next_header failed: %s", archive_error_string(fetch_data->a));
         g_idle_add (archive_finish_callback, fetch_data);
         return FALSE;
-    }
-
-    if (fetch_data->archive_entry_callback) {
-        fetch_data->archive_entry_callback (archive_entry_pathname (entry),
-                                            fetch_data->user_data);
     }
 
     const gchar *fragment = fetch_data->url->fragment;
@@ -219,8 +216,25 @@ http_archive_read_callback (gpointer user_data)
                 g_idle_add (archive_finish_callback, fetch_data);
                 return FALSE;
             }
-            fetch_data->extracted_cnt++;
+            gchar *strbegin = NULL;
+            if (fragment) {
+                strbegin = g_strstr_len(archive_entry_pathname(entry), -1,
+                                        fragment);
+            } else {
+                strbegin = (gchar *)archive_entry_pathname(entry) + strlen(fetch_data->base_path);
+                if (g_strstr_len(strbegin, 1, "/")) {
+                    strbegin += 1;
+                }
+            }
+            if ((fetch_data->archive_entry_callback) && (strbegin)) {
+                fetch_data->archive_entry_callback (strbegin,
+                                                    fetch_data->user_data);
+            }
+
+            fetch_data->match_cnt++;
         }
+    } else {
+        fetch_data->nonmatch_cnt++;
     }
     return TRUE;
 }
@@ -394,7 +408,7 @@ restraint_fetch_uri (SoupURI *url,
     fetch_data->user_data = user_data;
     fetch_data->url = url;
     fetch_data->base_path = base_path;
-    fetch_data->extracted_cnt = 0;
+    fetch_data->match_cnt = 0;
     fetch_data->keepchanges = keepchanges;
     fetch_data->ssl_verify = ssl_verify;
 

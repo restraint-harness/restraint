@@ -97,10 +97,12 @@ refresh_role_retry (gpointer user_data)
 }
 
 void
-fetch_finish_callback (GError *error, gpointer user_data)
+fetch_finish_callback (GError *error, guint32 match_cnt,
+                       guint32 nonmatch_cnt, gpointer user_data)
 {
     AppData *app_data = (AppData *) user_data;
     Task *task = (Task *) app_data->tasks->data;
+    GString *message = g_string_new (NULL);
 
     if (error) {
         if (app_data->fetch_retries < FETCH_RETRIES) {
@@ -115,6 +117,14 @@ fetch_finish_callback (GError *error, gpointer user_data)
         }
     } else {
         task->state = TASK_METADATA_PARSE;
+
+        if ((match_cnt > 0) || (nonmatch_cnt > 0)) {
+            g_string_printf (message, "** Fetch Summary: Match %d, "
+                             "Nonmatch %d\n",
+                             match_cnt, nonmatch_cnt);
+            connections_write (app_data, LOG_PATH_HARNESS, message->str, message->len);
+            g_string_free (message, TRUE);
+        }
     }
 
     app_data->task_handler_id = g_idle_add_full(G_PRIORITY_DEFAULT_IDLE,
@@ -155,7 +165,7 @@ restraint_task_fetch(AppData *app_data) {
                              RESTRAINT_TASK_RUNNER_SCHEMA_ERROR,
                              "Unimplemented schema method %s",
                              task->fetch.url->scheme);
-                fetch_finish_callback (error, app_data);
+                fetch_finish_callback (error, 0, 0, app_data);
                 return;
             }
             break;
@@ -186,7 +196,7 @@ restraint_task_fetch(AppData *app_data) {
             g_set_error (&error, RESTRAINT_ERROR,
                          RESTRAINT_TASK_RUNNER_FETCH_ERROR,
                          "Unknown fetch method");
-            fetch_finish_callback (error, app_data);
+            fetch_finish_callback (error, 0, 0, app_data);
             g_return_if_reached();
     }
 }

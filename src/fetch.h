@@ -26,6 +26,8 @@
 #define LARGE_PACKET_MAX 65520
 
 typedef void (*FetchFinishCallback) (GError *error,
+                                     guint32 match_cnt,
+                                     guint32 nonmatch_cnt,
                                      gpointer user_data);
 
 typedef void (*ArchiveEntryCallback) (const gchar *entry,
@@ -45,7 +47,8 @@ typedef struct {
     ArchiveEntryCallback archive_entry_callback;
     gpointer user_data;
     GError *error;
-    uint32_t extracted_cnt;
+    guint32 match_cnt;
+    guint32 nonmatch_cnt;
     gboolean keepchanges;
     gboolean ssl_verify;
     gpointer private_data;

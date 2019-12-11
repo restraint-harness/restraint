@@ -433,7 +433,8 @@ static void dep_mtdata_finish_cb(gpointer user_data, GError *error)
 }
 
 static void
-fetch_repodeps_finish_callback(GError *error, gpointer user_data)
+fetch_repodeps_finish_callback(GError *error, guint32 match_cnt,
+                               guint32 nonmatch_cnt, gpointer user_data)
 {
     RepoDepData *rd_data = (RepoDepData*)user_data;
     DependencyData *dependency_data = rd_data->dependency_data;
