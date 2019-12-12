@@ -1,0 +1,17 @@
+#!/usr/bin/make -f
+
+export DH_VERBOSE=1
+
+%:
+	dh $@
+
+override_dh_auto_clean:
+	make clean
+	make -C third-party clean
+	rm -f third-party/glib-rhel6-s390.patch
+
+override_dh_auto_build:
+override_dh_auto_test:
+	# Building 'third-party' with -j seems to fail
+	make -C third-party
+	PKG_CONFIG_PATH=../third-party/tree/lib/pkgconfig make STATIC=1 -j -C src
