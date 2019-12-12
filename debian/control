@@ -1,0 +1,12 @@
+Source: restraint
+Maintainer: Beaker Project <maintainer@beaker-project.org>
+Section: misc
+Priority: optional
+Standards-Version: 3.9.2
+Build-Depends: debhelper (>= 9), curl, gcc, gettext, libarchive-dev, libcurl4, libcurl4-gnutls-dev, libglib2.0-dev, libselinux1-dev, libsoup2.4-dev, libssh-dev, libxml-sax-expat-perl, libxml2-dev
+
+Package: restraint
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Restraint is a test harness for the Beaker Project
+ (https://www.beaker-project.org/)
