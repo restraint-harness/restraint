@@ -1,6 +1,40 @@
 Release Notes
 =============
 
+Restraint 0.1.43
+----------------
+* | FIXED: :bug:`1774211`: Seeing too many repo extraction
+    Under certain conditions, restraint was failing to go
+    to next repoRequires operation causing redundant
+    fetch operations to occur.
+  | (Contributed by Carol Bouchard)
+* | FIXED: :bug:`1236568`: Separate dmesg clear from check
+    Need for a separate plugin so clear of the dmesg logs
+    is done independently from check dmesg logs.
+    Currently this is done during `dmesg check` plugin.
+    If `dmesg check` plugin is disabled, so is the clear
+    operation leaving the next task will process unrelated
+    errors. By separating clear from check operation, the clear
+    operation can always be performed.
+  | (Contributed by Carol Bouchard)
+* | FIXED: :bug:`1749316`: Rstrnt retry refresh role on socket io err
+    User periodically observed "Error: Socket I/O Timed out".
+    This occurred during the restraint task state
+    "** Refreshing peer role hostnames" which collects
+    host roles from lab controller and there is no response
+    in default 1 minute time frame.  To handle network
+    issues, restraint will retry this event similar to
+    what is done when performing fetch operations.
+  | (Contributed by Carol Bouchard)
+* | FIXED: :bug:`1762731`: Rstrnt add more metadata UTs
+  | (Contributed by Carol Bouchard)
+* | NEW: :bug:`1455763`: New command rstrnt-prepare-reboot
+    It does the same preparatory work as rstrnt-reboot, but does not
+    trigger the reboot. Tasks can use this prior to (intentionally)
+    crashing the system or rebooting it in some other non-standard
+    way.
+  | (Contributed by Tomas Klohna)
+
 Restraint 0.1.42
 ----------------
 * | FIXED: :bug:`1753652`: Multihost Sync Improvements
