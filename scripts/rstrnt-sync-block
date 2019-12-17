@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 command="$0 $*"
 params="$(getopt -o s:r:t:R: -l state:,any,timeout:,retry: --name "$(basename -- "$0")" -- "$@")"

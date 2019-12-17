@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # Synchronize tasks between SERVER/Client jobs
 # on multihost machines.

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # If local watchdog triggers we reboot to attempt to get things
 # in a sane state again.

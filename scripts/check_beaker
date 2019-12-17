@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # If we haven't already started running a recipe then check if beaker-harness
 # is defined and if so fetch that recipe.

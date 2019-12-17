@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 command="$0 $*"
 params="$(getopt -o hs:R:m:r:t: -l help,state:,result_server:,machine:,recipesetid:,testorder: --name "$(basename -- "$0")" -- "$@")"

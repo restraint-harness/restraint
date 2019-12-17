@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # The following restraint variables are defined just for plugins
 # RSTRNT_RESULT_URL, This is the url to the parent which kicked off this plugin.

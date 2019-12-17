@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 AVC_FILE=/var/lib/restraint/avc_since
 
