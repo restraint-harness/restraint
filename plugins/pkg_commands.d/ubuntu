@@ -1,0 +1,6 @@
+#!/bin/bash
+
+. /etc/os-release
+
+# Ubuntu uses apt-get as the package command
+RSTRNT_PKG_CMD=${RSTRNT_PKG_CMD:-apt-get}

@@ -29,8 +29,7 @@ install:
 	install -m0755 task_run.d/25_environment $(DESTDIR)/usr/share/restraint/plugins/task_run.d
 	install -m0755 task_run.d/30_restore_events $(DESTDIR)/usr/share/restraint/plugins/task_run.d
 	install -m0755 task_run.d/35_oom_adj $(DESTDIR)/usr/share/restraint/plugins/task_run.d
-	install -m0755 pkg_commands.d/fedora $(DESTDIR)/usr/share/restraint/pkg_commands.d
-	install -m0755 pkg_commands.d/rhel $(DESTDIR)/usr/share/restraint/pkg_commands.d
+	install -m0755 pkg_commands.d/* $(DESTDIR)/usr/share/restraint/pkg_commands.d
 
 .PHONY: clean
 clean:
