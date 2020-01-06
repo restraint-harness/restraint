@@ -312,16 +312,14 @@ process_pid_finish (gpointer user_data)
     return FALSE;
 }
 
-gboolean
-process_timeout (gpointer user_data)
+void
+process_kill (gpointer user_data)
 {
     ProcessData *process_data = (ProcessData *) user_data;
 
-    process_data->timeout_handler_id = 0;
-
     // If pid == 0 then we are already dead
     if (process_data->pid == 0) {
-        return FALSE;
+        return;
     }
 
     // Kill process pid
@@ -335,14 +333,18 @@ process_timeout (gpointer user_data)
             process_data->pid_handler_id = 0;
         }
     }
-
-    return FALSE;
 }
 
 gboolean
 process_timeout_callback (gpointer user_data)
 {
     ProcessData *process_data = (ProcessData *) user_data;
+
+    // If pid == 0 then we are already dead
+    if (process_data->pid == 0) {
+        process_data->timeout_handler_id = 0;
+        return FALSE;
+    }
 
     /* Execute user timeout_callback and
      * check if timeout was changed by user. */
@@ -376,14 +378,22 @@ process_timeout_callback (gpointer user_data)
         }
     }
 
-    return process_timeout(user_data);
+    process_kill(user_data);
+    process_data->timeout_handler_id = 0;
+    return FALSE;
 
 }
 
 static void
 process_cancelled_cb (GCancellable *cancellable, gpointer user_data)
 {
-    (void)process_timeout(user_data);
+    ProcessData *process_data = (ProcessData *) user_data;
+
+    process_kill(user_data);
+    if (process_data->timeout_handler_id) {
+        g_source_remove(process_data->timeout_handler_id);
+        process_data->timeout_handler_id = 0;
+    }
 }
 
 /*
