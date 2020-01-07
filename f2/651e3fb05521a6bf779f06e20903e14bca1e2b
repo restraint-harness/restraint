@@ -1,0 +1,10 @@
+Verified+1: Martin Styk <mastyk@redhat.com>
+Code-Review+1: Martin Styk <mastyk@redhat.com>
+Code-Review+2: Carol Bouchard <cbouchar@redhat.com>
+Ready-for-Checks+1: Martin Styk <mastyk@redhat.com>
+Ready-for-Checks+1: Carol Bouchard <cbouchar@redhat.com>
+Submitted-by: Martin Styk <mastyk@redhat.com>
+Submitted-at: Tue, 07 Jan 2020 09:06:51 +0000
+Reviewed-on: https://gerrit.beaker-project.org/6709
+Project: restraint
+Branch: refs/heads/master
