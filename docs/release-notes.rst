@@ -1,8 +1,33 @@
 Release Notes
 =============
 
+Restraint 0.1.44
+----------------
+
+* | FIXED: :bug:`1788252`: restraintd crash in timeout_callback functions
+    Ran into timing issues when process_timeout_callback occurs after
+    process_pid_callback.  The task data is NULL so process_timeout_callback
+    should not attempt to process task data when pid is 0 indicating
+    process is complete.
+  | (Contributed by Carol Bouchard)
+* | FIXED: :bug:`1781722`: Not executing task when multihost utilized
+    Observed that restraint reported the task started but output from
+    the task itself not making it to taskout.log file. With debug
+    enabled, found it stopped in 30_restore_events plugin.
+    Performed more detail unit testing on rstrnt-sync and resolved
+    a number of issues found.
+  | (Contributed by Carol Bouchard)
+* | FIXED: :bug:`1782422`: Fetch https operation noisy harness.log
+    When using <fetch url="https://github.com/repo#dirname> in task, the
+    entire repo is downloaded and a log entry for each file/dir found
+    is logged.  These log entries get reported to Lab Controller
+    which results in reduced performance.  Fixed code to report
+    only entries found beneath the directory name 'dirname'.
+  | (Contributed by Carol Bouchard)
+
 Restraint 0.1.43
 ----------------
+
 * | FIXED: :bug:`1774211`: Seeing too many repo extraction
     Under certain conditions, restraint was failing to go
     to next repoRequires operation causing redundant
@@ -37,6 +62,7 @@ Restraint 0.1.43
 
 Restraint 0.1.42
 ----------------
+
 * | FIXED: :bug:`1753652`: Multihost Sync Improvements
     A number of improvements have been made to the Multihost
     synchronization feature.
@@ -63,6 +89,7 @@ Restraint 0.1.42
 
 Restraint 0.1.41
 ----------------
+
 * | FIXED: :bug:`1753336`: The cli rstrnt-adjust-watchdog command
     was producing random results.  The message from restraintd
     to the lab controller was getting truncated when the number
