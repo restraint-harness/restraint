@@ -886,7 +886,6 @@ recipe_fetch_complete(GError *error, xmlDoc *doc, gpointer user_data)
         if (app_data->fetch_retries < FETCH_RETRIES) {
             g_print("* RETRY refresh roles [%d]**:%s\n", ++app_data->fetch_retries,
                     error->message);
-            g_clear_error(&error);
             g_timeout_add_seconds(FETCH_INTERVAL, refresh_role_retry, app_data);
             return;
         } else {
