@@ -338,11 +338,13 @@ int main(int argc, char **argv)
     char buf[BUFSIZE] = "";
     struct sockaddr_in saddr;
     struct hostent *he;
-    int sockfd, ret, result, bytes=0, time_rcvd=0;
+    int sockfd, ret=0, result, bytes=0, time_rcvd=0;
     fd_set rset;
     struct timeval timeout = { 0, 0 };
     time_t start_time, end_time;
     double seconds, diff_time=0;
+    unsigned int ping_count = 0;
+    unsigned int non_match_count = 0;
 
     if (argc < 4) {
       usage(argv[0]);
@@ -382,15 +384,20 @@ int main(int argc, char **argv)
     send(sockfd, argv[2], strlen(argv[2]) + 1, 0);
 
     result = 1;
+    FD_ZERO(&rset);
+    FD_SET(sockfd, &rset);
     while ((time_rcvd == 0) || (diff_time > 0)) {
         if (timeout.tv_sec > 0) {
-          FD_SET(sockfd, &rset);
           ret = select(sockfd + 1, &rset, NULL, NULL, &timeout);
-          if (ret > 0) {
-            bytes = recv(sockfd, buf, BUFSIZE, 0);
+          if (ret <= 0) {
+              // Error or peer is gone or nothing to read.
+              break;
           }
-        } else {
-          bytes = recv(sockfd, buf, BUFSIZE, 0);
+        }
+        bytes = recv(sockfd, buf, BUFSIZE, 0);
+        if (bytes <= 0) {
+            // Error or peer disconnected
+            break;
         }
 
         // if server not testing the socket with PING
@@ -400,17 +407,24 @@ int main(int argc, char **argv)
             result = 0;
             break;
         }
+        if (g_strcmp0("PING", buf) == 0) {
+            ping_count++;
+        } else {
+            non_match_count++;
+        }
         if (time_rcvd != 0) {
           time(&end_time);
           seconds = difftime(end_time, start_time);
           diff_time = (double)time_rcvd - seconds;
           timeout.tv_sec = diff_time;
+          timeout.tv_usec = 0;
         }
     }
     close(sockfd);
     if (result == 1) {
-          g_fprintf(stderr, "Server %s not reported state %s for Multihost Sync rcvd %d bytes\n",
-                    argv[3], argv[2], bytes);
+          g_fprintf(stderr, "Server %s not reported state %s for Multihost "
+                            "Sync rcvd %d bytes, ret %d [%d, %d]\n",
+                    argv[3], argv[2], bytes, ret, ping_count, non_match_count);
      }
     return(result);
 
