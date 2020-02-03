@@ -1,0 +1,17 @@
+diff --git build-aux/config.guess build-aux/config.guess
+index d622a44e..67c9c11d 100755
+--- a/build-aux/config.guess
++++ b/build-aux/config.guess
+@@ -975,6 +975,12 @@ EOF
+     ppc:Linux:*:*)
+ 	echo powerpc-unknown-linux-gnu
+ 	exit ;;
++    ppc64le:Linux:*:*)
++	echo powerpc64le-unknown-linux-gnu
++	exit ;;
++    ppcle:Linux:*:*)
++	echo powerpcle-unknown-linux-gnu
++	exit ;;
+     s390:Linux:*:* | s390x:Linux:*:*)
+ 	echo ${UNAME_MACHINE}-ibm-linux
+ 	exit ;;

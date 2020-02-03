@@ -1,19 +1,19 @@
 
 ZLIB = zlib-1.2.11
-BZIP2 = bzip2-1.0.6
+BZIP2 = bzip2-1.0.8
 LIBFFI = libffi-3.1
 GLIB = glib-2.56.1
 LIBXML2 = libxml2-2.9.1
-CURL = curl-7.29.0
-LIBARCHIVE = libarchive-3.2.1
-XZ = xz-5.2.2
+CURL = curl-7.68.0
+LIBARCHIVE = libarchive-3.4.0
+XZ = xz-5.2.4
 LIBSOUP = libsoup-2.48.1
-CMAKE = cmake-3.2.3
 OPENSSL = openssl-1.0.1m
-SQLITE = sqlite-autoconf-3080002
+SQLITE = sqlite-autoconf-3310100
 INTLTOOL = intltool-0.51.0
 LIBJSONC = json-c-0.13.1
-AUTOCONF = autoconf-2.65
+AUTOCONF = autoconf-2.69
+M4 = m4-1.4.18
 
 arch := $(shell uname -m)
 
@@ -43,37 +43,36 @@ all: \
     tree/lib/pkgconfig/sqlite3.pc \
     tree/bin/intltool-update \
     tree/lib/pkgconfig/libsoup-2.4.pc \
-    tree/bin/cmake \
     tree/lib/pkgconfig/openssl.pc \
     tree/bin/autoheader \
+    tree/bin/m4 \
     tree/lib/pkgconfig/libjson-c.pc
+
+tree/bin/m4: $(M4) $(M4)/.patches-done
+	( cd $(M4) && ./configure --prefix=$(CURDIR)/tree )
+	$(MAKE) -C $(M4)
+	$(MAKE) -C $(M4) install
 
 tree/lib/pkgconfig/zlib.pc: $(ZLIB)
 	( cd $(ZLIB) && ./configure --prefix=$(CURDIR)/tree --static )
 	$(MAKE) -C $(ZLIB)
 	$(MAKE) -C $(ZLIB) install
 
-tree/bin/cmake: $(CMAKE) $(CMAKE)/.patches-done
-	( cd $(CMAKE) && ./bootstrap --prefix=$(CURDIR)/tree )
-	$(MAKE) -C $(CMAKE)
-	$(MAKE) -C $(CMAKE) PREFIX=$(CURDIR)/tree install
-	touch $@
-
-tree/bin/autoheader: $(AUTOCONF)
-	( cd $(AUTOCONF) && ./configure --prefix=$(CURDIR)/tree )
+tree/bin/autoheader: tree/bin/m4 $(AUTOCONF) $(AUTOCONF)/.patches-done
+	( cd $(AUTOCONF) && PATH=$(CURDIR)/tree/bin:$(PATH) ./configure --prefix=$(CURDIR)/tree )
 	$(MAKE) -C $(AUTOCONF)
 	$(MAKE) -C $(AUTOCONF) install
 
-tree/lib/pkgconfig/libjson-c.pc: $(AUTOCONF) $(LIBJSONC)
+tree/lib/pkgconfig/libjson-c.pc: tree/bin/autoheader $(LIBJSONC)
 	( cd $(LIBJSONC) && ./configure --prefix=$(CURDIR)/tree --enable-shared=no )
 	( PATH=$(CURDIR)/tree/bin:$(PATH) $(MAKE) -C $(LIBJSONC) )
 	$(MAKE) -C $(LIBJSONC) install
 
 tree/lib/pkgconfig/openssl.pc: $(OPENSSL)
     ifeq ("$(arch)", "ppc64")
-	( cd $(OPENSSL) && ./Configure --prefix=$(CURDIR)/tree -DPURIFY linux-ppc64)
+	( cd $(OPENSSL) && PATH=$(CURDIR)/tree/bin:$(PATH) ./Configure --prefix=$(CURDIR)/tree -DPURIFY linux-ppc64)
     else
-	( cd $(OPENSSL) && ./config --prefix=$(CURDIR)/tree -DPURIFY )
+	( cd $(OPENSSL) && PATH=$(CURDIR)/tree/bin:$(PATH) ./config --prefix=$(CURDIR)/tree -DPURIFY )
     endif
 	$(MAKE) -C $(OPENSSL)
 	$(MAKE) -C $(OPENSSL) PREFIX=$(CURDIR)/tree install_sw
@@ -82,7 +81,7 @@ tree/lib/libbz2.a: $(BZIP2)
 	$(MAKE) -C $(BZIP2)
 	$(MAKE) -C $(BZIP2) PREFIX=$(CURDIR)/tree install
 
-tree/lib/pkgconfig/liblzma.pc: $(XZ) $(XZ)/.patches-done
+tree/lib/pkgconfig/liblzma.pc: $(XZ)
 	( cd $(XZ) && ./configure --prefix=$(CURDIR)/tree \
 	    --disable-lzma-links --disable-scripts \
 	    --enable-static --disable-shared )
@@ -114,7 +113,7 @@ tree/lib/pkgconfig/libxml-2.0.pc: $(LIBXML2) $(LIBXML2)/.patches-done tree/lib/p
 	$(MAKE) -C $(LIBXML2)
 	$(MAKE) -C $(LIBXML2) install
 
-tree/lib/pkgconfig/sqlite3.pc: $(SQLITE) $(SQLITE)/.patches-done
+tree/lib/pkgconfig/sqlite3.pc: $(SQLITE)
 	( cd $(SQLITE) && ./configure --prefix=$(CURDIR)/tree \
 	    --enable-static --disable-shared )
 	$(MAKE) -C $(SQLITE)
@@ -134,10 +133,11 @@ tree/lib/pkgconfig/libsoup-2.4.pc: $(LIBSOUP) $(LIBSOUP)/.patches-done tree/lib/
 	( PATH=$(CURDIR)/tree/bin:$(PATH) $(MAKE) -C $(LIBSOUP) )
 	$(MAKE) -C $(LIBSOUP) install
 
-tree/lib/pkgconfig/libcurl.pc: $(CURL) $(CURL)/.patches-done tree/lib/pkgconfig/zlib.pc tree/lib/pkgconfig/openssl.pc
+tree/lib/pkgconfig/libcurl.pc: $(CURL) tree/lib/pkgconfig/zlib.pc tree/lib/pkgconfig/openssl.pc
 	( cd $(CURL) && LIBS="-ldl" PKG_CONFIG_PATH=../tree/lib/pkgconfig ./configure --prefix=$(CURDIR)/tree \
 	    --with-zlib=$(CURDIR)/tree --with-ssl=$(CURDIR)/tree --enable-ipv6 --disable-manual \
-	    --enable-static --disable-shared --disable-ldap --disable-ldaps --without-libidn --without-libssh2)
+	    --enable-static --disable-shared --disable-ldap --disable-ldaps --without-libidn --without-libssh2 \
+	    --without-brotli --without-libpsl)
 	$(MAKE) -C $(CURL)
 	$(MAKE) -C $(CURL) install
 
@@ -151,6 +151,10 @@ tree/lib/pkgconfig/libarchive.pc: $(LIBARCHIVE) $(LIBARCHIVE)/.patches-done \
 	    --enable-static --disable-shared )
 	$(MAKE) -C $(LIBARCHIVE)
 	$(MAKE) -C $(LIBARCHIVE) install
+
+$(LIBARCHIVE)/.patches-done: $(LIBARCHIVE)
+	patch -d$(LIBARCHIVE) -p1 <libarchive-use-pkgconfig.patch
+	touch $@
 
 TAR_BALLS = $(LIBFFI).tar.gz
 $(LIBFFI).tar.gz:
@@ -166,7 +170,7 @@ $(ZLIB).tar.gz:
 
 TAR_BALLS += $(BZIP2).tar.gz
 $(BZIP2).tar.gz:
-	curl -f -L -O http://downloads.sourceforge.net/project/bzip2/$@
+	curl -f -L -O https://www.sourceware.org/pub/bzip2/$@
 
 TAR_BALLS += $(LIBXML2).tar.gz
 $(LIBXML2).tar.gz:
@@ -186,7 +190,7 @@ $(XZ).tar.gz:
 
 TAR_BALLS += $(SQLITE).tar.gz
 $(SQLITE).tar.gz:
-	curl -f -L -O http://sqlite.org/2013/$@
+	curl -f -L -O http://sqlite.org/2020/$@
 
 TAR_BALLS += $(INTLTOOL).tar.gz
 $(INTLTOOL).tar.gz:
@@ -208,9 +212,9 @@ TAR_BALLS += $(OPENSSL).tar.gz
 $(OPENSSL).tar.gz:
 	curl -f -L -O https://www.openssl.org/source/$@
 
-TAR_BALLS += $(CMAKE).tar.gz
-$(CMAKE).tar.gz:
-	curl -f -L -O http://www.cmake.org/files/v3.2/$@
+TAR_BALLS += $(M4).tar.xz
+$(M4).tar.xz:
+	curl -f -L -O https://ftp.gnu.org/gnu/m4/$@
 
 tarballs: $(TAR_BALLS)
 	printf '%s\n' $(TAR_BALLS) >$@
@@ -224,26 +228,8 @@ tarballs: $(TAR_BALLS)
 %: %.tar.xz tree/lib/pkgconfig/liblzma.pc
 	$(CURDIR)/tree/bin/xzcat $< | tar -xf -
 
-$(CMAKE)/.patches-done: $(CMAKE)
-	patch -d$(CMAKE) -p1 <cmake-yes-format-security.patch
-	touch $@
-
-$(CURL)/.patches-done: $(CURL)
-	patch -d$(CURL) -p1 <curl_add_ppc64le.patch
-	patch -d$(CURL) -p1 <curl_pkgconfig.patch
-	touch $@
-
-$(XZ)/.patches-done: $(XZ)
-	patch -d$(XZ) -p1 <xz-no-pkgconfig-url.patch
-	patch -d$(XZ) -p1 <xz_add_ppc64le.patch
-	touch $@
-
 $(LIBFFI)/.patches-done: $(LIBFFI)
 	patch -d$(LIBFFI) -p1 <libffi-3.1-toolexeclibdir.patch
-	touch $@
-
-$(SQLITE)/.patches-done: $(SQLITE)
-	patch -d$(SQLITE) -p1 <sqlite_add_ppc64le.patch
 	touch $@
 
 $(GLIB)/.patches-done: $(GLIB)
@@ -252,11 +238,6 @@ $(GLIB)/.patches-done: $(GLIB)
 	if [ -e glib-rhel6-s390.patch ]; then\
 		patch -d$(GLIB) -p1 < glib-rhel6-s390.patch;\
 	fi
-	touch $@
-
-$(LIBARCHIVE)/.patches-done: $(LIBARCHIVE)
-	patch -d$(LIBARCHIVE) -p1 <libarchive-use-pkgconfig.patch
-	patch -d$(LIBARCHIVE) -p1 <libarchive_add_ppc64le.patch
 	touch $@
 
 $(INTLTOOL)/.patches-done: $(INTLTOOL)
@@ -271,8 +252,18 @@ $(LIBSOUP)/.patches-done: $(LIBSOUP)
 
 $(LIBXML2)/.patches-done: $(LIBXML2)
 	patch -d$(LIBXML2) -p1 <libxml2_add_ppc64le.patch
+
+$(AUTOCONF)/.patches-done: $(AUTOCONF)
+	patch -d$(AUTOCONF) -p1 <autoconf-ppc64le.patch
+	touch $@
+
+$(M4)/.patches-done: $(M4)
+	patch -d$(M4) -p1 < m4-1.4.18-glibc-change-work-around.patch
 	touch $@
 
 .PHONY: clean
 clean:
-	rm -rf $(XZ) $(ZLIB) $(BZIP2) $(LIBFFI) $(GLIB) $(LIBXML2) $(CURL) $(LIBARCHIVE) $(LIBSOUP) $(SQLITE) $(INTLTOOL) $(CMAKE) $(OPENSSL) $(AUTOCONF) $(LIBJSONC) tree
+	rm -rf $(XZ) $(ZLIB) $(BZIP2) $(LIBFFI) $(GLIB) $(LIBXML2) $(CURL) $(LIBARCHIVE) $(LIBSOUP) $(SQLITE) $(INTLTOOL) $(CMAKE) $(OPENSSL) $(AUTOCONF) $(LIBJSONC) $(M4) tree
+
+clean-tarballs:
+	rm -rf $(TAR_BALLS)

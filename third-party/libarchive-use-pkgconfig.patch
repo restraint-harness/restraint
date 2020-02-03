@@ -12,9 +12,9 @@ Index: b/configure
  LIBICONV
 +ZLIB_LIBS
 +ZLIB_CFLAGS
+ INC_BLAKE2_FALSE
+ INC_BLAKE2_TRUE
  STATIC_BSDCPIO_FALSE
- STATIC_BSDCPIO_TRUE
- BUILD_BSDCPIO_FALSE
 @@ -824,6 +828,10 @@ CPP
  PKG_CONFIG
  PKG_CONFIG_PATH
@@ -25,7 +25,7 @@ Index: b/configure
 +LZMA_LIBS
  LIBXML2_PC_CFLAGS
  LIBXML2_PC_LIBS'
- 
+
 @@ -1525,6 +1533,10 @@ Some influential environment variables:
                C compiler flags for LIBXML2_PC, overriding pkg-config
    LIBXML2_PC_LIBS
@@ -34,13 +34,13 @@ Index: b/configure
 +  ZLIB_LIBS   linker flags for ZLIB, overriding pkg-config
 +  LZMA_CFLAGS C compiler flags for LZMA, overriding pkg-config
 +  LZMA_LIBS   linker flags for LZMA, overriding pkg-config
- 
+
  Use these variables to override the choices made by `configure' or to help
  it to find libraries and programs with nonstandard names/locations.
 @@ -13255,6 +13267,126 @@ done
- 
+
  # Checks for libraries.
- 
+
 +
 +
 +
@@ -165,8 +165,8 @@ Index: b/configure
  if test "${with_zlib+set}" = set; then :
    withval=$with_zlib;
 @@ -13262,6 +13394,100 @@ fi
- 
- 
+
+
  if test "x$with_zlib" != "xno"; then
 +
 +pkg_failed=no
@@ -266,8 +266,8 @@ Index: b/configure
  do :
    ac_fn_c_check_header_mongrel "$LINENO" "zlib.h" "ac_cv_header_zlib_h" "$ac_includes_default"
 @@ -14663,6 +14889,100 @@ fi
- 
- 
+
+
  if test "x$with_lzma" != "xno"; then
 +
 +pkg_failed=no
