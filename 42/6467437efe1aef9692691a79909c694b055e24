@@ -1,0 +1,9 @@
+Ready-for-Checks+1: Carol Bouchard <cbouchar@redhat.com>
+Verified+1: Carol Bouchard <cbouchar@redhat.com>
+Code-Review+1: Martin Styk <mastyk@redhat.com>
+Code-Review+2: Renan Rodrigo Barbosa <rebarbos@redhat.com>
+Submitted-by: Carol Bouchard <cbouchar@redhat.com>
+Submitted-at: Wed, 05 Feb 2020 12:55:30 +0000
+Reviewed-on: https://gerrit.beaker-project.org/6752
+Project: restraint
+Branch: refs/heads/master
