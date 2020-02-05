@@ -1,23 +1,50 @@
 Release Notes
 =============
 
+Restraint 0.1.45
+----------------
+
+* | FIXED: :bug:`1795781`: Multihost sync hangs on remote reboot.
+    Users multihost synchronization task hangs on block operation
+    when remote host reboots.  This is a corner case difficult to
+    reproduce.
+  | (Contributed by Carol Bouchard)
+* | FIXED: :bug:`1792466`: Restraint segfault during labcontroller timeout.
+    On error when gathering peer roles from the lab controller, a double
+    free of the error structure causes bad behavior in glib
+    memory management.  Eventually this causes restraint server to crash
+    on a segfault.
+  | (Contributed by Carol Bouchard)
+* | FIXED: :bug:`1691485`: Rstrnt Client not provide task vers in job.xml.
+    This change affects rpm tasks only.  Restraint server gets the
+    version number from the rpm and returns it in 'Completed/Aborted'
+    status message sent to restraint client.  The restraint client
+    writes it out in the job.xml.
+  | (Contributed by Carol Bouchard)
+* | FIXED: :bug:`1793114`: Wrong file permission on 30_dmesg_clear plugin.
+    The new 30_dmesg_clear plugin does not have execute file permission.
+    However, other scripts add execution permission so it is correct in
+    the rpm.  This is being fixed in repo to prevent chasing it as
+    an issue.
+  | (Contributed by Carol Bouchard)
+
 Restraint 0.1.44
 ----------------
 
-* | FIXED: :bug:`1788252`: restraintd crash in timeout_callback functions
+* | FIXED: :bug:`1788252`: restraintd crash in timeout_callback functions.
     Ran into timing issues when process_timeout_callback occurs after
     process_pid_callback.  The task data is NULL so process_timeout_callback
     should not attempt to process task data when pid is 0 indicating
     process is complete.
   | (Contributed by Carol Bouchard)
-* | FIXED: :bug:`1781722`: Not executing task when multihost utilized
+* | FIXED: :bug:`1781722`: Not executing task when multihost utilized.
     Observed that restraint reported the task started but output from
     the task itself not making it to taskout.log file. With debug
     enabled, found it stopped in 30_restore_events plugin.
     Performed more detail unit testing on rstrnt-sync and resolved
     a number of issues found.
   | (Contributed by Carol Bouchard)
-* | FIXED: :bug:`1782422`: Fetch https operation noisy harness.log
+* | FIXED: :bug:`1782422`: Fetch https operation noisy harness.log.
     When using <fetch url="https://github.com/repo#dirname> in task, the
     entire repo is downloaded and a log entry for each file/dir found
     is logged.  These log entries get reported to Lab Controller
@@ -28,12 +55,12 @@ Restraint 0.1.44
 Restraint 0.1.43
 ----------------
 
-* | FIXED: :bug:`1774211`: Seeing too many repo extraction
+* | FIXED: :bug:`1774211`: Seeing too many repo extraction.
     Under certain conditions, restraint was failing to go
     to next repoRequires operation causing redundant
     fetch operations to occur.
   | (Contributed by Carol Bouchard)
-* | FIXED: :bug:`1236568`: Separate dmesg clear from check
+* | FIXED: :bug:`1236568`: Separate dmesg clear from check.
     Need for a separate plugin so clear of the dmesg logs
     is done independently from check dmesg logs.
     Currently this is done during `dmesg check` plugin.
@@ -42,7 +69,7 @@ Restraint 0.1.43
     errors. By separating clear from check operation, the clear
     operation can always be performed.
   | (Contributed by Carol Bouchard)
-* | FIXED: :bug:`1749316`: Rstrnt retry refresh role on socket io err
+* | FIXED: :bug:`1749316`: Rstrnt retry refresh role on socket io err.
     User periodically observed "Error: Socket I/O Timed out".
     This occurred during the restraint task state
     "** Refreshing peer role hostnames" which collects
@@ -51,9 +78,9 @@ Restraint 0.1.43
     issues, restraint will retry this event similar to
     what is done when performing fetch operations.
   | (Contributed by Carol Bouchard)
-* | FIXED: :bug:`1762731`: Rstrnt add more metadata UTs
+* | FIXED: :bug:`1762731`: Rstrnt add more metadata UTs.
   | (Contributed by Carol Bouchard)
-* | NEW: :bug:`1455763`: New command rstrnt-prepare-reboot
+* | NEW: :bug:`1455763`: New command rstrnt-prepare-reboot.
     It does the same preparatory work as rstrnt-reboot, but does not
     trigger the reboot. Tasks can use this prior to (intentionally)
     crashing the system or rebooting it in some other non-standard
@@ -63,7 +90,7 @@ Restraint 0.1.43
 Restraint 0.1.42
 ----------------
 
-* | FIXED: :bug:`1753652`: Multihost Sync Improvements
+* | FIXED: :bug:`1753652`: Multihost Sync Improvements.
     A number of improvements have been made to the Multihost
     synchronization feature.
     * Only perform multihost sync when roles SERVERS and CLIENTS
@@ -74,7 +101,7 @@ Restraint 0.1.42
     * Improve log entries to provide insight to multihost sync
       operations.
   | (Contributed by Carol Bouchard)
-* | FIXED: :bug:`1756515`: FALSESTRINGS not provide consistent results
+* | FIXED: :bug:`1756515`: FALSESTRINGS not provide consistent results.
     If a dmesg log contains  "falsestring failurestring", then
     falsestring will override failurestring.  If they were
     swapped where "failurestring falsestring", then falsestring
@@ -90,7 +117,7 @@ Restraint 0.1.42
 Restraint 0.1.41
 ----------------
 
-* | FIXED: :bug:`1753336`: The cli rstrnt-adjust-watchdog command
+* | FIXED: :bug:`1753336`: The cli rstrnt-adjust-watchdog command.
     was producing random results.  The message from restraintd
     to the lab controller was getting truncated when the number
     of digits for time increased.  There is an extra 30 minutes
@@ -101,7 +128,7 @@ Restraint 0.1.41
     The solution is to initialize the length to 0 to force the
     soup library to recalculate it.
   | (Contributed by Carol Bouchard)
-* | FIXED: :bug:`1751074`: Rlse 0.1.40 seeing a lot of invalid
+* | FIXED: :bug:`1751074`: Rlse 0.1.40 seeing a lot of invalid.
     dmesg failures.  This behavior only occurs on x86_64 arch.
     The rpm task /distribution/install, method VirtWorkaround()
     is setting an empty /usr/share/rhts/failurestrings file.
