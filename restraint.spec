@@ -1,14 +1,3 @@
-%{!?_without_static:%global with_static 1}
-
-# Got Systemd?
-%if 0%{?fedora} >= 18 || 0%{?rhel} >= 7
-%global with_systemd 1
-%global with_selinux_policy 1
-%else
-%global with_systemd 0
-%global with_selinux_policy 0
-%endif
-
 Name:		restraint
 Version:	0.1.45
 Release:	1%{?dist}
@@ -19,117 +8,37 @@ License:	GPLv3+ and MIT
 URL:		https://github.com/beaker-project/%{name}
 Source0:	https://github.com/beaker-project/%{name}/%{name}-%{version}.tar.gz
 
-%if 0%{?with_static:1}
-# Sources for bundled, statically linked libraries
-Source101:      libffi-3.1.tar.gz
-Source102:      glib-2.56.1.tar.xz
-Source103:      zlib-1.2.11.tar.gz
-Source104:      bzip2-1.0.8.tar.gz
-Source105:      libxml2-2.9.1.tar.gz
-Source106:      curl-7.68.0.tar.bz2
-Source107:      libarchive-3.4.0.tar.gz
-Source108:      xz-5.2.4.tar.gz
-Source109:      sqlite-autoconf-3310100.tar.gz
-Source110:      intltool-0.51.0.tar.gz
-Source111:      libsoup-2.48.1.tar.xz
-Source112:      json-c-0.13.1.tar.gz
-Source114:      openssl-1.0.1m.tar.gz
-Source115:      autoconf-2.69.tar.gz
-Source116:      m4-1.4.18.tar.xz
-%endif
+BuildRequires:		gcc
+BuildRequires:		gcc-c++
+BuildRequires:		pkgconfig
+BuildRequires:		gettext
+BuildRequires:		perl-XML-Parser
+BuildRequires:		libselinux-devel
+BuildRequires:		glibc-devel
+BuildRequires:		make
+BuildRequires:		autoconf
+BuildRequires:		selinux-policy-devel
+BuildRequires:		systemd-units
+BuildRequires:		zlib-devel
+BuildRequires:		glib2-devel
+BuildRequires:		libsoup-devel
+BuildRequires:		libarchive-devel
+BuildRequires:		libxml2-devel
+BuildRequires:		json-c-devel
+BuildRequires:		openssl-devel
+BuildRequires:		libcurl-devel
+BuildRequires:		make
+BuildRequires:		tar
+BuildRequires:		selinux-policy-devel
 
-BuildRoot:	%(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
-BuildRequires:	gcc
-BuildRequires:	gcc-c++
-BuildRequires:	pkgconfig
-BuildRequires:	gettext
-BuildRequires:	perl-XML-Parser
-BuildRequires:	libselinux-devel
-BuildRequires:	glibc-devel
-BuildRequires:	make
-BuildRequires:	autoconf
-%if 0%{?rhel}%{?fedora} > 4
-BuildRequires: selinux-policy-devel
-%endif
-%if %{with_systemd}
-BuildRequires:          systemd-units
-Requires(post):         systemd
-Requires(pre):          systemd
-Requires(postun):       systemd
-%else
-Requires(post): chkconfig
-Requires(preun): chkconfig
-# This is for /sbin/service
-Requires(preun): initscripts
-Requires(postun): initscripts
-%endif
-%if %{with_selinux_policy}
-BuildRequires: selinux-policy-devel
-Requires: selinux-policy
-%endif
-
-#if not static build
-%{?without_static:BuildRequires:	zlib-devel}
-%{?without_static:BuildRequires:  glib2-devel}
-%{?without_static:BuildRequires:  libsoup-devel}
-%{?without_static:BuildRequires:  libarchive-devel}
-%{?without_static:BuildRequires:  libxml2-devel}
-%{?without_static:BuildRequires:  json-c-devel}
-%{?without_static:BuildRequires:  openssl-devel}
-%{?without_static:BuildRequires:  libcurl-devel}
-BuildRequires:  make
-BuildRequires:  tar
-
-# If static build...
-%if 0%{?rhel}%{?fedora} >= 6
-%{?with_static:BuildRequires:	libselinux-static}
-%{?with_static:BuildRequires:	glibc-static}
-%endif
-%{?with_static:BuildRequires:  ncurses-devel}
-# intltool perl dependencies
-%if 0%{?rhel}%{?fedora} >= 6
-%{?with_static:BuildRequires:  perl(Getopt::Long)}
-%endif
-%{?with_static:BuildRequires:  perl(XML::Parser)}
-%if 0%{?fedora} || 0%{?rhel} >= 8
-%{?with_static:BuildRequires: python3}
-%{?with_static:BuildRequires: python3-rpm-macros}
-%else
-%if 0%{?rhel} >= 7
-%{?with_static:BuildRequires: python}
-%else
-# new versions of glib require python2.7 as a build dependency
-%{?with_static:BuildRequires: python27}
-%endif
-%endif
+Requires(post):		systemd
+Requires(pre):		systemd
+Requires(postun):	systemd
+Requires:			selinux-policy
 
 %description
 restraint harness which can run standalone or with beaker.  when provided a recipe xml it will execute
 each task listed in the recipe until done.
-
-%package rhts
-Summary:	Allow unmodified rhts tests to run under restraint
-Group:		Applications/Internet
-Requires:       %{name}%{?_isa} = %{version}-%{release}
-Requires:       make
-%if 0%{?rhel} > 7 || 0%{?fedora} > 16
-Requires:	/usr/bin/hostname
-%else
-Requires:       /bin/hostname
-%endif
-Requires:       coreutils
-Requires:       libselinux-utils
-
-# All RHTS-format task RPMs have an unversioned requirement on rhts-test-env.
-# Therefore restraint-rhts provides a very low version of rhts-test-env so that
-# if restraint-rhts is already installed, the dependency is satisfied without
-# pulling in the real rhts-test-env, *but* if restraint-rhts is *not* already
-# installed yum will prefer the real rhts-test-env. We want yum to pick the
-# real rhts-test-env on traditional recipes using beah.
-Provides:       rhts-test-env = 0
-
-%description rhts
-Legacy package to allow older rhts tests to run under restraint
 
 %package client
 Summary:	used to run jobs outside of beaker
@@ -142,165 +51,48 @@ restAPI allowing all results and logs to be recorded from the test machine.
 
 %prep
 %setup -q
-%if 0%{?with_static:1}
-cp %{_sourcedir}/*.tar.* third-party/
-%endif
 
 %build
 export CFLAGS="$RPM_OPT_FLAGS"
-%if 0%{?rhel} == 5
-%ifarch i386
-# glib wants at least i486 for atomic instructions. RHEL6+ is already using i686.
-export CFLAGS="$RPM_OPT_FLAGS -march=i486"
-%endif
-%endif
 
-%if 0%{?with_static:1}
-pushd third-party
-%if 0%{?rhel} != 6
-# If this is not RHEL6, remove the patch.
-rm glib-rhel6-s390.patch
-%else
-%ifnarch s390x s390
-# If this is RHEL6, and not a s390 machine, remove the patch.
-rm glib-rhel6-s390.patch
-%endif
-%endif
-%if 0%{?fedora} || 0%{?rhel} >= 8
-make PYTHON=%{__python3}
-%else
-make
-%endif
-popd
-%endif
 pushd src
-PKG_CONFIG_PATH=../third-party/tree/lib/pkgconfig make %{?with_static:STATIC=1}
+make
 popd
-%if %{with_selinux_policy}
+
 make -C selinux -f %{_datadir}/selinux/devel/Makefile
-%endif
-make -C legacy
 
 %install
-%{__rm} -rf %{buildroot}
-
-make DESTDIR=%{buildroot} install
-%if %{with_selinux_policy}
+make DESTDIR=$RPM_BUILD_ROOT install
 if [ -e "selinux/restraint%{?dist}.pp" ]; then
     install -p -m 644 -D selinux/restraint%{?dist}.pp $RPM_BUILD_ROOT%{_datadir}/selinux/packages/%{name}/restraint.pp
 else
     install -p -m 644 -D selinux/restraint.pp $RPM_BUILD_ROOT%{_datadir}/selinux/packages/%{name}/restraint.pp
 fi
-%endif
-
-make DESTDIR=%{buildroot} -C legacy install
-# Legacy support.
-ln -s rhts-environment.sh $RPM_BUILD_ROOT/usr/bin/rhts_environment.sh
-ln -s rstrnt-report-log $RPM_BUILD_ROOT/usr/bin/rhts-submit-log
-ln -s rstrnt-report-log $RPM_BUILD_ROOT/usr/bin/rhts_submit_log
-ln -s rstrnt-backup $RPM_BUILD_ROOT/usr/bin/rhts-backup
-ln -s rstrnt-restore $RPM_BUILD_ROOT/usr/bin/rhts-restore
-ln -s rstrnt-reboot $RPM_BUILD_ROOT/usr/bin/rhts-reboot
-ln -s rstrnt-sync-set $RPM_BUILD_ROOT/usr/bin/rhts-recipe-sync-set
-ln -s rstrnt-sync-set $RPM_BUILD_ROOT/usr/bin/rhts_recipe_sync_set
-ln -s rstrnt-sync-set $RPM_BUILD_ROOT/usr/bin/rhts-sync-set
-ln -s rstrnt-sync-set $RPM_BUILD_ROOT/usr/bin/rhts_sync_set
-ln -s rstrnt-sync-block $RPM_BUILD_ROOT/usr/bin/rhts-recipe-sync-block
-ln -s rstrnt-sync-block $RPM_BUILD_ROOT/usr/bin/rhts_recipe_sync_block
-ln -s rstrnt-sync-block $RPM_BUILD_ROOT/usr/bin/rhts-sync-block
-ln -s rstrnt-sync-block $RPM_BUILD_ROOT/usr/bin/rhts_sync_block
-ln -s rstrnt-abort $RPM_BUILD_ROOT/usr/bin/rhts-abort
-mkdir -p $RPM_BUILD_ROOT/mnt/scratchspace
-mkdir -p $RPM_BUILD_ROOT/mnt/testarea
-
-%if 0%{?rhel}%{?fedora} > 4
-# Build RHTS Selinux Testing Policy
-pushd legacy/selinux
-# If dist specific selinux module is present use that.
-# Why:
-#  newer releases may introduce new selinux macros which are not present in
-#  older releases.  This means that a module built under the newer release
-#  will no longer load on an older release.
-# How:
-#  Simply issue the else statement on the older release and commit the
-#  policy to git with the appropriate dist tag.
-if [ -e "rhts%{?dist}.pp" ]; then
-    install -p -m 644 -D rhts%{?dist}.pp $RPM_BUILD_ROOT%{_datadir}/selinux/packages/%{name}/rhts.pp
-else
-    make -f %{_datadir}/selinux/devel/Makefile
-    install -p -m 644 -D rhts.pp $RPM_BUILD_ROOT%{_datadir}/selinux/packages/%{name}/rhts.pp
-fi
-popd
-%endif
 
 %post
 if [ "$1" -le "1" ] ; then # First install
-%if %{with_systemd}
 %systemd_post restraintd
 # Enable restraintd by default
 /bin/systemctl enable restraintd.service >/dev/null 2>&1 || :
-%else
-chkconfig --add restraintd
-%endif
-%if %{with_selinux_policy}
 semodule -i %{_datadir}/selinux/packages/%{name}/restraint.pp || :
-%endif
 fi
-
-%post rhts
-%if 0%{?rhel}%{?fedora} > 4
-if [ "$1" -le "1" ] ; then # First install
-semodule -i %{_datadir}/selinux/packages/%{name}/rhts.pp || :
-fi
-%endif
 
 %preun
 if [ "$1" -lt "1" ] ; then # Final removal
-%if %{with_systemd}
 %systemd_preun %{_services}
-%else
-chkconfig --del restraintd || :
-%endif
-%if %{with_selinux_policy}
 semodule -r restraint || :
-%endif
 fi
-
-%preun rhts
-%if 0%{?rhel}%{?fedora} > 4
-if [ "$1" -lt "1" ] ; then # Final removal
-semodule -r rhts || :
-fi
-%endif
 
 %postun
 if [ "$1" -ge "1" ] ; then # Upgrade
-%if %{with_systemd}
 %systemd_postun_with_restart %{_services_restart}
-%else
-service restraintd condrestart >/dev/null 2>&1 || :
-%endif
-%if %{with_selinux_policy}
 semodule -i %{_datadir}/selinux/packages/%{name}/restraint.pp || :
-%endif
 fi
-
-%postun rhts
-%if 0%{?rhel}%{?fedora} > 4
-if [ "$1" -ge "1" ] ; then # Upgrade
-semodule -i %{_datadir}/selinux/packages/%{name}/rhts.pp || :
-fi
-%endif
 
 %files
 %defattr(-,root,root,-)
-%if %{with_systemd}
 %attr(0644, root, root)%{_unitdir}/%{name}d.service
 %exclude %{_sysconfdir}/init.d
-%else
-%exclude /usr/lib/systemd
-%attr(0755, root, root)%{_sysconfdir}/init.d/%{name}d
-%endif
 %attr(0755, root, root)%{_bindir}/%{name}d
 %attr(0755, root, root)%{_bindir}/rstrnt-report-result
 %attr(0755, root, root)%{_bindir}/rstrnt-report-log
@@ -324,9 +116,7 @@ fi
 /usr/share/%{name}/plugins/task_run.d
 /usr/share/%{name}/pkg_commands.d
 /var/lib/%{name}
-%if %{with_selinux_policy}
 %{_datadir}/selinux/packages/%{name}/restraint.pp
-%endif
 
 %files client
 %attr(0755, root, root)%{_bindir}/%{name}
@@ -337,40 +127,6 @@ fi
 /usr/share/%{name}/client/bootstrap/LICENSE
 /usr/share/%{name}/client/bootstrap/README
 /usr/share/%{name}/client/bootstrap/bootstrap.min.css
-
-%files rhts
-%defattr(-,root,root,-)
-%attr(0755, root, root)%{_bindir}/rhts-environment.sh
-%attr(0755, root, root)%{_bindir}/rhts-run-simple-test
-%attr(0755, root, root)%{_bindir}/rhts-lint
-%attr(0755, root, root)%{_bindir}/rhts-report-result
-%attr(0755, root, root)%{_bindir}/rhts-flush
-
-# Symlinks do not have attributes
-%{_bindir}/rhts-sync-set
-%{_bindir}/rhts-sync-block
-%{_bindir}/rhts_sync_set
-%{_bindir}/rhts_sync_block
-%{_bindir}/rhts_environment.sh
-%{_bindir}/rhts-reboot
-%{_bindir}/rhts-submit-log
-%{_bindir}/rhts_submit_log
-%{_bindir}/rhts-backup
-%{_bindir}/rhts-restore
-%{_bindir}/rhts-recipe-sync-set
-%{_bindir}/rhts_recipe_sync_set
-%{_bindir}/rhts-recipe-sync-block
-%{_bindir}/rhts_recipe_sync_block
-%{_bindir}/rhts-abort
-%{_datadir}/rhts/lib/rhts-make.include
-/mnt/scratchspace
-%attr(1777,root,root)/mnt/testarea
-%if 0%{?rhel}%{?fedora} > 4
-%{_datadir}/selinux/packages/%{name}/rhts.pp
-%endif
-
-%clean
-%{__rm} -rf %{buildroot}
 
 %changelog
 * Wed Feb 05 2020 Martin Styk <mastyk@redhat.com> 0.1.45-1
