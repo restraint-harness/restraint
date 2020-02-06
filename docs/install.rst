@@ -53,28 +53,27 @@ and linked dynamically or statically. To build it dynamically you will
 need the development libraries for the following packages installed (minimum
 versions are listed):
 
- - zlib-1.2.8
- - bzip2-1.0.6
- - libffi-3.0.11
- - glib2-2.38.0
- - libxml2-2.9.0
- - libarchive-3.1.2
- - xz-5.0.4
+ - zlib-1.2.11
+ - bzip2-1.0.8
+ - libffi-3.1
+ - glib2-2.56.1
+ - libxml2-2.9.1
+ - libarchive-3.4.0
+ - xz-5.2.4
  - libsoup-2.48.1
- - sqlite-autoconf-3080002
- - intltool-0.35.5
+ - intltool-0.51.0
  - selinux-2.7
+ - curl-7.68.0
+ - json-c-0.13.1
+ - openssl-1.0.1m
+
 
 Commands that will make sure most of the development libraries required are
 installed::
 
  # sudo dnf install zlib-devel bzip2-devel libffi-devel glib2-devel libxml2-devel
- # sudo dnf install libarchive-devel xz-devel libsoup-devel selinux-devel
- # sudo dnf install intltool
-
-The last set of development libraries for SQLite require that you install
-SQLite. Following the 'Install SQLite on Linux' instructions available at
-https://www.tutorialspoint.com/sqlite/sqlite_installation.htm
+ # sudo dnf install libarchive-devel xz-devel libsoup-devel selinux-devel json-c-devel
+ # sudo dnf install intltool openssl-devel libcurl-devel
 
 Once you have all the development libraries installed, you can clone Restraint
 from git::
