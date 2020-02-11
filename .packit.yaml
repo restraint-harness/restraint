@@ -1,0 +1,51 @@
+# See the documentation for more information:
+# https://packit.dev/docs/configuration/
+
+specfile_path: specfiles/restraint-upstream.spec
+
+# add or remove files that should be synced
+synced_files:
+  - src: restraint-upstream.spec
+    dest: restraint.spec
+
+upstream_package_name: restraint
+# downstream (Fedora) RPM package name
+downstream_package_name: restraint
+
+jobs:
+- job: copr_build
+  trigger: pull_request
+  metadata:
+    targets:
+      - centos-stream-aarch64
+      - centos-stream-ppc64le
+      - centos-stream-x86_64
+      - fedora-30-aarch64
+      - fedora-30-armhfp
+      - fedora-30-i386
+      - fedora-30-ppc64le
+      - fedora-30-s390x
+      - fedora-30-x86_64
+      - fedora-31-aarch64
+      - fedora-31-armhfp
+      - fedora-31-i386
+      - fedora-31-ppc64le
+      - fedora-31-s390x
+      - fedora-31-x86_64
+      - fedora-rawhide-aarch64
+      - fedora-rawhide-armhfp
+      - fedora-rawhide-i386
+      - fedora-rawhide-ppc64le
+      - fedora-rawhide-s390x
+      - fedora-rawhide-x86_64
+      - rhel-8-aarch64
+      - rhel-8-ppc64
+      - rhel-8-ppc64le
+      - rhel-8-x86_64
+
+# Restraint is not accepted in Fedora (yet)
+#- job: propose_downstream
+  #trigger: release
+  #metadata:
+    #dist-git-branch: fedora-all
+
