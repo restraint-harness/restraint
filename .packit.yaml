@@ -39,9 +39,3 @@ jobs:
       - epel-8-aarch64
       - epel-8-x86_64
 
-# Restraint is not accepted in Fedora (yet)
-#- job: propose_downstream
-  #trigger: release
-  #metadata:
-    #dist-git-branch: fedora-all
-
