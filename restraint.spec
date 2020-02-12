@@ -4,6 +4,7 @@ Release:	1%{?dist}
 Summary:	Simple test harness which can be used with beaker
 
 Group:		Applications/Internet
+# The entire source code is GPLv3+ except client/bootstrap which is MIT
 License:	GPLv3+ and MIT
 URL:		https://github.com/beaker-project/%{name}
 Source0:	https://github.com/beaker-project/restraint/archive/%{name}-%{version}-1.tar.gz
@@ -34,20 +35,22 @@ BuildRequires:		selinux-policy-devel
 Requires(post):		systemd
 Requires(pre):		systemd
 Requires(postun):	systemd
-Requires:			selinux-policy
+Requires:		selinux-policy
 
 %description
-restraint harness which can run standalone or with beaker.  when provided a recipe xml it will execute
-each task listed in the recipe until done.
+Restraint harness which can run standalone or with beaker.
+When provided a recipe xml it will execute each task listed in the recipe
+until done.
 
 %package client
-Summary:	used to run jobs outside of beaker
-Group:		Applications/Internet
-Requires:	libxslt
+Summary:  Used to run jobs outside of beaker
+Group:    Applications/Internet
+Requires: libxslt
 
 %description client
-With the restraint client you can run jobs outside of beaker.  This will provide the same
-restAPI allowing all results and logs to be recorded from the test machine.
+With the Restraint client you can run jobs outside of beaker. This will provide
+the same rest API allowing all results and logs to be recorded from the test
+machine.
 
 %prep
 %setup -q
@@ -90,7 +93,11 @@ semodule -i %{_datadir}/selinux/packages/%{name}/restraint.pp || :
 fi
 
 %files
-%defattr(-,root,root,-)
+%dir %{_datadir}/%{name}/
+%dir %{_datadir}/%{name}/client
+%dir %{_datadir}/%{name}/client/bootstrap
+%dir %{_datadir}/%{name}/plugins
+%dir %{_datadir}/selinux/packages/%{name}/
 %attr(0644, root, root)%{_unitdir}/%{name}d.service
 %exclude %{_sysconfdir}/init.d
 %attr(0755, root, root)%{_bindir}/%{name}d
@@ -107,26 +114,26 @@ fi
 %attr(0755, root, root)%{_bindir}/rstrnt-abort
 %attr(0755, root, root)%{_bindir}/rstrnt-sync
 %attr(0755, root, root)%{_bindir}/rstrnt-package
-/usr/share/%{name}/plugins/run_plugins
-/usr/share/%{name}/plugins/run_task_plugins
-/usr/share/%{name}/plugins/helpers
-/usr/share/%{name}/plugins/localwatchdog.d
-/usr/share/%{name}/plugins/completed.d
-/usr/share/%{name}/plugins/report_result.d
-/usr/share/%{name}/plugins/task_run.d
-/usr/share/%{name}/pkg_commands.d
-/var/lib/%{name}
+%{_datadir}/%{name}/plugins/run_plugins
+%{_datadir}/%{name}/plugins/run_task_plugins
+%{_datadir}/%{name}/plugins/helpers
+%{_datadir}/%{name}/plugins/localwatchdog.d
+%{_datadir}/%{name}/plugins/completed.d
+%{_datadir}/%{name}/plugins/report_result.d
+%{_datadir}/%{name}/plugins/task_run.d
+%{_datadir}/%{name}/pkg_commands.d
+%{_sharedstatedir}/%{name}
 %{_datadir}/selinux/packages/%{name}/restraint.pp
 
 %files client
 %attr(0755, root, root)%{_bindir}/%{name}
-/usr/share/%{name}/client/job_schema.rng
-/usr/share/%{name}/client/bkr2rstrnt.xsl
-/usr/share/%{name}/client/job2junit.xml
-/usr/share/%{name}/client/job2html.xml
-/usr/share/%{name}/client/bootstrap/LICENSE
-/usr/share/%{name}/client/bootstrap/README
-/usr/share/%{name}/client/bootstrap/bootstrap.min.css
+%{_datadir}/%{name}/client/job_schema.rng
+%{_datadir}/%{name}/client/bkr2rstrnt.xsl
+%{_datadir}/%{name}/client/job2junit.xml
+%{_datadir}/%{name}/client/job2html.xml
+%{_datadir}/%{name}/client/bootstrap/LICENSE
+%{_datadir}/%{name}/client/bootstrap/README
+%{_datadir}/%{name}/client/bootstrap/bootstrap.min.css
 
 %changelog
 * Wed Feb 05 2020 Martin Styk <mastyk@redhat.com> 0.1.45-1
