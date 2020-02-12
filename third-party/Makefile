@@ -148,7 +148,7 @@ tree/lib/pkgconfig/libarchive.pc: $(LIBARCHIVE) $(LIBARCHIVE)/.patches-done \
 	( cd $(LIBARCHIVE) && PKG_CONFIG_PATH=../tree/lib/pkgconfig ./configure --prefix=$(CURDIR)/tree \
 	    --disable-bsdtar --disable-bsdcpio \
 	    --without-nettle --disable-acl \
-	    --enable-static --disable-shared )
+	    --enable-static --disable-shared --without-zstd )
 	$(MAKE) -C $(LIBARCHIVE)
 	$(MAKE) -C $(LIBARCHIVE) install
 
