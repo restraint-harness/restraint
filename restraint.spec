@@ -25,7 +25,7 @@ Source101:      libffi-3.1.tar.gz
 Source102:      glib-2.56.1.tar.xz
 Source103:      zlib-1.2.11.tar.gz
 Source104:      bzip2-1.0.8.tar.gz
-Source105:      libxml2-2.9.1.tar.gz
+Source105:      libxml2-2.9.10.tar.gz
 Source106:      curl-7.68.0.tar.bz2
 Source107:      libarchive-3.4.0.tar.gz
 Source108:      xz-5.2.4.tar.gz
