@@ -10,6 +10,7 @@ export G_SLICE="debug-blocks"
 
 GITD_PID_FILE=git-daemon.pid
 HTTPD_PID_FILE=http-daemon.pid
+HTTPD_LOG_FILE=httserver.log
 
 testargs=""
 
@@ -27,6 +28,10 @@ cleanup()
 {
     kill_daemon ${GITD_PID_FILE}
     kill_daemon ${HTTPD_PID_FILE}
+
+    if [ -f  ${HTTPD_LOG_FILE} ] ; then
+        rm -f ${HTTPD_LOG_FILE} || :
+    fi
 }
 
 trap cleanup EXIT
@@ -42,7 +47,10 @@ fi
 function start_httpd() {
     pidfile=$PWD/${HTTPD_PID_FILE}
     httpd=$PWD/httpserver.py
-    (cd test-data/http-remote && python2.7 ${httpd} -i ${pidfile} -p 8000 --host 127.0.0.1 &> /dev/null)
+    httpd_log=$PWD/${HTTPD_LOG_FILE}
+
+    (cd test-data/http-remote && python2.7 ${httpd} -i ${pidfile} -p 8000 --host 127.0.0.1 &> "${httpd_log}") \
+        || (cat "${httpd_log}" && exit 1)
 }
 start_httpd
 
