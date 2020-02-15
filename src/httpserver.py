@@ -21,7 +21,15 @@ def main():
 
     server_address = (args.host, int(args.port))
     handler = SimpleHTTPServer.SimpleHTTPRequestHandler
-    httpd = socketserver.TCPServer(server_address, handler)
+    httpd = socketserver.TCPServer(
+        server_address, handler, bind_and_activate=False
+    )
+
+    # Allow address reuse to avoid bind to fail due to TIME_WAIT
+    # connections
+    httpd.allow_reuse_address = True
+    httpd.server_bind()
+    httpd.server_activate()
 
     signal.signal(signal.SIGINT, sigterm_handler)
     signal.signal(signal.SIGTERM, sigterm_handler)
