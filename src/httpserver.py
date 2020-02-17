@@ -1,12 +1,15 @@
-import SimpleHTTPServer
-import SocketServer
 import argparse
-import signal
 import os
+import signal
 import sys
+
+from six.moves import SimpleHTTPServer
+from six.moves import socketserver
+
 
 def sigterm_handler(signal, frame):
     raise SystemExit("received sigterm")
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -18,7 +21,7 @@ def main():
 
     server_address = (args.host, int(args.port))
     handler = SimpleHTTPServer.SimpleHTTPRequestHandler
-    httpd = SocketServer.TCPServer(server_address, handler)
+    httpd = socketserver.TCPServer(server_address, handler)
 
     signal.signal(signal.SIGINT, sigterm_handler)
     signal.signal(signal.SIGTERM, sigterm_handler)
@@ -36,6 +39,7 @@ def main():
         finally:
             os.unlink(args.pid)
         sys.exit(1)
+
 
 if __name__ == '__main__':
     main()
