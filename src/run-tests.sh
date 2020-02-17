@@ -44,12 +44,22 @@ else
     testargs="-s /fetch_git/success -s /fetch_git/fail $testargs"
 fi
 
-function start_httpd() {
+guess_python_version() {
+    if command -v python3 >/dev/null ; then
+      echo "python3"
+    elif [ -f /usr/libexec/platform-python ] && /usr/libexec/platform-python --version 2>&1 | grep -q "Python 3" ; then
+      echo "/usr/libexec/platform-python"
+    else
+      echo "python2.7"
+    fi
+}
+
+start_httpd() {
     pidfile=$PWD/${HTTPD_PID_FILE}
     httpd=$PWD/httpserver.py
     httpd_log=$PWD/${HTTPD_LOG_FILE}
 
-    (cd test-data/http-remote && python2.7 ${httpd} -i ${pidfile} -p 8000 --host 127.0.0.1 &> "${httpd_log}") \
+    (cd test-data/http-remote && $(guess_python_version) ${httpd} -i ${pidfile} -p 8000 --host 127.0.0.1 &> "${httpd_log}") \
         || (cat "${httpd_log}" && exit 1)
 }
 start_httpd
