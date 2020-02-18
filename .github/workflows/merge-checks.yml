@@ -1,0 +1,52 @@
+name: Merge-checks
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  unittests:
+    runs-on: ubuntu-latest
+    container:
+      image: fedora:30
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Install deps
+      run: |
+        dnf install -y 'dnf-command(builddep)' git-daemon python3-flask python3-requests python3-pytest python3-six
+    - name: Install restraint deps
+      run: |
+        dnf builddep --spec specfiles/restraint-upstream.spec -y
+    - name: Run tests
+      run: |
+        make check | tee unittests.out
+        mv unittests.out /__w/unittests.out
+    - uses: actions/upload-artifact@v1
+      with:
+        name: unittests.out
+        path: /home/runner/work/unittests.out
+
+  valgrind:
+    runs-on: ubuntu-latest
+    container:
+      image: fedora:30
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Install deps
+      run: |
+        dnf install -y 'dnf-command(builddep)' valgrind git-daemon
+    - name: Install restraint deps
+      run: |
+        dnf builddep --spec specfiles/restraint-upstream.spec -y
+    - name: Run valgrind
+      run: |
+        make valgrind 2>&1 | tee valgrind.out
+        mv valgrind.out /__w/valgrind.out
+    - uses: actions/upload-artifact@v1
+      with:
+        name: valgrind.out
+        path: /home/runner/work/valgrind.out
+
