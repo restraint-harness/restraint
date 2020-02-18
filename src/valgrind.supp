@@ -638,3 +638,29 @@
    fun:getaddrinfo
    ...
 }
+{
+   g-type-register-fundamental-calloc
+   Memcheck:Leak
+   match-leak-kinds:possible,reachable
+   fun:calloc
+   ...
+   fun:g_type_register_fundamental
+}
+{
+   g-type-register-fundamental
+   Memcheck:Leak
+   match-leak-kinds:possible,reachable
+   fun:malloc
+   ...
+   fun:g_type_register_fundamental
+}
+{
+   glib/g_malloc0
+   Memcheck:Leak
+   match-leak-kinds:possible,reachable
+   ...
+   fun:g_malloc0
+   ...
+   fun:_dl_init
+}
+
