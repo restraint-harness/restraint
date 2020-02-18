@@ -41,7 +41,7 @@ if [[ -f /usr/libexec/git-core/git-daemon ]] ; then
         --base-path=test-data/git-remote --export-all --enable=upload-archive \
         --verbose --detach --pid-file=${GITD_PID_FILE}
 else
-    testargs="-s /fetch_git/success -s /fetch_git/fail $testargs"
+    testargs="-s /fetch_git/success -s /fetch_git/fail -s /fetch_git/keepchanges $testargs"
 fi
 
 guess_python_version() {
