@@ -5,7 +5,10 @@ set -ex
 export PATH="$PWD/test-dummies:$PWD/../scripts:$PATH"
 export RSTRNT_PKG_RETRIES=1
 export MALLOC_CHECK_=2
-export G_DEBUG="fatal_warnings fatal_criticals"
+
+# gtester is deprecated since GLib 2.62, Fedora 31, and using
+# 'fatal_warnings' will abort itself due to the deprecation warning.
+export G_DEBUG="fatal_criticals"
 export G_SLICE="debug-blocks"
 
 GITD_PID_FILE=git-daemon.pid
