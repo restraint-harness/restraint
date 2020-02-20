@@ -93,7 +93,7 @@ test_task: task.o fetch_git.o expect_http.o param.o role.o metadata.o
 test_task.o: task.h expect_http.h
 
 test-data/git-remote: test-data/git-remote.tgz
-	tar -C test-data -xzf $<
+	tar --no-same-owner -C test-data -xzf $<
 
 #TEST_PROGS += test_recipe
 test_recipe: recipe.o task.o fetch_git.o param.o role.o metadata.o
