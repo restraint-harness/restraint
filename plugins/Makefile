@@ -33,6 +33,7 @@ install:
 
 .PHONY: clean
 clean:
+	rm -rf tests/__pycache__ tests/.pytest_cache
 
 .PHONY: check
 check:
