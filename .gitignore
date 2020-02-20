@@ -1,3 +1,5 @@
+/plugins/tests/__pycache__/
+/plugins/tests/server_output/
 /third-party/bzip2-1.0.8.tar.gz
 /third-party/bzip2-1.0.8/
 /third-party/curl-7.68.0.tar.bz2
