@@ -4,9 +4,13 @@ on: [pull_request]
 
 jobs:
   unittests:
+    strategy:
+      fail-fast: false
+      matrix:
+        container: ["fedora:30", "fedora:31", "fedora:rawhide"]
     runs-on: ubuntu-latest
     container:
-      image: fedora:30
+      image: ${{ matrix.container }}
 
     steps:
     - uses: actions/checkout@v1
@@ -18,6 +22,7 @@ jobs:
         dnf builddep --spec specfiles/restraint-upstream.spec -y
     - name: Run tests
       run: |
+        set -o pipefail
         make check | tee unittests.out
         mv unittests.out /__w/unittests.out
     - uses: actions/upload-artifact@v1
@@ -26,9 +31,13 @@ jobs:
         path: /home/runner/work/unittests.out
 
   valgrind:
+    strategy:
+      fail-fast: false
+      matrix:
+        container: ["fedora:30", "fedora:31", "fedora:rawhide"]
     runs-on: ubuntu-latest
     container:
-      image: fedora:30
+      image: ${{ matrix.container }}
 
     steps:
     - uses: actions/checkout@v1
@@ -40,6 +49,7 @@ jobs:
         dnf builddep --spec specfiles/restraint-upstream.spec -y
     - name: Run valgrind
       run: |
+        set -o pipefail
         make valgrind 2>&1 | tee valgrind.out
         mv valgrind.out /__w/valgrind.out
     - uses: actions/upload-artifact@v1
