@@ -17,5 +17,4 @@
 
 #include "task.h"
 
-#define CMD_ENV_FILE "/etc/profile.d/rstrnt-commands-env.sh"
 void build_env(gchar *restraint_url, gboolean stdin, Task *task);

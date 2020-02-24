@@ -24,14 +24,43 @@
 #include <string.h>
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
+#include <unistd.h>
 #include "errors.h"
-#include "env.h"
 #include "utils.h"
 
-void cmd_usage(GOptionContext *context) {
-    gchar *usage_str = g_option_context_get_help(context, FALSE, NULL);
-    g_print("%s", usage_str);
-    g_free(usage_str);
+/*
+ * update_env_script()
+ *
+ * The restraint TCP port no longer static,
+ * the environment variables RECIPE_URL and TASKID need
+ * to be put somewhere so the user can conveniently
+ * run restraintd commands.
+ * If user wants to run commands in this case, they should first do:
+ *    export $(cat /etc/profile.d/rstrnt-commands-env.sh)
+ * to acquire the current environment variables.
+ */
+void update_env_script(gchar *prefix, gchar *restraint_url,
+                       gchar *recipe_id, gchar *task_id,
+                       GError **error)
+{
+    gchar *filename = get_envvar_filename(getpid());
+    FILE *env_file;
+
+    env_file = g_fopen(filename, "w");
+
+    g_free(filename);
+    if (env_file == NULL) {
+        g_set_error (error, RESTRAINT_ERROR, RESTRAINT_OPEN,
+                     "update_env_script env_file is NULL, errno=%s\n",
+                     g_strerror (errno));
+        return;
+    }
+
+    g_fprintf(env_file, "HARNESS_PREFIX=%s\n", prefix);
+    g_fprintf(env_file, "%sURL=%s\n", prefix, restraint_url);
+    g_fprintf(env_file, "%sRECIPE_URL=%s/recipes/%s\n", prefix, restraint_url, recipe_id);
+    g_fprintf(env_file, "%sTASKID=%s\n", prefix, task_id);
+    fclose(env_file);
 }
 
 guint64
@@ -132,65 +161,23 @@ get_package_version (gchar   *pkg_name,
     return std_out;
 }
 
-/* set_rstrnt_cmd_env()
+/* get_envvar_filename()
  *
- * To allow 'C' code to read in and 'export' environment variables
- * from the CMD_ENV_FILE.
+ * Retries the correct name which can vary depending
+ * on authentic installation or running UTs with gtester.
  */
-void set_rstrnt_cmd_env() {
-    int i;
-    GError *error = NULL;
-    gchar *msgbuf = NULL;
+gchar *
+get_envvar_filename(gint pid)
+{
+    gboolean result;
+    gchar *filename;
 
-    g_file_get_contents(CMD_ENV_FILE, &msgbuf,
-                        NULL, &error);
-    gchar **myarr = g_strsplit(msgbuf, "\n", -1);
-    printf("%s%s", "This is a test", myarr[0]);
-
-    for (i=0; myarr[i] != NULL; i++) {
-        if (strlen(myarr[i]) != 0) {
-            gchar **my_vars = g_strsplit(myarr[i], "=", 2);
-            if ((my_vars[0] != NULL) && (strlen(my_vars[0]) != 0)) {
-                g_setenv(my_vars[0], my_vars[1], TRUE);
-            }
-            g_strfreev(my_vars);
-        }
+    /* If the expected directory is present, this is an actual installation */
+    result = g_file_test(CMD_ENV_DIR, G_FILE_TEST_IS_DIR);
+    if (result) {
+        filename = g_strdup_printf(CMD_ENV_FILE_FORMAT, CMD_ENV_DIR, pid);
+    } else {
+        filename = g_strdup_printf(CMD_ENV_FILE_FORMAT, "./", pid);
     }
-    g_strfreev(myarr);
-}
-
-/* get_recipe_url
- *
- * To allow 'C' command code to read in some environment variables
- * to acquire current RECIPE_URL.
- */
-gchar *get_recipe_url ( void ) {
-    gchar *prefix = NULL;
-    gchar *server_recipe_key = NULL;
-    gchar *server_recipe = NULL;
-
-    prefix = getenv("HARNESS_PREFIX") ? getenv("HARNESS_PREFIX") : "";
-    server_recipe_key = g_strdup_printf ("%sRECIPE_URL", prefix);
-    server_recipe = getenv(server_recipe_key);
-    g_free(server_recipe_key);
-
-    return (server_recipe);
-}
-
-/* get_taskid
- *
- * To allow 'C' command code to read in some environment variables
- * to acquire current TASK_ID.
- */
-gchar *get_taskid (void) {
-    gchar *prefix = NULL;
-    gchar *task_id_key = NULL;
-    gchar *task_id= NULL;
-
-    prefix = getenv("HARNESS_PREFIX") ? getenv("HARNESS_PREFIX") : "";
-    task_id_key = g_strdup_printf ("%sTASKID", prefix);
-    task_id = getenv(task_id_key);
-    g_free(task_id_key);
-
-    return (task_id);
+    return(filename);
 }

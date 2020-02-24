@@ -1,61 +1,538 @@
-Commands
-========
+Processes and Commands
+======================
+
+There are two main restraint processes.  The first is the restraint server named
+`restraintd` which processes tasks.  The second process supports restraint standalone.
+This process is the restraint client named `restraint` which starts `restraintd`, provides
+the job.xml information to the server, and collects logs and results from the server.
 
 restraintd
 ----------
 
-restraintd is the daemon which executes the tasks.
+`restraintd` is the daemon which executes the tasks.
 
 Both a SysV init script and a systemd unit file are provided. The included
 spec file will use the correct one when built on RHEL/Fedora based systems.
 
-Logging
-~~~~~~~
-
-All messages from restraintd will be printed to stderr and all output from
-executing commands will be printed to stdout.
+Logging messages from restraintd are printed to stderr and all output from
+command execution is printed to stdout.
 
 stderr is redirected to /dev/console to help debug when things
-go wrong. The SysV init script will redirect both stdout + stderr to
-/var/log/restraintd.log. For systemd you can use the journalctl command::
+go wrong. The SysV init script redirects both stdout and stderr to
+/var/log/restraintd.log.  For systemd, use the following `journalctl`
+command to view restraint logs::
 
  journalctl --unit restraintd
 
- -- Logs begin at Fri 2014-04-11 16:39:13 EDT, end at Fri 2014-04-11 16:46:36 EDT. --
- Apr 11 16:40:20 virt-test systemd[1]: Starting The restraint harness....
- Apr 11 16:40:20 virt-test systemd[1]: Started The restraint harness..
- Apr 11 16:40:20 virt-test restraintd[567]: Waiting for client!
- Apr 11 16:40:20 virt-test restraintd[567]: * Fetching recipe: http://beaker.example.com:8000//recipes/1079/
- Apr 11 16:40:21 virt-test restraintd[567]: ** (restraintd:567): WARNING **: Ignoring Server Running state
- Apr 11 16:40:21 virt-test restraintd[567]: * Parsing recipe
- Apr 11 16:40:21 virt-test restraintd[567]: * Running recipe
- Apr 11 16:40:21 virt-test restraintd[567]: ** Fetching task: 1562 [/mnt/tests/distribution/install]
- Apr 11 16:40:27 virt-test restraintd[567]: Resolving Dependencies
- Apr 11 16:40:27 virt-test restraintd[567]: --> Running transaction check
- Apr 11 16:40:27 virt-test restraintd[567]: ---> Package beaker-distribution-install.noarch 0:1.10-15 will be installed
- Apr 11 16:40:30 virt-test restraintd[567]: --> Finished Dependency Resolution
+ -- Logs begin at Thu 2020-03-12 11:45:05 EDT, end at Thu 2020-03-12 12:10:47 EDT. --
+ Mar 12 11:45:26 virt-test systemd[1]: Starting The restraint harness....
+ Mar 12 11:45:26 virt-test systemd[1]: Started The restraint harness..
+ Mar 12 11:45:26 virt-test restraintd[1135]: recipe: * Fetching recipe: http://labhost.testdomain.com:8000//recipes/30220/
+ Mar 12 11:45:26 virt-test restraintd[1135]: Listening on http://localhost:39581
+ Mar 12 11:45:26 virt-test restraintd[1135]: recipe: * Parsing recipe
+ Mar 12 11:45:26 virt-test restraintd[1135]: recipe: * Running recipe
+ Mar 12 11:45:26 virt-test restraintd[1135]: ** Fetching task: 183853 [/mnt/tests/distribution/check-install]
+ Mar 12 11:45:26 virt-test restraintd[1135]: use_pty:FALSE rstrnt-package reinstall beaker-core-tasks-distribution-check-install
+ Mar 12 11:45:32 virt-test yum[1194]: Installed: beaker-core-tasks-distribution-check-install-1.0-2.noarch
+ Mar 12 11:45:33 virt-test restraintd[1135]: ** Preparing metadata
+ Mar 12 11:45:33 virt-test restraintd[1135]: ** Refreshing peer role hostnames: Retries 0
+ Mar 12 11:45:33 virt-test restraintd[1135]: ** Updating env vars
+ Mar 12 11:45:33 virt-test restraintd[1135]: ** Updating external watchdog: 2400 seconds
+ Mar 12 11:45:33 virt-test restraintd[1135]: ** Installing dependencies
+ Mar 12 11:45:33 virt-test restraintd[1135]: ** Running task: 183853 [/distribution/check-install]
  .
  .
  .
- Apr 11 16:40:36 virt-test restraintd[567]: Installed:
- Apr 11 16:40:36 virt-test restraintd[567]: beaker-distribution-install.noarch 0:1.10-15
- Apr 11 16:40:36 virt-test restraintd[567]: Complete!
- Apr 11 16:40:36 virt-test restraintd[567]: ** Parsing metadata
- Apr 11 16:40:36 virt-test restraintd[567]: ** Updating env vars
- Apr 11 16:40:36 virt-test restraintd[567]: ** Updating watchdog
- Apr 11 16:40:37 virt-test restraintd[567]: ** Installing dependencies
- Apr 11 16:41:00 virt-test restraintd[567]: Nothing to do
- Apr 11 16:41:00 virt-test restraintd[567]: ** Running task: 1562 [/distribution/install]
- Apr 11 16:41:00 virt-test restraintd[567]: TASK_RUNNER_PLUGINS: /usr/share/restraint/plugins/task_run.d/10_bash_login
- /usr/share/restraint/plugins/task_run.d/15_beakerlib /usr/share/restraint/plugins/task_run.d/20_unconfined make run
- Apr 11 16:41:01 virt-test restraintd[567]: -- INFO: selinux enabled: trying to switch context...
- .
- .
- .
- Apr 11 16:41:12 virt-test restraintd[567]: *** Running Plugin: 98_restore
- Apr 11 16:41:12 virt-test restraintd[567]: Nothing to restore.
- Apr 11 16:41:12 virt-test restraintd[567]: ** Completed Task : 1562
+ Mar 12 11:45:43 virt-test restraintd[1135]: ** Completed Task : 183853
 
+
+The scripts and programs associated with the `restraintd` server can be
+run within the context of a job as well outside a job execution.
+
+.. _common-cmd-args:
+
+Command Usage
+~~~~~~~~~~~~~
+
+Restraint commands are communicated to the running `restraintd` service
+by providing a URL that `restraintd` is listening to.  When the
+command is run within a job, the needed information is available by
+way of environment variables set by `restraintd` for each task. When
+the command is executed outside a job, you can provide the information
+by one of three options. One option relies on setting of environment
+variables. Second is the server option which requires you gather restraint
+server port, recipe number, and task number for constructing the
+command URL. Lastly is a local option which relies on an
+environment file created by `restraintd`.
+
+**Environment Variables Option **
+
+Most often, many of restraint commands are executed in tasks included in your 'job.xml'.
+As a result, commands look for specific environment variables to be set by restraintd.
+The variables are as follows with data such as port, recipe, and task id which is
+unique for each job::
+
+    HARNESS_PREFIX=RSTRNT_
+    RSTRNT_URL=http://localhost:<port>
+    RSTRNT_RECIPE_URL=http://localhost:<port>/recipes/<recipe_id>
+    RSTRNT_TASKID=<task_id>
+
+.. note::
+   <port> is a numeric value representing the dynamic port used to communication with `restraintd`.
+   <recipe_id> and <task_id> are the numeric values assigned to your running jobs recipe and task.
+
+To utilize the environment variables option when executing a command outside your job, the command
+software will default to look for environment variables when other `Server` and `Local` options
+are not set.  These environment variables must be set by the user before executing the
+command.
+
+**Server Option**
+
+The server option of calling these commands without exporting environment variables is to
+provide the argument::
+
+    -s, --server <server-url>
+
+The format of the <server-url> is one of the following depending on the command::
+
+    # for rstrnt-abort
+      http://localhost:<port>/recipes/<recipe_id>/status/
+    # for rstrnt-adjust-watchdog
+      http://localhost:<port>/recipes/<recipe_id>/watchdog/
+    # for rstrnt-report-results
+      http://localhost:<port>/recipes/<recipe_id>/tasks/<task_id>/results/
+    # for rstrnt-report-log. The string /logs/$file is appended by the command for you.
+      http://localhost:<port>/recipes/<recipe_id>/tasks/<task_id>
+
+**Local Option**
+
+A simpler option is to run the command locally on the host running `restraintd` by
+specifying the following argument(s)::
+
+    -c, --current [ -i, --pid <server-process-id> ]
+
+This option must be run on the same host running restraint service since the information is derived
+from the local file `/var/lib/restraint/rstrnt-commands-env-<$pid>.sh` (where `$pid` is restraintd
+process id).  As the server progresses through a job, it defines this file based on the current
+task. As a result, the user does not need to gather restraint port number, recipe number, and
+task number in order to construct a URL for a command as this will be generated for you.
+
+This option has similar effect to doing the following prior to executing the command::
+
+    export $(cat /var/lib/restraint/rstrnt-commands-env-$pid.sh)
+
+If there is only one instance of restraintd running, the `-p, -pid <server-process-id>` is not
+required.  If there are multiple instances of restraintd running, the command will fail
+and `-i, --pid <server-process-id>` is required to provide the process id of restraint server
+in which the command is targeted.
+
+In conclusion, one of three methods must be used to execute your command.
+The following are examples of each method using the command `rstrnt-abort` as an example::
+
+    rstrnt-abort                                                               # Environment Variables method
+    rstrnt-abort -s http://localhost:<port>/recipes/<rid>/tasks/<tid>/status/  # Legacy Method
+    rstrnt-abort -c                                                            # Local Method
+
+.. note::
+   1. Replace <port>, <rid>, <tid> with your restraint port id, Recipe id, taskid.
+   2. Given these fields change as the job progresses and if you are running the command
+      outside the job, the window of opportunity to target the current running task is reduced
+      for the -c option.
+
+rstrnt-abort
+~~~~~~~~~~~~
+Running this command sets a recipe or a task to `Aborted` status. For an aborted recipe, the current
+task as well as subsequent tasks in the recipe will be marked as `aborted` and the job is discontinued.
+
+Arguments for this command are as follows::
+
+    rstrnt-abort [ -c, --current [ -i, --pid <server-process-id> ] \
+                   -s, --server <server-url>
+                 ]
+
+Where:
+
+.. option:: -c, --current [-i, --pid <server-process-id>]
+   :noindex:
+
+   Refer to :ref:`common-cmd-args` for details.
+
+.. option:: -s, --server <server-url>
+   :noindex:
+
+   Refer to :ref:`common-cmd-args` for details.
+
+   Where <server-url> is as follows::
+
+       http://localhost:<port>/recipes/<recipe_id>/status/
+
+rstrnt-adjust-watchdog
+~~~~~~~~~~~~~~~~~~~~~~
+
+This command allows you to adjust both the external watchdog and the local watchdog.
+
+The arguments for this command is as follows::
+
+    rstrnt-adjust-watchdog [ -c, --current [ -i, --pid <server-process-id>] \
+                             -s, --server <server-url>
+                           ] <time>
+
+Where:
+
+.. option:: -c, --current [server-process-id]
+   :noindex:
+
+   Refer to :ref:`common-cmd-args` for details.
+
+.. option:: -s, --server <server-url>
+   :noindex:
+
+   Refer to :ref:`common-cmd-args` for details.
+
+   Where server-url is `http://localhost:<port>/recipes/<recipe_id>/watchdog/`
+
+.. option:: time
+
+   This is a required argument.  This time can be configured in seconds, minutes, and hours.
+   The value of the field should be a number followed by either the letter “m” or “h” to
+   express the time in minutes or hours. It can also be specified in seconds by giving just
+   a number. In most cases, it is recommended to provide a value in at least minutes rather
+   than seconds.
+
+   For example: 90 = 90 seconds, 1m = 1 minute, 2h = 2 hours
+
+   The time should be the absolute longest a test is expected to take on the slowest
+   platform supported, plus a 10% margin of error. Setting the time too short may lead to
+   spurious cancellations, while setting it too long may waste lab system time if the task
+   does get stuck. Durations of less than one minute are not recommended, as they usually run
+   some risk of spurious cancellation, and it’s typically reasonable to take a minute to abort
+   the test after an actual infinite loop or deadlock.
+
+The time provided with the command replaces the current watchdog time as opposed to adding
+to or removing from the current watchdog time.  Once set, it will take up to ``HEARTBEAT``
+(1 minute) time for the local watchdog thread to wake up and see the changes (provided
+the metadata ``no_localwatch`` is false); however, the effective time is as soon as the
+command is executed since current time is captured.  The external watchdog is increased
+by ``EWD_TIME`` (30 minutes) from the time you provide while the local watchdog
+uses the exact time provided.
+
+The following log entries appear in the harness.log file as watchdog's
+heartbeat progresses every minute.::
+
+*** Current Time: Fri May 17 15:15:49 2019 Localwatchdog at: Fri May 17 15:15:59 2019
+
+When a user runs this command, you can expect to see the following log entry once
+the change is first recognized.  Notice it is prefixed with 'User Adjusted'.
+Also notice in this example the expire time is less than current time.  This can
+occur if the command was run with number of seconds less than 1 minute.  There is a
+delay waiting for the watchdog thread to wake up to handle the changes.  The thread
+can recognize a change occurred at a previous point in time and will expire
+the task immediately if the expired time is earlier than now.::
+
+*** Current Time: Fri May 17 15:15:49 2019 User Adjusted Localwatchdog at: Fri May 17 15:15:02 2019
+
+If the command is run with time less than the ``HEARTBEAT`` time, the following
+warning will appear when the command is executed::
+
+    Expect up to a 1 minute delay for watchdog thread to notice change.
+
+If the task metadata has ``no_localwatchdog`` set to ``true``, the
+local watchdog time is not adjusted with this new time.  However,
+the external watchdog will continue to be adjusted. The log file
+will show the following warning when this occurs::
+
+    Adjustment to local watchdog ignored since 'no_localwatchdog' metadata is set
+
+.. _rstrnt-backup:
+
+rstrnt-backup
+~~~~~~~~~~~~~
+
+Provides the ability to backup a list of files.  This command works in
+concert with :ref:`rstrnt-restore` which restores the files.  In order
+to preserve permissions and attributes of the files, it is recommended
+to run this command as root. The command line for this features is as follows::
+
+    rstrnt-backup [list of files to backup]
+
+Other than the list of files to backup, there are no arguments with this
+command. However, there exists an environment variable which may be used::
+
+    RSTRNT_BACKUP_DIR - Specify an environment variable which can be set if you want
+                        your files backed up in a directory other than default.
+                        The default is in the subdirectory `/backup`.
+
+rstrnt-package
+~~~~~~~~~~~~~~
+
+This command supports installation, removal, and re-installation of packages for
+various OS package managers.  The restraintd server uses the command to perform
+package operations for user's task `dependencies`.  It may be necessary for
+user tasks to control these operations as part of their tests.
+
+The arguments for this command are as follows::
+
+    rstrnt-package  <install | remove | reinstall> <package-name>
+
+The following are environment variables available to control execution of
+this command::
+
+    RSTRNT_PKG_CMD:      To specify which package manager command to use.
+                         default: yum
+    RSTRNT_ARG_ARGS:     To provide arguments to package manager command.
+                         default: -y
+    RSTRNT_PKG_INSTALL:  Specify package manager install operation.
+                         default: install
+    RSTRNT_PKG_REMOVE:   Specify package manager remove operation.
+                         default: remove.
+    RSTRNT_PKG_RETRIES:  Number of times to retry package operation.
+                         default: 5
+    RSTRNT_PKG_DELAY:    Number of seconds to delay between retries.
+                         default: 1
+
+rstrnt-prepare-reboot
+~~~~~~~~~~~~~~~~~~~~~
+
+Prepare the system for rebooting. Similar to rstrnt-reboot,
+but does not actually trigger the reboot.
+
+If machine is UEFI and has efibootmgr installed, sets BootNext to
+BootCurrent and uses :envvar:`NEXTBOOT_VALID_TIME` to determine for
+how long (in seconds) this value is valid. After the specified time,
+BootOrder is reset to previous state. Default value for
+:envvar:`NEXTBOOT_VALID_TIME` is 180 seconds.
+
+Tasks can run this command before triggering a crash or rebooting
+through some other non-standard means. For example::
+
+    rstrnt-prepare-reboot
+    echo c >/proc/sysrq-trigger
+
+No arguments are required to run this command.
+
+
+rstrnt-reboot
+~~~~~~~~~~~~~
+
+Helper to reboot the system. On UEFI systems it will use efibootmgr to set next
+boot to what is booted currently.  No arguments are required to run this command.
+
+rstrnt-report-log
+~~~~~~~~~~~~~~~~~
+The command `rstrnt-report-log` loads a log file for a given task. If called
+multiple times for the same filename for the same task, it replaces the
+previously sent file.
+
+The arguments for this command are as follows::
+
+    rstrnt-report-log [ -c, --current [ -i, --pid <server-process-id>] \
+                        -s, --server <server-url> \
+                      ] -l, --filename <logfilename>
+
+Where:
+
+.. option:: -c, --current [ -i, --pid <server-process-id> ]
+   :noindex:
+
+   Refer to :ref:`common-cmd-args` for details.
+
+.. option:: -s, --server <server-url>
+   :noindex:
+
+   Refer to :ref:`common-cmd-args` for details.
+
+   Where `server-url` is `http://localhost:<port>/recipes/<recipe_id>/tasks/<task_id>`
+   `rstrnt-report-log` completes the urls by appending `logs/$file` to your server-url.
+
+.. option:: -l, --filename <logfilename>
+
+   Specify the name of log file to upload.  This is a
+   required argument.
+
+rstrnt-report-result
+~~~~~~~~~~~~~~~~~~~~
+
+The command `rstrnt-report-result` sends a result report and alters the
+status of the task.  This command can be called multiple times for a
+single task each concluding with their own status results.   At conclusion
+of the task, the final task result is the most severe rating. So if you
+call the command with FAIL, then WARN, then PASS, the task status results
+in FAIL.
+
+This program runs in two modes.  One provides backward compatibility to
+legacy harness and libraries and the other is restraint specific.
+In the latter case, there are more features.  Both modes report a
+result file, test results, and an optional score.
+
+Restraint Reporting Mode
+""""""""""""""""""""""""
+
+For restraint reporting mode (not --rhts), the format of arguments is as follows::
+
+    rstrnt-report-result [-c, --current [ -i, --pid <server-process-id>] \
+                          -s, --server <server-url> \
+                          -o, --outputfile <outfilename> \
+                          -p, --disable-plugin <plugin-name> --no-plugins] \
+                         TESTNAME TESTRESULT [METRIC]
+                         ]
+
+Where:
+
+.. option:: -c, --current [ -i, --pid <server-process-id>]
+   :noindex:
+
+   Refer to :ref:`common-cmd-args` for details.
+
+.. option:: -s, --server <server-url>
+   :noindex:
+
+   Refer to :ref:`common-cmd-args` for details.
+
+   Where `server-url` is `http://localhost:<port>/recipes/<recipe_id>/tasks/<task_id>/results/`
+
+.. option:: -o, --outputfile <outfilename>
+
+   Specify the name of file to upload.  If not specified, the
+   environment variable $OUTPUTFILE is used if available.
+
+.. option:: -p, --disable-plugin <plugin-name(s)>
+
+   Disables the specified reporting plugins (see :ref:`rpt_result`)
+   with the provided name or list of names. For example, to
+   disable the built-in AVC (Access Vector Cache) checker, this
+   argument would look like::
+
+       --disable 10_avc_check
+
+.. option:: --no-plugins
+
+   Disables all reporting plugins
+
+.. option::  TESTNAME
+
+   Testname of the task. This is a required argument.
+
+.. option::  TESTRESULT
+
+   Indicates results of job.  It can be one of PASS|FAIL|WARN.
+   This is a required argument.
+
+.. option::  METRIC
+
+    Optional result metric
+
+Legacy Reporting Mode
+"""""""""""""""""""""
+The rhts extension of restraint uses --rhts.  The command line would appear as follows::
+
+    rstrnt-report-result --rhts TESTNAME TESTRESULT LOG/OUTPUTFILE [METRIC]
+
+Where:
+
+.. option::  TESTNAME
+
+   Testname of the task. This is a required argument.
+
+.. option::  TESTRESULT
+
+   Indicates results of job.  It can be one of PASS|FAIL|WARN.
+   This is a required argument.
+
+.. option::  LOGFILE
+
+   Output name of file. If not specified, the
+   environment variable $OUTPUTFILE is used if available.
+
+.. option::  METRIC
+
+    Optional result metric
+
+The legacy mode depends on environment variables being defined as described in
+:ref:`common-cmd-args`.  The options `-s, --server` and `-c, --current` are not
+supported for legacy mode.
+
+Legacy mode looks to see if the environment variable AVC_ERROR is set
+to +no_avc_check. If this is true, then its behavior is equivalent to the
+non-legacy mode ``--disable 10_avc_check`` argument.
+
+.. _rstrnt-restore:
+
+rstrnt-restore
+~~~~~~~~~~~~~~
+
+Provides the ability to restore a previously backed up file(s). This command
+works in concert with :ref:`rstrnt-backup` which performs the back up step.
+There is a plugin which is executed at task completion which calls this command
+for you (:ref:`completed` restore plugin).
+
+.. _rstrnt-sync-block:
+
+rstrnt-sync-block
+~~~~~~~~~~~~~~~~~
+
+Block the task until the given systems in this recipe set have reached
+a certain state.  Use this command, along with `rstrnt-sync-set` to
+synchronize between systems in a multihost recipe set.
+
+::
+
+    rstrnt-sync-block -s <state> [--timeout <timeout>] [--retry <time>] [--any] <fqdn> [<fqdn> ...]
+
+For a more detailed guide on multihosting, refer to
+`Beaker Multihost documentation <https://beaker-project.org/docs/user-guide/multihost.html>`__.
+
+.. option:: -s <state>
+
+   Wait for the given state. If this option is repeated, the command will
+   return when any of the states has been reached. This option is required.
+
+.. option:: --retry <time>
+
+    `rstrnt-sync-block` sleeps inbetween check for machine(s) states.
+    If you'd like increase or decrease the frequency of checks, you can alter
+    sleep time using the option `retry`.  The default is 60 seconds.
+
+.. option:: --timeout <timeout>
+
+   Return a non-zero exit status after *timeout* seconds if the state has
+   not been reached. By default no timeout is enforced and the command will
+   block until either the given state is reached on all specified systems
+   or the recipe is aborted by the local or external watchdog.
+
+.. option:: --any
+
+   Return when any of the systems has reached the given state. By default, this
+   command blocks until *all* systems have reached the state.
+
+.. describe:: <fqdn> [<fqdn> ...]
+
+   FQDN of the systems to wait for. At least one FQDN must be given. Use the
+   role environment variables to determine which FQDNs to pass.
+
+.. _rstrnt-sync-set:
+
+rstrnt-sync-set
+~~~~~~~~~~~~~~~
+
+Sets the given state for this system. Other systems in the recipe set can use
+`rstrnt-sync-block` to wait for a state to be set on other systems. The
+syntax for this command is as follows:
+
+::
+
+    rstrnt-sync-set -s STATE
+
+States are scoped to the current task. That is, states set by the current task
+will have no effect in subsequent tasks.
+
+On execution of the first `set` operation, a background process `rstrnt-sync`
+is spawned which collects these states and responds to block requests.  This
+server listens for events received on `TCP port 6776`.  All subsequent `set`
+and `block` operations are forwarded to the `rstrnt-sync` server by way of
+this socket.
+
+This script also writes the states to the file named `/var/lib/restraint/rstrnt_events`.
+This file is used when the system reboots enabling the states to be restored.
 
 restraint
 ---------
@@ -104,184 +581,8 @@ screen as well.
 All of this information is also stored in the job.xml which in this case is
 stored in the ./simple_job.07 directory.
 
-rstrnt-report-result
---------------------
-
-Report Pass/Fail/Warn, optional score.
-
-Reporting plugins can be disabled by passing the plugin name to the --disable
-option. Here is an example of reporting a result but disabling the built in
-AVC (Access Vector Cache) checker::
-
- rstrnt-report-result --disable 10_avc_check $RSTRNT_TASKNAME/sub-result PASS 100
-
-Multiple plugins can be disabled by passing in multiple --disable arguments.
-
-To stay compatible with legacy RHTS (Red Hat Test System) tasks, Restraint also
-looks to see if the environment variable AVC_ERROR is set to +no_avc_check. If
-this is true then it's the same as the above ``--disable 10_avc_check``
-argument.
-
-rstrnt-report-log
------------------
-
-Upload a log or some other file.
-
-rstrnt-reboot
--------------
-
-Helper to reboot the system. On UEFI systems it will use efibootmgr to set next
-boot to what is booted currently.
-
-rstrnt-prepare-reboot
----------------------
-
-Prepare the system for rebooting. Similar to rstrnt-reboot,
-but does not actually trigger the reboot.
-
-If machine is UEFI and has efibootmgr installed, sets BootNext to
-BootCurrent and uses :envvar:`NEXTBOOT_VALID_TIME` to determine for
-how long (in seconds) this value is valid. After the specified time,
-BootOrder is reset to previous state. Default value for
-:envvar:`NEXTBOOT_VALID_TIME` is 180 seconds.
-
-Tasks can run this command before triggering a crash or rebooting
-through some other non-standard means. For example::
-
-    rstrnt-prepare-reboot
-    echo c >/proc/sysrq-trigger
-
-rstrnt-backup
--------------
-
-Helper to backup a config file.
-
-rstrnt-restore
---------------
-
-Helper to restore a previously backed up file. There is a plugin which is
-executed at task completion which will call this command for you.
-
-.. _rstrnt-sync-block:
-
-rstrnt-sync-block
------------------
-
-Block the task until the given systems in this recipe set have reached
-a certain state.  Use this command, along with `rstrnt-sync-set` to
-synchronize between systems in a multihost recipe set.
-
-::
-
-    rstrnt-sync-block -s <state> [--timeout <timeout>] [--retry <time>] [--any] <fqdn> [<fqdn> ...]
-
-For a more detailed guide on multihosting, refer to
-`Beaker Multihost documentation <https://beaker-project.org/docs/user-guide/multihost.html>`__.
-
-.. option:: -s <state>
-
-   Wait for the given state. If this option is repeated, the command will
-   return when any of the states has been reached. This option is required.
-
-.. option:: --retry <time>
-
-   `rstrnt-sync-block` sleeps inbetween check for machine(s) states.
-    If you'd like increase or decrease the frequency of checks, you can alter
-    sleep time using the option `retry`.  The default is 60 seconds.
-
-.. option:: --timeout <timeout>
-
-   Return a non-zero exit status after *timeout* seconds if the state has
-   not been reached. By default no timeout is enforced and the command will
-   block until either the given state is reached on all specified systems
-   or the recipe is aborted by the local or external watchdog.
-
-.. option:: --any
-
-   Return when any of the systems has reached the given state. By default, this
-   command blocks until *all* systems have reached the state.
-
-.. describe:: <fqdn> [<fqdn> ...]
-
-   FQDN of the systems to wait for. At least one FQDN must be given. Use the
-   role environment variables to determine which FQDNs to pass.
-
-.. _rstrnt-sync-set:
-
-rstrnt-sync-set
----------------
-
-Sets the given state for this system. Other systems in the recipe set can use
-`rstrnt-sync-block` to wait for a state to be set on other systems. The
-syntax for this command is as follows:
-
-::
-
-    rstrnt-sync-set -s STATE
-
-States are scoped to the current task. That is, states set by the current task
-will have no effect in subsequent tasks.
-
-On execution of the first `set` operation, a background process `rstrnt-sync`
-is spawned which collects these states and responds to block requests.  This
-server listens for events received on `TCP port 6776`.  All subsequent `set`
-and `block` operations are forwarded to the `rstrnt-sync` server by way of
-this socket.
-
-This script also writes the states to the file named `/var/lib/restraint/rstrnt_events`.
-This file is used when the system reboots enabling the states to be restored.
-
-rstrnt-adjust-watchdog
-----------------------
-
-This command allows you to adjust both the external watchdog (if running with beaker)
-and the local watchdog.  The time provided with the command replaces the current
-watchdog time and does not add to or remove from current watchdog time.  This time can be
-configured in seconds, minutes, and hours as
-similarly described as ``TestTime`` metadata in
-`Beaker User Guide <https://beaker-project.org/docs/user-guide/task-metadata.html>`_.
-Once set, it will take up to ``HEARTBEAT`` (1 minute) time for the local watchdog
-thread to wake up and see the changes (provided the metadata ``no_localwatch``
-is false); however, the effective time is as soon as the command is executed since
-current time is captured.  The external watchdog is increased by
-``EWD_TIME`` (30 minutes) from the time you provide while the local watchdog
-uses the exact time provided.
-
-The following log entries appear in the harness.log file as watchdog's
-heartbeat progresses every minute.::
-
-*** Current Time: Fri May 17 15:15:49 2019 Localwatchdog at: Fri May 17 15:15:59 2019
-
-When a user runs this command, you can expect to see the following log entry once
-the change is first recognized.  Notice it is prefixed with 'User Adjusted'.
-Also notice in this example the expire time is less than current time.  This can
-occur if the command was run with number of seconds less than 1 minute.  There is a
-delay waiting for the watchdog thread to wake up to handle the changes.  The thread
-can recognize a change occurred at a previous point in time and will expire
-the task immediately if the expired time is earlier than now.::
-
-*** Current Time: Fri May 17 15:15:49 2019 User Adjusted Localwatchdog at: Fri May 17 15:15:02 2019
-
-If the command is run with time less than the ``HEARTBEAT`` time, the following
-warning will appear when the command is executed::
-
-    Expect up to a 1 minute delay for watchdog thread to notice change.
-
-If the task metadata has ``no_localwatchdog`` set to ``true``, the
-local watchdog time is not adjusted with this new time.  However,
-the external watchdog will continue to be adjusted. The log file
-will show the following warning when this occurs::
-
-    Adjustment to local watchdog ignored since 'no_localwatchdog'
-    metadata is set
-
-check_beaker
-------------
-
-Run from init/systemd, will run a Beaker job.
-
 job2html.xml
-------------
+~~~~~~~~~~~~
 
 An XSLT (eXtensible Stylesheet Language Transformations) template to convert
 the stand-alone job.xml results file into an HTML doc. The template can be
@@ -296,7 +597,7 @@ logs.
  xsltproc job2html.xml simple_job.07/job.xml > simple_job.07/index.html
 
 job2junit.xml
--------------
+~~~~~~~~~~~~~
 
 An XSLT template to convert the stand-alone job.xml file into JUnit results.
 The template can be found in Restraint's ``client`` directory.
@@ -313,20 +614,10 @@ Legacy RHTS Commands
 If you have the restraint-rhts subpackage installed these commands are provided
 in order to support legacy tests written for RHTS.
 
-rhts-reboot
-~~~~~~~~~~~
-
-Use `rstrnt-reboot` instead.
-
 rhts-backup
 ~~~~~~~~~~~
 
 Use `rstrnt-backup` instead.
-
-rhts-restore
-~~~~~~~~~~~~
-
-Use `rstrnt-restore` instead.
 
 rhts-environment.sh
 ~~~~~~~~~~~~~~~~~~~
@@ -338,18 +629,28 @@ rhts-lint
 
 Deprecated - only provided so that testinfo.desc can be generated.
 
-rhts-run-simple-test
-~~~~~~~~~~~~~~~~~~~~
+rhts-sync-block
+~~~~~~~~~~~~~~~
 
-Deprecated.
+Use `rstrnt-sync-block` instead.
 
 rhts-sync-set
 ~~~~~~~~~~~~~
 
 Use `rstrnt-sync-set` instead.
 
-rhts-sync-block
-~~~~~~~~~~~~~~~
+rhts-reboot
+~~~~~~~~~~~
 
-Use `rstrnt-sync-block` instead.
+Use `rstrnt-reboot` instead.
+
+rhts-restore
+~~~~~~~~~~~~
+
+Use `rstrnt-restore` instead.
+
+rhts-run-simple-test
+~~~~~~~~~~~~~~~~~~~~
+
+Deprecated.
 

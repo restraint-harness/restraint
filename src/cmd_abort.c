@@ -17,62 +17,89 @@
 
 #include <glib.h>
 #include <gio/gio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <libsoup/soup.h>
-#include "upload.h"
-#include "utils.h"
+
+#include "cmd_utils.h"
+#include "cmd_abort.h"
 #include "errors.h"
 
+void
+format_abort_server(ServerData *s_data)
+{
+    if (s_data->server_recipe) {
+        s_data->server = g_strdup_printf ("%s/status", s_data->server_recipe);
+    }
+}
+gboolean
+parse_abort_arguments(AbortAppData *app_data, int argc, char *argv[], GError **error)
+{
 
-int main(int argc, char *argv[]) {
-    SoupSession *session;
-    GError *error = NULL;
+    gboolean ret = TRUE;
 
-    gchar *server = NULL;
-    SoupURI *server_uri = NULL;
-    guint ret = 0;
-
-    gchar *server_recipe = NULL;
-    gchar *type = NULL;
 
     GOptionEntry entries[] = {
-        {"server", 's', 0, G_OPTION_ARG_STRING, &server,
+        {"current", 'c', G_OPTION_FLAG_NONE, G_OPTION_FLAG_NONE,
+            &app_data->s.curr_set, "Use current recipe/task id", NULL},
+        {"pid", 'i', G_OPTION_FLAG_NONE, G_OPTION_ARG_INT,
+            &app_data->s.pid, "server pid", "PID"},
+        {"server", 's', 0, G_OPTION_ARG_STRING, &app_data->s.server,
             "Server to connect to", "URL" },
-        {"type", 't', G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_STRING, &type,
+        {"type", 't', G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_STRING, &app_data->type,
             "deprecated option", NULL},
         { NULL }
     };
+
     GOptionContext *context = g_option_context_new(NULL);
     g_option_context_set_summary(context,
-            "Aborts currently running task. if you don't specify the\n"
-            "the server url you must have RECIPEID defined.\n"
+            "Aborts currently running task. if you don't specify --current or \n"
+            "the server url you must have RECIPE_URL defined.\n"
             "If HARNESS_PREFIX is defined then the value of that must be\n"
-            "prefixed to RECIPEID");
+            "prefixed to RECIPE_URL");
     g_option_context_add_main_entries(context, entries, NULL);
-    gboolean parse_succeeded = g_option_context_parse(context, &argc, &argv, &error);
+    gboolean parse_succeeded = g_option_context_parse(context, &argc, &argv, error);
 
     if (!parse_succeeded) {
-        goto cleanup;
+        ret = FALSE;
+        goto parse_cleanup;
     }
 
-    server_recipe = get_recipe_url();
-
-    if (!server && server_recipe) {
-        server = g_strdup_printf ("%s/status", server_recipe);
+    if (!app_data->s.server) {
+        format_server_string(&app_data->s, format_abort_server, error);
+        if (error != NULL && *error != NULL) {
+            ret = FALSE;
+            goto parse_cleanup;
+        }
     }
 
-    if (!server) {
+    if (!app_data->s.server) {
+        ret = FALSE;
+        goto parse_cleanup;
+    }
+
+parse_cleanup:
+    if (ret == FALSE) {
         cmd_usage(context);
-        goto cleanup;
     }
+    g_option_context_free(context);
+    return ret;
+}
 
-    server_uri = soup_uri_new(server);
+gboolean
+upload_abort (AbortAppData *app_data, GError **error)
+{
+    gboolean result = TRUE;
+    guint ret = 0;
+    SoupSession *session;
+
+    SoupURI *server_uri = NULL;
+
+    server_uri = soup_uri_new(app_data->s.server);
     if (!server_uri) {
-        g_set_error (&error, RESTRAINT_ERROR,
+        g_set_error (error, RESTRAINT_ERROR,
                      RESTRAINT_PARSE_ERROR_BAD_SYNTAX,
-                     "Malformed server url: %s", server);
-        goto cleanup;
+                     "Malformed server url: %s", app_data->s.server);
+        result = FALSE;
+        goto upload_cleanup;
     }
     session = soup_session_new_with_options("timeout", 3600, NULL);
     SoupMessage *msg = soup_message_new_from_uri("POST", server_uri);
@@ -83,28 +110,18 @@ int main(int argc, char *argv[]) {
     if (!SOUP_STATUS_IS_SUCCESSFUL(ret)) {
         g_warning ("Failed to abort job, status: %d Message: %s\n", ret,
                    msg->reason_phrase);
+        result = FALSE;
     }
 
     g_object_unref(msg);
     soup_session_abort(session);
     g_object_unref(session);
 
-cleanup:
-    g_option_context_free(context);
+upload_cleanup:
 
     if (server_uri != NULL) {
         soup_uri_free (server_uri);
     }
 
-    g_free (server);
-
-    if (error) {
-        int retcode = error->code;
-        g_printerr("%s [%s, %d]\n", error->message,
-                g_quark_to_string(error->domain), error->code);
-        g_clear_error(&error);
-        return retcode;
-    } else {
-        return EXIT_SUCCESS;
-    }
+    return (result);
 }

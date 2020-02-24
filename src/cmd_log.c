@@ -17,93 +17,115 @@
 
 #include <glib.h>
 #include <gio/gio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <libsoup/soup.h>
+#include "cmd_log.h"
+#include "cmd_utils.h"
+#include "errors.h"
 #include "upload.h"
 #include "utils.h"
-#include "errors.h"
 
-static SoupSession *session;
+void
+format_log_server(ServerData *s_data)
+{
+    if (s_data->server_recipe && s_data->task_id) {
+        s_data->server = g_strdup_printf ("%s/tasks/%s", s_data->server_recipe, s_data->task_id);
+    }
+}
 
-int main(int argc, char *argv[]) {
+gboolean
+parse_log_arguments(LogAppData *app_data, int argc, char *argv[], GError **error)
+{
 
-    GError *error = NULL;
-
-    gchar *server = NULL;
-    SoupURI *result_uri = NULL;
-
-    gchar *filename = NULL;
-    gchar *basename = NULL;
-    gchar *server_recipe = NULL;
-    gchar *task_id = NULL;
-
-    gchar *deprecated1 = NULL;
-    gchar *deprecated2 = NULL;
+    gboolean ret = TRUE;
 
     GOptionEntry entries[] = {
-        {"server", 's', 0, G_OPTION_ARG_STRING, &server,
+        {"current", 'c', G_OPTION_FLAG_NONE, G_OPTION_FLAG_NONE,
+            &app_data->s.curr_set, "Use current recipe/task id", NULL},
+        {"pid", 'i', G_OPTION_FLAG_NONE, G_OPTION_ARG_INT,
+            &app_data->s.pid, "server pid", "PID"},
+        {"server", 's', 0, G_OPTION_ARG_STRING, &app_data->s.server,
             "Server to connect to", "URL" },
-        { "filename", 'l', 0, G_OPTION_ARG_STRING, &filename,
+        { "filename", 'l', 0, G_OPTION_ARG_STRING, &app_data->filename,
             "Log to upload", "FILE" },
-        {"deprecated1", 'S', G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_STRING, &deprecated1,
+        {"deprecated1", 'S', G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_STRING, &app_data->deprecated1,
             "deprecated option", NULL},
-        {"deprecated2", 'T', G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_STRING, &deprecated2,
+        {"deprecated2", 'T', G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_STRING, &app_data->deprecated2,
             "deprecated option", NULL},
         { NULL }
     };
+
     GOptionContext *context = g_option_context_new(NULL);
     g_option_context_set_summary(context,
-            "Report results to lab controller. if you don't specify the\n"
-            "the server url you must have RECIPEID and TASKID defined.\n"
+            "Report results to lab controller. if you don't specify --current or the\n"
+            "the server url you must have RECIPE_URL and TASKID defined.\n"
             "If HARNESS_PREFIX is defined then the value of that must be\n"
-            "prefixed to RECIPEID and TASKID");
+            "prefixed to RECIPE_URL and TASKID");
     g_option_context_add_main_entries(context, entries, NULL);
-    gboolean parse_succeeded = g_option_context_parse(context, &argc, &argv, &error);
+    gboolean parse_succeeded = g_option_context_parse(context, &argc, &argv, error);
 
     if (!parse_succeeded) {
-        goto cleanup;
+        ret = FALSE;
+        goto parse_cleanup;
     }
 
-    server_recipe = get_recipe_url();
-    task_id = get_taskid();
-
-    if (!server && server_recipe && task_id) {
-        server = g_strdup_printf ("%s/tasks/%s", server_recipe, task_id);
+    if (!app_data->s.server) {
+        format_server_string(&app_data->s, format_log_server, error);
+        if (error != NULL && *error != NULL) {
+            ret = FALSE;
+            goto parse_cleanup;
+        }
     }
 
-    if (!filename || !server) {
-        cmd_usage(context);
-        goto cleanup;
+    if (!app_data->filename || !app_data->s.server) {
+        ret = FALSE;
+        goto parse_cleanup;
     }
 
-    if (deprecated1 != NULL) {
+    if (app_data->deprecated1 != NULL) {
         g_warning ("Option -S deprecated! Update your code.\n");
     }
-    if (deprecated2 != NULL) {
+    if (app_data->deprecated2 != NULL) {
         g_warning ("Option -T deprecated! Update your code.\n");
     }
 
-    result_uri = soup_uri_new (server);
+parse_cleanup:
+    if (ret == FALSE) {
+        cmd_usage(context);
+    }
+    g_option_context_free(context);
+    return ret;
+}
+
+gboolean
+upload_log (LogAppData *app_data, GError **error)
+{
+    SoupSession *session;
+    SoupURI *result_uri = NULL;
+    gchar *basename = NULL;
+    gboolean ret = TRUE;
+
+    result_uri = soup_uri_new (app_data->s.server);
     if (!result_uri) {
-        g_set_error (&error, RESTRAINT_ERROR,
+        g_set_error (error, RESTRAINT_ERROR,
                      RESTRAINT_PARSE_ERROR_BAD_SYNTAX,
-                     "Malformed server url: %s", server);
-        goto cleanup;
+                     "Malformed server url: %s", app_data->s.server);
+        ret = FALSE;
+        goto upload_cleanup;
     }
     session = soup_session_new_with_options("timeout", 3600, NULL);
 
-    basename = g_filename_display_basename (filename);
-    gchar *location = g_strdup_printf ("%s/logs/%s", server, basename);
+    basename = g_filename_display_basename (app_data->filename);
+    gchar *location = g_strdup_printf ("%s/logs/%s", app_data->s.server, basename);
     soup_uri_free(result_uri);
     result_uri = soup_uri_new (location);
     g_free (location);
-    if (g_file_test (filename, G_FILE_TEST_EXISTS)) 
+    if (g_file_test (app_data->filename, G_FILE_TEST_EXISTS))
     {
         g_print ("Uploading %s ", basename);
-        if (upload_file (session, filename, basename, result_uri, &error)) {
+        if (upload_file (session, app_data->filename, basename, result_uri, error)) {
             g_print ("done\n");
         } else {
+            ret = FALSE;
             g_print ("failed\n");
         }
     }
@@ -111,24 +133,10 @@ int main(int argc, char *argv[]) {
     soup_session_abort(session);
     g_object_unref(session);
 
-cleanup:
-    g_option_context_free(context);
+upload_cleanup:
     if (result_uri != NULL) {
         soup_uri_free (result_uri);
     }
-    if (filename != NULL) {
-        g_free(filename);
-    }
-    if (server != NULL) {
-        g_free(server);
-    }
-    if (error) {
-        int retcode = error->code;
-        g_printerr("%s [%s, %d]\n", error->message,
-                g_quark_to_string(error->domain), error->code);
-        g_clear_error(&error);
-        return retcode;
-    } else {
-        return EXIT_SUCCESS;
-    }
+    return ret;
+
 }

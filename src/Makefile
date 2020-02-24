@@ -48,16 +48,16 @@ endif
 .PHONY: all
 all: $(PROGRAMS)
 
-rstrnt-report-result: cmd_result.o cmd_result_main.o upload.o utils.o errors.o
+rstrnt-report-result: cmd_result.o cmd_result_main.o upload.o utils.o cmd_utils.o errors.o
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
-rstrnt-report-log: cmd_log.o upload.o utils.o errors.o
+rstrnt-report-log: cmd_log.o cmd_log_main.o upload.o utils.o cmd_utils.o errors.o
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
-rstrnt-adjust-watchdog: cmd_watchdog.o utils.o errors.o
+rstrnt-adjust-watchdog: cmd_watchdog.o cmd_watchdog_main.o utils.o cmd_utils.o errors.o
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
-rstrnt-abort: cmd_abort.o utils.o errors.o
+rstrnt-abort: cmd_abort.o cmd_abort_main.o utils.o cmd_utils.o errors.o
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 rstrnt-sync: cmd_sync.o
@@ -91,7 +91,10 @@ restraint_forkpty.o:
 
 # Tests
 
+TEST_PROGRAMS += test_cmd_abort
+TEST_PROGRAMS += test_cmd_log
 TEST_PROGRAMS += test_cmd_result
+TEST_PROGRAMS += test_cmd_watchdog
 TEST_PROGRAMS += test_dependency
 TEST_PROGRAMS += test_env
 TEST_PROGRAMS += test_fetch_git
@@ -117,7 +120,7 @@ test_process.o: process.h
 test_dependency: dependency.o errors.o process.o fetch.o fetch_uri.o fetch_git.o metadata.o utils.o param.o restraint_forkpty.o
 test_dependency.o: dependency.h errors.h process.h param.h
 
-test_env: test_env.o errors.o env.o
+test_env: test_env.o errors.o env.o utils.o cmd_utils.o
 
 test_task: task.o fetch_git.o expect_http.o param.o role.o metadata.o
 test_task.o: task.h expect_http.h
@@ -128,8 +131,17 @@ test_recipe.o: recipe.h task.h param.h
 test_metadata: metadata.o utils.o errors.o process.o param.o restraint_forkpty.o
 test_metadata.o: metadata.h utils.h errors.h process.h param.h
 
-test_cmd_result: cmd_result.o utils.o upload.o errors.o
-test_cmd_result.o: cmd_result.h utils.h upload.h errors.h
+test_cmd_abort: cmd_abort.o utils.o cmd_utils.o errors.o
+test_cmd_abort.o: cmd_abort.h utils.h cmd_utils.h errors.h
+
+test_cmd_log: cmd_log.o utils.o cmd_utils.o upload.o errors.o
+test_cmd_log.o: cmd_log.h utils.h cmd_utils.h upload.h errors.h
+
+test_cmd_result: cmd_result.o utils.o cmd_utils.o upload.o errors.o
+test_cmd_result.o: cmd_result.h utils.h cmd_utils.h upload.h errors.h
+
+test_cmd_watchdog: cmd_watchdog.o utils.o cmd_utils.o errors.o
+test_cmd_watchdog.o: cmd_watchdog.h utils.h cmd_utils.h errors.h
 
 test_utils: test_utils.o utils.o errors.o
 

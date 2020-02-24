@@ -111,7 +111,7 @@ a TCP capture::
  cat << "EOF" > /usr/share/restraint/plugins/task_run.d/30_tcpdump
  #!/bin/sh -x
 
- echo "*** Running PLugin: $0"
+ rstrnt_info "*** Running Plugin: $0"
 
  # Don't run from PLUGINS
  if [ -z "$RSTRNT_NOPLUGINS" ]; then
@@ -124,6 +124,8 @@ a TCP capture::
  chmod a+x /usr/share/restraint/plugins/task_run.d/30_tcpdump
 
 Refer to section (:ref:`completed`) for how to report these results.
+
+.. _rpt_result:
 
 Report Result
 -------------

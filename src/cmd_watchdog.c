@@ -21,77 +21,107 @@
 #include <string.h>
 #include <libsoup/soup.h>
 #include <unistd.h>
-#include "utils.h"
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
+#include "cmd_watchdog.h"
+#include "cmd_utils.h"
 #include "errors.h"
 #include "process.h"
+#include "utils.h"
 
-static SoupSession *session;
+void
+format_watchdog_server(ServerData *s_data)
+{
+    if (s_data->server_recipe) {
+        s_data->server = g_strdup_printf ("%s/watchdog", s_data->server_recipe);
+    }
+}
 
-int main(int argc, char *argv[]) {
 
-    GError *error = NULL;
+gboolean
+parse_watchdog_arguments(WatchdogAppData *app_data, int argc, char *argv[], GError **error) {
 
-    gchar *server = NULL;
-    gchar *form_data;
-    gchar *form_seconds;
-    SoupURI *watchdog_uri = NULL;
-    guint ret = 0;
-    guint64 seconds;
+    gboolean ret = TRUE;
 
-    gchar *server_recipe = NULL;
-    GHashTable *data_table = g_hash_table_new (NULL, NULL);
 
     GOptionEntry entries[] = {
-        {"server", 's', 0, G_OPTION_ARG_STRING, &server,
+        {"current", 'c', G_OPTION_FLAG_NONE, G_OPTION_FLAG_NONE,
+            &app_data->s.curr_set, "Use current recipe/task id", NULL},
+        {"pid", 'i', G_OPTION_FLAG_NONE, G_OPTION_ARG_INT,
+            &app_data->s.pid, "server pid", "PID"},
+        {"server", 's', 0, G_OPTION_ARG_STRING, &app_data->s.server,
             "Server to connect to", "URL" },
         { NULL }
     };
+
     GOptionContext *context = g_option_context_new("<time>");
     g_option_context_set_summary(context,
-            "Adjust watchdog on lab controller. if you don't specify the\n"
-            "the server url you must have RECIPEID defined.\n"
+            "Adjust watchdog on lab controller. if you don't specify --current or \n"
+            "the server url you must have RECIPE_URL defined.\n"
             "If HARNESS_PREFIX is defined then the value of that must be\n"
-            "prefixed to RECIPEID");
+            "prefixed to RECIPE_URL");
     g_option_context_add_main_entries(context, entries, NULL);
-    gboolean parse_succeeded = g_option_context_parse(context, &argc, &argv, &error);
+
+    gboolean parse_succeeded = g_option_context_parse(context, &argc, &argv, error);
 
     if (argc < 2 || !parse_succeeded) {
-        g_set_error (&error, RESTRAINT_ERROR,
+        g_set_error (error, RESTRAINT_ERROR,
                      RESTRAINT_PARSE_ERROR_BAD_SYNTAX,
                      "Wrong arguments");
-        cmd_usage(context);
-        goto cleanup;
+        ret = FALSE;
+        goto parse_cleanup;
     }
 
-    seconds = parse_time_string (argv[1], &error);
-    if (error) {
-        cmd_usage(context);
-        goto cleanup;
+    app_data->seconds = parse_time_string (argv[1], error);
+    if (*error) {
+        ret = FALSE;
+        goto parse_cleanup;
      }
 
-    server_recipe = get_recipe_url();
-
-    if (!server && server_recipe) {
-        server = g_strdup_printf ("%s/watchdog", server_recipe);
+    if (!app_data->s.server) {
+        format_server_string(&app_data->s, format_watchdog_server, error);
+        if (error != NULL && *error != NULL) {
+            ret = FALSE;
+            goto parse_cleanup;
+        }
     }
 
-    if (!server) {
+    if (!app_data->s.server) {
+        ret = FALSE;
+        goto parse_cleanup;
+    }
+
+parse_cleanup:
+    if (ret == FALSE) {
         cmd_usage(context);
-        goto cleanup;
     }
+    g_option_context_free(context);
+    return ret;
+}
 
-    watchdog_uri = soup_uri_new (server);
+gboolean
+upload_watchdog (WatchdogAppData *app_data, GError **error)
+{
+    SoupSession *session;
+    SoupURI *watchdog_uri = NULL;
+    gchar *form_data;
+    gchar *form_seconds;
+    GHashTable *data_table = g_hash_table_new (NULL, NULL);
+    gint ret = 0;
+    gboolean result = TRUE;
+
+    watchdog_uri = soup_uri_new (app_data->s.server);
+
     if (!watchdog_uri) {
-        g_set_error (&error, RESTRAINT_ERROR,
+        g_set_error (error, RESTRAINT_ERROR,
                      RESTRAINT_PARSE_ERROR_BAD_SYNTAX,
-                     "Malformed server url: %s", server);
+                     "Malformed server url: %s", app_data->s.server);
+        result = FALSE;
         goto cleanup;
     }
     session = soup_session_new_with_options("timeout", 3600, NULL);
     SoupMessage *server_msg = soup_message_new_from_uri ("POST", watchdog_uri);
-    form_seconds = g_strdup_printf ("%" G_GUINT64_FORMAT, seconds);
+    form_seconds = g_strdup_printf ("%" G_GUINT64_FORMAT, app_data->seconds);
     g_hash_table_insert (data_table, "seconds", form_seconds);
     form_data = soup_form_encode_hash (data_table);
     g_free (form_seconds);
@@ -100,10 +130,11 @@ int main(int argc, char *argv[]) {
 
     ret = soup_session_send_message (session, server_msg);
     if (SOUP_STATUS_IS_SUCCESSFUL (ret)) {
-        if (seconds < HEARTBEAT) {
+        if (app_data->seconds < HEARTBEAT) {
             g_warning ("Expect up to a 1 minute delay for watchdog thread to notice change.\n");
         }
     } else {
+        result = FALSE;
         g_warning ("Failed to adjust watchdog, status: %d Message: %s\n", ret,
                    server_msg->reason_phrase);
     }
@@ -114,20 +145,10 @@ int main(int argc, char *argv[]) {
 
 cleanup:
     g_hash_table_destroy(data_table);
-    g_option_context_free(context);
-    if (server != NULL) {
-        g_free(server);
-    }
+
     if (watchdog_uri != NULL) {
         soup_uri_free (watchdog_uri);
     }
-    if (error) {
-        int retcode = error->code;
-        g_printerr("%s [%s, %d]\n", error->message,
-                g_quark_to_string(error->domain), error->code);
-        g_clear_error(&error);
-        return retcode;
-    } else {
-        return EXIT_SUCCESS;
-    }
+    return result;
+
 }

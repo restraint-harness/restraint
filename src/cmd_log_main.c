@@ -1,4 +1,4 @@
-/*  
+/*
     This file is part of Restraint.
 
     Restraint is free software: you can redistribute it and/or modify
@@ -15,21 +15,35 @@
     along with Restraint.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef __UTILS_H
-#define __UTILS_H
-
 #include <glib.h>
-#define BASE10 10
+#include "cmd_log.h"
 
-#define CMD_ENV_DIR "/var/lib/restraint"
-#define CMD_ENV_FILE_FORMAT "%s/rstrnt-commands-env-%d.sh"
+int main(int argc, char *argv[]) {
 
-void update_env_script(gchar *prefix, gchar *restraint_url,
-                       gchar *recipe_id, gchar *task_id,
-                       GError **error);
-gchar *get_envvar_filename(gint pid);
-guint64 parse_time_string (gchar *time_string, GError **error);
-gboolean file_exists (gchar *filename);
-gchar *get_package_version(gchar *pkg_name, GError **error);
+    GError *error = NULL;
+    int retcode = EXIT_SUCCESS;
 
-#endif
+    LogAppData *app_data = g_slice_new0 (LogAppData);
+
+    if (!parse_log_arguments(app_data, argc, argv, &error)) {
+        goto cleanup;
+    }
+
+    if (!upload_log(app_data, &error)) {
+        goto cleanup;
+    }
+
+cleanup:
+    g_free(app_data->filename);
+    clear_server_data(&app_data->s);
+    g_slice_free(LogAppData, app_data);
+
+    if (error) {
+        retcode = error->code;
+        g_printerr("%s [%s, %d]\n", error->message,
+                g_quark_to_string(error->domain), error->code);
+        g_clear_error(&error);
+    }
+    return retcode;
+}
+

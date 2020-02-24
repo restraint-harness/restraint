@@ -17,36 +17,9 @@
 #include <glib.h>
 #include <glib/gstdio.h>
 
+#include "cmd_utils.h"
 #include "env.h"
 #include "param.h"
-
-/*
- * update_env_script()
- *
- * When restraintd paired with client, the environment variables
- * RECIPE_URL and TASKID need to be put somewhere if the user
- * wants to run the commands which work with the client.
- * If user wants to run commands in this case, they should first do:
- *    export $(cat /etc/profile.d/rstrnt-commands-env.sh)
- * to acquire the current environment variables.
- */
-static void update_env_script(gchar *prefix, gchar *restraint_url,
-                              gchar *recipe_id, gchar *task_id)
-{
-    FILE *env_file;
-
-    env_file = g_fopen(CMD_ENV_FILE, "w");
-
-    if (env_file == NULL) {
-        return;
-    }
-
-    g_fprintf(env_file, "HARNESS_PREFIX=%s\n", prefix);
-    g_fprintf(env_file, "%sURL=%s\n", ENV_PREFIX, restraint_url);
-    g_fprintf(env_file, "%sRECIPE_URL=%s/recipes/%s\n", ENV_PREFIX, restraint_url, recipe_id);
-    g_fprintf(env_file, "%sTASKID=%s\n", ENV_PREFIX, task_id);
-    fclose(env_file);
-}
 
 static void get_recipe_members(GSList **hosts, GList *rolehosts)
 {
@@ -102,6 +75,7 @@ static void build_param_var(Param *param, GPtrArray *env) {
 
 void build_env(gchar *restraint_url, gboolean stdin, Task *task) {
     GPtrArray *env = g_ptr_array_new_with_free_func (g_free);
+    GError *error = NULL;
 
     if (task->metadata != NULL) {
         g_slist_foreach(task->metadata->envvars, (GFunc) build_param_var, env);
@@ -185,9 +159,15 @@ void build_env(gchar *restraint_url, gboolean stdin, Task *task) {
     // This terminates the array
     g_ptr_array_add(env, NULL);
     task->env = env;
-    // When restraintd paired with test client, environment variables needs to be made
-    // available to user who wants to run the commands against the client.
-    if (stdin) {
-        update_env_script(ENV_PREFIX, restraint_url, task->recipe->recipe_id, task->task_id);
+    // To make it easy for user's to run restraintd commands, these environment variables
+    // need to be made conveniently available to user.
+    update_env_script(ENV_PREFIX, restraint_url, task->recipe->recipe_id, task->task_id,
+                      &error);
+    if (error) {
+        g_printerr("%s [%s, %d]\n", error->message,
+                g_quark_to_string(error->domain), error->code);
+        g_clear_error(&error);
     }
+
+
 }

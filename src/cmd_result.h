@@ -2,17 +2,16 @@
 #define RESTRAINT_CMD_RESULT
 
 #include <glib.h>
+#include "cmd_utils.h"
 
 typedef struct {
+    ServerData s;
     gchar *filename;
     gchar *outputfile;
     GPtrArray *disable_plugin;
 
-    gchar *server;
     gchar *result_msg;
     gchar *prefix;
-    gchar *server_recipe;
-    gchar *task_id;
 
     /* Positional Arguments */
     gchar *test_name;

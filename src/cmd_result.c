@@ -25,6 +25,7 @@
 #include "errors.h"
 
 #include "cmd_result.h"
+#include "cmd_utils.h"
 
 static gboolean
 callback_disable_plugin (const gchar *option_name, const gchar *value,
@@ -55,8 +56,8 @@ callback_server (const gchar *option_name, const gchar *value,
 {
     AppData *app_data = (AppData *) user_data;
 
-    g_free(app_data->server);
-    app_data->server = g_strdup(value);
+    g_free(app_data->s.server);
+    app_data->s.server = g_strdup(value);
     return TRUE;
 }
 
@@ -72,16 +73,24 @@ void restraint_free_appdata(AppData *app_data)
     g_free(app_data->outputfile);
     g_ptr_array_free(app_data->disable_plugin, TRUE);
 
-    g_free(app_data->server);
     g_free(app_data->result_msg);
-    g_free(app_data->server_recipe);
-    g_free(app_data->task_id);
 
     g_free(app_data->test_name);
     g_free(app_data->test_result);
     g_free(app_data->score);
 
+    clear_server_data(&app_data->s);
+
     g_slice_free(AppData, app_data);
+}
+
+void
+format_result_server(ServerData *s_data)
+{
+    if (s_data->server_recipe && s_data->task_id) {
+        s_data->server = g_strdup_printf ("%s/tasks/%s/results/",
+            s_data->server_recipe, s_data->task_id);
+    }
 }
 
 /*
@@ -98,7 +107,6 @@ void restraint_free_appdata(AppData *app_data)
     that start with a '-' then they must first use a '--' switch
     to tell glib to stop processing arguments.
 */
-
 gboolean parse_arguments_rstrnt(AppData *app_data, int argc, char *argv[])
 {
     gchar **positional_args = NULL;
@@ -109,6 +117,10 @@ gboolean parse_arguments_rstrnt(AppData *app_data, int argc, char *argv[])
     guint positional_arg_count = 0;
 
     GOptionEntry entry[] = {
+        {"current", 'c', G_OPTION_FLAG_NONE, G_OPTION_FLAG_NONE,
+            &app_data->s.curr_set, "Use current recipe/task id", NULL},
+        {"pid", 'i', G_OPTION_FLAG_NONE, G_OPTION_ARG_INT,
+            &app_data->s.pid, "server pid", "PID"},
         {"server", 's', 0, G_OPTION_ARG_CALLBACK, callback_server,
             "Server to connect to", "URL" },
         { "message", 't', 0, G_OPTION_ARG_STRING, &app_data->result_msg,
@@ -125,14 +137,14 @@ gboolean parse_arguments_rstrnt(AppData *app_data, int argc, char *argv[])
     };
 
     option_group = g_option_group_new ("main",
-                                                    "Application Options",
-                                                    "Various application related options",
-                                                    app_data, NULL);
+                                       "Application Options",
+                                       "Various application related options",
+                                       app_data, NULL);
 
     g_option_group_add_entries(option_group, entry);
     context = g_option_context_new("TASK_PATH RESULT [SCORE]");
     g_option_context_set_summary(context,
-            "Report results to lab controller. if you don't specify the\n"
+            "Report results to lab controller. if you don't specify --current or\n"
             "the server url you must have RECIPE_URL and TASKID defined.\n"
             "If HARNESS_PREFIX is defined then the value of that must be\n"
             "prefixed to RECIPE_URL and TASKID");
@@ -141,8 +153,15 @@ gboolean parse_arguments_rstrnt(AppData *app_data, int argc, char *argv[])
     gboolean parse_succeeded = g_option_context_parse(context,
         &argc, &argv, &error);
 
-    if(!parse_succeeded){
+    if (parse_succeeded && app_data->s.server == NULL) {
+        format_server_string(&app_data->s, format_result_server, &error);
+    }
+
+    if(!parse_succeeded || app_data->s.server == NULL){
         cmd_usage(context);
+        if (error) {
+            g_print("\nERROR: %s\n", error->message);
+        }
         rc = FALSE;
         goto cleanup;
     }
@@ -152,7 +171,7 @@ gboolean parse_arguments_rstrnt(AppData *app_data, int argc, char *argv[])
     }
 
     if( positional_args == NULL ||
-        app_data->server == NULL ||
+        app_data->s.server == NULL ||
         positional_arg_count > 4 ||
         positional_arg_count < 2 )
     {
@@ -182,10 +201,10 @@ gboolean parse_arguments_rhts(AppData *app_data, int argc, char *argv[])
      * The first argument (that is, argv[1]) will be --rhts, so we need to +1
      * All the argv indexes.
      * */
-    if(
-        argc < 5 || argc > 6 ||
-        !app_data->server_recipe || !app_data->task_id
-    ) {
+    format_server_string(&app_data->s, format_result_server, NULL);
+
+    if (argc < 5 || argc > 6 ||
+        app_data->s.server == NULL) {
         g_print(
             "rstrnt-report-result running in rhts-report-result compatability mode.\n\n"
 
@@ -231,13 +250,6 @@ gboolean parse_arguments(AppData *app_data, int argc, char *argv[])
     app_data->filename = g_strdup("resultoutputfile.log");
     app_data->outputfile = g_strdup(getenv("OUTPUTFILE"));
     app_data->disable_plugin = g_ptr_array_new_with_free_func (g_free);
-    app_data->server_recipe = g_strdup(get_recipe_url());
-    app_data->task_id = g_strdup(get_taskid());
-
-    if (app_data->server_recipe && app_data->task_id) {
-        app_data->server = g_strdup_printf ("%s/tasks/%s/results/",
-            app_data->server_recipe, app_data->task_id);
-    }
 
     if(app_data->rhts_compat){
         return parse_arguments_rhts(app_data, argc, argv);
@@ -260,11 +272,11 @@ gboolean upload_results(AppData *app_data) {
     gchar *form_data;
     GHashTable *data_table = g_hash_table_new (NULL, NULL);
 
-    result_uri = soup_uri_new (app_data->server);
+    result_uri = soup_uri_new (app_data->s.server);
     if (result_uri == NULL) {
         g_set_error (&error, RESTRAINT_ERROR,
                      RESTRAINT_PARSE_ERROR_BAD_SYNTAX,
-                     "Malformed server url: %s", app_data->server);
+                     "Malformed server url: %s", app_data->s.server);
         goto cleanup;
     }
     session = soup_session_new_with_options("timeout", 3600, NULL);
