@@ -70,13 +70,16 @@ for file in "$@"; do
 
     # create path and copy files
     mkdir -p "${DEST}${path}" || { echo "Cannot create ${DEST}${path} directory."; exit 1; }
+
+    cp_opts="-fa"
+
     if $SELINUX; then
         # when selinux enabled we need -c here (cp bug #470207)
-        cp -fac "$file" "${DEST}${path}"
-    else
-        cp -fa "$file" "${DEST}${path}"
+        # -c is deprecated by --preserve=context
+        cp_opts="${cp_opts} --preserve=context"
     fi
-    if [ "$?" != "0" ]; then
+
+    if ! cp ${cp_opts} "$file" "${DEST}${path}" ; then
         echo "Failed to back up files to ${DEST}${path}."
         exit 1
     fi

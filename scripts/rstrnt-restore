@@ -43,20 +43,21 @@ if [ -n "$RSTRNT_BACKUP_DIR" ]; then
     SRC=$(echo "$RSTRNT_BACKUP_DIR" | sed 's|/$||')
     [ -d "${SRC}" ] || { echo "Failed to restore files, there is no ${SRC} directory."; exit 1; }
     echo "Backup directory set. Restoring files from ${SRC}."
-else  
+else
     SRC="$(eval echo \$$(echo ${HARNESS_PREFIX}RUNPATH))/backup"
     [ -d "${SRC}" ] || { echo "Nothing to restore."; exit 0; }
 fi
 
 # restore files
-if $SELINUX; then
+cp_opts="-fa"
+
+if $SELINUX ; then
     # when selinux enabled we need -c here (cp bug #470207)
-    cp -fac "${SRC}"/* /
-else
-    cp -fa "${SRC}"/* /
+    # -c is deprecated by --preserve=context
+    cp_opts="${cp_opts} --preserve=context"
 fi
 
-if [ "$?" != "0" ]; then
+if ! cp ${cp_opts} "${SRC}"/* / ; then
     echo "Failed to restore files from ${SRC}."
     exit 1
 fi
