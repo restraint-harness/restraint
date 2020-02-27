@@ -439,11 +439,11 @@ static void test_metadata_environment(void) {
 
 int main(int argc, char *argv[]) {
     g_test_init(&argc, &argv, NULL);
-    g_test_add_func("/testindo.desc/testtime/day", test_testinfo_testtime_day);
-    g_test_add_func("/testindo.desc/testtime/hour", test_testinfo_testtime_hour);
-    g_test_add_func("/testindo.desc/testtime/invalid", test_testinfo_testtime_invalid);
-    g_test_add_func("/testindo.desc/testtime/minute", test_testinfo_testtime_minute);
-    g_test_add_func("/testindo.desc/testtime/second", test_testinfo_testtime_second);
+    g_test_add_func("/testinfo.desc/testtime/day", test_testinfo_testtime_day);
+    g_test_add_func("/testinfo.desc/testtime/hour", test_testinfo_testtime_hour);
+    g_test_add_func("/testinfo.desc/testtime/invalid", test_testinfo_testtime_invalid);
+    g_test_add_func("/testinfo.desc/testtime/minute", test_testinfo_testtime_minute);
+    g_test_add_func("/testinfo.desc/testtime/second", test_testinfo_testtime_second);
     g_test_add_func("/testinfo.desc/dependencies", test_testinfo_dependencies);
     g_test_add_func("/testinfo.desc/repodeps", test_testinfo_repodeps);
     g_test_add_func("/testinfo.desc/use_pty", test_testinfo_use_pty);
