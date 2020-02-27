@@ -31,6 +31,7 @@
 #include "common.h"
 #include "config.h"
 #include "process.h"
+#include "logging.h"
 #include "message.h"
 #include "server.h"
 
@@ -102,48 +103,6 @@ static void restraint_free_app_data(AppData *app_data)
   g_slice_free(AppData, app_data);
 }
 
-void connections_write (AppData *app_data, const gchar *path,
-                        const gchar *msg_data, gsize msg_len)
-{
-    // Active parsed task?  Send the output to log via REST
-    if (app_data->tasks && ! g_cancellable_is_cancelled(app_data->cancellable)) {
-        Task *task = (Task *) app_data->tasks->data;
-        SoupURI *task_output_uri = soup_uri_new_with_base (task->task_uri, path);
-        SoupMessage *server_msg = soup_message_new_from_uri ("PUT", task_output_uri);
-        soup_uri_free (task_output_uri);
-        g_return_if_fail (server_msg != NULL);
-
-        goffset *offset = g_hash_table_lookup(task->offsets, path);
-        if (offset == NULL) {
-          offset = g_malloc0(sizeof(offset));
-          g_hash_table_insert(task->offsets, g_strdup(path), offset);
-        }
-        gchar *range = g_strdup_printf ("bytes %" G_GOFFSET_FORMAT "-%" G_GOFFSET_FORMAT "/*",
-                *offset, *offset + msg_len - 1);
-        *offset += msg_len;
-        soup_message_headers_append (server_msg->request_headers, "Content-Range", range);
-        g_free (range);
-
-        soup_message_headers_append (server_msg->request_headers, "log-level", "2");
-        soup_message_set_request (server_msg, "text/plain", SOUP_MEMORY_COPY, msg_data, msg_len);
-
-        app_data->queue_message (soup_session,
-                                 server_msg,
-                                 app_data->message_data,
-                                 NULL,
-                                 app_data->cancellable,
-                                 NULL);
-
-        // Update config file with new offset.
-        gchar *section = g_strdup_printf("offsets_%s", task->task_id);
-        restraint_config_set (app_data->config_file, section,
-                              path, NULL, G_TYPE_UINT64, *offset);
-        g_free(section);
-    }
-}
-
-
-
 gboolean
 server_io_callback (GIOChannel *io, GIOCondition condition, gpointer user_data) {
     //ProcessData *process_data = (ProcessData *) user_data;
@@ -168,8 +127,10 @@ server_io_callback (GIOChannel *io, GIOCondition condition, gpointer user_data) 
             if (!app_data->stdin)
                 g_print ("%s", buf);
 
-            /* Push data to our connections.. */
-            connections_write(app_data, LOG_PATH_HARNESS, buf, bytes_read);
+            rstrnt_log_bytes (app_data->tasks->data,
+                              RSTRNT_LOG_TYPE_HARNESS,
+                              buf, bytes_read);
+
             return G_SOURCE_CONTINUE;
 
           case G_IO_STATUS_ERROR:
@@ -208,6 +169,7 @@ plugin_finish_callback (gint pid_result, gboolean localwatchdog, gpointer user_d
         g_warning ("** ERROR: running plugins returned non-zero %i\n", pid_result);
     }
     soup_server_unpause_message (client_data->server, client_data->client_msg);
+
     g_slice_free(ClientData, client_data);
 }
 
@@ -667,8 +629,8 @@ int main(int argc, char *argv[]) {
   const gchar *config = "config.conf";
   SoupServer *soup_server = NULL;
   GError *error = NULL;
-
   app_data->port = 0;
+  RstrntLogManager *log_manager;
 
   GOptionEntry entries [] = {
     { "port", 'p', 0, G_OPTION_ARG_INT, &app_data->port, "Port to listen on", "PORT" },
@@ -770,6 +732,10 @@ int main(int argc, char *argv[]) {
   restraint_free_app_data(app_data);
 
   g_main_loop_unref(loop);
+
+  log_manager = rstrnt_log_manager_get_instance ();
+
+  g_object_unref (log_manager);
 
   return 0;
 }

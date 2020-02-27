@@ -1,4 +1,4 @@
-/*  
+/*
     This file is part of Restraint.
 
     Restraint is free software: you can redistribute it and/or modify
@@ -24,6 +24,7 @@
 #include <pty.h>
 #include <time.h>
 #include "recipe.h"
+#include "logging.h"
 #include "message.h"
 #include "server.h"
 #include "metadata.h"
@@ -65,7 +66,7 @@ typedef enum {
     TASK_FETCH_UNPACK,
 } TaskFetchMethod;
 
-typedef struct {
+typedef struct RstrntTask {
     /* Beaker ID for this task */
     gchar *task_id;
     /* Recipe attributes for this job */
@@ -129,7 +130,7 @@ typedef struct {
     TaskSetupState pass_state;
     TaskSetupState fail_state;
     gchar expire_time[80];
-    const gchar *logpath;
+    RstrntLogType log_type;
 } TaskRunData;
 
 Task *restraint_task_new(void);

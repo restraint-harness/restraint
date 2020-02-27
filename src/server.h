@@ -31,7 +31,7 @@ typedef enum {
   ABORTED_TASK,
 } StateAborted;
 
-typedef struct {
+typedef struct RstrntServerAppData {
   RecipeSetupState state;
   guint port;
   guint recipe_handler_id;

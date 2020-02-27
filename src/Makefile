@@ -66,7 +66,7 @@ rstrnt-sync: cmd_sync.o
 restraint: client.o errors.o xml.o utils.o process.o restraint_forkpty.o
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
-restraintd: server.o recipe.o task.o fetch.o fetch_git.o fetch_uri.o param.o role.o metadata.o process.o message.o dependency.o utils.o config.o errors.o xml.o env.o restraint_forkpty.o beaker_harness.o
+restraintd: server.o recipe.o task.o fetch.o fetch_git.o fetch_uri.o param.o role.o metadata.o process.o message.o dependency.o utils.o config.o errors.o xml.o env.o restraint_forkpty.o beaker_harness.o logging.o
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 fetch_git.o: fetch.h fetch_git.h
@@ -89,6 +89,7 @@ errors.o: errors.h
 xml.o: xml.h
 restraint_forkpty.o:
 beaker_harness.o:
+logging.o: logging.c logging.h task.h
 
 # Tests
 TEST_PROGRAMS += test_beaker_harness
@@ -106,6 +107,7 @@ TEST_PROGRAMS += test_process
 #TEST_PROGRAMS += test_recipe
 #TEST_PROGRAMS += test_task
 TEST_PROGRAMS += test_utils
+TEST_PROGRAMS += test_logging
 
 test_%: test_%.o
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
@@ -156,6 +158,9 @@ test_cmd_watchdog.o: cmd_watchdog.h utils.h cmd_utils.h errors.h
 test_cmd_utils: test_cmd_utils.o cmd_utils.o env.o utils.o errors.o
 
 test_utils: test_utils.o utils.o errors.o
+
+test_logging: test_logging.o message.o
+test_logging.o: test_logging.c
 
 test-data/git-remote: test-data/git-remote.tgz
 	tar --no-same-owner -C test-data -xzf $<
