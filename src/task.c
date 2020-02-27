@@ -56,7 +56,10 @@ archive_entry_callback (const gchar *entry, gpointer user_data)
     GString *message = g_string_new (NULL);
 
     g_string_printf (message, "** Extracting %s\n", entry);
-    connections_write (app_data, LOG_PATH_HARNESS, message->str, message->len);
+
+    rstrnt_log_bytes (app_data->tasks->data, RSTRNT_LOG_TYPE_HARNESS,
+                      message->str, message->len);
+
     g_string_free (message, TRUE);
 }
 
@@ -123,7 +126,10 @@ fetch_finish_callback (GError *error, guint32 match_cnt,
             g_string_printf (message, "** Fetch Summary: Match %d, "
                              "Nonmatch %d\n",
                              match_cnt, nonmatch_cnt);
-            connections_write (app_data, LOG_PATH_HARNESS, message->str, message->len);
+
+            rstrnt_log_bytes (app_data->tasks->data, RSTRNT_LOG_TYPE_HARNESS,
+                              message->str, message->len);
+
             g_string_free (message, TRUE);
         }
     }
@@ -186,7 +192,7 @@ restraint_task_fetch(AppData *app_data) {
             task_run_data->app_data = app_data;
             task_run_data->pass_state = TASK_METADATA_PARSE;
             task_run_data->fail_state = TASK_COMPLETE;
-            task_run_data->logpath = LOG_PATH_HARNESS;
+            task_run_data->log_type = RSTRNT_LOG_TYPE_HARNESS;
             process_run ((const gchar *)command, NULL, NULL, FALSE, 0,
                          NULL, task_io_callback, task_handler_callback,
                          NULL, 0, FALSE, app_data->cancellable, task_run_data);
@@ -203,7 +209,11 @@ restraint_task_fetch(AppData *app_data) {
 }
 
 gboolean
-io_callback (GIOChannel *io, GIOCondition condition, const gchar *logpath, gpointer user_data) {
+io_callback (GIOChannel    *io,
+             GIOCondition   condition,
+             RstrntLogType  log_type,
+             gpointer       user_data)
+{
     AppData *app_data = (AppData *) user_data;
     GError *tmp_error = NULL;
 
@@ -218,8 +228,8 @@ io_callback (GIOChannel *io, GIOCondition condition, const gchar *logpath, gpoin
                G_MESSAGES_DEBUG is used. */
             g_debug ("%s", buf);
 
-            /* Push data to our connections.. */
-            connections_write(app_data, logpath, buf, bytes_read);
+            rstrnt_log_bytes (app_data->tasks->data, log_type, buf, bytes_read);
+
             return G_SOURCE_CONTINUE;
 
           case G_IO_STATUS_ERROR:
@@ -250,12 +260,12 @@ io_callback (GIOChannel *io, GIOCondition condition, const gchar *logpath, gpoin
 gboolean
 task_io_callback (GIOChannel *io, GIOCondition condition, gpointer user_data) {
     TaskRunData *task_run_data = (TaskRunData *) user_data;
-    return io_callback(io, condition, task_run_data->logpath, task_run_data->app_data);
+    return io_callback(io, condition, task_run_data->log_type, task_run_data->app_data);
 }
 
 gboolean
 metadata_io_callback (GIOChannel *io, GIOCondition condition, gpointer user_data) {
-    return io_callback(io, condition, LOG_PATH_HARNESS, user_data);
+    return io_callback(io, condition, RSTRNT_LOG_TYPE_HARNESS, user_data);
 }
 
 void
@@ -336,7 +346,7 @@ task_finish_callback (gint pid_result, gboolean localwatchdog, gpointer user_dat
     }
     task->env->pdata[task->env->len - 3] = rstrnt_localwatchdog;
 
-    task_run_data->logpath = LOG_PATH_HARNESS;
+    task_run_data->log_type = RSTRNT_LOG_TYPE_HARNESS;
     process_run ((const gchar *) command,
                  (const gchar **) task->env->pdata,
                  "/usr/share/restraint/plugins",
@@ -505,9 +515,11 @@ restraint_log_lwd_message (AppData *app_data,
                     (modified_wd) ? " User Adjusted" : "",
                     expire_time);
     g_message("%s", message->str);
-    connections_write(app_data, LOG_PATH_HARNESS, message->str, message->len);
-    g_string_free(message, TRUE);
 
+    rstrnt_log_bytes (app_data->tasks->data, RSTRNT_LOG_TYPE_HARNESS,
+                      message->str, message->len);
+
+    g_string_free (message, TRUE);
 }
 
 void restraint_start_heartbeat(TaskRunData *task_run_data,
@@ -582,6 +594,7 @@ task_heartbeat_callback (gpointer user_data)
     restraint_log_lwd_message(task_run_data->app_data,
                               task_run_data->expire_time,
                               modified_wd);
+
     return G_SOURCE_CONTINUE;
 }
 
@@ -619,13 +632,14 @@ task_run (AppData *app_data)
       task->remaining_time = 0;
     }
 
-    task_run_data->logpath = LOG_PATH_TASK;
+    task_run_data->log_type = RSTRNT_LOG_TYPE_TASK;
     restraint_start_heartbeat(task_run_data, task->remaining_time, NULL);
     if (task->metadata->nolocalwatchdog) {
         restraint_log_lwd_message(task_run_data->app_data,
                                   task_run_data->expire_time,
                                   FALSE);
     }
+
     process_run ((const gchar *) entry_point,
                  (const gchar **)task->env->pdata,
                  task->path,
@@ -1064,7 +1078,7 @@ task_handler (gpointer user_data)
           g_string_printf(message, "** Installing dependencies\n");
           TaskRunData *task_run_data = g_slice_new0(TaskRunData);
           task_run_data->app_data = app_data;
-          task_run_data->logpath = LOG_PATH_HARNESS;
+          task_run_data->log_type = RSTRNT_LOG_TYPE_HARNESS;
           restraint_start_heartbeat(task_run_data, 0, NULL);
           restraint_install_dependencies (task, task_io_callback,
                                           taskrun_archive_entry_callback,
@@ -1123,6 +1137,8 @@ task_handler (gpointer user_data)
       break;
     case TASK_COMPLETED:
     {
+      rstrnt_upload_logs (task, app_data, soup_session, app_data->cancellable);
+
       // Some step along the way failed.
       if (task->error) {
         restraint_task_status(task, app_data, "Aborted", task->version, task->error);
@@ -1150,9 +1166,11 @@ task_handler (gpointer user_data)
       result = G_SOURCE_CONTINUE;
       break;
   }
+
   if (message->len > 0) {
     g_printerr ("%s", message->str);
-    connections_write(app_data, LOG_PATH_HARNESS, message->str, message->len);
+    rstrnt_log_bytes (app_data->tasks->data, RSTRNT_LOG_TYPE_HARNESS,
+                      message->str, message->len);
   }
   g_string_free(message, TRUE);
   return result;
