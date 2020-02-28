@@ -14,6 +14,7 @@
     You should have received a copy of the GNU General Public License
     along with Restraint.  If not, see <http://www.gnu.org/licenses/>.
 */
+
 #include <glib.h>
 #include <gio/gio.h>
 #include <glib/gstdio.h>
@@ -26,45 +27,27 @@
 #include "utils.h"
 #include "cmd_utils.h"
 
-
-/* get_recipe_url
- *
- * To allow 'C' command code to read in some environment variables
- * to acquire current RECIPE_URL.
+/*
+ * Like getenv, but checks for HARNESS_PREFIX
  */
-gchar *
-get_recipe_url ( void )
+const gchar *
+rstrnt_getenv (const gchar *name)
 {
-    gchar *prefix = NULL;
-    gchar *server_recipe_key = NULL;
-    gchar *server_recipe = NULL;
+    const gchar *prefix;
+    const gchar *value;
+    gchar       *long_name;
 
-    prefix = getenv("HARNESS_PREFIX") ? getenv("HARNESS_PREFIX") : "";
-    server_recipe_key = g_strdup_printf ("%sRECIPE_URL", prefix);
-    server_recipe = getenv(server_recipe_key);
-    g_free(server_recipe_key);
+    prefix = g_getenv ("HARNESS_PREFIX");
 
-    return (server_recipe);
-}
+    if (prefix == NULL || strlen (prefix) == 0)
+        return g_getenv (name);
 
-/* get_taskid
- *
- * To allow 'C' command code to read in some environment variables
- * to acquire current TASK_ID.
- */
-gchar *
-get_taskid (void)
-{
-    gchar *prefix = NULL;
-    gchar *task_id_key = NULL;
-    gchar *task_id= NULL;
+    long_name = g_strconcat (prefix, name, NULL);
+    value = g_getenv (long_name);
 
-    prefix = getenv("HARNESS_PREFIX") ? getenv("HARNESS_PREFIX") : "";
-    task_id_key = g_strdup_printf ("%sTASKID", prefix);
-    task_id = getenv(task_id_key);
-    g_free(task_id_key);
+    g_free (long_name);
 
-    return (task_id);
+    return value;
 }
 
 void get_env_vars_and_format_ServerData(ServerData *s_data)
