@@ -115,11 +115,70 @@ test_get_recipe_url_prefix (void)
     g_assert_cmpstr (recipe_url, ==, expected_recipe_url);
 }
 
+static void
+test_rstrnt_getenv_not_set (void)
+{
+    g_assert_cmpstr (rstrnt_getenv ("NOT_SET_PLEASE"), ==, NULL);
+}
+
+static void
+test_rstrnt_getenv_empty (void)
+{
+    const gchar *value;
+
+    g_setenv ("EMPTY_PLEASE", "", TRUE);
+
+    value = rstrnt_getenv ("EMPTY_PLEASE");
+
+    g_unsetenv ("EMPTY_PLEASE");
+
+    g_assert_cmpstr (value, ==, "");
+}
+
+static void
+test_rstrnt_getenv_set (void)
+{
+    const gchar *value;
+
+    g_setenv ("SOME_VAR", "42", TRUE);
+
+    value = rstrnt_getenv ("SOME_VAR");
+
+    g_unsetenv ("SOME_VAR");
+
+    g_assert_cmpstr (value, ==, "42");
+}
+
+static void
+test_rstrnt_getenv_prefix (void)
+{
+    const gchar *value;
+
+    g_setenv ("HARNESS_PREFIX", "PREFIX_", TRUE);
+    g_setenv ("PREFIX_SOME_VAR", "42", TRUE);
+
+    value = rstrnt_getenv ("SOME_VAR");
+
+    g_unsetenv ("HARNESS_PREFIX");
+    g_unsetenv ("PREFIX_SOME_VAR");
+
+    g_assert_cmpstr (value, ==, "42");
+}
+
 int
 main (int   argc,
       char *argv[])
 {
     g_test_init (&argc, &argv, NULL);
+
+    g_test_add_func ("/cmd_utils/rstrnt_getenv/not_set",
+                     test_rstrnt_getenv_not_set);
+    g_test_add_func ("/cmd_utils/rstrnt_getenv/empty",
+                     test_rstrnt_getenv_empty);
+    g_test_add_func ("/cmd_utils/rstrnt_getenv/set",
+                     test_rstrnt_getenv_set);
+    g_test_add_func ("/cmd_utils/rstrnt_getenv/prefix",
+                     test_rstrnt_getenv_prefix);
 
     g_test_add_func ("/cmd_utils/get_taskid/not_set",
                      test_get_taskid_not_set);

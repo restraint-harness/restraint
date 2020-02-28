@@ -15,8 +15,8 @@
     along with Restraint.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef __UTILS_H
-#define __UTILS_H
+#ifndef _RESTRAINT_UTILS_H
+#define _RESTRAINT_UTILS_H
 
 #include <glib.h>
 #define BASE10 10
