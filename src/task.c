@@ -216,31 +216,31 @@ io_callback (GIOChannel *io, GIOCondition condition, const gchar *logpath, gpoin
             /* Push data to our connections.. */
             g_debug ("%s", buf);
             connections_write(app_data, logpath, buf, bytes_read);
-            return TRUE;
+            return G_SOURCE_CONTINUE;
 
           case G_IO_STATUS_ERROR:
              g_error("IO error: %s", tmp_error->message);
              g_clear_error (&tmp_error);
-             return FALSE;
+             return G_SOURCE_REMOVE;
 
           case G_IO_STATUS_EOF:
              g_message("finished!");
-             return FALSE;
+             return G_SOURCE_REMOVE;
 
           case G_IO_STATUS_AGAIN:
              g_warning("Not ready.. try again.");
-             return TRUE;
+             return G_SOURCE_CONTINUE;
 
           default:
-             g_return_val_if_reached(FALSE);
+             g_return_val_if_reached(G_SOURCE_REMOVE);
              break;
         }
     }
     if (condition & G_IO_HUP){
-        return FALSE;
+        return G_SOURCE_REMOVE;
     }
 
-    return FALSE;
+    return G_SOURCE_REMOVE;
 }
 
 gboolean
@@ -553,7 +553,7 @@ task_heartbeat_callback (gpointer user_data)
     g_message ("%s", message->str);
     connections_write(app_data, LOG_PATH_HARNESS, message->str, message->len);
     g_string_free(message, TRUE);
-    return TRUE;
+    return G_SOURCE_CONTINUE;
 }
 
 void task_timeout_cb(gpointer user_data, guint64 *time_remain)
@@ -921,12 +921,12 @@ task_handler (gpointer user_data)
   // No More tasks, return false so this handler gets removed.
   if (app_data->tasks == NULL) {
       g_message ("no more tasks..");
-      return FALSE;
+      return G_SOURCE_REMOVE;
   }
 
   Task *task = app_data->tasks->data;
   GString *message = g_string_new(NULL);
-  gboolean result = TRUE;
+  gboolean result = G_SOURCE_CONTINUE;
 
   /*
    *  - Fetch the task
@@ -959,7 +959,7 @@ task_handler (gpointer user_data)
           } else {
               // If neither started nor finished then fetch the task
               restraint_task_status (task, app_data, "Running", NULL, NULL);
-              result = FALSE;
+              result = G_SOURCE_REMOVE;
               g_string_printf(message, "** Fetching task: %s [%s]\n", task->task_id, task->path);
               app_data->fetch_retries = 0;
               task->state = TASK_FETCH;
@@ -975,7 +975,7 @@ task_handler (gpointer user_data)
                           app_data->fetch_retries);
       }
       restraint_task_fetch (app_data);
-      result=FALSE;
+      result = G_SOURCE_REMOVE;
       break;
     case TASK_METADATA_PARSE:
       g_string_printf (message, "** Preparing metadata\n");
@@ -983,7 +983,7 @@ task_handler (gpointer user_data)
                             task->recipe->osmajor, &task->metadata,
                             app_data->cancellable, metadata_finish_cb,
                             metadata_io_callback, app_data);
-      result=FALSE;
+      result = G_SOURCE_REMOVE;
       break;
     case TASK_REFRESH_ROLES:
       if (app_data->recipe_url) {
@@ -991,7 +991,7 @@ task_handler (gpointer user_data)
                                      G_GINT32_FORMAT "\n", app_data->fetch_retries);
           restraint_xml_parse_from_url(soup_session, app_data->recipe_url,
                   recipe_fetch_complete, app_data);
-          result = FALSE;
+          result = G_SOURCE_REMOVE;
       } else {
           task->state = TASK_ENV;
       }
@@ -1010,7 +1010,7 @@ task_handler (gpointer user_data)
       if (!task->started) {
           g_string_printf(message, "** Updating external watchdog: %" G_GINT64_FORMAT " seconds\n", task->remaining_time + EWD_TIME);
           restraint_task_watchdog (task, app_data, task->remaining_time + EWD_TIME);
-          result=FALSE;
+          result = G_SOURCE_REMOVE;
       }
       task->state = TASK_DEPENDENCIES;
       break;
@@ -1029,7 +1029,7 @@ task_handler (gpointer user_data)
                                           dependency_finish_cb,
                                           app_data->cancellable,
                                           task_run_data);
-          result=FALSE;
+          result = G_SOURCE_REMOVE;
       }
       task->state = TASK_RUN;
       break;
@@ -1045,7 +1045,7 @@ task_handler (gpointer user_data)
           g_string_printf(message, "** Running task: %s [%s]\n", task->task_id, task->name);
           task_run (app_data);
           task->starttime = time(NULL);
-          result=FALSE;
+          result = G_SOURCE_REMOVE;
           task->started = TRUE;
           restraint_config_set (app_data->config_file,
                                 task->task_id,
@@ -1097,7 +1097,7 @@ task_handler (gpointer user_data)
           app_data->aborted = ABORTED_NONE;
         g_cancellable_reset(app_data->cancellable);
       }
-      result = FALSE;
+      result = G_SOURCE_REMOVE;
       break;
     }
     case TASK_NEXT:
@@ -1105,7 +1105,7 @@ task_handler (gpointer user_data)
       result = restraint_next_task (app_data, TASK_IDLE);
       break;
     default:
-      result = TRUE;
+      result = G_SOURCE_CONTINUE;
       break;
   }
   if (message->len) {

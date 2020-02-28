@@ -159,30 +159,30 @@ server_io_callback (GIOChannel *io, GIOCondition condition, gpointer user_data) 
             g_message ("%s", buf);
             /* Push data to our connections.. */
             connections_write(app_data, LOG_PATH_HARNESS, buf, bytes_read);
-            return TRUE;
+            return G_SOURCE_CONTINUE;
 
           case G_IO_STATUS_ERROR:
              g_error("IO error: %s\n", tmp_error->message);
              g_clear_error (&tmp_error);
-             return FALSE;
+             return G_SOURCE_REMOVE;
 
           case G_IO_STATUS_EOF:
-             return FALSE;
+             return G_SOURCE_REMOVE;
 
           case G_IO_STATUS_AGAIN:
              g_warning("Not ready.. try again.");
-             return TRUE;
+             return G_SOURCE_CONTINUE;
 
           default:
-             g_return_val_if_reached(FALSE);
+             g_return_val_if_reached(G_SOURCE_REMOVE);
              break;
         }
     }
     if (condition & G_IO_HUP){
-        return FALSE;
+        return G_SOURCE_REMOVE;
     }
 
-    return FALSE;
+    return G_SOURCE_REMOVE;
 }
 
 void
