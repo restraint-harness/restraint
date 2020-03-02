@@ -56,7 +56,7 @@ versions are listed):
  - zlib-1.2.11
  - bzip2-1.0.8
  - libffi-3.1
- - glib2-2.56.1
+ - glib2-2.56.4
  - libxml2-2.9.10
  - libarchive-3.4.0
  - xz-5.2.4

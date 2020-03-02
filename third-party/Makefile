@@ -2,7 +2,7 @@
 ZLIB = zlib-1.2.11
 BZIP2 = bzip2-1.0.8
 LIBFFI = libffi-3.1
-GLIB = glib-2.56.1
+GLIB = glib-2.56.4
 LIBXML2 = libxml2-2.9.10
 CURL = curl-7.68.0
 LIBARCHIVE = libarchive-3.4.0
@@ -233,7 +233,6 @@ $(LIBFFI)/.patches-done: $(LIBFFI)
 	touch $@
 
 $(GLIB)/.patches-done: $(GLIB)
-	patch -d$(GLIB) -p1 < glib-setpipe.patch
 	patch -d$(GLIB) -p1 < glib-nullstrings.patch
 	if [ -e glib-rhel6-s390.patch ]; then\
 		patch -d$(GLIB) -p1 < glib-rhel6-s390.patch;\
