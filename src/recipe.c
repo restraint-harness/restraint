@@ -1,4 +1,4 @@
-/*  
+/*
     This file is part of Restraint.
 
     Restraint is free software: you can redistribute it and/or modify
@@ -15,9 +15,9 @@
     along with Restraint.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-
 #include <glib.h>
 #include <gio/gio.h>
+#include <libsoup/soup.h>
 #include <libxml/tree.h>
 #include <libxml/parser.h>
 #include <libxml/xpath.h>
@@ -620,4 +620,26 @@ recipe_handler (gpointer user_data)
 
     g_string_free(message, TRUE);
     return result;
+}
+
+void
+recipe_handler_finish (gpointer user_data)
+{
+    AppData *app_data = (AppData *) user_data;
+    ClientData *client_data = app_data->message_data;
+
+    if (client_data) {
+        if (app_data->error) {
+         soup_message_set_status_full (client_data->client_msg,
+                                       SOUP_STATUS_BAD_REQUEST,
+                                       app_data->error->message);
+        } else {
+            soup_message_set_status (client_data->client_msg, SOUP_STATUS_OK);
+        }
+        soup_message_body_append (client_data->client_msg->response_body,
+                                  SOUP_MEMORY_STATIC,
+                                  "\r\n--cut-here\n", 13);
+        soup_server_unpause_message (client_data->server, client_data->client_msg);
+    }
+    g_clear_error (&app_data->error);
 }

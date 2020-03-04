@@ -26,6 +26,8 @@
 // XXX make this configurable
 #define TASK_LOCATION "/mnt/tests"
 
+extern SoupSession *soup_session;
+
 typedef enum {
     RECIPE_IDLE,
     RECIPE_FETCH,

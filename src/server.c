@@ -186,28 +186,6 @@ server_io_callback (GIOChannel *io, GIOCondition condition, gpointer user_data) 
 }
 
 void
-recipe_handler_finish (gpointer user_data)
-{
-    AppData *app_data = (AppData *) user_data;
-    ClientData *client_data = app_data->message_data;
-
-    if (client_data) {
-        if (app_data->error) {
-            soup_message_set_status_full (client_data->client_msg,
-                                          SOUP_STATUS_BAD_REQUEST,
-                                          app_data->error->message);
-        } else {
-            soup_message_set_status (client_data->client_msg, SOUP_STATUS_OK);
-        }
-        soup_message_body_append (client_data->client_msg->response_body,
-                                  SOUP_MEMORY_STATIC,
-                                  "\r\n--cut-here\n", 13);
-        soup_server_unpause_message (client_data->server, client_data->client_msg);
-    }
-    g_clear_error (&app_data->error);
-}
-
-void
 plugin_finish_callback (gint pid_result, gboolean localwatchdog, gpointer user_data, GError *error)
 {
     ClientData *client_data = (ClientData *) user_data;
