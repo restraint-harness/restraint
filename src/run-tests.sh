@@ -35,8 +35,9 @@ cleanup()
     if [ -f  ${HTTPD_LOG_FILE} ] ; then
         rm -f ${HTTPD_LOG_FILE} || :
     fi
-}
 
+    rm -f *.err
+}
 trap cleanup EXIT
 
 if [[ -f /usr/libexec/git-core/git-daemon ]] ; then
@@ -67,14 +68,56 @@ start_httpd() {
 }
 start_httpd
 
-if [[ $1 == "--valgrind" ]] ; then
-    shift
+run_valgrind()
+{
+    local test
+    local test_args
+
+    test=$1
+    test_args=$2
+
     G_DEBUG="gc-friendly $G_DEBUG"
     G_SLICE="always-malloc"
-    for test in $* ; do
-        valgrind --leak-check=full --num-callers=50 --error-exitcode=1 \
-            --suppressions=valgrind.supp ./$test $testargs
-    done
+
+    echo "VALGRIND CHECK: ${test}"
+
+    valgrind --leak-check=full \
+             --num-callers=50 \
+             --error-exitcode=1 \
+             --suppressions=valgrind.supp -- \
+             ./"${test}" ${test_args}
+}
+
+run_gtester()
+{
+    local result
+    local test
+    local test_args
+
+    test=$1
+    test_args=$2
+
+    result=0
+
+    if ! ${GTESTER:-gtester} --verbose ${test_args} "${test}" 2> "${test}.err" ; then
+        result=1
+        { echo "-- Begin ${test} error output --"
+          cat "${test}.err"
+          echo "-- End ${test} error output --" ; } >&2
+    fi
+
+    rm "${test}.err"
+
+    return "${result}"
+}
+
+if [[ $1 == "--valgrind" ]] ; then
+    shift
+    run_test=run_valgrind
 else
-    ${GTESTER:-gtester} --verbose $testargs $*
+    run_test=run_gtester
 fi
+
+for test in "$@" ; do
+    ${run_test} "${test}" "${testargs}"
+done
