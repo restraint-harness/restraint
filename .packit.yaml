@@ -20,20 +20,23 @@ jobs:
   metadata:
     targets:
       - centos-stream-aarch64
-      - centos-stream-ppc64le
       - centos-stream-x86_64
+      - fedora-30-aarch64
+      - fedora-30-i386
+      - fedora-30-x86_64
+      - fedora-31-aarch64
       - fedora-31-armhfp
-      - fedora-stable-aarch64
-      - fedora-stable-i386
-      - fedora-stable-ppc64le
-      - fedora-stable-x86_64
+      - fedora-31-i386
+      - fedora-31-x86_64
+      - fedora-32-aarch64
+      - fedora-32-armhfp
+      - fedora-32-i386
+      - fedora-32-x86_64
       - fedora-rawhide-aarch64
       - fedora-rawhide-armhfp
       - fedora-rawhide-i386
-      - fedora-rawhide-ppc64le
       - fedora-rawhide-x86_64
       - epel-8-aarch64
-      - epel-8-ppc64le
       - epel-8-x86_64
 
 # Restraint is not accepted in Fedora (yet)
