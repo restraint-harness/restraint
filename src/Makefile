@@ -100,6 +100,7 @@ TEST_PROGRAMS += test_metadata
 TEST_PROGRAMS += test_process
 #TEST_PROGRAMS += test_recipe
 #TEST_PROGRAMS += test_task
+TEST_PROGRAMS += test_utils
 
 test_%: test_%.o
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
@@ -129,6 +130,8 @@ test_metadata.o: metadata.h utils.h errors.h process.h param.h
 
 test_cmd_result: cmd_result.o utils.o upload.o errors.o
 test_cmd_result.o: cmd_result.h utils.h upload.h errors.h
+
+test_utils: test_utils.o utils.o errors.o
 
 test-data/git-remote: test-data/git-remote.tgz
 	tar --no-same-owner -C test-data -xzf $<

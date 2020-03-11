@@ -33,6 +33,7 @@
 /third-party/tarballs
 /third-party/tree/
 /src/test-data/git-remote/
+/src/test_cmd_result
 /src/test_fetch_task
 /src/test_metadata
 /src/test_recipe
@@ -42,6 +43,7 @@
 /src/test_process
 /src/test_dependency
 /src/test_env
+/src/test_utils
 /src/rhts-report-result
 /src/restraint
 /src/restraintd
