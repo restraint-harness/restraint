@@ -82,8 +82,10 @@ upload_file (SoupSession *session,
     GError *tmp_error = NULL;
     SoupURI *result_log_uri;
     gint ret;
+    char *uri_estring_filename = NULL;
 
-    fileinfo = g_file_query_info (f, "standard::*", G_FILE_QUERY_INFO_NONE, NULL, &tmp_error);
+    fileinfo = g_file_query_info (f, "standard::*", G_FILE_QUERY_INFO_NONE,
+                                  NULL, &tmp_error);
     if (tmp_error != NULL) {
         g_propagate_prefixed_error (error, tmp_error,
             "Error querying: %s ", filepath);
@@ -91,7 +93,8 @@ upload_file (SoupSession *session,
         return FALSE;
     }
 
-    filesize = g_file_info_get_attribute_uint64 (fileinfo, G_FILE_ATTRIBUTE_STANDARD_SIZE);
+    filesize = g_file_info_get_attribute_uint64 (
+                   fileinfo, G_FILE_ATTRIBUTE_STANDARD_SIZE);
     g_object_unref(fileinfo);
 
     /* get input stream */
@@ -104,8 +107,9 @@ upload_file (SoupSession *session,
         return FALSE;
     }
 
+    uri_estring_filename = g_uri_escape_string(filename, NULL, FALSE);
     result_log_uri = soup_uri_new_with_base (results_uri,
-                        g_uri_escape_string(filename, NULL, FALSE));
+                                             uri_estring_filename);
     uploaded = 0;
     while (uploaded < filesize) {
         ret = upload_chunk (
@@ -120,6 +124,7 @@ upload_file (SoupSession *session,
         }
     }
 
+    g_free(uri_estring_filename);
     soup_uri_free (result_log_uri);
     g_object_unref(fis);
     g_object_unref (f);
