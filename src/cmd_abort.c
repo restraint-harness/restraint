@@ -1,4 +1,4 @@
-/*  
+/*
     This file is part of Restraint.
 
     Restraint is free software: you can redistribute it and/or modify
@@ -86,19 +86,18 @@ int main(int argc, char *argv[]) {
     }
 
     g_object_unref(msg);
-    soup_uri_free(server_uri);
     soup_session_abort(session);
     g_object_unref(session);
 
 cleanup:
     g_option_context_free(context);
+
     if (server_uri != NULL) {
         soup_uri_free (server_uri);
     }
 
-    if (server != NULL) {
-        g_free(server);
-    }
+    g_free (server);
+
     if (error) {
         int retcode = error->code;
         g_printerr("%s [%s, %d]\n", error->message,
