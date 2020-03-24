@@ -1,0 +1,9 @@
+Ready-for-Checks+1: John Villalovos <jvillalovos.ampere@gmail.com>
+Verified+1: Martin Styk <mastyk@redhat.com>
+Code-Review+1: Martin Styk <mastyk@redhat.com>
+Code-Review+2: Carol Bouchard <cbouchar@redhat.com>
+Submitted-by: Martin Styk <mastyk@redhat.com>
+Submitted-at: Tue, 24 Mar 2020 17:08:34 +0000
+Reviewed-on: https://gerrit.beaker-project.org/6712
+Project: restraint
+Branch: refs/heads/master
