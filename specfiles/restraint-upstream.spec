@@ -6,7 +6,7 @@ Summary:	Simple test harness which can be used with beaker
 Group:		Applications/Internet
 License:	GPLv3+ and MIT
 URL:		https://github.com/beaker-project/%{name}
-Source0:	https://github.com/beaker-project/restraint/archive/%{name}-%{version}-1.tar.gz
+Source0:	https://github.com/beaker-project/restraint/archive/%{name}-%{version}.tar.gz
 
 BuildRequires:		gcc
 BuildRequires:		gcc-c++
