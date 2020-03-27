@@ -1,0 +1,9 @@
+Ready-for-Checks+1: Daniel Rodriguez Gonzalez <danrodri@redhat.com>
+Verified+1: Daniel Rodriguez Gonzalez <danrodri@redhat.com>
+Code-Review+1: Martin Styk <mastyk@redhat.com>
+Code-Review+2: Carol Bouchard <cbouchar@redhat.com>
+Submitted-by: Daniel Rodriguez Gonzalez <danrodri@redhat.com>
+Submitted-at: Fri, 27 Mar 2020 14:56:08 +0000
+Reviewed-on: https://gerrit.beaker-project.org/6809
+Project: restraint
+Branch: refs/heads/master
