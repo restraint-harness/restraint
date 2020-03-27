@@ -1109,7 +1109,8 @@ task_handler (gpointer user_data)
       break;
   }
   if (message->len) {
-    g_message ("%s", message->str);
+    if (fwrite(message->str, sizeof(gchar), message->len, stderr) != message->len)
+        g_warning ("failed to write message");
     connections_write(app_data, LOG_PATH_HARNESS, message->str, message->len);
   }
   g_string_free(message, TRUE);
