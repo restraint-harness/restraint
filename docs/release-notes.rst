@@ -1,6 +1,31 @@
 Release Notes
 =============
 
+Restraint 0.2.0
+---------------
+
+Upgrades:
+~~~~~~~~~
+* | :bug:`1667510`: Remove libssh from restraint client.
+  | If using the restraint client, refer to restraint documentation
+    for changes to executing the client as ports to server are no
+    longer static.
+  | (Contributed by Bill Peck and Carol Bouchard)
+* | :bug:`1770230`: Replace rhts-sync- with rstrnt-sync- cmds.
+  | This changeset creates rstrnt-sync- commands and links
+    rhts-sync- commands to it. The multihost plugin now
+    uses rstrnt-sync- commands.
+  | (Contributed by Carol Bouchard)
+* | :bug:`1802261`: Upgrade libxml2 to version 2.9.10
+  | (Contributed by Daniel Rodriguez Gonzalez)
+
+Bug Fixes:
+~~~~~~~~~~
+* | :bug:`1795915`: Remove execute permission from systemd service file.
+    There is a warning message in the systemd logs about the file being
+    executable.
+  | (Contributed by John Villalovos)
+
 Restraint 0.1.45
 ----------------
 
