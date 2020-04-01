@@ -165,7 +165,7 @@ executed at task completion which will call this command for you.
 .. _rstrnt-sync-block:
 
 rstrnt-sync-block
----------------
+-----------------
 
 Block the task until the given systems in this recipe set have reached
 a certain state.  Use this command, along with `rstrnt-sync-set` to
