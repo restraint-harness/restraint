@@ -18,6 +18,53 @@
 #include <glib.h>
 #include "utils.h"
 
+static gboolean
+has_rpm_program (void)
+{
+    gchar *rpm_path;
+
+    rpm_path = g_find_program_in_path ("rpm");
+
+    if (rpm_path == NULL)
+        return FALSE;
+
+    g_free (rpm_path);
+
+    return TRUE;
+}
+
+/*
+ * Ensure that error is handled when RPM program in not available
+ */
+static void
+test_get_package_version_no_rpm_cmd (void)
+{
+    GError *error;
+    gchar  *expected_msg_regex;
+    gchar  *path_bkp;
+    gchar  *version;
+
+    path_bkp = g_strdup (g_getenv ("PATH"));
+    g_setenv ("PATH", "", TRUE);
+
+    g_assert_false (has_rpm_program ());
+
+    error = NULL;
+
+    version = get_package_version ("some-package", &error);
+
+    g_setenv ("PATH", path_bkp, TRUE);
+
+    g_assert_null (version);
+    g_assert_nonnull (error);
+
+    expected_msg_regex = "Failed to spawn command:.+";
+    g_assert_true (g_regex_match_simple (expected_msg_regex, error->message, 0, 0));
+
+    g_clear_error (&error);
+    g_free (path_bkp);
+}
+
 /*
  * Ensure that get_package_version returns the version of a package
  * installed in the system.
@@ -27,6 +74,9 @@ test_get_package_version_installed (void)
 {
     GError *error;
     gchar  *version;
+
+    if (!has_rpm_program ())
+        return g_test_skip ("RPM program not available");
 
     error = NULL;
 
@@ -53,6 +103,9 @@ test_get_package_version_not_installed (void)
     gchar  *expected_message;
     gchar  *version;
 
+    if (!has_rpm_program ())
+        return g_test_skip ("RPM program not available");
+
     expected_message = "Get version command: "
         "rpm -q --qf '%{Version}' _the-package-that-doesnt-exist_, "
         "returned error: package _the-package-that-doesnt-exist_ is not installed\n";
@@ -74,6 +127,8 @@ main (int   argc,
 {
     g_test_init (&argc, &argv, NULL);
 
+    g_test_add_func ("/utils/get_package_version/no_rpm_cmd",
+                     test_get_package_version_no_rpm_cmd);
     g_test_add_func ("/utils/get_package_version/not_installed",
                      test_get_package_version_not_installed);
     g_test_add_func ("/utils/get_package_version/installed",
