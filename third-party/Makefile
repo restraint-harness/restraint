@@ -210,7 +210,7 @@ $(LIBJSONC).tar.gz:
 
 TAR_BALLS += $(OPENSSL).tar.gz
 $(OPENSSL).tar.gz:
-	curl -f -L -O https://www.openssl.org/source/$@
+	curl -f -L -O https://www.openssl.org/source/old/1.0.1/$@
 
 TAR_BALLS += $(M4).tar.xz
 $(M4).tar.xz:
