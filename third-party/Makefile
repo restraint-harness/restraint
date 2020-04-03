@@ -101,7 +101,7 @@ tree/lib/pkgconfig/glib-2.0.pc: $(GLIB) $(GLIB)/.patches-done tree/lib/pkgconfig
 	    --disable-man \
 	    --with-python=$(PYTHON) --with-pcre=internal --disable-libmount \
 	    --enable-static --disable-shared )
-	$(MAKE) -C $(GLIB)
+	$(MAKE) CFLAGS=-Wno-error=format-overflow= -C $(GLIB)
 	$(MAKE) -C $(GLIB) install
 #   this is a dirty hack to stop gcc reporting on warnings in the glib headers.
 	sed -i -e 's/\-I/\-isystem/g' $(CURDIR)/tree/lib/pkgconfig/glib-2.0.pc
