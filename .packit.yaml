@@ -39,6 +39,9 @@ jobs:
       - epel-8-aarch64
       - epel-8-x86_64
 
+notifications:
+  pull_request:
+    successful_build: false
 # Restraint is not accepted in Fedora (yet)
 #- job: propose_downstream
   #trigger: release
