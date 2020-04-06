@@ -233,6 +233,7 @@ $(LIBFFI)/.patches-done: $(LIBFFI)
 	touch $@
 
 $(GLIB)/.patches-done: $(GLIB)
+	patch -d$(GLIB) -p1 < glib-nullstrings-gdbusauth.patch
 	patch -d$(GLIB) -p1 < glib-nullstrings.patch
 	if [ -e glib-rhel6-s390.patch ]; then\
 		patch -d$(GLIB) -p1 < glib-rhel6-s390.patch;\
