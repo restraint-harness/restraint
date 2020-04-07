@@ -159,7 +159,7 @@ First step is to run the following workflow to reserve a system in Beaker::
     </repos>
     <task name="/distribution/install" role="STANDALONE" />
     <task name="/distribution/reservesys" role="None">
-     <fetch url="git://fedorapeople.org/home/fedora/bpeck/public_git/tests.git#distribution/reservesys"/>
+     <fetch url="https://github.com/beaker-project/beaker-core-tasks/archive/master.zip#reservesys"/>
     </task>
    </recipe>
   </recipeSet>
