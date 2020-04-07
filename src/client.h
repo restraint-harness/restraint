@@ -64,6 +64,7 @@ typedef struct _AppData {
     guint max_retries;
     gchar *rsh_cmd;
     gchar *restraint_path;
+    guint restraint_port;
 } AppData;
 
 #endif

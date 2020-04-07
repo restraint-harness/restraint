@@ -1016,18 +1016,21 @@ run_recipe_handler (gpointer user_data)
     RecipeData *recipe_data = (RecipeData*)user_data;
     AppData *app_data = recipe_data->app_data;
     const gchar **env = NULL;
+    gchar *command;
 
     // return the xml doc
     xmlBufferPtr buffer = xmlBufferCreate();
     gssize size = xmlNodeDump(buffer, app_data->xml_doc, recipe_data->recipe_node_ptr, 0, 1);
 
+    command = g_strdup_printf ("%s %s -- %s --port %d --stdin",
+                               app_data->rsh_cmd,
+                               recipe_data->connect_uri,
+                               app_data->restraint_path,
+                               app_data->restraint_port);
+
     g_print ("Connecting to host: %s, recipe id:%d\n",
              recipe_data->connect_uri, recipe_data->recipe_id);
 
-    gchar *command = g_strdup_printf ("%s %s -- %s --stdin",
-            app_data->rsh_cmd,
-            recipe_data->connect_uri,
-            app_data->restraint_path);
     process_run ((const gchar *) command,
                   env,
                   NULL,
@@ -1739,12 +1742,15 @@ int main(int argc, char *argv[]) {
     AppData *app_data = g_slice_new0 (AppData);
     app_data->rsh_cmd = "ssh";
     app_data->restraint_path = "restraintd";
+    app_data->restraint_port = 0;
 
     init_result_hash (app_data);
     app_data->recipes = g_hash_table_new_full(g_str_hash, g_str_equal,
             g_free, (GDestroyNotify)&restraint_free_recipe_data);
 
     GOptionEntry entries[] = {
+        { "port", 'p', 0, G_OPTION_ARG_INT, &app_data->restraint_port,
+            "Restraint HTTP server port to listen on", "PORT" },
         { "job", 'j', 0, G_OPTION_ARG_STRING, &job,
             "Run job from file", "FILE" },
         { "run", 'r', 0, G_OPTION_ARG_STRING, &app_data->run_dir,
