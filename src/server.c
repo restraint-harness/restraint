@@ -583,11 +583,14 @@ int main(int argc, char *argv[]) {
   SoupServer *soup_server = NULL;
   GError *error = NULL;
   GSList *uris;
+  guint port;
+
+  port = 0;
 
   GOptionEntry entries [] = {
-        { "stdin", 's', 0, G_OPTION_ARG_NONE, &app_data->stdin,
-            "Run from STDIN/STDOUT", NULL},
-        { NULL }
+    { "port", 'p', 0, G_OPTION_ARG_INT, &port, "HTTP server port to listen on", "PORT" },
+    { "stdin", 's', 0, G_OPTION_ARG_NONE, &app_data->stdin, "Run from STDIN/STDOUT", NULL },
+    { NULL }
   };
   GOptionContext *context = g_option_context_new(NULL);
   g_option_context_set_summary(context,
@@ -636,9 +639,9 @@ int main(int argc, char *argv[]) {
   soup_server_add_handler (soup_server, "/recipes",
                            server_recipe_callback, app_data, NULL);
 
-  // Tell our soup server to listen on any interface
+  // Tell our soup server to listen on any local interface
   // This includes ipv4 and ipv6 if available.
-  if (!soup_server_listen_local( soup_server, 0, 0, NULL)) {
+  if (!soup_server_listen_local (soup_server, port, 0, NULL)) {
       g_error ("Unable to listen on either ipV4 or ipV6 protocols, exiting...\n");
       exit (FAILED_LISTEN);
   }
