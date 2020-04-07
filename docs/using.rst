@@ -140,7 +140,13 @@ Sometimes the tests that I am developing can be destructive to the system so I
 don't want to run them on my development box. Or the test is specific to an
 architecture so I can't use a VM for it on my machine. These are cases where
 it's really handy to use a combination of Beaker for provisioning and
-Standalone for executing the tests.
+Standalone for executing the tests. By default, Beaker provides a test harness
+for all imported distributions. You can replace test harness with your build
+by adding a new repository. You can create your build on your own or you can
+use different RPM build systems, for example COPR. Be aware that custom
+restraint should have higher NVR than the latest released version and your
+build needs to be built against distribution you planning to test. Otherwise,
+DNF may pick up Restraint provided by Beaker or Restraint may fail to install.
 
 First step is to run the following workflow to reserve a system in Beaker::
 
@@ -149,13 +155,15 @@ First step is to run the following workflow to reserve a system in Beaker::
    <recipe ks_meta="harness=restraint" id="1">
     <distroRequires>
      <and>
-      <distro_name op="=" value="Fedora-20"/>
-      <distro_arch op="=" value="x86_64"/>
+        <distro_family op="=" value="Fedorarawhide"/>
+        <distro_variant op="=" value="Everything"/>
+        <distro_name op="=" value="Fedora-Rawhide-20200406.n.0"/>
+        <distro_arch op="=" value="x86_64"/>
      </and>
     </distroRequires>
     <hostRequires/>
     <repos>
-     <repo name="myrepo_0" url="http://copr-be.cloud.fedoraproject.org/results/bpeck/restraint/fedora-20-x86_64"/>
+     <repo name="my_custom_restraint" url="http://copr-be.cloud.fedoraproject.org/path/to/copr/repo/results"/>
     </repos>
     <task name="/distribution/install" role="STANDALONE" />
     <task name="/distribution/reservesys" role="None">
@@ -165,7 +173,7 @@ First step is to run the following workflow to reserve a system in Beaker::
   </recipeSet>
  </job>
 
-This will reserve a ppc64 system running Fedora20. The /distribution/reservesys
+This will reserve a ppc64 system running Fedora Rawhide. The /distribution/reservesys
 task will email the submitter of the job when run so you know the system is
 available. By default the reservesys task will give you access to the system
 for 24 hours, after that the external watchdog will reclaim the system. You can
