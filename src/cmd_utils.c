@@ -148,14 +148,18 @@ void get_env_vars_from_file(ServerData *s_data, GError **error)
  */
 gint
 get_restraintd_pid (GError **gerror) {
-    pid_t pid1 = 0;
-    pid_t pid2 = 0;
-    int rc = 0;
-    const gchar *command = "pidof restraintd";
-    gchar* std_out = NULL;
-    gchar* std_err = NULL;
-    gint exitstat = 0;
     GError *gerror_cmd = NULL;
+    gchar  *command;
+    gchar  *std_err = NULL;
+    gchar  *std_out = NULL;
+    gint    exitstat = 0;
+    int     rc = 0;
+    pid_t   pid1 = 0;
+    pid_t   pid2 = 0;
+
+    /* This command works consistently from CentOS 5 to CentOS 8 and
+     * latest Fedora, and its behavior matches pidof. */
+    command = "pgrep -x -d ' ' restraintd";
 
     if (!g_spawn_command_line_sync(command, &std_out, &std_err,
                                    &exitstat, &gerror_cmd)) {
