@@ -7,9 +7,13 @@ Restraint 0.2.0
 Upgrades:
 ~~~~~~~~~
 * | :bug:`1667510`: Remove libssh from restraint client.
-  | If using the restraint client, refer to restraint documentation
-    for changes to executing the client as ports to server are no
-    longer static.
+  | The port used by restraint server is no longer static.
+    If using the restraint client, refer to restraint documentation
+    for changes to arguments passed since the port is no longer
+    included in `--host` argument. The client spawns restraintd
+    for you so the extra step of starting up a restraintd instance
+    is no longer needed. Because of these interface changes, the
+    restraint client and server must be the same version.
   | (Contributed by Bill Peck and Carol Bouchard)
 * | :bug:`1770230`: Replace rhts-sync- with rstrnt-sync- cmds.
   | This changeset creates rstrnt-sync- commands and links

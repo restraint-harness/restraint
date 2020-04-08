@@ -1753,7 +1753,7 @@ int main(int argc, char *argv[]) {
             "Do not perform xml validation", NULL },
         { "host", 't', 0, G_OPTION_ARG_STRING_ARRAY, &hostarr,
             "Set host for a recipe with specific id.",
-            "<recipe_id>=[<user>@]<host>[:ssh_port]" },
+            "<recipe_id>=[<user>@]<host>" },
         {"conn-retries", 'c', 0, G_OPTION_ARG_INT, &app_data->max_retries,
             "Specify the number of reconnection retries.", NULL},
         { "verbose", 'v', G_OPTION_FLAG_NO_ARG, G_OPTION_ARG_CALLBACK,
