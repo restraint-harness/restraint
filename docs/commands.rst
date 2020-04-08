@@ -65,7 +65,7 @@ server port, recipe number, and task number for constructing the
 command URL. Lastly is a local option which relies on an
 environment file created by `restraintd`.
 
-**Environment Variables Option **
+** Environment Variables Option **
 
 Most often, many of restraint commands are executed in tasks included in your 'job.xml'.
 As a result, commands look for specific environment variables to be set by restraintd.
@@ -544,6 +544,38 @@ remote test machine.  You can run jobs on the local machine but it is not
 recommended since some tasks reboot the system. Hosts are tied to recipe IDs
 inside the job XML.
 
+Arguments for the client are as follows::
+
+    restraint --host <recipe-id>=<host> --job <job.xml> [--restraint-path </dir/restraintd>] [-v]
+
+Where:
+
+.. option:: --host <recipe_id>=[<user>@]<host>
+
+   Set host for a recipe with specific id.  The recipe_id identifies which host
+   correlates to the recipe with the same recipe id in your job.xml file. This is
+   very useful for multihost testing.  If there is no id in the recipe of your
+   job.xml file, then 1 is the default.
+
+.. option:: --job </yourdir/your-job.xml>
+
+   File Location of your job.xml.
+
+.. option:: --restraint-path </dir/restraintd>
+
+   The optional argument ``--restraint-path`` specifies the path to the restraintd
+   binary to run on the remote machine.  This can be used by developers where the
+   restraint repo is pulled and ``restraintd`` image is built.  By default, the
+   installed image is executed.
+
+.. option:: -v
+
+   You can pass ``-v`` for more verbose output which will show every task
+   reported.  If you pass another ``-v`` you will get the output from the tasks
+   written to your screen as well.
+
+A sample of restraint command line is as follows:
+
 .. code-block:: console
 
  restraint --host 1=addressOfMyTestSystem.example.com --job /path/to/simple_job.xml --restraint-path /home/userid/restraint/src/restraintd
@@ -559,7 +591,7 @@ exist.
 By default, Restraint will report the start and stop of each task run like this::
 
  Using ./simple_job.07 for job run
- * Fetching recipe: http://192.168.1.198:8000/recipes/07/
+ * Fetching recipe: http://localhost:42640
  * Parsing recipe
  * Running recipe
  *  T:   1 [/kernel/performance/fs_mark                     ] Running
@@ -568,15 +600,6 @@ By default, Restraint will report the start and stop of each task run like this:
  *  T:   2 [/kernel/misc/gdb-simple                         ] Completed: PASS
  *  T:   3 [restraint/vmstat                                ] Running
  *  T:   3 [restraint/vmstat                                ] Completed
-
-The argument ``--restraint-path`` passes the directory from which to run
-`restraintd` from.  By default, the installed image is executed but it is
-best to provide a path where your restraint repo is pulled and
-``restraintd`` image is built.
-
-You can pass ``-v`` for more verbose output which will show every task reported.
-If you pass another ``-v`` you will get the output from the tasks written to your
-screen as well.
 
 All of this information is also stored in the job.xml which in this case is
 stored in the ./simple_job.07 directory.

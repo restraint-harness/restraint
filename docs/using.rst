@@ -180,7 +180,7 @@ for 24 hours, after that the external watchdog will reclaim the system. You can
 extend it using extendtesttime.sh on the system.
 
 You can spawn a second instance of restraintd server using the client command below.  It will
-generate an instance with a different port than the static port used by beaker.
+generate an instance with a different port than the port used by beaker.
 
 .. code-block:: console
 
