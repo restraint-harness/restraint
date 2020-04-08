@@ -163,4 +163,4 @@ install: all
 
 .PHONY: clean
 clean:
-	rm -f $(PROGRAMS) $(TEST_PROGRAMS) *.o
+	rm -f $(PROGRAMS) $(TEST_PROGRAMS) *.o rstrnt-commands-env-*.sh
