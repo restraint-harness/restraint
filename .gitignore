@@ -33,7 +33,10 @@
 /third-party/tarballs
 /third-party/tree/
 /src/test-data/git-remote/
+/src/test_cmd_abort
+/src/test_cmd_log
 /src/test_cmd_result
+/src/test_cmd_watchdog
 /src/test_fetch_task
 /src/test_metadata
 /src/test_recipe
@@ -47,6 +50,7 @@
 /src/rhts-report-result
 /src/restraint
 /src/restraintd
+/src/rstrnt-commands-env-*.sh
 /src/rstrnt-report-result
 /src/rstrnt-report-log
 /src/rstrnt-adjust-watchdog
