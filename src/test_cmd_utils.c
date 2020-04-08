@@ -13,8 +13,8 @@ test_get_restraintd_pid_success (void)
     path_bkp = g_strdup (g_getenv ("PATH"));
     g_setenv ("PATH", "./test-dummies/cmd_utils/bin", TRUE);
 
-    g_setenv ("MOCK_PIDOF_STDOUT", "123", TRUE);
-    g_setenv ("MOCK_PIDOF_EXIT", "0", TRUE);
+    g_setenv ("MOCK_PGREP_STDOUT", "123", TRUE);
+    g_setenv ("MOCK_PGREP_EXIT", "0", TRUE);
 
     error = NULL;
 
@@ -22,8 +22,8 @@ test_get_restraintd_pid_success (void)
 
     g_setenv ("PATH", path_bkp, TRUE);
 
-    g_unsetenv ("MOCK_PIDOF_STDOUT");
-    g_unsetenv ("MOCK_PIDOF_EXIT");
+    g_unsetenv ("MOCK_PGREP_STDOUT");
+    g_unsetenv ("MOCK_PGREP_EXIT");
 
     g_assert_no_error (error);
     g_assert_cmpint (restraintd_pid, ==, 123);
@@ -42,8 +42,8 @@ test_get_restraintd_pid_many_pids (void)
     path_bkp = g_strdup (g_getenv ("PATH"));
     g_setenv ("PATH", "./test-dummies/cmd_utils/bin", TRUE);
 
-    g_setenv ("MOCK_PIDOF_STDOUT", "123 124 125", TRUE);
-    g_setenv ("MOCK_PIDOF_EXIT", "0", TRUE);
+    g_setenv ("MOCK_PGREP_STDOUT", "123 124 125", TRUE);
+    g_setenv ("MOCK_PGREP_EXIT", "0", TRUE);
 
     expected_regex = "Due to multiple restraintd .+";
 
@@ -53,8 +53,8 @@ test_get_restraintd_pid_many_pids (void)
 
     g_setenv ("PATH", path_bkp, TRUE);
 
-    g_unsetenv ("MOCK_PIDOF_STDOUT");
-    g_unsetenv ("MOCK_PIDOF_EXIT");
+    g_unsetenv ("MOCK_PGREP_STDOUT");
+    g_unsetenv ("MOCK_PGREP_EXIT");
 
     g_assert_cmpint (restraintd_pid, ==, 0);
     g_assert_error (error, RESTRAINT_ERROR, RESTRAINT_TOO_MANY_RESTRAINTD_RUNNING);
