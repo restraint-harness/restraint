@@ -165,7 +165,7 @@ First step is to run the following workflow to reserve a system in Beaker::
     <repos>
      <repo name="my_custom_restraint" url="http://copr-be.cloud.fedoraproject.org/path/to/copr/repo/results"/>
     </repos>
-    <task name="/distribution/install" role="STANDALONE" />
+    <task name="/distribution/check-install" role="STANDALONE" />
     <task name="/distribution/reservesys" role="None">
      <fetch url="https://github.com/beaker-project/beaker-core-tasks/archive/master.zip#reservesys"/>
     </task>
