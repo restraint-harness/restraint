@@ -16,7 +16,7 @@ jobs:
     - uses: actions/checkout@v1
     - name: Install deps
       run: |
-        dnf install -y 'dnf-command(builddep)' git-daemon python3-flask python3-requests python3-pytest python3-six
+        dnf install -y 'dnf-command(builddep)' git-daemon python3-flask python3-requests python3-pytest python3-six procps-ng
     - name: Install restraint deps
       run: |
         dnf builddep --spec specfiles/restraint-upstream.spec -y
@@ -43,7 +43,7 @@ jobs:
     - uses: actions/checkout@v1
     - name: Install deps
       run: |
-        dnf install -y 'dnf-command(builddep)' valgrind git-daemon
+        dnf install -y 'dnf-command(builddep)' valgrind git-daemon procps-ng
     - name: Install restraint deps
       run: |
         dnf builddep --spec specfiles/restraint-upstream.spec -y
