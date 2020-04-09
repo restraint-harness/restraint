@@ -7,18 +7,18 @@ Restraint doesn't require tasks to be written in any particular language. In
 fact, most tests are written in a mixture of shell, python and C code. You do
 need to provide some metadata in order for things to work best.
 
-Metadata
---------
+Restraint Metadata File
+-----------------------
 
-Restraint will look for a file called metadata in the task directory. The
-format for that file is a simple ini file which most people should be familiar
+`Restraint` will look for a file called metadata in the task directory. The
+format for that file is a simple `ini` file which most people should be familiar
 with.
 
 ::
 
  [General]
  name=/restraint/env/metadata
- owner=Bill Peck <bpeck@redhat.com>
+ owner=User ABC1 <userabc1@example.com>
  description=just reports env variables
  license=GPLv2
  confidential=no
@@ -28,24 +28,32 @@ with.
  entry_point=./runtest.sh
  max_time=5m
  dependencies=gcc;emacs
+ softDependencies=numactl;numactl-devel
+ environment=META_VAR1=var1value;META_VAR2=var2value;META_VAR3=var3value
+ repoRequires=general/include;filesystems/include
+ no_localwatchdog=true
  use_pty=false
- #use_pty=true # to enable a pty
 
-The "General" section is mostly used for informational purposes. The only
-element that Restraint will read from here is the name attribute. If defined
-this will over write the task name specified from the job XML.
+`restraintd` does not require any metadata fields to be present. In other words,
+there are no checks and reporting of errors if metadata is not present.  This allows
+flexibility in your configuration.
 
-The "restraint" section has the following elements which can be defined:
+The `General` section is mostly used for informational data. The only
+element that `Restraint` will process is the `name` attribute. If defined,
+this will overwrite the task name specified from the job XML.
+
+The `restraint` section has the following elements which can be defined:
 
 entry_point
 ~~~~~~~~~~~
 
 This tells Restraint how it should start running the task. If you don't
 specify a program to run it will default to 'make run' which is what legacy
-RHTS (Red Hat Test System) would do. Other examples of entry points:
+RHTS (Red Hat Test System) would do. This would require you provide a
+Makefile. Other examples of entry points::
 
-* entry_point=autotest-local control-file
-* entry_point=STAF local PROCESS START SHELL COMMAND "ps | grep test | wc >testcount.txt"
+ * entry_point=autotest-local control-file
+ * entry_point=STAF local PROCESS START SHELL COMMAND "ps | grep test | wc >testcount.txt"
 
 max_time
 ~~~~~~~~
@@ -54,12 +62,12 @@ The maximum time a task is expected to run. When restraintd runs a task it
 sets up a localwatchdog which will kill the task after this time has expired.
 When run in Beaker this is also used for the external watchdog (typically 20-30
 minutes later than the local watchdog time). Time units can be specified as
-follows:
+follows::
 
-* d for days
-* h for hours
-* m for minutes
-* s for seconds
+ * d for days
+ * h for hours
+ * m for minutes
+ * s for seconds
 
 To set a max run time for 2 days you would use the following:
 
@@ -174,22 +182,10 @@ PostgreSQL on everything else.
  dependencies=postgresql
  dependencies[RedHatEnterpriseLinuxServer5]=rhdb
 
-testinfo.desc
--------------
+Legacy Metadata File
+--------------------
 
-Legacy RHTS tests use this file for their metadata [#]_. Restraint supports
-generating (via the Makefile) and reading this file. But Restraint does not
-understand all the fields in this file. The following are the ones Restraint
-parses:
-
- * Name - Same as [General] name
- * Environment- Same as [restraint] environment
- * TestTime - Same as [restraint] max_time
- * Requires - Same as [restraint] dependencies
- * RhtsRequires - Same as [restraint] dependencies
- * RepoRequires - Same as [restraint] repoRequires
- * USE_PTY - Same as [restraint] use_pty
-
-Please see the Beaker documentation for how to populate these fields.
-
-.. [#] `RHTS Task Metadata <https://beaker-project.org/docs/user-guide/task-metadata.html>`_.
+Prior to the `Restraint` harness, users defined `testinfo.desc` file as the
+metadata file in their job tasks and restraint supported that file.  This
+is being deprecated and the substitute for this file and variables
+within can be found in :ref:`legacy_metadata`.
