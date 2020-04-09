@@ -94,6 +94,7 @@ restraint_forkpty.o:
 TEST_PROGRAMS += test_cmd_abort
 TEST_PROGRAMS += test_cmd_log
 TEST_PROGRAMS += test_cmd_result
+TEST_PROGRAMS += test_cmd_utils
 TEST_PROGRAMS += test_cmd_watchdog
 TEST_PROGRAMS += test_dependency
 TEST_PROGRAMS += test_env
@@ -142,6 +143,8 @@ test_cmd_result.o: cmd_result.h utils.h cmd_utils.h upload.h errors.h
 
 test_cmd_watchdog: cmd_watchdog.o utils.o cmd_utils.o errors.o
 test_cmd_watchdog.o: cmd_watchdog.h utils.h cmd_utils.h errors.h
+
+test_cmd_utils: test_cmd_utils.o cmd_utils.o env.o utils.o errors.o
 
 test_utils: test_utils.o utils.o errors.o
 

@@ -1,0 +1,17 @@
+#!/bin/sh
+
+MOCK_NAME=$(/usr/bin/basename "$0" | /usr/bin/tr 'a-z' 'A-Z')
+
+stdout_value=$(eval echo \$MOCK_"${MOCK_NAME}"_STDOUT)
+stderr_value=$(eval echo \$MOCK_"${MOCK_NAME}"_STDERR)
+exit_value=$(eval echo \$MOCK_"${MOCK_NAME}"_EXIT)
+
+if [ -n "${stdout_value}" ] ; then
+	echo "${stdout_value}"
+fi
+
+if [ -n "${stderr_value}" ] ; then
+	echo "${stderr_value}" >&2
+fi
+
+exit ${exit_value:-255}
