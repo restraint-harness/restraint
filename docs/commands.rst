@@ -291,6 +291,8 @@ this command::
     RSTRNT_PKG_DELAY:    Number of seconds to delay between retries.
                          default: 1
 
+.. _p_reboot:
+
 rstrnt-prepare-reboot
 ~~~~~~~~~~~~~~~~~~~~~
 
@@ -315,8 +317,9 @@ No arguments are required to run this command.
 rstrnt-reboot
 ~~~~~~~~~~~~~
 
-Helper to reboot the system. On UEFI systems it will use efibootmgr to set next
-boot to what is booted currently.  No arguments are required to run this command.
+Helper to soft reboot the system. On UEFI systems, it will use efibootmgr
+to set next boot to what is booted currently.  No arguments are required to run
+this command.
 
 rstrnt-report-log
 ~~~~~~~~~~~~~~~~~
@@ -421,6 +424,8 @@ Where:
 .. option::  METRIC
 
     Optional result metric
+
+.. _legacy_rpt_mode:
 
 Legacy Reporting Mode
 """""""""""""""""""""
@@ -640,46 +645,6 @@ Here is an example command to covert a job run XML into JUnit results.
 Legacy RHTS Commands
 --------------------
 
-If you have the restraint-rhts subpackage installed these commands are provided
-in order to support legacy tests written for RHTS.
-
-rhts-backup
-~~~~~~~~~~~
-
-Use `rstrnt-backup` instead.
-
-rhts-environment.sh
-~~~~~~~~~~~~~~~~~~~
-
-Deprecated.
-
-rhts-lint
-~~~~~~~~~
-
-Deprecated - only provided so that testinfo.desc can be generated.
-
-rhts-sync-block
-~~~~~~~~~~~~~~~
-
-Use `rstrnt-sync-block` instead.
-
-rhts-sync-set
-~~~~~~~~~~~~~
-
-Use `rstrnt-sync-set` instead.
-
-rhts-reboot
-~~~~~~~~~~~
-
-Use `rstrnt-reboot` instead.
-
-rhts-restore
-~~~~~~~~~~~~
-
-Use `rstrnt-restore` instead.
-
-rhts-run-simple-test
-~~~~~~~~~~~~~~~~~~~~
-
-Deprecated.
-
+Prior to the `Restraint` harness, users used `RHTS` commands in their jobs.
+These are being deprecated and substitutes for those legacy commands can be
+found in :ref:`legacy_rhts_cmds`.

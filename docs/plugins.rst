@@ -1,3 +1,5 @@
+.. _plugins:
+
 Plugins
 =======
 
@@ -203,7 +205,9 @@ to check for false positives.
   forward.
 
 If you need to skip error checking, refer to RSTRNT_DISABLED as described
-in the environment variable section (see :ref:`env-variables`).
+in the :ref:`env_variables` section.
+
+.. _lcl_wd_p_in:
 
 Local Watchdog
 --------------
@@ -224,7 +228,7 @@ limit. Restraint currently ships with three plugins:
 
 * 99_reboot - Simply reboots the system to try and get the system back to a
   sane state.  If you need to skip this step, you can use RSTRNT_DISABLED
-  as described in (see :ref:`env-variables`).
+  as described in (see :ref:`env_variables`).
 
 .. _completed:
 
@@ -255,6 +259,6 @@ To finish our tcpdump example from above we can add the following::
  chmod a+x /usr/share/restraint/plugins/completed.d/80_upload_tcpdump
 
 If you need to skip file restoration, refer to RSTRNT_DISABLED as described
-in the environment variable section (see :ref:`env-variables`).
+in the environment variable section (see :ref:`env_variables`).
 
 .. [#] `Beaker Multihost documentation <https://beaker-project.org/docs/user-guide/multihost.html>`_.
