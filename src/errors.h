@@ -1,5 +1,9 @@
-#define RESTRAINT_ERROR restraint_error_quark()
-GQuark restraint_error_quark (void);
+#ifndef _RESTRAINT_ERRORS_H
+#define _RESTRAINT_ERRORS_H
+
+#include <glib.h>
+
+#define RESTRAINT_ERROR (restraint_error_quark ())
 
 typedef enum {
     RESTRAINT_PARSE_ERROR_BAD_SYNTAX, /* parse errors */
@@ -22,3 +26,6 @@ typedef enum {
     RESTRAINT_TOO_MANY_RESTRAINTD_RUNNING,
 } RestraintError;
 
+GQuark restraint_error_quark (void);
+
+#endif

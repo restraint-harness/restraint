@@ -1,7 +1,4 @@
-
 #include <glib.h>
+#include "errors.h"
 
-GQuark restraint_error_quark(void) {
-    return g_quark_from_static_string("restraint-error-quark");
-}
-
+G_DEFINE_QUARK (restraint-error-quark, restraint_error);
