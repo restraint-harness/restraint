@@ -7,7 +7,7 @@ Requires=network-online.target
 Type=simple
 StandardError=syslog+console
 ExecStartPre=/usr/bin/check_beaker
-ExecStart=/usr/bin/restraintd
+ExecStart=/usr/bin/restraintd --port 8081
 KillMode=process
 OOMScoreAdjust=-1000
 

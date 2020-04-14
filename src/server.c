@@ -588,7 +588,7 @@ int main(int argc, char *argv[]) {
   port = 0;
 
   GOptionEntry entries [] = {
-    { "port", 'p', 0, G_OPTION_ARG_INT, &port, "HTTP server port to listen on", "PORT" },
+    { "port", 'p', 0, G_OPTION_ARG_INT, &port, "Port to listen on", "PORT" },
     { "stdin", 's', 0, G_OPTION_ARG_NONE, &app_data->stdin, "Run from STDIN/STDOUT", NULL },
     { NULL }
   };

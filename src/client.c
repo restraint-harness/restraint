@@ -1749,8 +1749,6 @@ int main(int argc, char *argv[]) {
             g_free, (GDestroyNotify)&restraint_free_recipe_data);
 
     GOptionEntry entries[] = {
-        { "port", 'p', 0, G_OPTION_ARG_INT, &app_data->restraint_port,
-            "Restraint HTTP server port to listen on", "PORT" },
         { "job", 'j', 0, G_OPTION_ARG_STRING, &job,
             "Run job from file", "FILE" },
         { "run", 'r', 0, G_OPTION_ARG_STRING, &app_data->run_dir,
@@ -1760,8 +1758,10 @@ int main(int argc, char *argv[]) {
         { "host", 't', 0, G_OPTION_ARG_STRING_ARRAY, &hostarr,
             "Set host for a recipe with specific id.",
             "<recipe_id>=[<user>@]<host>" },
-        {"conn-retries", 'c', 0, G_OPTION_ARG_INT, &app_data->max_retries,
+        { "conn-retries", 'c', 0, G_OPTION_ARG_INT, &app_data->max_retries,
             "Specify the number of reconnection retries.", NULL},
+        { "port", 'p', 0, G_OPTION_ARG_INT, &app_data->restraint_port,
+            "Port for restraintd HTTP server", "PORT" },
         { "verbose", 'v', G_OPTION_FLAG_NO_ARG, G_OPTION_ARG_CALLBACK,
             callback_parse_verbose, "Increase verbosity, up to three times.",
             NULL },
