@@ -120,3 +120,5 @@ For SysV init based systems use the following commands::
  # chkconfig --level 345 restraintd on
  Start the service now
  # service restraintd start
+
+When Restraint runs as a system service it listens on the port 8081.
