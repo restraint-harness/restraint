@@ -27,8 +27,8 @@ command to view restraint logs::
  -- Logs begin at Thu 2020-03-12 11:45:05 EDT, end at Thu 2020-03-12 12:10:47 EDT. --
  Mar 12 11:45:26 virt-test systemd[1]: Starting The restraint harness....
  Mar 12 11:45:26 virt-test systemd[1]: Started The restraint harness..
- Mar 12 11:45:26 virt-test restraintd[1135]: recipe: * Fetching recipe: http://labhost.testdomain.com:8000//recipes/30220/
- Mar 12 11:45:26 virt-test restraintd[1135]: Listening on http://localhost:39581
+ Mar 12 11:45:26 virt-test restraintd[1135]: recipe: * Fetching recipe: http://lc.example.net:8000//recipes/30220/
+ Mar 12 11:45:26 virt-test restraintd[1135]: Listening on http://localhost:8081
  Mar 12 11:45:26 virt-test restraintd[1135]: recipe: * Parsing recipe
  Mar 12 11:45:26 virt-test restraintd[1135]: recipe: * Running recipe
  Mar 12 11:45:26 virt-test restraintd[1135]: ** Fetching task: 183853 [/mnt/tests/distribution/check-install]
@@ -40,11 +40,12 @@ command to view restraint logs::
  Mar 12 11:45:33 virt-test restraintd[1135]: ** Updating external watchdog: 2400 seconds
  Mar 12 11:45:33 virt-test restraintd[1135]: ** Installing dependencies
  Mar 12 11:45:33 virt-test restraintd[1135]: ** Running task: 183853 [/distribution/check-install]
- .
- .
- .
+ ...
  Mar 12 11:45:43 virt-test restraintd[1135]: ** Completed Task : 183853
 
+
+When `restraintd` runs as a system service by SysV init or systemd, it
+listens on the port 8081.
 
 The scripts and programs associated with the `restraintd` server can be
 run within the context of a job as well outside a job execution.
@@ -539,7 +540,7 @@ restraint
 
 Used for stand-alone execution.
 
-Use the restraint command to spawn a restraintd server process to run a job on a
+Use the `restraint` command to spawn a `restraintd` process to run a job on a
 remote test machine.  You can run jobs on the local machine but it is not
 recommended since some tasks reboot the system. Hosts are tied to recipe IDs
 inside the job XML.
@@ -582,6 +583,10 @@ A sample of restraint command line is as follows:
 
 .. end
 
+By default, the `restraintd` launched in the remote system will randomly
+choose a free port to listen on. The option ``-p, --port <port>`` can be
+used to specify the port where `restraintd` will listen on.
+
 Restraint will look for the next available directory to store the results in.
 In the above example, it will see if the directory simple_job.01 exists. If
 it does (because of a previous run) it will then look for simple_job.02. It
@@ -600,6 +605,7 @@ By default, Restraint will report the start and stop of each task run like this:
  *  T:   2 [/kernel/misc/gdb-simple                         ] Completed: PASS
  *  T:   3 [restraint/vmstat                                ] Running
  *  T:   3 [restraint/vmstat                                ] Completed
+
 
 All of this information is also stored in the job.xml which in this case is
 stored in the ./simple_job.07 directory.
