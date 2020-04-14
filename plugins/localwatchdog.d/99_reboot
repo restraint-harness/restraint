@@ -6,4 +6,5 @@
 PLUGIN=$(basename $0)
 
 rstrnt-report-result --no-plugins $TEST/$PLUGIN WARN 0
+rstrnt-abort -t task
 rstrnt-reboot

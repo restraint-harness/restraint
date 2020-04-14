@@ -124,6 +124,84 @@ test_rstrnt_abort_long_current_and_pid()
     g_free(mypid);
 }
 
+
+/* test restraint abort cmd with long 'current&pid' args and
+ * -t type 'task' */
+#define TYPE_TASK_SERVER_STRING "http://localhost:46344/recipes/1/tasks/999/status"
+static void
+test_rstrnt_abort_long_current_and_pid_and_type_task()
+{
+    GError *error = NULL;
+    AbortAppData *app_data = g_slice_new0 (AbortAppData);
+    char *mypid = g_strdup_printf("%d", getpid());
+
+    char *argv[] = {
+        CMD_RSTRNT,
+        "--current",
+        "--pid",
+        mypid,   // need to use our own pid since we created the file
+        "--type",
+        "task"
+    };
+    int argc = sizeof(argv) / sizeof(char*);
+
+    // Environment file to be used by --current option
+    update_env_script("RSTRNT_", "http://localhost:46344", "1", "999",
+                      &error);
+    g_assert_no_error(error);
+
+    gboolean rc = parse_abort_arguments(app_data, argc, argv, &error);
+    g_assert_true(rc);
+    g_assert_cmpstr(TYPE_TASK_SERVER_STRING, ==, app_data->s.server);
+
+    if (error) {
+        g_clear_error(&error);
+    }
+    unset_envvar_from_file(getpid(), &error);
+    clear_server_data(&app_data->s);
+    g_slice_free(AbortAppData, app_data);
+    g_free(mypid);
+}
+
+
+/* test restraint abort cmd -t type 'task' missing task-id error. */
+static void
+test_rstrnt_abort_type_task_missing_taskid_error()
+{
+    GError *error = NULL;
+    AbortAppData *app_data = g_slice_new0 (AbortAppData);
+    char *mypid = g_strdup_printf("%d", getpid());
+
+    char *argv[] = {
+        CMD_RSTRNT,
+        "--current",
+        "--pid",
+        mypid,   // need to use our own pid since we created the file
+        "--type",
+        "task"
+    };
+    int argc = sizeof(argv) / sizeof(char*);
+
+    // Environment file to be used by --current option
+    update_env_script("RSTRNT_", "http://localhost:46344", "1", NULL,
+                      &error);
+    g_assert_no_error(error);
+
+    gboolean rc = parse_abort_arguments(app_data, argc, argv, &error);
+    g_assert_false(rc);
+    g_assert_error(error, RESTRAINT_ERROR, RESTRAINT_CMDLINE_ERROR);
+
+    if (error) {
+        g_assert_cmpstr(error->message, ==,
+                        "Requested type task-abort but no task_id available. Quitting.\n");
+        g_clear_error(&error);
+    }
+    unset_envvar_from_file(getpid(), &error);
+    clear_server_data(&app_data->s);
+    g_slice_free(AbortAppData, app_data);
+    g_free(mypid);
+}
+
 /* test restraint abort cmd using environment vars and not args*/
 #define ENV_SERVER_STRING "http://localhost:99999/recipes/2/status"
 static void
@@ -246,6 +324,10 @@ int main(int argc, char *argv[])
                     test_rstrnt_abort_short_c_and_i);
     g_test_add_func("/cmd_upload/rhts_test_rstrnt_abort_long_current_and_pid",
                     test_rstrnt_abort_long_current_and_pid);
+    g_test_add_func("/cmd_upload/rhts_test_rstrnt_abort_long_current_and_pid_and_type_task",
+                    test_rstrnt_abort_long_current_and_pid_and_type_task);
+    g_test_add_func("/cmd_upload/rhts_test_rstrnt_abort_type_task_missing_taskid_error",
+                    test_rstrnt_abort_type_task_missing_taskid_error);
     g_test_add_func("/cmd_upload/rhts_test_environment_variables",
                     test_environment_variables);
     g_test_add_func("/cmd_upload/rhts_test_rstrnt_abort_current_file_not_exist",

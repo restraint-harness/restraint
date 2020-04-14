@@ -24,18 +24,32 @@
 #include "errors.h"
 
 void
-format_abort_server(ServerData *s_data)
+format_recipe_abort_server(ServerData *s_data, GError **error)
 {
     if (s_data->server_recipe) {
         s_data->server = g_strdup_printf ("%s/status", s_data->server_recipe);
     }
 }
+void
+format_task_abort_server(ServerData *s_data, GError **error)
+{
+    if (s_data->task_id == NULL) {
+        g_set_error (error, RESTRAINT_ERROR,
+                     RESTRAINT_CMDLINE_ERROR,
+                     "Requested type task-abort but no task_id available. Quitting.\n");
+        return;
+    }
+
+    if (s_data->server_recipe) {
+        s_data->server = g_strdup_printf ("%s/tasks/%s/status",
+                                          s_data->server_recipe, s_data->task_id);
+    }
+}
 gboolean
 parse_abort_arguments(AbortAppData *app_data, int argc, char *argv[], GError **error)
 {
-
+    gchar *type = NULL;
     gboolean ret = TRUE;
-
 
     GOptionEntry entries[] = {
         {"current", 'c', G_OPTION_FLAG_NONE, G_OPTION_FLAG_NONE,
@@ -44,14 +58,14 @@ parse_abort_arguments(AbortAppData *app_data, int argc, char *argv[], GError **e
             &app_data->s.pid, "server pid", "PID"},
         {"server", 's', 0, G_OPTION_ARG_STRING, &app_data->s.server,
             "Server to connect to", "URL" },
-        {"type", 't', G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_STRING, &app_data->type,
-            "deprecated option", NULL},
+        {"type", 't', 0, G_OPTION_ARG_STRING, &type,
+            "Specify abort type. Dflt: recipe", "<task|recipe>"},
         { NULL }
     };
 
     GOptionContext *context = g_option_context_new(NULL);
     g_option_context_set_summary(context,
-            "Aborts currently running task. if you don't specify --current or \n"
+            "Aborts currently running recipe or task. if you don't specify --current or \n"
             "the server url you must have RECIPE_URL defined.\n"
             "If HARNESS_PREFIX is defined then the value of that must be\n"
             "prefixed to RECIPE_URL");
@@ -64,7 +78,11 @@ parse_abort_arguments(AbortAppData *app_data, int argc, char *argv[], GError **e
     }
 
     if (!app_data->s.server) {
-        format_server_string(&app_data->s, format_abort_server, error);
+        if (g_strcmp0(type, "task") == 0) {
+            format_server_string(&app_data->s, format_task_abort_server, error);
+        } else {
+            format_server_string(&app_data->s, format_recipe_abort_server, error);
+        }
         if (error != NULL && *error != NULL) {
             ret = FALSE;
             goto parse_cleanup;
@@ -80,6 +98,7 @@ parse_cleanup:
     if (ret == FALSE) {
         cmd_usage(context);
     }
+    free(type);
     g_option_context_free(context);
     return ret;
 }

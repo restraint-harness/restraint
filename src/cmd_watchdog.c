@@ -30,7 +30,7 @@
 #include "utils.h"
 
 void
-format_watchdog_server(ServerData *s_data)
+format_watchdog_server(ServerData *s_data, GError **error)
 {
     if (s_data->server_recipe) {
         s_data->server = g_strdup_printf ("%s/watchdog", s_data->server_recipe);

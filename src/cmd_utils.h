@@ -13,7 +13,7 @@ void clear_server_data(ServerData *s_data);
 void get_env_vars_and_format_ServerData(ServerData *s_data);
 void get_env_vars_from_file(ServerData *s_data, GError **error);
 void format_server_string(ServerData *s_data,
-                       void (*format_server)(ServerData *s_data),
+                       void (*format_server)(ServerData *s_data, GError **error),
                        GError **error);
 void set_envvar_from_file(gint pid, GError **error);
 void unset_envvar_from_file(gint pid, GError **error);

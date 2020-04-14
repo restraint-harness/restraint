@@ -85,7 +85,7 @@ void restraint_free_appdata(AppData *app_data)
 }
 
 void
-format_result_server(ServerData *s_data)
+format_result_server(ServerData *s_data, GError **error)
 {
     if (s_data->server_recipe && s_data->task_id) {
         s_data->server = g_strdup_printf ("%s/tasks/%s/results/",

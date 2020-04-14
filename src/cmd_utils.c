@@ -57,7 +57,7 @@ get_taskid (void)
 {
     gchar *prefix = NULL;
     gchar *task_id_key = NULL;
-    gchar *task_id= NULL;
+    gchar *task_id = NULL;
 
     prefix = getenv("HARNESS_PREFIX") ? getenv("HARNESS_PREFIX") : "";
     task_id_key = g_strdup_printf ("%sTASKID", prefix);
@@ -198,7 +198,7 @@ get_restraintd_pid (GError **gerror) {
 
 void
 format_server_string(ServerData *s_data,
-                  void (*format_server)(ServerData *s_data),
+                  void (*format_server)(ServerData *s_data, GError **error),
                   GError **error)
 {
 
@@ -213,7 +213,7 @@ format_server_string(ServerData *s_data,
     } else {
         get_env_vars_and_format_ServerData(s_data);
     }
-    format_server(s_data);
+    format_server(s_data, error);
 }
 
 void

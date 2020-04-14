@@ -97,6 +97,8 @@ The format of the <server-url> is one of the following depending on the command:
 
     # for rstrnt-abort
       http://localhost:<port>/recipes/<recipe_id>/status/
+    # for rstrnt-abort -t task
+      http://localhost:<port>/recipes/<recipe_id>/tasks/<task_id>/status/
     # for rstrnt-adjust-watchdog
       http://localhost:<port>/recipes/<recipe_id>/watchdog/
     # for rstrnt-report-results
@@ -147,7 +149,8 @@ task as well as subsequent tasks in the recipe will be marked as `aborted` and t
 Arguments for this command are as follows::
 
     rstrnt-abort [ -c, --current [ -i, --pid <server-process-id> ] \
-                   -s, --server <server-url>
+                   -s, --server <server-url> \
+                   -t|--type <task|recipe>
                  ]
 
 Where:
@@ -162,9 +165,15 @@ Where:
 
    Refer to :ref:`common-cmd-args` for details.
 
-   Where <server-url> is as follows::
+   Where <server-url> is one of the following depending on -t|--type option::
 
        http://localhost:<port>/recipes/<recipe_id>/status/
+       http://localhost:<port>/recipes/<recipe_id>/tasks/<task_id>/status/
+
+.. option:: -t|--type <task|recipe>
+
+   To choose whether to abort just the task or the entire recipe. If not specified, the default
+   is aborting the entire recipe as described earlier.
 
 rstrnt-adjust-watchdog
 ~~~~~~~~~~~~~~~~~~~~~~

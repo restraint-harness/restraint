@@ -59,7 +59,9 @@ void update_env_script(gchar *prefix, gchar *restraint_url,
     g_fprintf(env_file, "HARNESS_PREFIX=%s\n", prefix);
     g_fprintf(env_file, "%sURL=%s\n", prefix, restraint_url);
     g_fprintf(env_file, "%sRECIPE_URL=%s/recipes/%s\n", prefix, restraint_url, recipe_id);
-    g_fprintf(env_file, "%sTASKID=%s\n", prefix, task_id);
+    if (task_id) {
+        g_fprintf(env_file, "%sTASKID=%s\n", prefix, task_id);
+    }
     fclose(env_file);
 }
 

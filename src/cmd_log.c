@@ -25,7 +25,7 @@
 #include "utils.h"
 
 void
-format_log_server(ServerData *s_data)
+format_log_server(ServerData *s_data, GError **error)
 {
     if (s_data->server_recipe && s_data->task_id) {
         s_data->server = g_strdup_printf ("%s/tasks/%s", s_data->server_recipe, s_data->task_id);
