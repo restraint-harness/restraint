@@ -3,7 +3,9 @@
 PLUGIN=$(basename $0)
 
 if [ -z $OUTPUTFILE ]; then
+    if [ -s /mnt/testarea/current.log ]; then
         export OUTPUTFILE="/mnt/testarea/current.log"
+    fi
 fi
 
 rstrnt-report-result --no-plugins $TEST/$PLUGIN WARN 0

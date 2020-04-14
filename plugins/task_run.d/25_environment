@@ -8,6 +8,21 @@
 
 rstrnt_info "*** Running Plugin: $0"
 
+if [ -z "$RSTRNT_NOPLUGINS" ]; then
+
+    if [ -z "$OUTPUTFILE" ]; then
+        export OUTPUTFILE=`mktemp /mnt/testarea/tmp.XXXXXX`
+    fi
+
+    if [ -e $OUTPUTFILE ]; then
+        if [ -h /mnt/testarea/current.log ]; then
+                ln -sf $OUTPUTFILE /mnt/testarea/current.log
+        else
+                ln -s $OUTPUTFILE /mnt/testarea/current.log
+        fi
+    fi
+fi
+
 if [ -z "$HOSTNAME" ]; then
    HOSTNAME=$(hostname)
 fi
