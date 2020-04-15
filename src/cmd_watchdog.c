@@ -62,9 +62,12 @@ parse_watchdog_arguments(WatchdogAppData *app_data, int argc, char *argv[], GErr
             "prefixed to RECIPE_URL");
     g_option_context_add_main_entries(context, entries, NULL);
 
-    gboolean parse_succeeded = g_option_context_parse(context, &argc, &argv, error);
+    if (!g_option_context_parse (context, &argc, &argv, error)) {
+        ret = FALSE;
+        goto parse_cleanup;
+    }
 
-    if (argc < 2 || !parse_succeeded) {
+    if (argc < 2) {
         g_set_error (error, RESTRAINT_ERROR,
                      RESTRAINT_PARSE_ERROR_BAD_SYNTAX,
                      "Wrong arguments");
