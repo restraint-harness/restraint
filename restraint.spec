@@ -103,6 +103,9 @@ BuildRequires:  tar
 %endif
 %endif
 
+# Common requires
+Requires: /usr/bin/pgrep
+
 %description
 restraint harness which can run standalone or with beaker.  when provided a recipe xml it will execute
 each task listed in the recipe until done.
@@ -119,7 +122,6 @@ Requires:       /bin/hostname
 %endif
 Requires:       coreutils
 Requires:       libselinux-utils
-Requires:       /usr/bin/pgrep
 
 # All RHTS-format task RPMs have an unversioned requirement on rhts-test-env.
 # Therefore restraint-rhts provides a very low version of rhts-test-env so that
