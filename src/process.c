@@ -144,7 +144,7 @@ restraint_fork (gint *fd_out,
     pid_t pid = 0;
     gint pipefd1[2];
     gint pipefd2[2];
-    //gint devnull;
+    gint devnull;
 
     //struct termios term;
     struct winsize win = {
@@ -155,26 +155,27 @@ restraint_fork (gint *fd_out,
     if (use_pty) {
         pid = restraint_forkpty (fd_out, NULL, NULL, &win, reset_signal_handlers);
     } else {
-       if (pipe(pipefd1) == -1) {
+        if (pipe(pipefd1) == -1 || pipe(pipefd2) == -1)
             return -1;
-       }
-       if (pipe(pipefd2) == -1) {
-            return -1;
-       }
+
        pid = fork();
-       if (pid == -1) {
+
+       if (pid == -1)
            return -1;
-       }
+
        if (pid == 0) {
-           reset_signal_handlers();
+           reset_signal_handlers ();
 
            close (pipefd1[STDIN_FILENO]);
            close (pipefd2[STDOUT_FILENO]);
 
-           if (dup2(pipefd2[STDIN_FILENO], STDIN_FILENO) == -1) {
+           devnull = g_open ("/dev/null", O_RDONLY, NULL);
+
+           if (dup2 (devnull, STDIN_FILENO) == -1) {
                // Handle dup2() error
                g_warning ("dup2 STDIN failed: %s\n", g_strerror (errno));
            }
+           g_close (devnull, NULL);
            close (pipefd2[STDIN_FILENO]);
 
            // Dupe both STDOUT and STDERR to write side of pipe
@@ -311,7 +312,7 @@ process_run (const gchar *command,
                                                                NULL);
     }
 
-    if (content_size > 0 && process_data->fd_in != -1) {
+    if (content_input != NULL && content_size > 0 && process_data->fd_in != -1) {
         results_len = write(process_data->fd_in, content_input, content_size);
         if (results_len != content_size) {
             g_warning("Error writing to STDIN: %s", g_strerror (errno));
