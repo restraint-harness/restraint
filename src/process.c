@@ -216,6 +216,9 @@ process_run (const gchar *command,
              gpointer user_data)
 {
     ProcessData *process_data;
+    gssize       results_len;
+    guint64      timeout;
+
     process_data = g_slice_new0 (ProcessData);
     process_data->localwatchdog = FALSE;
     process_data->command = g_strsplit (command, " ", 0);
@@ -227,15 +230,18 @@ process_run (const gchar *command,
     process_data->user_data = user_data;
     process_data->io = NULL;
     process_data->cancellable = cancellable;
-    guint64 timeout;
-    gssize results_len;
+
+    process_data->fd_in = -1;
+    process_data->fd_out = -1;
 
     if (fflush (stdout) != 0)
         g_warning ("Failed to flush stdout: %s\n", g_strerror (errno));
+
     if (fflush (stderr) != 0)
         g_warning ("Failed to flush stderr: %s\n", g_strerror (errno));
 
     process_data->pid = restraint_fork (&process_data->fd_out, &process_data->fd_in, use_pty);
+
     if (process_data->pid < 0) {
         /* Failed to fork */
         g_set_error (&process_data->error, RESTRAINT_PROCESS_ERROR,
@@ -287,7 +293,7 @@ process_run (const gchar *command,
     if (fcntl (process_data->fd_out, F_SETFD, FD_CLOEXEC) < 0) {
         g_warning("Failed to set close on exec for fd_out");
     }
-    if (fcntl (process_data->fd_in, F_SETFD, FD_CLOEXEC) < 0) {
+    if (process_data->fd_in != -1 && fcntl (process_data->fd_in, F_SETFD, FD_CLOEXEC) < 0) {
         g_warning("Failed to set close on exec for fd_in");
     }
 
@@ -305,14 +311,15 @@ process_run (const gchar *command,
                                                                NULL);
     }
 
-    if (content_size > 0) {
+    if (content_size > 0 && process_data->fd_in != -1) {
         results_len = write(process_data->fd_in, content_input, content_size);
         if (results_len != content_size) {
             g_warning("Error writing to STDIN: %s", g_strerror (errno));
         }
     }
 
-    close(process_data->fd_in);
+    if (process_data->fd_in != -1)
+        close(process_data->fd_in);
 
     // IO handler
     if (io_callback != NULL) {
