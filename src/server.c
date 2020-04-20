@@ -574,6 +574,56 @@ null_log_writer (GLogLevelFlags   log_level,
   return G_LOG_WRITER_HANDLED;
 }
 
+/* Bind server to available IPv4 and IPv6 local addresses
+ *
+ * The server must NOT already be listening on any interface.
+ *
+ * If port is 0, the server will find an unused port to listen on. The
+ * port will be the same for both addresses.
+ *
+ * Returns TRUE if the server is bound to at least one address. FALSE
+ * otherwise.
+ */
+static gboolean
+rstrnt_listen_any_local (SoupServer *server, guint port)
+{
+    GError   *error;
+    GSList   *uris;
+    gboolean  is_listening;
+
+    /* Ensure that server is not listening on any interface */
+    uris = soup_server_get_uris (server);
+    is_listening = g_slist_length (uris) > 0;
+    g_slist_free (uris);
+    g_return_val_if_fail (!is_listening, FALSE);
+
+    error = NULL;
+
+    is_listening = soup_server_listen_local (server, port, SOUP_SERVER_LISTEN_IPV4_ONLY, &error);
+
+    if (error != NULL) {
+        g_warning ("Unable to listen on local IPv4 address: %s\n", error->message);
+        g_clear_error (&error);
+    } else if (port == 0) {
+        /* When the port is chosen by the server, get the one used for
+           IPv4 to use the same value for IPv6 */
+
+        uris = soup_server_get_uris (server);
+        port = ((SoupURI *) uris->data)->port;
+
+        g_slist_free (uris);
+    }
+
+    is_listening |= soup_server_listen_local (server, port, SOUP_SERVER_LISTEN_IPV6_ONLY, &error);
+
+    if (error != NULL) {
+        g_warning ("Unable to listen on local IPv6 address: %s\n", error->message);
+        g_clear_error (&error);
+    }
+
+    return is_listening;
+}
+
 int main(int argc, char *argv[]) {
   AppData *app_data = g_slice_new0(AppData);
   app_data->cancellable = g_cancellable_new ();
@@ -639,12 +689,13 @@ int main(int argc, char *argv[]) {
   soup_server_add_handler (soup_server, "/recipes",
                            server_recipe_callback, app_data, NULL);
 
-  // Tell our soup server to listen on any local interface
-  // This includes ipv4 and ipv6 if available.
-  if (!soup_server_listen_local (soup_server, port, 0, NULL)) {
-      g_error ("Unable to listen on either ipV4 or ipV6 protocols, exiting...\n");
+  /* Tell our soup server to listen on any local interface. This includes
+     IPv4 and IPv6 if available */
+  if (!rstrnt_listen_any_local (soup_server, port)) {
+      g_error ("Unable to listen on any IPv4 or IPv6 local address, exiting...\n");
       exit (FAILED_LISTEN);
   }
+
   uris = soup_server_get_uris (soup_server);
   SoupURI *uri = uris->data;
   app_data->restraint_url = g_strdup_printf ("http://localhost:%d", uri->port);
