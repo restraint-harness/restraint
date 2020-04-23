@@ -724,8 +724,9 @@ int main(int argc, char *argv[]) {
   g_main_loop_run (loop);
 
   if (app_data->last_signal != 0) {
-      g_error("restraintd quit on received signal %s\n",
-              strsignal(app_data->last_signal));
+      g_message("restraintd quit on received signal: %s(%u)\n",
+                strsignal(app_data->last_signal),
+                app_data->last_signal);
   }
 
   soup_session_abort(soup_session);
