@@ -156,18 +156,21 @@ server_io_callback (GIOChannel *io, GIOCondition condition, gpointer user_data) 
         //switch (g_io_channel_read_line_string(io, s, NULL, &tmp_error)) {
         switch (g_io_channel_read_chars(io, buf, 10000, &bytes_read, &tmp_error)) {
           case G_IO_STATUS_NORMAL:
-            g_message ("%s", buf);
+            if (fwrite (buf, sizeof(gchar), bytes_read, stdout) != bytes_read)
+              g_warning ("failed to write message");
+
             /* Push data to our connections.. */
             connections_write(app_data, LOG_PATH_HARNESS, buf, bytes_read);
             return G_SOURCE_CONTINUE;
 
           case G_IO_STATUS_ERROR:
-             g_error("IO error: %s\n", tmp_error->message);
-             g_clear_error (&tmp_error);
-             return G_SOURCE_REMOVE;
+            g_printerr ("IO error: %s\n", tmp_error->message);
+            g_clear_error (&tmp_error);
+            return G_SOURCE_REMOVE;
 
           case G_IO_STATUS_EOF:
-             return G_SOURCE_REMOVE;
+            g_print ("finished!\n");
+            return G_SOURCE_REMOVE;
 
           case G_IO_STATUS_AGAIN:
              g_warning("Not ready.. try again.");
