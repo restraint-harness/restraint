@@ -590,7 +590,7 @@ null_log_writer (GLogLevelFlags   log_level,
 static gboolean
 rstrnt_listen_any_local (SoupServer *server, guint port)
 {
-    GError   *error;
+    GError   *error = NULL;
     GSList   *uris;
     gboolean  is_listening;
 
