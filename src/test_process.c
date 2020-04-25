@@ -15,7 +15,6 @@
     along with Restraint.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-
 #include <glib.h>
 #include <string.h>
 
@@ -345,6 +344,132 @@ static void test_dont_use_pty(void) {
     g_slice_free (RunData, run_data);
 }
 
+static void
+test_process_read_empty_stdin (void)
+{
+    RunData *run_data;
+    gchar   *command;
+    gchar   *expected;
+    guint64  maximumtime;
+
+    maximumtime = 3;
+    command = "cat";
+    expected = "";
+
+    run_data = g_slice_new0 (RunData);
+    run_data->loop = g_main_loop_new (NULL, TRUE);
+    run_data->output = g_string_new (NULL);
+
+    process_run (command,
+                 NULL,
+                 NULL,
+                 FALSE,
+                 maximumtime,
+                 NULL,
+                 test_process_io_cb,
+                 test_process_finish_cb,
+                 NULL,
+                 0,
+                 FALSE,
+                 NULL,
+                 run_data);
+
+    g_main_loop_run (run_data->loop);
+
+    g_assert_no_error (run_data->error);
+    g_assert_cmpint (run_data->pid_result, ==, 0);
+    g_assert_cmpstr (run_data->output->str, == , expected);
+    g_assert (!run_data->localwatchdog);
+
+    g_string_free (run_data->output, TRUE);
+    g_clear_error (&run_data->error);
+    g_slice_free (RunData, run_data);
+}
+
+static void
+test_process_read_content_input (void)
+{
+    RunData *run_data;
+    gchar   *command;
+    gchar   *expected;
+    guint64  maximumtime;
+
+    maximumtime = 3;
+    command = "cat";
+    expected = "Some text for stdin\n";
+
+    run_data = g_slice_new0 (RunData);
+    run_data->loop = g_main_loop_new (NULL, TRUE);
+    run_data->output = g_string_new (NULL);
+
+    process_run (command,
+                 NULL,
+                 NULL,
+                 FALSE,
+                 maximumtime,
+                 NULL,
+                 test_process_io_cb,
+                 test_process_finish_cb,
+                 expected,
+                 strlen (expected),
+                 FALSE,
+                 NULL,
+                 run_data);
+
+    g_main_loop_run (run_data->loop);
+
+    g_assert_no_error (run_data->error);
+    g_assert_cmpint (run_data->pid_result, ==, 0);
+    g_assert_cmpstr (run_data->output->str, == , expected);
+    g_assert (!run_data->localwatchdog);
+
+    g_string_free (run_data->output, TRUE);
+    g_clear_error (&run_data->error);
+    g_slice_free (RunData, run_data);
+}
+
+static void
+test_process_read_empty_stdin_pty (void)
+{
+    RunData *run_data;
+    gchar   *command;
+    gchar   *expected;
+    guint64  maximumtime;
+
+    maximumtime = 3;
+    command = "cat";
+    expected = "";
+
+    run_data = g_slice_new0 (RunData);
+    run_data->loop = g_main_loop_new (NULL, TRUE);
+    run_data->output = g_string_new (NULL);
+
+    process_run (command,
+                 NULL,
+                 NULL,
+                 TRUE,
+                 maximumtime,
+                 NULL,
+                 test_process_io_cb,
+                 test_process_finish_cb,
+                 NULL,
+                 0,
+                 FALSE,
+                 NULL,
+                 run_data);
+
+    g_main_loop_run (run_data->loop);
+
+    g_assert_no_error (run_data->error);
+    g_assert_cmpint (run_data->pid_result, ==, 9);
+    g_assert_cmpstr (run_data->output->str, == , expected);
+    g_assert (run_data->localwatchdog);
+
+    g_string_free (run_data->output, TRUE);
+    g_clear_error (&run_data->error);
+    g_slice_free (RunData, run_data);
+}
+
 int main(int argc, char *argv[]) {
     g_test_init(&argc, &argv, NULL);
     g_test_add_func("/process/success", test_process_success);
@@ -354,5 +479,10 @@ int main(int argc, char *argv[]) {
     g_test_add_func("/process/no_hang", test_no_hang);
     g_test_add_func("/process/use_pty", test_use_pty);
     g_test_add_func("/process/dont_use_pty", test_dont_use_pty);
+
+    g_test_add_func ("/process/read_content_input", test_process_read_content_input);
+    g_test_add_func ("/process/read_empty_stdin", test_process_read_empty_stdin);
+    g_test_add_func ("/process/read_empty_stdin_pty", test_process_read_empty_stdin_pty);
+
     return g_test_run();
 }
