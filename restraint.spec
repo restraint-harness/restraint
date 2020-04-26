@@ -69,14 +69,15 @@ Requires: selinux-policy
 %endif
 
 #if not static build
-%{?without_static:BuildRequires:	zlib-devel}
-%{?without_static:BuildRequires:  glib2-devel}
-%{?without_static:BuildRequires:  libsoup-devel}
-%{?without_static:BuildRequires:  libarchive-devel}
-%{?without_static:BuildRequires:  libxml2-devel}
-%{?without_static:BuildRequires:  json-c-devel}
-%{?without_static:BuildRequires:  openssl-devel}
-%{?without_static:BuildRequires:  libcurl-devel}
+%{!?with_static:BuildRequires:  zlib-devel}
+%{!?with_static:BuildRequires:  glib2-devel}
+%{!?with_static:BuildRequires:  libsoup-devel}
+%{!?with_static:BuildRequires:  libarchive-devel}
+%{!?with_static:BuildRequires:  libxml2-devel}
+%{!?with_static:BuildRequires:  json-c-devel}
+%{!?with_static:BuildRequires:  openssl-devel}
+%{!?with_static:BuildRequires:  libcurl-devel}
+
 BuildRequires:  make
 BuildRequires:  tar
 
