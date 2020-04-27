@@ -136,6 +136,18 @@ process_io_cb (GIOChannel *io, GIOCondition condition, gpointer user_data)
     return process_data->io_callback (io, condition, process_data->user_data);
 }
 
+/* Fork wrapper with IO redirection.
+ *
+ * If use_pty is TRUE, the master file descriptor is returned in fd_out.
+ * If use_pty is FALSE, a file descriptor pointing to the child's STDOUT
+ * and STDERR is returned in fd_out.
+ *
+ * When fd_in is not NULL, if use_pty is FALSE, the child's
+ * STDIN file descriptor is returned in fd_in. If use_pty is TRUE, fd_in
+ * set to -1.
+ *
+ * Return values as in fork ().
+ */
 pid_t
 restraint_fork (gint     *fd_out,
                 gint     *fd_in,
@@ -154,25 +166,42 @@ restraint_fork (gint     *fd_out,
             .ws_ypixel = 192,
         };
 
+        if (fd_in != NULL)
+            *fd_in = -1;
+
         return restraint_forkpty (fd_out, NULL, NULL, &win, reset_signal_handlers);
     }
 
-    if (pipe (pipe_out) == -1 || pipe (pipe_in) == -1)
+    if (pipe (pipe_out) == -1)
         return -1;
+
+    if (fd_in != NULL && pipe (pipe_in) == -1) {
+        close (pipe_out[0]);
+        close (pipe_out[1]);
+
+        return -1;
+    }
 
     pid = fork ();
 
     if (pid == 0) {
+        gint child_stdin;
+
         reset_signal_handlers ();
 
-        /* Redirect child stdin to input pipe */
+        if (fd_in != NULL) {
+            close (pipe_in[1]);
+            child_stdin = pipe_in[0];
+        } else {
+            child_stdin = open ("/dev/null", O_RDONLY);
+        }
 
-        close (pipe_in[1]);
+        /* Redirect child stdin */
 
-        if (dup2 (pipe_in[0], STDIN_FILENO) == -1)
+        if (dup2 (child_stdin, STDIN_FILENO) == -1)
             g_warning ("dup2 STDIN failed: %s\n", g_strerror (errno));
 
-        close (pipe_in[0]);
+        close (child_stdin);
 
         /* Redirect child stdout and stderr to ouput pipe */
 
@@ -190,8 +219,10 @@ restraint_fork (gint     *fd_out,
         close (pipe_out[1]);
         *fd_out = pipe_out[0];
 
-        close (pipe_in[0]);
-        *fd_in = pipe_in[1];
+        if (fd_in != NULL) {
+            close (pipe_in[0]);
+            *fd_in = pipe_in[1];
+        }
     }
 
     return pid;
