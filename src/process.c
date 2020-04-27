@@ -137,64 +137,61 @@ process_io_cb (GIOChannel *io, GIOCondition condition, gpointer user_data)
 }
 
 pid_t
-restraint_fork (gint *fd_out,
-                gint *fd_in,
-                gboolean use_pty)
+restraint_fork (gint     *fd_out,
+                gint     *fd_in,
+                gboolean  use_pty)
 {
+    gint  pipe_in[2];  /* Child reads, parent writes */
+    gint  pipe_out[2]; /* Parent reads, child writes */
     pid_t pid = 0;
-    gint pipefd1[2];
-    gint pipefd2[2];
-    //gint devnull;
-
-    //struct termios term;
-    struct winsize win = {
-        .ws_col = 80, .ws_row = 24,
-        .ws_xpixel = 480, .ws_ypixel = 192,
-    };
 
     if (use_pty) {
-        pid = restraint_forkpty (fd_out, NULL, NULL, &win, reset_signal_handlers);
-    } else {
-       if (pipe(pipefd1) == -1) {
-            return -1;
-       }
-       if (pipe(pipefd2) == -1) {
-            return -1;
-       }
-       pid = fork();
-       if (pid == -1) {
-           return -1;
-       }
-       if (pid == 0) {
-           reset_signal_handlers();
+        //struct termios term;
+        struct winsize win = {
+            .ws_col = 80,
+            .ws_row = 24,
+            .ws_xpixel = 480,
+            .ws_ypixel = 192,
+        };
 
-           close (pipefd1[STDIN_FILENO]);
-           close (pipefd2[STDOUT_FILENO]);
+        return restraint_forkpty (fd_out, NULL, NULL, &win, reset_signal_handlers);
+    }
 
-           if (dup2(pipefd2[STDIN_FILENO], STDIN_FILENO) == -1) {
-               // Handle dup2() error
-               g_warning ("dup2 STDIN failed: %s\n", g_strerror (errno));
-           }
-           close (pipefd2[STDIN_FILENO]);
+    if (pipe (pipe_out) == -1 || pipe (pipe_in) == -1)
+        return -1;
 
-           // Dupe both STDOUT and STDERR to write side of pipe
-           if (dup2(pipefd1[STDOUT_FILENO], STDOUT_FILENO) == -1) {
-               /* Handle dup2() error */
-               g_warning ("dup2 STDOUT failed: %s\n", g_strerror (errno));
-           }
-           if (dup2(pipefd1[STDOUT_FILENO], STDERR_FILENO) == -1) {
-               /* Handle dup2() error */
-               g_warning ("dup2 STDERR failed: %s\n", g_strerror (errno));
-           }
-           // close the duped pipe
-           close (pipefd1[STDOUT_FILENO]);
-       } else {
-           // close writing side of pipe.
-           close (pipefd1[STDOUT_FILENO]);
-           close (pipefd2[STDIN_FILENO]);
-           *fd_out = pipefd1[STDIN_FILENO];
-           *fd_in = pipefd2[STDOUT_FILENO];
-       }
+    pid = fork ();
+
+    if (pid == 0) {
+        reset_signal_handlers ();
+
+        /* Redirect child stdin to input pipe */
+
+        close (pipe_in[1]);
+
+        if (dup2 (pipe_in[0], STDIN_FILENO) == -1)
+            g_warning ("dup2 STDIN failed: %s\n", g_strerror (errno));
+
+        close (pipe_in[0]);
+
+        /* Redirect child stdout and stderr to ouput pipe */
+
+        close (pipe_out[0]);
+
+        if (dup2 (pipe_out[1], STDOUT_FILENO) == -1)
+            g_warning ("dup2 STDOUT failed: %s\n", g_strerror (errno));
+
+        if (dup2 (pipe_out[1], STDERR_FILENO) == -1)
+            g_warning ("dup2 STDERR failed: %s\n", g_strerror (errno));
+
+        close (pipe_out[1]);
+
+    } else if (pid > 0) {
+        close (pipe_out[1]);
+        *fd_out = pipe_out[0];
+
+        close (pipe_in[0]);
+        *fd_in = pipe_in[1];
     }
 
     return pid;
