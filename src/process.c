@@ -244,7 +244,11 @@ process_run (const gchar *command,
              gpointer user_data)
 {
     ProcessData *process_data;
+    gint        *process_stdin;
     guint64      timeout;
+
+    /* Passing content_input is not supported with PTY */
+    g_return_if_fail (!use_pty || content_input == NULL);
 
     process_data = g_slice_new0 (ProcessData);
     process_data->localwatchdog = FALSE;
@@ -267,7 +271,13 @@ process_run (const gchar *command,
     if (fflush (stderr) != 0)
         g_warning ("Failed to flush stderr: %s\n", g_strerror (errno));
 
-    process_data->pid = restraint_fork (&process_data->fd_out, &process_data->fd_in, use_pty);
+    /* Request process stdin fd if there is content input for it. */
+    if (!use_pty && content_input != NULL && content_size > 0)
+        process_stdin = &process_data->fd_in;
+    else
+        process_stdin = NULL;
+
+    process_data->pid = restraint_fork (&process_data->fd_out, process_stdin, use_pty);
 
     if (process_data->pid < 0) {
         /* Failed to fork */
@@ -285,6 +295,7 @@ process_run (const gchar *command,
 
         setbuf (stdout, NULL);
         setbuf (stderr, NULL);
+
         if (process_data->path && (chdir (process_data->path) == -1)) {
             /* command_path was supplied and we failed to chdir to it. */
             g_warning ("Failed to chdir() to %s: %s\n", process_data->path, g_strerror (errno));
@@ -301,6 +312,7 @@ process_run (const gchar *command,
             exit (SPAWN_COMMAND_FAILED);
         }
     }
+
     /* Parent process. */
 
     // Print the command being executed.
@@ -337,14 +349,14 @@ process_run (const gchar *command,
                                                                NULL);
     }
 
-    if (process_data->fd_in != -1) {
-        if (content_input != NULL && content_size > 0) {
-            if (write (process_data->fd_in, content_input, content_size) != content_size)
-                g_warning ("Error writing to STDIN: %s", g_strerror (errno));
-        }
+    /* If process_stdin holds a file descriptor, there is data to pass in
+       content_input. */
+    if (process_stdin != NULL && *process_stdin != -1) {
+        if (write (*process_stdin, content_input, content_size) != content_size)
+            g_warning ("Error writing to STDIN: %s", g_strerror (errno));
 
-        close (process_data->fd_in);
-        process_data->fd_in = -1;
+        close (*process_stdin);
+        *process_stdin = -1;
     }
 
     // IO handler
