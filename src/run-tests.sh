@@ -80,9 +80,6 @@ run_valgrind()
     test=$1
     test_args=$2
 
-    G_DEBUG="gc-friendly $G_DEBUG"
-    G_SLICE="always-malloc"
-
     echo "VALGRIND CHECK: ${test}"
 
     valgrind --leak-check=full \
@@ -118,6 +115,8 @@ run_gtester()
 if [[ $1 == "--valgrind" ]] ; then
     shift
     run_test=run_valgrind
+    G_DEBUG="gc-friendly $G_DEBUG"
+    G_SLICE="always-malloc"
 else
     run_test=run_gtester
 fi
