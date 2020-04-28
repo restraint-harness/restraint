@@ -41,12 +41,13 @@ static void test_task_env_role_members_standalone(void)
   Task *task = g_slice_new0(Task);
   Param rmem = {"RECIPE_MEMBERS", "otherhost localhost"};
   gchar *rmembers = NULL;
+  guint port = 1111;
 
   task->rhts_compat = FALSE;
   task->recipe = g_slice_new0(Recipe);
   task->params = g_list_append(task->params, &rmem);
 
-  build_env("http://localhost", FALSE, task);
+  build_env("http://localhost", port, task);
   g_ptr_array_foreach(task->env, (GFunc)get_env_rmembers, &rmembers);
 
   g_assert_cmpstr(rmembers, ==, "otherhost localhost");
@@ -58,6 +59,7 @@ static void test_task_env_role_members_standalone(void)
   }
   g_list_free(task->params);
   g_slice_free(Task, task);
+  remove_env_file(port);
 
   if (rmembers != NULL) {
     g_free(rmembers);
@@ -69,6 +71,7 @@ static void test_task_env_role_members_beaker(void)
   Task *task = g_slice_new0(Task);
   GList *roles = NULL;
   gchar *rmembers = NULL;
+  guint port = 1111;
 
   Role srv = { "SERVERS", "localhost" };
   Role clt = { "CLIENTS", "otherhost" };
@@ -82,7 +85,7 @@ static void test_task_env_role_members_beaker(void)
   task->recipe = g_slice_new0(Recipe);
   task->roles = roles;
 
-  build_env("http://localhost", FALSE, task);
+  build_env("http://localhost", port, task);
   g_ptr_array_foreach(task->env, (GFunc)get_env_rmembers, &rmembers);
 
   g_assert_cmpstr(rmembers, ==, "otherhost localhost");
@@ -95,6 +98,7 @@ static void test_task_env_role_members_beaker(void)
     g_ptr_array_free(task->env, TRUE);
   }
   g_slice_free(Task, task);
+  remove_env_file(port);
 
   if (rmembers != NULL) {
     g_free(rmembers);

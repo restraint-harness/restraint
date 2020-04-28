@@ -73,7 +73,7 @@ static void build_param_var(Param *param, GPtrArray *env) {
     g_ptr_array_add(env, g_strdup_printf("%s=%s", param->name, param->value));
 }
 
-void build_env(gchar *restraint_url, gboolean stdin, Task *task) {
+void build_env(gchar *restraint_url, guint port, Task *task) {
     GPtrArray *env = g_ptr_array_new_with_free_func (g_free);
     GError *error = NULL;
 
@@ -161,8 +161,8 @@ void build_env(gchar *restraint_url, gboolean stdin, Task *task) {
     task->env = env;
     // To make it easy for user's to run restraintd commands, these environment variables
     // need to be made conveniently available to user.
-    update_env_script(ENV_PREFIX, restraint_url, task->recipe->recipe_id, task->task_id,
-                      &error);
+    update_env_file(ENV_PREFIX, restraint_url, task->recipe->recipe_id, task->task_id,
+                    port, &error);
     if (error) {
         g_printerr("%s [%s, %d]\n", error->message,
                 g_quark_to_string(error->domain), error->code);

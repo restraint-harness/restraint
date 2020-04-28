@@ -81,10 +81,10 @@ void get_env_vars_and_format_ServerData(ServerData *s_data)
  * from the CMD_ENV_FILE_FORMAT.
  */
 static void
-alter_envvar_from_file(gint pid, gboolean set, GError **error) {
+alter_envvar_from_file(guint port, gboolean set, GError **error) {
     int i;
     gchar *msgbuf = NULL;
-    gchar *filename = get_envvar_filename(pid);
+    gchar *filename = get_envvar_filename(port);
 
     if ((filename == NULL) || (!g_file_test(filename, G_FILE_TEST_EXISTS))) {
         g_set_error (error, RESTRAINT_ERROR,
@@ -120,80 +120,22 @@ alter_envvar_from_file(gint pid, gboolean set, GError **error) {
 }
 
 void
-set_envvar_from_file(gint pid, GError **error) {
-    alter_envvar_from_file(pid, TRUE, error);
+set_envvar_from_file(guint port, GError **error) {
+    alter_envvar_from_file(port, TRUE, error);
 }
 
 void
-unset_envvar_from_file(gint pid, GError **error) {
-    alter_envvar_from_file(pid, FALSE, error);
+unset_envvar_from_file(guint port, GError **error) {
+    alter_envvar_from_file(port, FALSE, error);
 }
 
 void get_env_vars_from_file(ServerData *s_data, GError **error)
 {
     // Set environment variables from file if it exists.
-    set_envvar_from_file(s_data->pid, error);
+    set_envvar_from_file(s_data->port, error);
     // Fetch env vars
     get_env_vars_and_format_ServerData(s_data);
 
-}
-
-/* get_restraintd_pid
- *
- * Get the pid of background restraintd process.
- *
- * returns pid if there exists only a single restraintd process.
- * returns 0 if there are none or more than 1.  If more than 1,
- * user will be required to specify pid of their choice.
- */
-gint
-get_restraintd_pid (GError **gerror) {
-    GError *gerror_cmd = NULL;
-    gchar  *command;
-    gchar  *std_err = NULL;
-    gchar  *std_out = NULL;
-    gint    exitstat = 0;
-    int     rc = 0;
-    pid_t   pid1 = 0;
-    pid_t   pid2 = 0;
-
-    /* This command works consistently from CentOS 5 to CentOS 8 and
-     * latest Fedora, and its behavior matches pidof. */
-    command = "pgrep -x -d ' ' restraintd";
-
-    if (!g_spawn_command_line_sync(command, &std_out, &std_err,
-                                   &exitstat, &gerror_cmd)) {
-        g_set_error(gerror, RESTRAINT_ERROR,
-                    RESTRAINT_CMDLINE_ERROR,
-                    "Failed to spawn command: '%s' due to %s",
-                    command, gerror_cmd->message);
-    } else if (exitstat != 0) {
-        g_set_error(gerror, RESTRAINT_ERROR,
-                    RESTRAINT_NO_RESTRAINTD_RUNNING_ERROR,
-                    "Failed to get restraintd pid. Server not running.");
-    } else {
-
-        rc = sscanf(std_out, "%d %d", &pid1, &pid2);
-        if (rc < 1) {
-            g_set_error(gerror, RESTRAINT_ERROR,
-                        RESTRAINT_CMDLINE_ERROR,
-                        "Unexpected results getting restraintd pid command: "
-                        "'%s', returned code %d",
-                        command, rc);
-        } else if (rc > 1) {
-            pid1 = 0;
-            g_set_error(gerror, RESTRAINT_ERROR,
-                        RESTRAINT_TOO_MANY_RESTRAINTD_RUNNING,
-                        "Due to multiple restraintd servers running,"
-                        " User must specify one at command line after"
-                        " running 'pidof restraintd'.");
-        }
-   }
-    g_clear_error(&gerror_cmd);
-    g_free(std_out);
-    g_free(std_err);
-
-    return pid1;
 }
 
 void
@@ -202,13 +144,7 @@ format_server_string(ServerData *s_data,
                   GError **error)
 {
 
-    if (s_data->curr_set) {
-        if (s_data->pid == 0) {
-            s_data->pid = get_restraintd_pid(error);
-        }
-        if ((error != NULL) && (*error != NULL)) {
-            return;
-        }
+    if (s_data->port != 0) {
         get_env_vars_from_file(s_data, error);
     } else {
         get_env_vars_and_format_ServerData(s_data);

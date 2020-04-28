@@ -29,21 +29,20 @@
 #include "utils.h"
 
 /*
- * update_env_script()
+ * update_env_file()
  *
- * The restraint TCP port no longer static,
- * the environment variables RECIPE_URL and TASKID need
+ * The environment variables RECIPE_URL and TASKID need
  * to be put somewhere so the user can conveniently
  * run restraintd commands.
  * If user wants to run commands in this case, they should first do:
  *    export $(cat /etc/profile.d/rstrnt-commands-env.sh)
  * to acquire the current environment variables.
  */
-void update_env_script(gchar *prefix, gchar *restraint_url,
-                       gchar *recipe_id, gchar *task_id,
-                       GError **error)
+void update_env_file (gchar *prefix, gchar *restraint_url,
+                      gchar *recipe_id, gchar *task_id,
+                      guint port, GError **error)
 {
-    gchar *filename = get_envvar_filename(getpid());
+    gchar *filename = get_envvar_filename(port);
     FILE *env_file;
 
     env_file = g_fopen(filename, "w");
@@ -51,7 +50,7 @@ void update_env_script(gchar *prefix, gchar *restraint_url,
     g_free(filename);
     if (env_file == NULL) {
         g_set_error (error, RESTRAINT_ERROR, RESTRAINT_OPEN,
-                     "update_env_script env_file is NULL, errno=%s\n",
+                     "update_env_file env_file is NULL, errno=%s\n",
                      g_strerror (errno));
         return;
     }
@@ -63,6 +62,13 @@ void update_env_script(gchar *prefix, gchar *restraint_url,
     fclose(env_file);
 }
 
+void
+remove_env_file(guint port)
+{
+    gchar *filename = get_envvar_filename(port);
+    g_remove(filename);
+    g_free(filename);
+}
 guint64
 parse_time_string(gchar *time_string, GError **error)
 {
@@ -167,7 +173,7 @@ get_package_version (gchar   *pkg_name,
  * on authentic installation or running UTs with gtester.
  */
 gchar *
-get_envvar_filename(gint pid)
+get_envvar_filename(guint port)
 {
     gboolean result;
     gchar *filename;
@@ -175,9 +181,9 @@ get_envvar_filename(gint pid)
     /* If the expected directory is present, this is an actual installation */
     result = g_file_test(CMD_ENV_DIR, G_FILE_TEST_IS_DIR);
     if (result) {
-        filename = g_strdup_printf(CMD_ENV_FILE_FORMAT, CMD_ENV_DIR, pid);
+        filename = g_strdup_printf(CMD_ENV_FILE_FORMAT, CMD_ENV_DIR, port);
     } else {
-        filename = g_strdup_printf(CMD_ENV_FILE_FORMAT, "./", pid);
+        filename = g_strdup_printf(CMD_ENV_FILE_FORMAT, "./", port);
     }
     return(filename);
 }
