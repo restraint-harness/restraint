@@ -121,6 +121,81 @@ test_get_package_version_not_installed (void)
     g_clear_error (&error);
 }
 
+static gboolean
+check_env_file_present (guint port)
+{
+    gchar *filename = get_envvar_filename(port);
+    gboolean result = g_file_test(filename, G_FILE_TEST_EXISTS);
+    g_free(filename);
+    return(result);
+}
+
+/*
+ * Checks the content of environment file. Returns number of
+ * expected elements found.
+ */
+static guint
+check_env_vars (guint port)
+{
+    int i = 0;
+    gchar *msgbuf = NULL;
+    gchar *filename = get_envvar_filename(port);
+    GError *error = NULL;
+
+    g_file_get_contents(filename, &msgbuf, NULL, &error);
+    g_free(filename);
+    g_assert_no_error(error);
+
+    gchar **myarr = g_strsplit(msgbuf, "\n", -1);
+    g_free(msgbuf);
+
+    for (i = 0; myarr[i] != NULL; i++) {
+
+        if (strlen(myarr[i]) != 0) {
+            gchar **my_vars = g_strsplit(myarr[i], "=", 2);
+            if (g_strcmp0(my_vars[0], "HARNESS_PREFIX") == 0) {
+                g_assert(g_strcmp0(my_vars[1], "RSTRNT_") == 0);
+            } else if (g_strcmp0(my_vars[0], "RSTRNT_RECIPE_URL") == 0) {
+                g_assert(g_strcmp0(my_vars[1],
+                         "http://localhost:46344/recipes/123") == 0);
+            } else if (g_strcmp0(my_vars[0], "RSTRNT_TASKID") == 0) {
+                g_assert(g_strcmp0(my_vars[1], "456") == 0);
+            } else {
+                // assert if something other than expected env vars
+                g_assert(g_strcmp0(my_vars[0], "RSTRNT_URL") == 0);
+                g_assert(g_strcmp0(my_vars[1], "http://localhost:46344") == 0);
+            }
+            g_strfreev(my_vars);
+        }
+    }
+    g_strfreev(myarr);
+
+    return (i);
+
+}
+
+/*
+ * Ensure creation/content/removal of environment file
+ * works properly.
+ */
+void
+test_environment_file (void)
+{
+    GError *error = NULL;
+    guint port = 46344;
+
+    update_env_file("RSTRNT_", "http://localhost:46344", "123", "456",
+                    port, &error);
+    g_assert_no_error(error);
+    g_assert_true(check_env_file_present(port));
+
+    // Validate file content
+    g_assert(check_env_vars(port) == 5);
+
+    remove_env_file(port);
+    g_assert_false(check_env_file_present(port));
+}
+
 int
 main (int   argc,
       char *argv[])
@@ -133,6 +208,8 @@ main (int   argc,
                      test_get_package_version_not_installed);
     g_test_add_func ("/utils/get_package_version/installed",
                      test_get_package_version_installed);
+    g_test_add_func ("/utils/test_environment_file",
+                     test_environment_file);
 
     return g_test_run ();
 }

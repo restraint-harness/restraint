@@ -38,10 +38,8 @@ parse_abort_arguments(AbortAppData *app_data, int argc, char *argv[], GError **e
 
 
     GOptionEntry entries[] = {
-        {"current", 'c', G_OPTION_FLAG_NONE, G_OPTION_FLAG_NONE,
-            &app_data->s.curr_set, "Use current recipe/task id", NULL},
-        {"pid", 'i', G_OPTION_FLAG_NONE, G_OPTION_ARG_INT,
-            &app_data->s.pid, "server pid", "PID"},
+        {"port", 0, G_OPTION_FLAG_NONE, G_OPTION_ARG_INT,
+            &app_data->s.port, "restraintd port", "PORT"},
         {"server", 's', 0, G_OPTION_ARG_STRING, &app_data->s.server,
             "Server to connect to", "URL" },
         {"type", 't', G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_STRING, &app_data->type,

@@ -108,37 +108,38 @@ The format of the <server-url> is one of the following depending on the command:
 **Local Option**
 
 A simpler option is to run the command locally on the host running `restraintd` by
-specifying the following argument(s)::
+specifying the following argument::
 
-    -c, --current [ -i, --pid <server-process-id> ]
+    --port <server-port-id>
 
-This option must be run on the same host running restraint service since the information is derived
-from the local file `/var/lib/restraint/rstrnt-commands-env-<$pid>.sh` (where `$pid` is restraintd
-process id).  As the server progresses through a job, it defines this file based on the current
-task. As a result, the user does not need to gather restraint port number, recipe number, and
-task number in order to construct a URL for a command as this will be generated for you.
+This option can be used on the same host running `restraint` service since the information is derived
+from the local file `/var/lib/restraint/rstrnt-commands-env-<$port>.sh` (where `$port` is the
+port id restraintd listens on).  As the server progresses through a job, it defines this file based
+on the current task. As a result, the user does not need to gather recipe number and task number in
+order to construct a URL for a command as this will be generated for you. The user will need to
+acquire the port number by running linux commands such as `ss -tnlp | grep restraintd` or look
+at the `restraintd` service journal and search for the following line where in this case 8081 is
+the port number::
+
+  Listening on http://localhost:8081
 
 This option has similar effect to doing the following prior to executing the command::
 
-    export $(cat /var/lib/restraint/rstrnt-commands-env-$pid.sh)
+    export $(cat /var/lib/restraint/rstrnt-commands-env-<$port>.sh)
 
-If there is only one instance of restraintd running, the `-p, -pid <server-process-id>` is not
-required.  If there are multiple instances of restraintd running, the command will fail
-and `-i, --pid <server-process-id>` is required to provide the process id of restraint server
-in which the command is targeted.
 
 In conclusion, one of three methods must be used to execute your command.
 The following are examples of each method using the command `rstrnt-abort` as an example::
 
     rstrnt-abort                                                               # Environment Variables method
     rstrnt-abort -s http://localhost:<port>/recipes/<rid>/tasks/<tid>/status/  # Legacy Method
-    rstrnt-abort -c                                                            # Local Method
+    rstrnt-abort --port 8081                                                   # Local Method
 
 .. note::
    1. Replace <port>, <rid>, <tid> with your restraint port id, Recipe id, taskid.
    2. Given these fields change as the job progresses and if you are running the command
       outside the job, the window of opportunity to target the current running task is reduced
-      for the -c option.
+      when using the --port option.
 
 rstrnt-abort
 ~~~~~~~~~~~~
@@ -147,13 +148,13 @@ task as well as subsequent tasks in the recipe will be marked as `aborted` and t
 
 Arguments for this command are as follows::
 
-    rstrnt-abort [ -c, --current [ -i, --pid <server-process-id> ] \
+    rstrnt-abort [ --port <server-port-id> ] \
                    -s, --server <server-url>
                  ]
 
 Where:
 
-.. option:: -c, --current [-i, --pid <server-process-id>]
+.. option:: --port <server-port-id>
    :noindex:
 
    Refer to :ref:`common-cmd-args` for details.
@@ -174,13 +175,13 @@ This command allows you to adjust both the external watchdog and the local watch
 
 The arguments for this command is as follows::
 
-    rstrnt-adjust-watchdog [ -c, --current [ -i, --pid <server-process-id>] \
+    rstrnt-adjust-watchdog [ --port <server-port-id>] \
                              -s, --server <server-url>
                            ] <time>
 
 Where:
 
-.. option:: -c, --current [server-process-id]
+.. option:: --port <server-port-id>
    :noindex:
 
    Refer to :ref:`common-cmd-args` for details.
@@ -329,13 +330,13 @@ previously sent file.
 
 The arguments for this command are as follows::
 
-    rstrnt-report-log [ -c, --current [ -i, --pid <server-process-id>] \
+    rstrnt-report-log [ --port <server-port-id> \
                         -s, --server <server-url> \
                       ] -l, --filename <logfilename>
 
 Where:
 
-.. option:: -c, --current [ -i, --pid <server-process-id> ]
+.. option:: --port <server-port-id>
    :noindex:
 
    Refer to :ref:`common-cmd-args` for details.
@@ -373,7 +374,7 @@ Restraint Reporting Mode
 
 For restraint reporting mode (not --rhts), the format of arguments is as follows::
 
-    rstrnt-report-result [-c, --current [ -i, --pid <server-process-id>] \
+    rstrnt-report-result [--port <server-port-id>] \
                           -s, --server <server-url> \
                           -o, --outputfile <outfilename> \
                           -p, --disable-plugin <plugin-name> --no-plugins] \
@@ -382,7 +383,7 @@ For restraint reporting mode (not --rhts), the format of arguments is as follows
 
 Where:
 
-.. option:: -c, --current [ -i, --pid <server-process-id>]
+.. option:: --port <server-port-id>
    :noindex:
 
    Refer to :ref:`common-cmd-args` for details.
@@ -454,7 +455,7 @@ Where:
     Optional result metric
 
 The legacy mode depends on environment variables being defined as described in
-:ref:`common-cmd-args`.  The options `-s, --server` and `-c, --current` are not
+:ref:`common-cmd-args`.  The options `-s, --server` and `--port` are not
 supported for legacy mode.
 
 Legacy mode looks to see if the environment variable AVC_ERROR is set

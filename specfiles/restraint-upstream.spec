@@ -35,7 +35,6 @@ Requires(post):		systemd
 Requires(pre):		systemd
 Requires(postun):	systemd
 Requires:		selinux-policy
-Requires:		/usr/bin/pgrep
 
 %description
 restraint harness which can run standalone or with beaker.  when provided a recipe xml it will execute

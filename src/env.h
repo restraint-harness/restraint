@@ -17,4 +17,4 @@
 
 #include "task.h"
 
-void build_env(gchar *restraint_url, gboolean stdin, Task *task);
+void build_env(gchar *restraint_url, guint port, Task *task);

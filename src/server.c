@@ -636,12 +636,11 @@ int main(int argc, char *argv[]) {
   SoupServer *soup_server = NULL;
   GError *error = NULL;
   GSList *uris;
-  guint port;
 
-  port = 0;
+  app_data->port = 0;
 
   GOptionEntry entries [] = {
-    { "port", 'p', 0, G_OPTION_ARG_INT, &port, "Port to listen on", "PORT" },
+    { "port", 'p', 0, G_OPTION_ARG_INT, &app_data->port, "Port to listen on", "PORT" },
     { "stdin", 's', 0, G_OPTION_ARG_NONE, &app_data->stdin, "Run from STDIN/STDOUT", NULL },
     { NULL }
   };
@@ -694,7 +693,7 @@ int main(int argc, char *argv[]) {
 
   /* Tell our soup server to listen on any local interface. This includes
      IPv4 and IPv6 if available */
-  if (!rstrnt_listen_any_local (soup_server, port)) {
+  if (!rstrnt_listen_any_local (soup_server, app_data->port)) {
       g_error ("Unable to listen on any IPv4 or IPv6 local address, exiting...\n");
       exit (FAILED_LISTEN);
   }
@@ -702,6 +701,7 @@ int main(int argc, char *argv[]) {
   uris = soup_server_get_uris (soup_server);
   SoupURI *uri = uris->data;
   app_data->restraint_url = g_strdup_printf ("http://localhost:%d", uri->port);
+  app_data->port = uri->port;
   g_print ("Listening on %s\n", app_data->restraint_url);
   g_slist_free (uris);
 

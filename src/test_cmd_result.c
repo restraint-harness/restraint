@@ -223,30 +223,29 @@ test_rstrnt_3arg()
     restraint_free_appdata(app_data);
 }
 
-/* test restraint log cmd with long 'current&pid' args */
+/* test restraint log cmd with port args */
 #define CURRENT_SERVER_STRING "http://localhost:46344/recipes/1/tasks/1/results/"
  void
-test_rstrnt_current()
+test_rstrnt_port()
 {
     AppData *app_data = restraint_create_appdata();
     GError *error = NULL;
+    guint port = 46344;
 
     // Environment file to be used by --current option
-    update_env_script("RSTRNT_", "http://localhost:46344", "1", "1",
-                      &error);
+    update_env_file("RSTRNT_", "http://localhost:46344", "1", "1",
+                    port, &error);
     g_assert_no_error(error);
 
     char *test_name = "my_restraint_test";
     char *test_result = "ALL GOOD";
     char *score = "23";
     char *outputfile = "output.log";
-    char *mypid = g_strdup_printf("%d", getpid());
 
     char *argv[] = {
         CMD_RSTRNT,
-        "--current",
-        "--pid",
-        mypid,   // need to use our own pid since we created the file
+        "--port",
+        "46344",   // need to use our own pid since we created the file
         "-o",
         outputfile,
         test_name,
@@ -265,12 +264,12 @@ test_rstrnt_current()
     g_assert_cmpstr(app_data->test_result, ==, test_result);
     g_assert_cmpstr(app_data->outputfile, ==, outputfile);
 
-    unset_envvar_from_file(getpid(), &error);
+    unset_envvar_from_file(port, &error);
     if (error) {
         g_clear_error(&error);
     }
-    g_free(mypid);
     restraint_free_appdata(app_data);
+    remove_env_file(port);
 }
 
 /* 1 arg is not valid for restraint */
@@ -497,19 +496,20 @@ test_prefix_variables()
 
 /* test restraint result cmd env_file not exist */
 static void
-test_rstrnt_result_current_file_not_exist()
+test_rstrnt_result_env_file_not_exist()
 {
     AppData *app_data = restraint_create_appdata();
 
+    GError *error = NULL;
     char *test_name = "my_restraint_test";
     char *test_result = "ALL GOOD";
     char *score = "23";
     char *outputfile = "output.log";
+    guint port = 46344;
 
     char *argv[] = {
         CMD_RSTRNT,
-        "-c",
-        "-i",
+        "--port",
         "11111",
         "--outputfile",
         outputfile,
@@ -520,44 +520,17 @@ test_rstrnt_result_current_file_not_exist()
 
     int argc = sizeof(argv) / sizeof(char*);
 
-    gboolean rc = parse_arguments(app_data, argc, argv);
-    g_assert_false(rc);
-
-    restraint_free_appdata(app_data);
-
-}
-
-/* test restraint result cmd Error Case Failed to get restraintd pid */
-static void
-test_rstrnt_result_no_restraintd_running()
-{
-    char *test_name = "my_restraint_test";
-    char *test_result = "ALL GOOD";
-    char *score = "23";
-    char *outputfile = "output.log";
-    GError *error = NULL;
-    AppData *app_data = g_slice_new0 (AppData);
-    char *argv[] = {
-        CMD_RSTRNT,
-        "-c",
-        "--outputfile",
-        outputfile,
-        test_name,
-        test_result,
-        score,
-    };
-    int argc = sizeof(argv) / sizeof(char*);
-
     // Environment file to be used by --current option
-    update_env_script("RSTRNT_", "http://localhost:46344", "1", "1",
-                      &error);
+    update_env_file("RSTRNT_", "http://localhost:46344", "1", "1",
+                    port, &error);
     g_assert_no_error(error);
 
     gboolean rc = parse_arguments(app_data, argc, argv);
     g_assert_false(rc);
 
+    unset_envvar_from_file(port, &error);
     restraint_free_appdata(app_data);
-
+    remove_env_file(port);
 }
 
 int main(int argc, char *argv[])
@@ -570,17 +543,15 @@ int main(int argc, char *argv[])
     g_test_add_func("/cmd_upload/rhts_small_argcount", test_rhts_small_argcount);
     g_test_add_func("/cmd_upload/rstrnt_2arg", test_rstrnt_2arg);
     g_test_add_func("/cmd_upload/rstrnt_3arg", test_rstrnt_3arg);
-    g_test_add_func("/cmd_upload/rstrnt_current", test_rstrnt_current);
+    g_test_add_func("/cmd_upload/rstrnt_port", test_rstrnt_port);
     g_test_add_func("/cmd_upload/rstrnt_large_argcount", test_rstrnt_large_argcount);
     g_test_add_func("/cmd_upload/rstrnt_small_argcount", test_rstrnt_small_argcount);
     g_test_add_func("/cmd_upload/args_with_dashes_rstrnt", test_names_with_dashes_rstrnt);
     g_test_add_func("/cmd_upload/args_with_dashes_rhts", test_names_with_dashes_rhts);
     g_test_add_func("/cmd_upload/environment_vars", test_environment_variables);
     g_test_add_func("/cmd_upload/prefixed_environment_vars", test_prefix_variables);
-    g_test_add_func("/cmd_upload/rhts_test_rstrnt_result_current_file_not_exist",
-                    test_rstrnt_result_current_file_not_exist);
-    g_test_add_func("/cmd_upload/rhts_test_rstrnt_result_no_restraintd_running",
-                    test_rstrnt_result_no_restraintd_running);
+    g_test_add_func("/cmd_upload/rhts_test_rstrnt_result_env_file_not_exist",
+                    test_rstrnt_result_env_file_not_exist);
 
 
     return g_test_run();
