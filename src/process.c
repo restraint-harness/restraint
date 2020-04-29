@@ -1,4 +1,4 @@
-/*  
+/*
     This file is part of Restraint.
 
     Restraint is free software: you can redistribute it and/or modify
@@ -306,9 +306,10 @@ process_run (const gchar *command,
 
         /* Spawn the command */
         if (execvp (*process_data->command, (gchar **) process_data->command) == -1) {
-            g_error ("Failed to exec() %s, %s error:%s\n",
+            g_warning ("Failed to exec() %s, %s error:%s\n",
                        *process_data->command,
-                       process_data->path, g_strerror (errno));
+                       process_data->path,
+                       g_strerror (errno));
             exit (SPAWN_COMMAND_FAILED);
         }
     }

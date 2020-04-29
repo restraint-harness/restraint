@@ -219,7 +219,7 @@ io_callback (GIOChannel *io, GIOCondition condition, const gchar *logpath, gpoin
             return G_SOURCE_CONTINUE;
 
           case G_IO_STATUS_ERROR:
-             g_error("IO error: %s", tmp_error->message);
+             g_warning ("IO error: %s", tmp_error->message);
              g_clear_error (&tmp_error);
              return G_SOURCE_REMOVE;
 

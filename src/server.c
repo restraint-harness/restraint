@@ -666,9 +666,11 @@ int main(int argc, char *argv[]) {
   }
 
   if (error) {
-      g_error ("%s [%s, %d]\n", error->message,
-                  g_quark_to_string (error->domain), error->code);
-      g_clear_error(&error);
+      g_printerr ("%s [%s, %d]\n",
+                  error->message,
+                  g_quark_to_string (error->domain),
+                  error->code);
+      g_clear_error (&error);
       exit (FAILED_GET_CONFIG_FILE);
   }
 
@@ -694,7 +696,7 @@ int main(int argc, char *argv[]) {
   /* Tell our soup server to listen on any local interface. This includes
      IPv4 and IPv6 if available */
   if (!rstrnt_listen_any_local (soup_server, app_data->port)) {
-      g_error ("Unable to listen on any IPv4 or IPv6 local address, exiting...\n");
+      g_printerr ("Unable to listen on any IPv4 or IPv6 local address, exiting...\n");
       exit (FAILED_LISTEN);
   }
 
@@ -710,7 +712,7 @@ int main(int argc, char *argv[]) {
   g_unix_signal_add (SIGHUP, on_sighup_term, app_data);
   int r = prctl(PR_SET_PDEATHSIG, SIGHUP);
   if (r == -1) {
-     g_error ("Unable to set Parent Death Signal to SIGHUP: %s\n", g_strerror (errno));
+     g_printerr ("Unable to set Parent Death Signal to SIGHUP: %s\n", g_strerror (errno));
      exit (FAILED_SET_PDEATHSIG);
   }
 
@@ -743,4 +745,3 @@ int main(int argc, char *argv[]) {
 
   return 0;
 }
-
