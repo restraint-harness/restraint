@@ -46,7 +46,7 @@ parse_watchdog_arguments(WatchdogAppData *app_data, int argc, char *argv[], GErr
 
     GOptionEntry entries[] = {
         {"port", 0, G_OPTION_FLAG_NONE, G_OPTION_ARG_INT,
-            &app_data->s.port, "restraintd port", "PORT"},
+            &app_data->s.port, "restraintd port number (Service default: 8081)", "PORT"},
         {"server", 's', 0, G_OPTION_ARG_STRING, &app_data->s.server,
             "Server to connect to", "URL" },
         { NULL }
@@ -54,7 +54,7 @@ parse_watchdog_arguments(WatchdogAppData *app_data, int argc, char *argv[], GErr
 
     GOptionContext *context = g_option_context_new("<time>");
     g_option_context_set_summary(context,
-            "Adjust watchdog on lab controller. if you don't specify --current or \n"
+            "Adjust watchdog on lab controller. if you don't specify --port or \n"
             "the server url you must have RECIPE_URL defined.\n"
             "If HARNESS_PREFIX is defined then the value of that must be\n"
             "prefixed to RECIPE_URL");

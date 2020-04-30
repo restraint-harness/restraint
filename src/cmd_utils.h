@@ -14,8 +14,8 @@ void get_env_vars_from_file(ServerData *s_data, GError **error);
 void format_server_string(ServerData *s_data,
                        void (*format_server)(ServerData *s_data),
                        GError **error);
-void set_envvar_from_file(guint pid, GError **error);
-void unset_envvar_from_file(guint pid, GError **error);
+void set_envvar_from_file(guint port, GError **error);
+void unset_envvar_from_file(guint port, GError **error);
 gchar *get_taskid (void);
 gchar *get_recipe_url (void);
 
