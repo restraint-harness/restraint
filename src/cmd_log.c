@@ -40,7 +40,7 @@ parse_log_arguments(LogAppData *app_data, int argc, char *argv[], GError **error
 
     GOptionEntry entries[] = {
         {"port", 0, G_OPTION_FLAG_NONE, G_OPTION_ARG_INT,
-            &app_data->s.port, "restraintd port", "PORT"},
+            &app_data->s.port, "restraintd port number (Service default: 8081)", "PORT"},
         {"server", 's', 0, G_OPTION_ARG_STRING, &app_data->s.server,
             "Server to connect to", "URL" },
         { "filename", 'l', 0, G_OPTION_ARG_STRING, &app_data->filename,
@@ -54,7 +54,7 @@ parse_log_arguments(LogAppData *app_data, int argc, char *argv[], GError **error
 
     GOptionContext *context = g_option_context_new(NULL);
     g_option_context_set_summary(context,
-            "Report results to lab controller. if you don't specify --current or the\n"
+            "Report results to lab controller. if you don't specify --port or the\n"
             "the server url you must have RECIPE_URL and TASKID defined.\n"
             "If HARNESS_PREFIX is defined then the value of that must be\n"
             "prefixed to RECIPE_URL and TASKID");

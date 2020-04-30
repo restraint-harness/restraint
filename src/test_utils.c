@@ -135,12 +135,14 @@ check_env_file_present (guint port)
  * expected elements found.
  */
 static guint
-check_env_vars (guint port)
+check_env_vars (gchar *prefix, gchar *restraint_url,
+                gchar *recipe_id, gchar *task_id, guint port)
 {
     int i = 0;
     gchar *msgbuf = NULL;
     gchar *filename = get_envvar_filename(port);
     GError *error = NULL;
+    gchar *recipe_url = g_strdup_printf ("%s/recipes/%s", restraint_url, recipe_id);
 
     g_file_get_contents(filename, &msgbuf, NULL, &error);
     g_free(filename);
@@ -154,21 +156,22 @@ check_env_vars (guint port)
         if (strlen(myarr[i]) != 0) {
             gchar **my_vars = g_strsplit(myarr[i], "=", 2);
             if (g_strcmp0(my_vars[0], "HARNESS_PREFIX") == 0) {
-                g_assert(g_strcmp0(my_vars[1], "RSTRNT_") == 0);
+                g_assert(g_strcmp0(my_vars[1], prefix) == 0);
             } else if (g_strcmp0(my_vars[0], "RSTRNT_RECIPE_URL") == 0) {
                 g_assert(g_strcmp0(my_vars[1],
-                         "http://localhost:46344/recipes/123") == 0);
+                         recipe_url) == 0);
             } else if (g_strcmp0(my_vars[0], "RSTRNT_TASKID") == 0) {
-                g_assert(g_strcmp0(my_vars[1], "456") == 0);
+                g_assert(g_strcmp0(my_vars[1], task_id) == 0);
             } else {
                 // assert if something other than expected env vars
                 g_assert(g_strcmp0(my_vars[0], "RSTRNT_URL") == 0);
-                g_assert(g_strcmp0(my_vars[1], "http://localhost:46344") == 0);
+                g_assert(g_strcmp0(my_vars[1], restraint_url) == 0);
             }
             g_strfreev(my_vars);
         }
     }
     g_strfreev(myarr);
+    g_free(recipe_url);
 
     return (i);
 
@@ -183,14 +186,33 @@ test_environment_file (void)
 {
     GError *error = NULL;
     guint port = 46344;
+    gchar *prefix = "RSTRNT_";
+    gchar *restraint_url = "http://localhost:46344";
+    gchar *recipe_id= "123";
+    gchar *task_id= "456";
 
-    update_env_file("RSTRNT_", "http://localhost:46344", "123", "456",
+    update_env_file(prefix, restraint_url, recipe_id, task_id,
                     port, &error);
     g_assert_no_error(error);
     g_assert_true(check_env_file_present(port));
 
     // Validate file content
-    g_assert(check_env_vars(port) == 5);
+    g_assert(check_env_vars(prefix, restraint_url,
+                            recipe_id, task_id, port) == 5);
+
+    restraint_url = "http://127.0.0.1:46344";
+    recipe_id= "789";
+    task_id= "101";
+
+    // Update it again and verify data has been replaced.
+    update_env_file(prefix, restraint_url, recipe_id, task_id,
+                    port, &error);
+    g_assert_no_error(error);
+    g_assert_true(check_env_file_present(port));
+
+    // Validate file content
+    g_assert(check_env_vars(prefix, restraint_url,
+                            recipe_id, task_id, port) == 5);
 
     remove_env_file(port);
     g_assert_false(check_env_file_present(port));

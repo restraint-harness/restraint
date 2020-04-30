@@ -39,7 +39,7 @@ parse_abort_arguments(AbortAppData *app_data, int argc, char *argv[], GError **e
 
     GOptionEntry entries[] = {
         {"port", 0, G_OPTION_FLAG_NONE, G_OPTION_ARG_INT,
-            &app_data->s.port, "restraintd port", "PORT"},
+            &app_data->s.port, "restraintd port number (Service default: 8081)", "PORT"},
         {"server", 's', 0, G_OPTION_ARG_STRING, &app_data->s.server,
             "Server to connect to", "URL" },
         {"type", 't', G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_STRING, &app_data->type,
@@ -49,7 +49,7 @@ parse_abort_arguments(AbortAppData *app_data, int argc, char *argv[], GError **e
 
     GOptionContext *context = g_option_context_new(NULL);
     g_option_context_set_summary(context,
-            "Aborts currently running task. if you don't specify --current or \n"
+            "Aborts currently running task. if you don't specify --port or \n"
             "the server url you must have RECIPE_URL defined.\n"
             "If HARNESS_PREFIX is defined then the value of that must be\n"
             "prefixed to RECIPE_URL");

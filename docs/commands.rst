@@ -6,6 +6,8 @@ There are two main restraint processes.  The first is the restraint server named
 This process is the restraint client named `restraint` which starts `restraintd`, provides
 the job.xml information to the server, and collects logs and results from the server.
 
+.. _restraintd_intro:
+
 restraintd
 ----------
 
@@ -43,9 +45,13 @@ command to view restraint logs::
  ...
  Mar 12 11:45:43 virt-test restraintd[1135]: ** Completed Task : 183853
 
-
 When `restraintd` runs as a system service by SysV init or systemd, it
 listens on the port 8081.
+
+`restraintd` can also be paired with the restraint client at which case it does not run as
+a service. More details on `Standalone` can be found at :ref:`restraint_client`.
+In this case, any `restraintd` stdout/stderr output is directed to the `restraint`
+client output.
 
 The scripts and programs associated with the `restraintd` server can be
 run within the context of a job as well outside a job execution.
@@ -66,7 +72,7 @@ server port, recipe number, and task number for constructing the
 command URL. Lastly is a local option which relies on an
 environment file created by `restraintd`.
 
-** Environment Variables Option **
+**Environment Variables Option**
 
 Most often, many of restraint commands are executed in tasks included in your 'job.xml'.
 As a result, commands look for specific environment variables to be set by restraintd.
@@ -79,7 +85,7 @@ unique for each job::
     RSTRNT_TASKID=<task_id>
 
 .. note::
-   <port> is a numeric value representing the dynamic port used to communication with `restraintd`.
+   <port> is a numeric value representing the port used to communicate with `restraintd`.
    <recipe_id> and <task_id> are the numeric values assigned to your running jobs recipe and task.
 
 To utilize the environment variables option when executing a command outside your job, the command
@@ -110,33 +116,37 @@ The format of the <server-url> is one of the following depending on the command:
 A simpler option is to run the command locally on the host running `restraintd` by
 specifying the following argument::
 
-    --port <server-port-id>
+    --port <server-port-number>
 
-This option can be used on the same host running `restraint` service since the information is derived
-from the local file `/var/lib/restraint/rstrnt-commands-env-<$port>.sh` (where `$port` is the
-port id restraintd listens on).  As the server progresses through a job, it defines this file based
-on the current task. As a result, the user does not need to gather recipe number and task number in
-order to construct a URL for a command as this will be generated for you. The user will need to
-acquire the port number by running linux commands such as `ss -tnlp | grep restraintd` or look
-at the `restraintd` service journal and search for the following line where in this case 8081 is
-the port number::
+This option can be used on the same host running `restraintd` since the
+information is derived from the local file
+`/var/lib/restraint/rstrnt-commands-env-<$port>.sh` (where `$port` is the
+port number restraintd listens on).  As the server progresses through a job,
+it defines this file based on the current task. As a result, the user does not
+need to gather recipe number and task number and construct a URL for a
+command as this will be generated for you.  The port number must be
+provided by the user.  For `restraintd` service, the default port of 8081 can
+be used. When running with `restraint` client, the port number can be found
+in `restraint` client log output since `restraintd` output is redirected
+to the client.  Log locations for service and non-service `restraintd`
+can be found in the section :ref:`restraintd_intro`.  The following log entry
+is the one which contains the port number of interest::
 
-  Listening on http://localhost:8081
+  Listening on http://localhost:<port-number>
 
-This option has similar effect to doing the following prior to executing the command::
+This `--port` option has similar effect to doing the following prior to executing the command::
 
-    export $(cat /var/lib/restraint/rstrnt-commands-env-<$port>.sh)
-
+    export $(cat /var/lib/restraint/rstrnt-commands-env-$port.sh)
 
 In conclusion, one of three methods must be used to execute your command.
 The following are examples of each method using the command `rstrnt-abort` as an example::
 
     rstrnt-abort                                                               # Environment Variables method
     rstrnt-abort -s http://localhost:<port>/recipes/<rid>/tasks/<tid>/status/  # Legacy Method
-    rstrnt-abort --port 8081                                                   # Local Method
+    rstrnt-abort --port <port>                                                 # Local Method
 
 .. note::
-   1. Replace <port>, <rid>, <tid> with your restraint port id, Recipe id, taskid.
+   1. Replace <port>, <rid>, <tid> with your restraint port number, recipe id, task id.
    2. Given these fields change as the job progresses and if you are running the command
       outside the job, the window of opportunity to target the current running task is reduced
       when using the --port option.
@@ -148,13 +158,13 @@ task as well as subsequent tasks in the recipe will be marked as `aborted` and t
 
 Arguments for this command are as follows::
 
-    rstrnt-abort [ --port <server-port-id> ] \
+    rstrnt-abort [ --port <server-port-number> ] \
                    -s, --server <server-url>
                  ]
 
 Where:
 
-.. option:: --port <server-port-id>
+.. option:: --port <server-port-number>
    :noindex:
 
    Refer to :ref:`common-cmd-args` for details.
@@ -175,13 +185,13 @@ This command allows you to adjust both the external watchdog and the local watch
 
 The arguments for this command is as follows::
 
-    rstrnt-adjust-watchdog [ --port <server-port-id>] \
+    rstrnt-adjust-watchdog [ --port <server-port-number>] \
                              -s, --server <server-url>
                            ] <time>
 
 Where:
 
-.. option:: --port <server-port-id>
+.. option:: --port <server-port-number>
    :noindex:
 
    Refer to :ref:`common-cmd-args` for details.
@@ -330,13 +340,13 @@ previously sent file.
 
 The arguments for this command are as follows::
 
-    rstrnt-report-log [ --port <server-port-id> \
+    rstrnt-report-log [ --port <server-port-number> \
                         -s, --server <server-url> \
                       ] -l, --filename <logfilename>
 
 Where:
 
-.. option:: --port <server-port-id>
+.. option:: --port <server-port-number>
    :noindex:
 
    Refer to :ref:`common-cmd-args` for details.
@@ -374,7 +384,7 @@ Restraint Reporting Mode
 
 For restraint reporting mode (not --rhts), the format of arguments is as follows::
 
-    rstrnt-report-result [--port <server-port-id>] \
+    rstrnt-report-result [--port <server-port-number>] \
                           -s, --server <server-url> \
                           -o, --outputfile <outfilename> \
                           -p, --disable-plugin <plugin-name> --no-plugins] \
@@ -383,7 +393,7 @@ For restraint reporting mode (not --rhts), the format of arguments is as follows
 
 Where:
 
-.. option:: --port <server-port-id>
+.. option:: --port <server-port-number>
    :noindex:
 
    Refer to :ref:`common-cmd-args` for details.
@@ -541,10 +551,12 @@ this socket.
 This script also writes the states to the file named `/var/lib/restraint/rstrnt_events`.
 This file is used when the system reboots enabling the states to be restored.
 
+.. _restraint_client:
+
 restraint
 ---------
 
-Used for stand-alone execution.
+The `restraint` client is used for standalone execution.
 
 Use the `restraint` command to spawn a `restraintd` process to run a job on a
 remote test machine.  You can run jobs on the local machine but it is not
