@@ -1002,7 +1002,7 @@ task_handler (gpointer user_data)
       // If not running in rhts_compat mode it will prepend
       // the variables with ENV_PREFIX.
       g_string_printf(message, "** Updating env vars\n");
-      build_env(app_data->restraint_url, app_data->port, task);
+      build_env(app_data->restraint_url, app_data->stdin, task);
       task->state = TASK_WATCHDOG;
       break;
     case TASK_WATCHDOG:

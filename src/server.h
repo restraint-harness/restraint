@@ -35,7 +35,6 @@ typedef enum {
 
 typedef struct {
   RecipeSetupState state;
-  guint port;
   guint recipe_handler_id;
   guint task_handler_id;
   gchar *recipe_url;

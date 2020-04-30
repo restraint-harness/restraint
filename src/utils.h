@@ -22,13 +22,12 @@
 #define BASE10 10
 
 #define CMD_ENV_DIR "/var/lib/restraint"
-#define CMD_ENV_FILE_FORMAT "%s/rstrnt-commands-env-%u.sh"
+#define CMD_ENV_FILE_FORMAT "%s/rstrnt-commands-env-%d.sh"
 
-void update_env_file(gchar *prefix, gchar *restraint_url,
-                     gchar *recipe_id, gchar *task_id,
-                     guint port, GError **error);
-void remove_env_file(guint port);
-gchar *get_envvar_filename(guint port);
+void update_env_script(gchar *prefix, gchar *restraint_url,
+                       gchar *recipe_id, gchar *task_id,
+                       GError **error);
+gchar *get_envvar_filename(gint pid);
 guint64 parse_time_string (gchar *time_string, GError **error);
 gboolean file_exists (gchar *filename);
 gchar *get_package_version(gchar *pkg_name, GError **error);

@@ -45,8 +45,10 @@ parse_watchdog_arguments(WatchdogAppData *app_data, int argc, char *argv[], GErr
 
 
     GOptionEntry entries[] = {
-        {"port", 0, G_OPTION_FLAG_NONE, G_OPTION_ARG_INT,
-            &app_data->s.port, "restraintd port", "PORT"},
+        {"current", 'c', G_OPTION_FLAG_NONE, G_OPTION_FLAG_NONE,
+            &app_data->s.curr_set, "Use current recipe/task id", NULL},
+        {"pid", 'i', G_OPTION_FLAG_NONE, G_OPTION_ARG_INT,
+            &app_data->s.pid, "server pid", "PID"},
         {"server", 's', 0, G_OPTION_ARG_STRING, &app_data->s.server,
             "Server to connect to", "URL" },
         { NULL }

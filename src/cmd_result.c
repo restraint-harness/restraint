@@ -117,8 +117,10 @@ gboolean parse_arguments_rstrnt(AppData *app_data, int argc, char *argv[])
     guint positional_arg_count = 0;
 
     GOptionEntry entry[] = {
-        {"port", 0, G_OPTION_FLAG_NONE, G_OPTION_ARG_INT,
-            &app_data->s.port, "restraintd port", "PORT"},
+        {"current", 'c', G_OPTION_FLAG_NONE, G_OPTION_FLAG_NONE,
+            &app_data->s.curr_set, "Use current recipe/task id", NULL},
+        {"pid", 'i', G_OPTION_FLAG_NONE, G_OPTION_ARG_INT,
+            &app_data->s.pid, "server pid", "PID"},
         {"server", 's', 0, G_OPTION_ARG_CALLBACK, callback_server,
             "Server to connect to", "URL" },
         { "message", 't', 0, G_OPTION_ARG_STRING, &app_data->result_msg,

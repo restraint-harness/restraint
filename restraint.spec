@@ -119,6 +119,7 @@ Requires:       /bin/hostname
 %endif
 Requires:       coreutils
 Requires:       libselinux-utils
+Requires:       /usr/bin/pgrep
 
 # All RHTS-format task RPMs have an unversioned requirement on rhts-test-env.
 # Therefore restraint-rhts provides a very low version of rhts-test-env so that
