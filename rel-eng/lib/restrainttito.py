@@ -1,8 +1,9 @@
 import os
-import sys
 import shutil
-from tito.common import debug, run_command
+
 from tito.builder import Builder
+from tito.common import debug, run_command
+
 
 class RestraintBuilder(Builder):
 
