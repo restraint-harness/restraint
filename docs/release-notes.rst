@@ -1,6 +1,54 @@
 Release Notes
 =============
 
+Restraint 0.2.1
+---------------
+
+What's New 
+~~~~~~~~~~
+* | Add ability to select `restraintd` instance by port to `restraint` commands
+  | When running commands outside of jobs on the local host,
+    some `restraint` commands require manually setting up
+    environment variables or constructing long URLs before running.
+    This can be issue if you are trying to extend the watchdog in
+    a timely fashion.  A new option was added which requires the
+    argument `--port <restraint-port-number>`. Commands affected
+    are `rstrnt-report-log`, `rstrnt-report-result`, `rstrnt-abort`, and
+    `rstrnt-watchdog`.
+* | Restore ability to specify `restraintd` port
+  | Add the `-p, --port` option back to restraint daemon and client to specify the
+    port where `restraintd` will be listening to. :bug:`1821342`
+* | Document how to remove RHTS from Jobs
+  | Added new section :ref:`rm_rhts_guide` detailing
+    substitutes for `RHTS` scripts, environment variables,
+    and testinfo.desc file and associated variables. :bug:`1802610`
+
+Bug Fixes
+~~~~~~~~~
+* | Redirect task STDIN back to /dev/null
+  | In release 0.2.0, the task STDIN was redirected to a pipe shared with the server. This
+    breaks `ausearch` command when the input is not explicitly specified, as by default, if
+    STDIN is a pipe, it will read from it, instead of system logs. As the pipe is closed
+    when the task is running, tests expecting matches failed, and tests expecting no matches
+    were unreliable.  Restoring redirect of task STDIN back to /dev/null ensures that `ausearch`
+    reads from system logs by default.
+* | Restore default port for restraind system service
+  | In release 0.2.0 the port for `restraintd` system service is chosen dynamically,
+    breaking workflows where the port was expected to persist between reboots.
+    When `restraintd` runs as a system service, the port defaults to `8081`. :bug:`1823545`
+* | Restraintd killed by SIGTRAP
+  | It was discovered that an error logging function (g_error) introduced in 0.2.0 also
+    performed aborts.  The function was replaced with one which logs without undesirable
+    side effects. :bug:`1823840`, :bug:`1831824`
+* | `restraintd` fails to start if both, IPv4 and IPv6, are not available on the loopback interface
+  | In this release, restraintd will not fail if it's able to listen on at least one protocol,
+    IPv4 or IPv6, although it will still try to listen on both.
+* | Fix use of uninitialized FD for STDIN when PTY is requested
+  | When PTY was requested, the FD for the task STDIN was left uninitialized. The value,
+    set to 0, was still used in a close call, closing the parent STDIN FD and causing
+    unexpected behavior in task execution.  In this release, the FD for STDIN is not used
+    when PTY is requested.
+
 Restraint 0.2.0
 ---------------
 
