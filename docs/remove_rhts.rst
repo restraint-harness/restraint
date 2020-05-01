@@ -1,3 +1,5 @@
+.. _rm_rhts_guide:
+
 Guide to removing RHTS from Jobs
 ================================
 
