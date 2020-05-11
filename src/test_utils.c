@@ -121,6 +121,47 @@ test_get_package_version_not_installed (void)
     g_clear_error (&error);
 }
 
+/*
+ * Ensure that get_package_version error handling favors message in
+ * stdout over stderr.
+ */
+void
+test_get_package_version_stderr (void)
+{
+    GError       *error;
+    const gchar  *path_bkp;
+    gchar        *expected_message;
+    gchar        *version;
+
+    if (!has_rpm_program ())
+        return g_test_skip ("RPM program not available");
+
+    path_bkp = g_getenv ("PATH");
+    g_setenv ("PATH", "./test-dummies/cmd_utils/bin", TRUE);
+
+    g_setenv ("MOCK_RPM_STDOUT", "Message in STDOUT", TRUE);
+    g_setenv ("MOCK_RPM_STDERR", "Message in STDERR", TRUE);
+    g_setenv ("MOCK_RPM_EXIT", "1", TRUE);
+
+    expected_message = "Get version command: "
+        "rpm -q --qf '%{Version}' rpm-is-mocked, "
+        "returned error: Message in STDOUT\n";
+
+    error = NULL;
+
+    version = get_package_version ("rpm-is-mocked", &error);
+
+    g_setenv ("PATH", path_bkp, TRUE);
+    g_unsetenv ("MOCK_RPM_STDOUT");
+    g_unsetenv ("MOCK_RPM_STDERR");
+    g_unsetenv ("MOCK_RPM_EXIT");
+
+    g_assert_null (version);
+    g_assert_nonnull (error);
+    g_assert_cmpstr (error->message, ==, expected_message);
+    g_clear_error (&error);
+}
+
 static gboolean
 check_env_file_present (guint port)
 {
@@ -230,6 +271,8 @@ main (int   argc,
                      test_get_package_version_not_installed);
     g_test_add_func ("/utils/get_package_version/installed",
                      test_get_package_version_installed);
+    g_test_add_func ("/utils/get_package_version/stderr",
+                     test_get_package_version_stderr);
     g_test_add_func ("/utils/test_environment_file",
                      test_environment_file);
 
