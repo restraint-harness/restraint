@@ -1,17 +1,22 @@
 import os
 import re
 import shutil
+import sys
+from shlex import quote
 
 from tito.builder import Builder
 from tito.common import (
+    BUILDCONFIG_SECTION,
     debug,
     run_command,
     find_spec_like_file,
     get_spec_version_and_release,
+    info_out,
     increase_version,
     increase_zstream,
-    reset_release
+    reset_release,
 )
+from tito.exception import TitoException
 from tito.tagger import VersionTagger
 
 
@@ -88,5 +93,57 @@ class RestraintVersionTagger(VersionTagger):
         return new_version
 
     def _update_package_metadata(self, new_version):
+        """
+        We track package metadata in the .tito/packages/ directory. Each
+        file here stores the latest package version (for the git branch you
+        are on) as well as the relative path to the project's code. (from the
+        git root)
+        """
+        self._clear_package_metadata()
+
+        # Write out our package metadata:
+        metadata_file = os.path.join(self.rel_eng_dir, "packages", self.project_name)
+
+        with open(metadata_file, 'w') as f:
+            f.write("%s %s\n" % (new_version.split('-')[0], self.relative_project_dir))
+
+        # Git add it (in case it's a new file):
+        run_command("git add %s" % metadata_file)
+        run_command("git add %s" % os.path.join(self.full_project_dir,
+            self.spec_file_name))
         run_command("git add %s" % self.fedora_spec_file)
-        return super(RestraintVersionTagger, self)._update_package_metadata(new_version)
+
+        fmt = 'Automatic commit of package [%(name)s] %(release_type)s [%(version)s].'
+        if self.config.has_option(BUILDCONFIG_SECTION, "tag_commit_message_format"):
+            fmt = self.config.get(BUILDCONFIG_SECTION, "tag_commit_message_format")
+        new_version_w_suffix = self._get_suffixed_version(new_version)
+        try:
+            msg = fmt % {
+                'name': self.project_name,
+                'release_type': self.release_type(),
+                'version': new_version_w_suffix,
+            }
+        except KeyError:
+            exc = sys.exc_info()[1]
+            raise TitoException('Unknown placeholder %s in tag_commit_message_format'
+                                % exc)
+
+        run_command('git commit -m {0} -m {1} -m {2}'.format(
+            quote(msg), quote("Created by command:"), quote(" ".join(sys.argv[:]))))
+
+        new_tag = self._get_new_tag(new_version)
+        tag_msg = "Tagging package [{}] version [{}] in directory [{}].".format(
+            self.project_name, new_tag, self.relative_project_dir)
+
+        # Optionally gpg sign the tag
+        sign_tag = ""
+        if self.config.has_option(BUILDCONFIG_SECTION, "sign_tag"):
+            if self.config.getboolean(BUILDCONFIG_SECTION, "sign_tag"):
+                sign_tag = "-s "
+
+        run_command('git tag %s -m "%s" %s' % (sign_tag, tag_msg, new_tag))
+        print()
+        info_out("Created tag: %s" % new_tag)
+        print("   View: git show HEAD")
+        print("   Undo: tito tag -u")
+        print("   Push: git push --follow-tags origin")
