@@ -130,7 +130,6 @@ get_package_version (gchar   *pkg_name,
 {
     GError *gerror = NULL;
     gchar  *command = NULL;
-    gchar  *err_out = NULL;
     gchar  *std_err = NULL;
     gchar  *std_out = NULL;
     gint    exitstat;
@@ -144,10 +143,12 @@ get_package_version (gchar   *pkg_name,
                      "Failed to spawn command: %s due to %s",
                      command, gerror->message);
     } else if (exitstat != 0) {
-        if (std_err != NULL && strlen (std_err) > 0) {
-            err_out = std_err;
-        } else if (std_out != NULL && strlen (std_out) > 0) {
+        gchar  *err_out;
+
+        if (std_out != NULL && strlen (std_out) > 0) {
             err_out = std_out;
+        } else if (std_err != NULL && strlen (std_err) > 0) {
+            err_out = std_err;
         } else {
             err_out = "None";
         }
