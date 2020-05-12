@@ -21,9 +21,6 @@ jobs:
     targets:
       - centos-stream-aarch64
       - centos-stream-x86_64
-      - fedora-30-aarch64
-      - fedora-30-i386
-      - fedora-30-x86_64
       - fedora-31-aarch64
       - fedora-31-armhfp
       - fedora-31-i386
