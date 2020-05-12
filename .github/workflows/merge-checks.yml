@@ -10,7 +10,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        container: ["fedora:30", "fedora:31", "fedora:32"]
+        container: ["fedora:31", "fedora:32"]
     runs-on: ubuntu-latest
     container:
       image: ${{ matrix.container }}
@@ -37,7 +37,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        container: ["fedora:30", "fedora:31", "fedora:32"]
+        container: ["fedora:31", "fedora:32"]
     runs-on: ubuntu-latest
     container:
       image: ${{ matrix.container }}
