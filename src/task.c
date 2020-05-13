@@ -227,7 +227,7 @@ io_callback (GIOChannel *io, GIOCondition condition, const gchar *logpath, gpoin
              return G_SOURCE_REMOVE;
 
           case G_IO_STATUS_EOF:
-             g_message("finished!");
+             g_print ("finished!");
              return G_SOURCE_REMOVE;
 
           case G_IO_STATUS_AGAIN:
