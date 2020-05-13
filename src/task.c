@@ -214,7 +214,10 @@ io_callback (GIOChannel *io, GIOCondition condition, const gchar *logpath, gpoin
         switch (g_io_channel_read_chars(io, buf, 10000, &bytes_read, &tmp_error)) {
           case G_IO_STATUS_NORMAL:
             /* Push data to our connections.. */
-            g_debug ("%s", buf);
+
+            if (fwrite (buf, sizeof (gchar), bytes_read, stdout) != bytes_read)
+                g_warning ("failed to write message");
+
             connections_write(app_data, logpath, buf, bytes_read);
             return G_SOURCE_CONTINUE;
 
