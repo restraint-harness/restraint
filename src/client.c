@@ -1685,12 +1685,21 @@ parse_host (const gchar *connect_uri)
     GRegex *regex;
     GMatchInfo *match_info;
 
-    regex = g_regex_new("^(([\\w\\.\\-]+)@)?([\\w\\.\\-]+)(:(\\d+))?$", 0, 0, NULL);
+    /* [user@]hostname[:port][/ssh_port] */
+    regex = g_regex_new ("^(([\\w\\.\\-]+)@)?([\\w\\.\\-]+)((:\\d+)?(/\\d+)?)?$", 0, 0, NULL);
+
     if (g_regex_match(regex, connect_uri, 0, &match_info)) {
-        while (g_match_info_matches(match_info)) {
-            host = g_match_info_fetch(match_info, 3);
-            g_match_info_next(match_info, NULL);
-        }
+        host = g_match_info_fetch (match_info, 3);
+
+        /* [:port][/ssh_port] are deprecated since 0.2.0
+            If present, warn about these values. */
+        deprecated = g_match_info_fetch (match_info, 4);
+
+        if (deprecated != NULL && strlen (deprecated) > 0)
+            g_printerr ("The [:port][/ssh_port] host arguments are deprecated, "
+                        "see help for reference\n");
+
+        g_free (deprecated);
     } else {
         g_printerr("Malformed host: %s, see help for reference\n", connect_uri);
     }
