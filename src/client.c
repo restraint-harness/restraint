@@ -1678,34 +1678,47 @@ cleanup:
         g_free (std_err);
 }
 
-gchar *
+static gchar **
 parse_host (const gchar *connect_uri)
 {
-    gchar *host = NULL;
-    GRegex *regex;
-    GMatchInfo *match_info;
+    GMatchInfo  *match_info;
+    GRegex      *regex;
+    gchar      **ssh_destination;
+
+    g_return_val_if_fail (connect_uri != NULL, NULL);
 
     /* [user@]hostname[:port][/ssh_port] */
     regex = g_regex_new ("^(([\\w\\.\\-]+)@)?([\\w\\.\\-]+)((:\\d+)?(/\\d+)?)?$", 0, 0, NULL);
 
     if (g_regex_match(regex, connect_uri, 0, &match_info)) {
-        host = g_match_info_fetch (match_info, 3);
+        gchar *deprecated;
+
+        ssh_destination = g_malloc (sizeof (gchar *) * 3);
+        ssh_destination[0] = g_match_info_fetch (match_info, 1);
+        ssh_destination[1] = g_match_info_fetch (match_info, 3);
+        ssh_destination[2] = NULL;
+
+        /* g_match_info_fetch returns NULL if match_num is out of range.
+           This is indication of a wrong regular expression, missing groups. */
+        g_return_val_if_fail (ssh_destination[0] != NULL && ssh_destination[1] != NULL, NULL);
 
         /* [:port][/ssh_port] are deprecated since 0.2.0
             If present, warn about these values. */
         deprecated = g_match_info_fetch (match_info, 4);
 
         if (deprecated != NULL && strlen (deprecated) > 0)
-            g_printerr ("The [:port][/ssh_port] host arguments are deprecated, "
+            g_printerr ("The [:port][/ssh_port] host arguments are deprecated and ignored, "
                         "see help for reference\n");
 
         g_free (deprecated);
     } else {
         g_printerr("Malformed host: %s, see help for reference\n", connect_uri);
+        ssh_destination = NULL;
     }
     g_match_info_free(match_info);
     g_regex_unref(regex);
-    return host;
+
+    return ssh_destination;
 }
 
 static gboolean add_recipe_host(const gchar *value, AppData *app_data,
@@ -1714,22 +1727,38 @@ static gboolean add_recipe_host(const gchar *value, AppData *app_data,
     gchar *connect_uri = NULL;
     gchar *id = NULL;
     gboolean result = TRUE;
+    gchar **ssh_destination;
 
     args = g_strsplit(value, "=", 2);
     if (g_strv_length(args) != 2) {
         id = g_strdup_printf("%u", (*recipe_id)++);
-        connect_uri = g_strdup (args[0]);
+        connect_uri = args[0];
     } else {
-        id = g_strdup(args[0]);
-        connect_uri = g_strdup (args[1]);
+        id = args[0];
+        connect_uri = args[1];
     }
 
-    RecipeData *recipe_data = new_recipe_data(app_data, id);
-    recipe_data->connect_uri = connect_uri;
-    recipe_data->rhost = parse_host(recipe_data->connect_uri);
+    ssh_destination = parse_host (connect_uri);
+
+    if (ssh_destination != NULL) {
+        RecipeData *recipe_data;
+
+        recipe_data = new_recipe_data (app_data, id);
+        recipe_data->connect_uri = g_strjoinv (NULL, ssh_destination);
+        recipe_data->rhost = ssh_destination[1];
+
+        g_free (ssh_destination[0]);
+        g_free (ssh_destination);
+
+        result = TRUE;
+    } else {
+        result = FALSE;
+    }
 
     g_free (id);
-    g_strfreev (args);
+    g_free (connect_uri);
+    g_free (args);
+
     return result;
 }
 
