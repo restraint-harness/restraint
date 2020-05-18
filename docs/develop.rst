@@ -18,24 +18,24 @@ Getting Started
 ~~~~~~~~~~~~~~~
 
 Restraint is written in C. The source lives in a git repo on
-http://git.beaker-project.org along with other related projects. The
+http://github.com/beaker-project/ along with other related projects. The
 following creates a local clone of the Restraint source.
 
 .. code-block:: console
 
-    git clone git://git.beaker-project.org/restraint
+    git clone git@github.com:beaker-project/restraint.git
 
 .. end
 
 Restraint uses a number of external libraries/tools, so before you can
 build Restraint you need to install the external libraries using
-``yum-builddep restraint.spec``. Once you have installed these dependencies,
+``dnf builddep restraint.spec``. Once you have installed these dependencies,
 running a ``make all`` at the source directory root will compile and build
 restraint, restraintd, and commands. To also run a quick sanity check, it is
 a good idea to run the unit tests using ``make check``. The unit tests use a
 simple Python HTTP server and ``git-daemon``, so you will need to install
 this as well
-(``yum -y install git-daemon``).
+(``dnf install git-daemon``).
 
 Testing Changes
 ~~~~~~~~~~~~~~~
@@ -64,19 +64,5 @@ of the restraintd server.  More details on this can be found in :ref:`standalone
 Submitting a Patch
 ~~~~~~~~~~~~~~~~~~
 
-Patches must first be submitted for review to the Beaker project's
-``gerrit`` code review installation. It may be convenient to setup a
-git remote as follows::
-
-    [remote "restraint-gerrit"]
-    url=git+ssh://gerrit.beaker-project.org:29418/restraint
-
-Once you’re happy with the change and the test you have written for
-it, push your local branch (named `myfeature` in this example) to Gerrit for review:
-
-
-.. code-block:: console
-
-    git push restraint-gerrit myfeature:refs/for/master
-
-.. end
+All patches are submitted using GitHub Pull Requests feature.
+To do that you have to have the fork of the Restraint.
