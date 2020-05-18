@@ -66,3 +66,6 @@ Submitting a Patch
 
 All patches are submitted using GitHub Pull Requests feature.
 To do that you have to have the fork of the Restraint.
+
+Created patch should also have a note for release notes.
+The note has to be created by `Reno <https://docs.openstack.org/reno/latest/user/usage.html>`__.
