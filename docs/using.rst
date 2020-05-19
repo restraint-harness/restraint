@@ -5,7 +5,7 @@ Running in Beaker
 -----------------
 
 Beaker will use restraint by default if you are running Red Hat Enterprise Linux
-version 8 or later or if you are running Fedora version 29 or later.
+version 8 or later or if you are running Fedora.
 
 To use Restraint in Beaker for earlier versions of Red Hat Enterprise Linux or
 Fedora, you will need to specify 'restraint' as the harness::
@@ -13,7 +13,7 @@ Fedora, you will need to specify 'restraint' as the harness::
  <recipe ks_meta="harness=restraint">
  <repos>
   <repo name="restraint"
-        url="https://beaker-project.org/yum/harness/Fedora29/"/>
+        url="https://beaker-project.org/yum/harness/CentOS7/"/>
  </repos>
   .
   .
@@ -34,11 +34,11 @@ both for you::
 
 If you are using Beaker command line workflows use these command line options::
 
- bkr <WORKFLOW> --ks-meta="harness=restraint" --repo https://beaker-project.org/yum/harness/Fedora29/
+ bkr <WORKFLOW> --ks-meta="harness=restraint" --repo https://beaker-project.org/yum/harness/CentOS7/
 
 If you need RHTS compatibility and/or beakerlib you can add it here as well::
 
- bkr <WORKFLOW> --ks-meta="harness='restraint-rhts beakerlib'" --repo https://beaker-project.org/yum/harness/Fedora29/
+ bkr <WORKFLOW> --ks-meta="harness='restraint-rhts beakerlib'" --repo https://beaker-project.org/yum/harness/CentOS7/
 
 .. _standalone:
 
@@ -158,7 +158,7 @@ First step is to run the following workflow to reserve a system in Beaker::
         <distro_family op="=" value="Fedorarawhide"/>
         <distro_variant op="=" value="Everything"/>
         <distro_name op="=" value="Fedora-Rawhide-20200406.n.0"/>
-        <distro_arch op="=" value="x86_64"/>
+        <distro_arch op="=" value="ppc64le"/>
      </and>
     </distroRequires>
     <hostRequires/>

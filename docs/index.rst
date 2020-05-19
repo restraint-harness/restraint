@@ -53,7 +53,6 @@ Contents:
    release-notes
    develop
    remove_rhts
-   todo
 
 Additional Information
 ======================
