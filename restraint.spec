@@ -10,7 +10,7 @@
 %endif
 
 Name:		restraint
-Version:	0.2.0
+Version:	0.2.1
 Release:	1%{?dist}
 Summary:	Simple test harness which can be used with beaker
 
@@ -373,6 +373,62 @@ fi
 %{__rm} -rf %{buildroot}
 
 %changelog
+* Tue May 19 2020 Martin Styk <mastyk@redhat.com> 0.2.1-1
+- Release notes for Restraint 0.2.1 Issue #58 (cbouchar@redhat.com)
+- docs: cleanup docs from all obsolete info (mastyk@redhat.com)
+- docs: Mention Reno in Developer Guide (mastyk@redhat.com)
+- feat: Introduce Reno for creating release notes (mastyk@redhat.com)
+- fix: Ignore deprecated client host arguments (danrodri@redhat.com)
+- deprecate: [:port][/ssh_port] client host arguments (danrodri@redhat.com)
+- docs: update developer guide with latest info (mastyk@redhat.com)
+- Revert logging in task io_callback (danrodri@redhat.com)
+- Fix incorrect use of buffer (danrodri@redhat.com)
+- refactor: get_recipe_url and get_taskid (danrodri@redhat.com)
+- test: Move GLib envars out of valgrind function (danrodri@redhat.com)
+- fix: remove default builder option from tito conf (mastyk@redhat.com)
+- fix: correct tito behavior for tag rollback (mastyk@redhat.com)
+- feat: allow bumping all specfiles during release (mastyk@redhat.com)
+- fix: correct imports in tito module (mastyk@redhat.com)
+- ci: remove Fedora 30 from Packit service (mastyk@redhat.com)
+- build: drop support for Fedora 30 (mastyk@redhat.com)
+- fix: Favor stdout over stderr in get_package_version (danrodri@redhat.com)
+- test: get_package_version error message source (danrodri@redhat.com)
+- Fix: Address comments on commands, pull 52 (cbouchar@redhat.com)
+- test: Add fedora:32 to GitHub workflows (danrodri@redhat.com)
+- fix: Replace calls to g_error (danrodri@redhat.com)
+- feat: Only use fd_in when there is content to pass (danrodri@redhat.com)
+- feat: Make fd_in in restraint_fork optional (danrodri@redhat.com)
+- refactor: restraint_fork (danrodri@redhat.com)
+- Fix use of uninitialized fd (danrodri@redhat.com)
+- test: process reads from stdin (danrodri@redhat.com)
+- Fix: Revisit restraint commands (cbouchar@redhat.com)
+- Doc: Detail how to remove rhts from jobs (cbouchar@redhat.com)
+- Replace call to g_error when report signal (cbouchar@redhat.com)
+- Setup server to listen on any local address (danrodri@redhat.com)
+- Revert logging in server_io_callback (danrodri@redhat.com)
+- docs: Add reference for "-p, --port" option (danrodri@redhat.com)
+- Use a fixed port for restraind service (danrodri@redhat.com)
+- Allow to specify restraind port (danrodri@redhat.com)
+- tests: Cover get_taskid and get_recipe_url (danrodri@redhat.com)
+- tests: Move spawned_mock out of bin (danrodri@redhat.com)
+- Use pgrep instead of pidof in get_restraintd_pid (danrodri@redhat.com)
+- Revisit Release notes for sshlib removal (cbouchar@redhat.com)
+- tests: Add cmd_utils unit tests (danrodri@redhat.com)
+- refactor: Use G_DEFINE_QUARK for errors (danrodri@redhat.com)
+- Fix error handling on rstrnt-adjust-watchdog (danrodri@redhat.com)
+- tests: Cover no rpm program in get_package_version (danrodri@redhat.com)
+- tests: Add procps-ng dep for containers (danrodri@redhat.com)
+- tests: Add cleanup for cmd tests (danrodri@redhat.com)
+- tests: Run checks in containers (danrodri@redhat.com)
+- tests: Add git tests to skip without git daemon (danrodri@redhat.com)
+- docs: use check-install instead of install in jobs (mastyk@redhat.com)
+- docs: update reference to Fedora distribution (mastyk@redhat.com)
+- Add pidof as dependency for upstream (danrodri@redhat.com)
+- ci: disable packit notification in pull request (mastyk@redhat.com)
+- docs: update reservesys task location (jracek@redhat.com)
+- build: fix nullstrings issue during GCC10 build (mastyk@redhat.com)
+- Fix: Improve restraint command doc & code (cbouchar@redhat.com)
+
 * Fri Apr 03 2020 Martin Styk <mastyk@redhat.com> 0.2.0-1
 - Upstream release 0.2.0:
   https://restraint.readthedocs.io/en/latest/release-notes.html#restraint-0-2-0
