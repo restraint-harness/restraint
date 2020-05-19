@@ -48,7 +48,7 @@ Building from Source
 --------------------
 
 Source code is located at
-https://git.beaker-project.org/cgit/restraint/. Restraint can be built
+https://github.com/beaker-project/restraint/. Restraint can be built
 and linked dynamically or statically. To build it dynamically you will
 need the development libraries for the following packages installed (minimum
 versions are listed):
@@ -78,7 +78,7 @@ installed::
 Once you have all the development libraries installed, you can clone Restraint
 from git::
 
- % git clone git://git.beaker-project.org/restraint
+ % git clone git@github.com:beaker-project/restraint.git
  % cd restraint
 
 Build Restraint::

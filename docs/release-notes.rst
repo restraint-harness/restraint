@@ -4,8 +4,8 @@ Release Notes
 Restraint 0.2.0
 ---------------
 
-Upgrades:
-~~~~~~~~~
+Upgrades
+~~~~~~~~
 * | :bug:`1667510`: Remove libssh from restraint client.
   | The port used by restraint server is no longer static.
     If using the restraint client, refer to restraint documentation
@@ -23,8 +23,8 @@ Upgrades:
 * | :bug:`1802261`: Upgrade libxml2 to version 2.9.10
   | (Contributed by Daniel Rodriguez Gonzalez)
 
-Bug Fixes:
-~~~~~~~~~~
+Bug Fixes
+~~~~~~~~~
 * | :bug:`1795915`: Remove execute permission from systemd service file.
     There is a warning message in the systemd logs about the file being
     executable.
