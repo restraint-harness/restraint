@@ -1377,6 +1377,15 @@ static gchar *copy_job_as_template(gchar *job, gboolean novalid,
                                            recipe_set_node_ptr, wboard,
                                            role, owner, family);
 
+            // Copy recipe params
+            xmlXPathObjectPtr params_node = get_node_set(template_xml_doc_ptr,
+                    node, (xmlChar*)"params");
+            if (params_node) {
+                xmlNodePtr copy_params_node_ptr = xmlDocCopyNode(params_node->nodesetval->nodeTab[0],
+                                                  new_xml_doc_ptr, 1);
+                xmlAddChild (new_recipe_ptr, copy_params_node_ptr);
+            }
+
             // find task nodes
             xmlXPathObjectPtr task_nodes = get_node_set(template_xml_doc_ptr,
                     node, (xmlChar*)"task");
