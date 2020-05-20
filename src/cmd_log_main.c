@@ -15,13 +15,13 @@
     along with Restraint.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <stdlib.h>
 #include <glib.h>
 #include "cmd_log.h"
 
 int main(int argc, char *argv[]) {
 
     GError *error = NULL;
-    int retcode = EXIT_SUCCESS;
 
     LogAppData *app_data = g_slice_new0 (LogAppData);
 
@@ -39,11 +39,12 @@ cleanup:
     g_slice_free(LogAppData, app_data);
 
     if (error) {
-        retcode = error->code;
         g_printerr("%s [%s, %d]\n", error->message,
                 g_quark_to_string(error->domain), error->code);
         g_clear_error(&error);
-    }
-    return retcode;
-}
 
+        return EXIT_FAILURE;
+    }
+
+    return EXIT_SUCCESS;
+}

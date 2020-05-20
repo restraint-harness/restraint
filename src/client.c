@@ -1900,21 +1900,21 @@ int main(int argc, char *argv[]) {
     // convert job.xml to index.html
     pretty_results(app_data->run_dir);
 
-
 cleanup:
-    g_strfreev(hostarr);
-    if (job != NULL) {
-        g_free(job);
+
+    g_strfreev (hostarr);
+    g_free (job);
+
+    gboolean success = app_data->error == NULL;
+
+    if (!success) {
+        g_printerr ("%s [%s, %d]\n",
+                    app_data->error->message,
+                    g_quark_to_string (app_data->error->domain),
+                    app_data->error->code);
     }
-    if (app_data->error) {
-        int retcode = app_data->error->code;
-        g_printerr("%s [%s, %d]\n", app_data->error->message,
-                g_quark_to_string(app_data->error->domain),
-                app_data->error->code);
-        restraint_free_app_data(app_data);
-        return retcode;
-    } else {
-        restraint_free_app_data(app_data);
-        return EXIT_SUCCESS;
-    }
+
+    restraint_free_app_data (app_data);
+
+    return success ? EXIT_SUCCESS : EXIT_FAILURE;
 }
