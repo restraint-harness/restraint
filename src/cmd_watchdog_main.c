@@ -15,6 +15,7 @@
     along with Restraint.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <stdlib.h>
 #include <glib.h>
 #include "cmd_watchdog.h"
 #include "errors.h"
@@ -22,7 +23,6 @@
 int main(int argc, char *argv[]) {
 
     GError *error = NULL;
-    gint ret = EXIT_SUCCESS;
     WatchdogAppData *app_data = g_slice_new0 (WatchdogAppData);
 
     if (!parse_watchdog_arguments(app_data, argc, argv, &error)) {
@@ -39,11 +39,12 @@ cleanup:
     g_slice_free(WatchdogAppData, app_data);
 
     if (error) {
-        ret = error->code;
         g_printerr("%s [%s, %d]\n", error->message,
                 g_quark_to_string(error->domain), error->code);
         g_clear_error(&error);
-    }
-    return ret;
-}
 
+        return EXIT_FAILURE;
+    }
+
+    return EXIT_SUCCESS;
+}

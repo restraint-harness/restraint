@@ -15,11 +15,11 @@
     along with Restraint.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <stdlib.h>
 #include <glib.h>
 #include "cmd_abort.h"
 
 int main(int argc, char *argv[]) {
-    gint ret = EXIT_SUCCESS;
     GError *error = NULL;
 
     AbortAppData *app_data = g_slice_new0 (AbortAppData);
@@ -38,12 +38,12 @@ cleanup:
     g_slice_free(AbortAppData, app_data);
 
     if (error) {
-        ret = error->code;
         g_printerr("%s [%s, %d]\n", error->message,
                 g_quark_to_string(error->domain), error->code);
         g_clear_error(&error);
+
+        return EXIT_FAILURE;
     }
 
-    return ret;
-
+    return EXIT_SUCCESS;
 }
