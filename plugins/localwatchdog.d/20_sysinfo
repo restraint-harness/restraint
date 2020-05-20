@@ -25,11 +25,11 @@ function WatchFile ()
         fi
         diff=$(diff -q $FILE $TMPFILE)
         rc=$?
-        if [ $rc != 0 ]; then
+        if [ $rc == 1 ]; then
             cat $FILE > $TMPFILE
         else
             rm $TMPFILE
-            return 0
+            return $rc
         fi
         sleep 2
     done
@@ -43,8 +43,12 @@ function SysRq ()
     echo $ACTION > /proc/sysrq-trigger
     # Wait until logfile has changed.
     WatchFile $LOGFILE
+    if [[ $? -ne 0 ]]; then
+        logger -p local2.warning -t "List of $ACTION Tasks" Check on $LOGFILE failed
+    fi
 
     logger -p local2.info -t "List of $ACTION Tasks" Stop
+
 }
 
 # Verbose tree view of running processes:
