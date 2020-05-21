@@ -1,0 +1,3 @@
+fixes:
+  - |
+    restraint client now honors recipe params as well as task params.
