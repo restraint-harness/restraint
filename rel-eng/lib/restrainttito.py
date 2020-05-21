@@ -34,6 +34,9 @@ class RestraintBuilder(Builder):
             self.sources.append(os.path.join(self.rpmbuild_sourcedir, tarball))
         return super(RestraintBuilder, self).tgz()
 
+    def _copy_extra_sources(self):
+        pass
+
 
 class RestraintVersionTagger(VersionTagger):
 
