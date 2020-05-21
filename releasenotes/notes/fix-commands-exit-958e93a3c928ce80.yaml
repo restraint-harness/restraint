@@ -1,0 +1,5 @@
+fixes:
+  - |
+    Correct commands exit status when argument parsing fails due to
+    bad syntax. Commands always return non-zero in case of failure.
+    
