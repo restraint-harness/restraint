@@ -1833,17 +1833,21 @@ int main(int argc, char *argv[]) {
         app_data->max_retries = CONN_RETRIES;
     }
 
-    guint recipe_id = 1;
+    /* -t, --host option parsing */
     if (hostarr != NULL) {
-        for (int i = 0; i < g_strv_length(hostarr); i++) {
-            if (!add_recipe_host(hostarr[i], app_data, recipe_id++)) {
-                if (app_data->error == NULL) {
-                    g_set_error(&app_data->error, RESTRAINT_ERROR,
-                                RESTRAINT_CMDLINE_ERROR,
-                                "Failed to add recipe host.");
-                }
-                goto cleanup;
-            }
+        guint recipe_id = 1;
+
+        for (gchar **host = hostarr; *host != NULL; host++) {
+            if (add_recipe_host (*host, app_data, recipe_id++))
+                continue;
+
+            if (app_data->error == NULL)
+                g_set_error (&app_data->error,
+                             RESTRAINT_ERROR,
+                             RESTRAINT_CMDLINE_ERROR,
+                             "Failed to add recipe host.");
+
+            goto cleanup;
         }
     }
 
