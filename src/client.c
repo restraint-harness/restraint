@@ -1796,6 +1796,7 @@ int main(int argc, char *argv[]) {
     app_data->rsh_cmd = "ssh";
     app_data->restraint_path = "restraintd";
     app_data->restraint_port = 0;
+    app_data->max_retries = CONN_RETRIES;
 
     init_result_hash (app_data);
     app_data->recipes = g_hash_table_new_full(g_str_hash, g_str_equal,
@@ -1838,10 +1839,6 @@ int main(int argc, char *argv[]) {
     gboolean parse_succeeded = g_option_context_parse(context, &argc, &argv,
             &app_data->error);
     g_option_context_free(context);
-
-    if (app_data->max_retries == 0) {
-        app_data->max_retries = CONN_RETRIES;
-    }
 
     /* -t, --host option parsing */
     if (hostarr != NULL) {
