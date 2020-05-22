@@ -1722,7 +1722,7 @@ parse_host (const gchar *connect_uri)
 }
 
 static gboolean add_recipe_host(const gchar *value, AppData *app_data,
-                                guint *recipe_id) {
+                                guint recipe_id) {
     gchar **args;
     gchar *connect_uri = NULL;
     gchar *id = NULL;
@@ -1731,7 +1731,7 @@ static gboolean add_recipe_host(const gchar *value, AppData *app_data,
 
     args = g_strsplit(value, "=", 2);
     if (g_strv_length(args) != 2) {
-        id = g_strdup_printf("%u", (*recipe_id)++);
+        id = g_strdup_printf("%u", recipe_id);
         connect_uri = args[0];
     } else {
         id = args[0];
@@ -1831,7 +1831,7 @@ int main(int argc, char *argv[]) {
     guint recipe_id = 1;
     if (hostarr != NULL) {
         for (int i = 0; i < g_strv_length(hostarr); i++) {
-            if (!add_recipe_host(hostarr[i], app_data, &recipe_id)) {
+            if (!add_recipe_host(hostarr[i], app_data, recipe_id++)) {
                 if (app_data->error == NULL) {
                     g_set_error(&app_data->error, RESTRAINT_ERROR,
                                 RESTRAINT_CMDLINE_ERROR,
