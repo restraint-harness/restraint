@@ -1721,17 +1721,24 @@ parse_host (const gchar *connect_uri)
     return ssh_destination;
 }
 
-static gboolean add_recipe_host(const gchar *value, AppData *app_data,
-                                guint recipe_id) {
-    gchar **args;
-    gchar *connect_uri = NULL;
-    gchar *id = NULL;
-    gboolean result = TRUE;
-    gchar **ssh_destination;
+static gboolean
+add_recipe_host (const gchar *value,
+                 AppData     *app_data,
+                 guint        recipe_id)
+{
+    gboolean   parse_result;
+    gchar     *connect_uri;
+    gchar     *id;
+    gchar    **args;
+    gchar    **ssh_destination;
 
-    args = g_strsplit(value, "=", 2);
-    if (g_strv_length(args) != 2) {
-        id = g_strdup_printf("%u", recipe_id);
+    g_return_val_if_fail (value != NULL && strlen (value) > 0, FALSE);
+    g_return_val_if_fail (app_data != NULL, FALSE);
+
+    args = g_strsplit (value, "=", 2);
+
+    if (g_strv_length (args) == 1) {
+        id = g_strdup_printf ("%u", recipe_id);
         connect_uri = args[0];
     } else {
         id = args[0];
@@ -1739,8 +1746,9 @@ static gboolean add_recipe_host(const gchar *value, AppData *app_data,
     }
 
     ssh_destination = parse_host (connect_uri);
+    parse_result = ssh_destination != NULL;
 
-    if (ssh_destination != NULL) {
+    if (parse_result) {
         RecipeData *recipe_data;
 
         recipe_data = new_recipe_data (app_data, id);
@@ -1749,17 +1757,13 @@ static gboolean add_recipe_host(const gchar *value, AppData *app_data,
 
         g_free (ssh_destination[0]);
         g_free (ssh_destination);
-
-        result = TRUE;
-    } else {
-        result = FALSE;
     }
 
     g_free (id);
     g_free (connect_uri);
     g_free (args);
 
-    return result;
+    return parse_result;
 }
 
 static void recipe_init(gchar *id, RecipeData *recipe_data,
