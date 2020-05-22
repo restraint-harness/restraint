@@ -1690,7 +1690,7 @@ parse_host (const gchar *connect_uri)
     /* [user@]hostname[:port][/ssh_port] */
     regex = g_regex_new ("^(([\\w\\.\\-]+)@)?([\\w\\.\\-]+)((:\\d+)?(/\\d+)?)?$", 0, 0, NULL);
 
-    if (g_regex_match(regex, connect_uri, 0, &match_info)) {
+    if (g_regex_match (regex, connect_uri, 0, &match_info)) {
         gchar *deprecated;
 
         ssh_destination = g_malloc (sizeof (gchar *) * 3);
@@ -1712,11 +1712,12 @@ parse_host (const gchar *connect_uri)
 
         g_free (deprecated);
     } else {
-        g_printerr("Malformed host: %s, see help for reference\n", connect_uri);
+        g_printerr ("Malformed host: %s, see help for reference\n", connect_uri);
         ssh_destination = NULL;
     }
-    g_match_info_free(match_info);
-    g_regex_unref(regex);
+
+    g_match_info_free (match_info);
+    g_regex_unref (regex);
 
     return ssh_destination;
 }
