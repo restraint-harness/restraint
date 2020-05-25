@@ -339,8 +339,16 @@ server_recipe_callback (SoupServer *server, SoupMessage *client_msg,
         // Extract the number of watchdog seconds
         data_table = soup_form_decode(client_msg->request_body->data);
         seconds_string = g_hash_table_lookup(data_table, "seconds");
-        max_time = g_ascii_strtoull(seconds_string, NULL, BASE10);
-        seconds_string = NULL;
+
+        if (seconds_string != NULL) {
+            max_time = g_ascii_strtoull (seconds_string, NULL, BASE10);
+            seconds_string = NULL;
+        } else {
+            /* TODO: Most likely this case should be a bad request or
+             some value other than 0. EWD_TIME? */
+            max_time = 0;
+        }
+
         g_hash_table_destroy (data_table);
 
         // Update the number of watchdog seconds for External watchdog
