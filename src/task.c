@@ -758,6 +758,7 @@ void restraint_task_free(Task *task) {
     g_free(task->task_id);
     soup_uri_free(task->task_uri);
     g_free(task->name);
+    g_free(task->version);
     g_free(task->path);
     g_hash_table_destroy(task->offsets);
     switch (task->fetch_method) {
