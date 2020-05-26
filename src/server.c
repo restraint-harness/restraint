@@ -86,6 +86,8 @@ swap_base (const gchar *orig, const gchar *new_base, gchar *split_string)
 
 static void restraint_free_app_data(AppData *app_data)
 {
+  g_return_if_fail (app_data != NULL);
+
   g_free(app_data->recipe_url);
   g_free(app_data->config_file);
   g_free(app_data->restraint_url);
@@ -95,6 +97,7 @@ static void restraint_free_app_data(AppData *app_data)
     app_data->recipe = NULL;
   }
 
+  g_clear_object (&app_data->cancellable);
   g_clear_error(&app_data->error);
   g_slice_free(AppData, app_data);
 }
