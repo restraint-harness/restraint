@@ -584,21 +584,23 @@ null_log_writer (GLogLevelFlags   log_level,
  * If port is 0, the server will find an unused port to listen on. The
  * port will be the same for both addresses.
  *
- * Returns TRUE if the server is bound to at least one address. FALSE
- * otherwise.
+ * Returns the port used if the server is bound to at least one address.
+ * 0 otherwise.
  */
-static gboolean
+static guint
 rstrnt_listen_any_local (SoupServer *server, guint port)
 {
     GError   *error;
     GSList   *uris;
     gboolean  is_listening;
 
+    g_return_val_if_fail (server != NULL, 0);
+
     /* Ensure that server is not listening on any interface */
     uris = soup_server_get_uris (server);
     is_listening = g_slist_length (uris) > 0;
     g_slist_free (uris);
-    g_return_val_if_fail (!is_listening, FALSE);
+    g_return_val_if_fail (!is_listening, 0);
 
     error = NULL;
 
@@ -624,7 +626,7 @@ rstrnt_listen_any_local (SoupServer *server, guint port)
         g_clear_error (&error);
     }
 
-    return is_listening;
+    return is_listening ? port : 0;
 }
 
 int main(int argc, char *argv[]) {
@@ -635,7 +637,6 @@ int main(int argc, char *argv[]) {
   const gchar *config = "config.conf";
   SoupServer *soup_server = NULL;
   GError *error = NULL;
-  GSList *uris;
 
   app_data->port = 0;
 
@@ -695,17 +696,15 @@ int main(int argc, char *argv[]) {
 
   /* Tell our soup server to listen on any local interface. This includes
      IPv4 and IPv6 if available */
-  if (!rstrnt_listen_any_local (soup_server, app_data->port)) {
+  app_data->port = rstrnt_listen_any_local (soup_server, app_data->port);
+
+  if (app_data->port == 0) {
       g_printerr ("Unable to listen on any IPv4 or IPv6 local address, exiting...\n");
       exit (FAILED_LISTEN);
   }
 
-  uris = soup_server_get_uris (soup_server);
-  SoupURI *uri = uris->data;
-  app_data->restraint_url = g_strdup_printf ("http://localhost:%d", uri->port);
-  app_data->port = uri->port;
+  app_data->restraint_url = g_strdup_printf ("http://localhost:%d", app_data->port);
   g_print ("Listening on %s\n", app_data->restraint_url);
-  g_slist_free (uris);
 
   g_unix_signal_add (SIGINT, on_sigint_term, app_data);
   g_unix_signal_add (SIGTERM, on_sigterm_term, app_data);
