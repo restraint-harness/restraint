@@ -616,7 +616,7 @@ rstrnt_listen_any_local (SoupServer *server, guint port)
         uris = soup_server_get_uris (server);
         port = ((SoupURI *) uris->data)->port;
 
-        g_slist_free (uris);
+        g_slist_free_full (uris, (GDestroyNotify) soup_uri_free);
     }
 
     is_listening |= soup_server_listen_local (server, port, SOUP_SERVER_LISTEN_IPV6_ONLY, &error);
