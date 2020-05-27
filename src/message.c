@@ -179,7 +179,6 @@ restraint_stdout_message (SoupSession *session,
                           gpointer user_data)
 {
     ClientData *client_data = (ClientData *) msg_data;
-    GHashTable *table;
     time_t result;
     result = time(NULL);
     static time_t transaction_id = 0;
@@ -201,7 +200,6 @@ restraint_stdout_message (SoupSession *session,
 
         jobj = json_object_new_object();
         jobj_headers = json_object_new_object();
-        jobj_body = json_object_new_object();
         json_object_object_add(jobj, "headers", jobj_headers);
 
         SoupURI *uri = soup_message_get_uri (msg);
@@ -234,15 +232,19 @@ restraint_stdout_message (SoupSession *session,
         if (g_strrstr (path, "/logs/")) {
             // base64 encode the body for logs
             gchar *encoded = g_base64_encode ((unsigned char*) request->data, request->length);
-            json_object_object_add (jobj, "body", json_object_new_string(encoded));
+            jobj_body = json_object_new_string (encoded);
             g_free (encoded);
         } else {
+            GHashTable *table;
+
             table = soup_form_decode (request->data);
+            jobj_body = json_object_new_object ();
             // translate form_data into json body->keys->values
             g_hash_table_foreach (table, ghash_append_json_header, jobj_body);
-            json_object_object_add (jobj, "body", jobj_body);
             g_hash_table_destroy (table);
         }
+
+        json_object_object_add (jobj, "body", jobj_body);
 
         // Print json_root to STDOUT
         const gchar *json_text = json_object_to_json_string_ext(jobj, JSON_C_TO_STRING_PLAIN);
