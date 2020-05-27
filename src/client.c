@@ -782,8 +782,11 @@ handle_message (const char *message,
                   headers,
                   json_body,
                   user_data);
-    } else
+    } else {
         g_message ("no registered callback matches %s", rstrnt_path);
+    }
+
+    json_object_put (jobj);
     g_hash_table_destroy(headers);
 }
 
