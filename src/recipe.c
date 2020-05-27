@@ -431,13 +431,18 @@ recipe_parse (xmlDoc *doc, SoupURI *recipe_uri, GError **error, gchar **cfg_file
     result->osmajor = get_attribute(recipe, "family");
     result->osvariant = get_attribute(recipe, "variant");
     result->owner = get_attribute(job, "owner");
-    if (! recipe_uri) {
-        *cfg_file = get_attribute(job, "checkpoint_file");
-        *cfg_file = g_build_filename (VAR_LIB_PATH, *cfg_file, NULL);
+
+    if (recipe_uri == NULL) {
+        gchar *tmp_str;
+
+        tmp_str = get_attribute (job, "checkpoint_file");
+        *cfg_file = g_build_filename (VAR_LIB_PATH, tmp_str, NULL);
+        g_free (tmp_str);
+
         // Hack to make soup_uri_new happy.
-        gchar *recipe_url = g_strdup_printf ("http://localhost/recipes/%s/", result->recipe_id);
-        recipe_uri = soup_uri_new (recipe_url);
-        g_free (recipe_url);
+        tmp_str = g_strdup_printf ("http://localhost/recipes/%s/", result->recipe_id);
+        recipe_uri = soup_uri_new (tmp_str);
+        g_free (tmp_str);
     }
     result->recipe_uri = recipe_uri;
     result->base_path = TASK_LOCATION;
