@@ -45,10 +45,17 @@ static gboolean run_recipe_handler (gpointer user_data);
 
 static void restraint_free_recipe_data(RecipeData *recipe_data)
 {
+    g_return_if_fail (recipe_data != NULL);
+
     if (recipe_data->tasks != NULL) {
         g_hash_table_destroy(recipe_data->tasks);
     }
+
     g_string_free(recipe_data->body, TRUE);
+    g_clear_object (&recipe_data->cancellable);
+    g_free (recipe_data->rhost);
+    g_free (recipe_data->connect_uri);
+
     g_slice_free(RecipeData, recipe_data);
 }
 
