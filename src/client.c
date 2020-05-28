@@ -120,7 +120,7 @@ json_to_hashtable (struct json_object *jobj) {
     GHashTable *form_data_set;
     int val_type;
     form_data_set = g_hash_table_new_full(g_str_hash, g_str_equal,
-                                          g_free, NULL);
+                                          NULL, NULL);
     json_object_object_foreach(jobj, key, val) {
         val_type = json_object_get_type(val);
         switch (val_type) {
