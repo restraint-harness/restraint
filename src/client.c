@@ -1384,6 +1384,8 @@ static gchar *copy_job_as_template(gchar *job, gboolean novalid,
                 xmlNodePtr copy_params_node_ptr = xmlDocCopyNode(params_node->nodesetval->nodeTab[0],
                                                   new_xml_doc_ptr, 1);
                 xmlAddChild (new_recipe_ptr, copy_params_node_ptr);
+                xmlXPathFreeObject(params_node);
+                params_node = NULL;
             }
 
             // find task nodes
