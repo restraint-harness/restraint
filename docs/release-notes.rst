@@ -1,6 +1,25 @@
 Release Notes
 =============
 
+Restraint 0.2.2
+---------------
+
+Bug Fixes
+---------
+
+- restraint client now honors recipe params as well as task params.
+
+- Correct commands exit status when argument parsing fails due to
+  bad syntax. Commands always return non-zero in case of failure.
+
+- Resolve loop in local watchdog plugin
+
+  When the local watchdog (LWD) expires a task, the LWD plugin `20_sysinfo`
+  goes into an infinite loop since the directory `/mnt/testarea` is not
+  created for the non-rhts restraint package. An error returned by `diff`
+  utility within an infinite loop was not anticipated.  The fix
+  terminates the infinite loop when diff returns error.
+
 Restraint 0.2.1
 ---------------
 
