@@ -63,3 +63,4 @@ rel-eng/lib/__pycache__/
 /docs/_build
 tags
 cscope.out
+.tox/
