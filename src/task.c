@@ -954,7 +954,7 @@ task_handler (gpointer user_data)
               task->state = TASK_COMPLETE;
           } else if (task->localwatchdog) {
               // If the task is not finished but localwatchdog expired.
-              g_string_printf(message, "** Localwatchdog task: %s [%s]\n", task->task_id, task->path);
+              g_string_printf(message, "** Localwatchdog task: %s [%s] [R:%s]\n", task->task_id, task->path, task->recipe->recipe_id);
               task->state = TASK_COMPLETE;
           } else if (task->started) {
               // If the task is not finished but started then skip fetching the task again.
