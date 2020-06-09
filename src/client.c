@@ -768,10 +768,14 @@ handle_message (const char *message,
 
     jobj = json_tokener_parse(message);
     json_headers = find_object(jobj, "headers");
-    if (!json_headers) {
-        g_message("%s", message);
+
+    if (json_headers == NULL) {
+        gchar *trunc_host = g_strndup (recipe_data->rhost, 20);
+        g_print ("[%-20s] %s", trunc_host, message);
+        g_free (trunc_host);
         return;
     }
+
     json_body = find_object(jobj, "body");
     headers = json_to_hashtable(json_headers);
     rstrnt_path = g_hash_table_lookup (headers, "rstrnt-path");
