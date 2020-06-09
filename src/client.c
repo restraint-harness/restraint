@@ -70,6 +70,7 @@ static void restraint_free_app_data(AppData *app_data)
 {
     g_clear_error(&app_data->error);
     g_free(app_data->run_dir);
+    g_free(app_data->rsh_cmd);
 
     if (app_data->result_states_to != NULL) {
         g_hash_table_destroy(app_data->result_states_to);
@@ -1806,9 +1807,10 @@ int main(int argc, char *argv[]) {
     gchar *job = NULL;
     gboolean novalid = FALSE;
     gchar **hostarr = NULL;
+    gint timeout = 5;
 
     AppData *app_data = g_slice_new0 (AppData);
-    app_data->rsh_cmd = "ssh";
+    app_data->rsh_cmd = NULL;
     app_data->restraint_path = "restraintd";
     app_data->restraint_port = 0;
     app_data->max_retries = CONN_RETRIES;
@@ -1838,6 +1840,8 @@ int main(int argc, char *argv[]) {
             "Command to use make remote connection [Default: ssh].", NULL },
         { "restraint-path", 0, 0, G_OPTION_ARG_STRING, &app_data->restraint_path,
             "specify the restraintd to run on the remote machine", NULL },
+        { "timeout", 0, 0, G_OPTION_ARG_INT, &timeout,
+            "Specify timeout in minutes when rsh option not used [Default: 5].", NULL },
         { NULL }
     };
     GOptionGroup *option_group = g_option_group_new("main",
@@ -1876,6 +1880,10 @@ int main(int argc, char *argv[]) {
     if (job) {
         // if template job is passed in use it to generate our job
         app_data->run_dir = copy_job_as_template(job, novalid, app_data);
+    }
+    if (app_data->rsh_cmd == NULL) {
+        app_data->rsh_cmd = g_strdup_printf("ssh -o ServerAliveInterval=60 -o ServerAliveCountMax=%d",
+                                            timeout);
     }
     if (!parse_succeeded || !app_data->run_dir) {
         if (app_data->error == NULL) {

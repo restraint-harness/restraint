@@ -604,6 +604,15 @@ Where:
    restraint repo is pulled and ``restraintd`` image is built.  By default, the
    installed image is executed.
 
+
+.. option:: --timeout <minutes>
+
+   This optional argument ``--timeout`` specifies the time in minutes for
+   ssh to timeout.  This option takes affect when the `rsh` argument is not
+   used. The default timeout is 5 minutes.  A keepalive message is sent every
+   minute to the server and this is done for the number of minutes provided.
+   If there is no response, the ssh client will disconnect.
+
 .. option:: -v
 
    You can pass ``-v`` for more verbose output which will show every task

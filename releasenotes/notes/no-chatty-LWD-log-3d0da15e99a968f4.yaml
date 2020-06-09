@@ -1,0 +1,14 @@
+fixes:
+  - |
+    Stop logging `LWD is disabled` every minute
+
+    When LWD (Local Watchdog) is disabled, there is a message in the
+    harness log that reports this every minute.  The message looks
+    like: `Localwatchdog at:  Disabled! `.  This changeset makes sure
+    it is no longer reported repeatedly when `no_localwatchdog=true`
+    is configured in the task `metadata` file.  To ensure there is some
+    type of keepalive mechanism, the client now performs ssh keepalive
+    towards the server.  This timeout value is configurable by use
+    of the restraint client option `--timeout` which only affects default
+    behavior. The timeout value has no effect when the `rsh` argument
+    is used.
