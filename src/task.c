@@ -15,6 +15,7 @@
     along with Restraint.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#define _XOPEN_SOURCE 500
 
 #include <string.h>
 #include <stdlib.h>
@@ -483,6 +484,32 @@ task_handler_callback (gint pid_result, gboolean localwatchdog, gpointer user_da
                                                 NULL);
 }
 
+static void
+restraint_log_lwd_message (AppData *app_data,
+                           gchar *expire_time,
+                           gboolean modified_wd)
+{
+    time_t rawtime;
+    struct tm timeinfo;
+    gchar currtime[80];
+    GString *message;
+
+    g_return_if_fail(app_data != NULL && expire_time != NULL);
+
+    message = g_string_new(NULL);
+    rawtime = time(NULL);
+    localtime_r(&rawtime, &timeinfo);
+    strftime(currtime,80,"%a %b %d %H:%M:%S %Y", &timeinfo);
+    g_string_printf(message, "*** Current Time: %s %s Localwatchdog at: %s\n",
+                    currtime,
+                    (modified_wd) ? " User Adjusted" : "",
+                    expire_time);
+    g_message("%s", message->str);
+    connections_write(app_data, LOG_PATH_HARNESS, message->str, message->len);
+    g_string_free(message, TRUE);
+
+}
+
 void restraint_start_heartbeat(TaskRunData *task_run_data,
                                gint64 remaining_time,
                                time_t *expire_time)
@@ -490,9 +517,9 @@ void restraint_start_heartbeat(TaskRunData *task_run_data,
     time_t rawtime = time (NULL);
     struct tm timeinfo;
     if (expire_time != NULL) {
-        timeinfo = *localtime(expire_time);
+        localtime_r(expire_time, &timeinfo);
     } else {
-        timeinfo = *localtime (&rawtime);
+        localtime_r(&rawtime, &timeinfo);
         timeinfo.tm_sec += remaining_time;
     }
 
@@ -502,7 +529,6 @@ void restraint_start_heartbeat(TaskRunData *task_run_data,
                  sizeof(task_run_data->expire_time),
                  "%a %b %d %H:%M:%S %Y", &timeinfo);
     } else {
-        task_run_data->skip_remaining = TRUE;
         snprintf(task_run_data->expire_time,
                   sizeof(task_run_data->expire_time),
                   " * Disabled! *");
@@ -519,12 +545,11 @@ task_heartbeat_callback (gpointer user_data)
 
     time_t rawtime;
     double delta_sec = 0;
-    struct tm *timeinfo;
-    GString *message = g_string_new(NULL);
-    gchar currtime[80];
     gboolean modified_wd = FALSE;
 
     if (task->time_chged != NULL) {
+        // user requested WD change by way of
+        // rstrnt-adjust-watchdog cli
         modified_wd = TRUE;
         if (task->remaining_time) {
             time(&rawtime);
@@ -544,31 +569,19 @@ task_heartbeat_callback (gpointer user_data)
         g_free(task->time_chged);
         task->time_chged = NULL;
     } else {
-        if (!task->metadata->nolocalwatchdog &&
-              task_run_data->skip_remaining == FALSE) {
-            if (task->remaining_time > HEARTBEAT) {
-                task->remaining_time -= HEARTBEAT;
-            } else {
-                task->remaining_time = 0;
-            }
+        if (task->remaining_time > HEARTBEAT) {
+            task->remaining_time -= HEARTBEAT;
         } else {
-            task->remaining_time = HEARTBEAT;
+            task->remaining_time = 0;
         }
     }
     restraint_config_set (app_data->config_file, task->task_id,
                           "remaining_time", NULL,
                           G_TYPE_UINT64, task->remaining_time);
 
-    time(&rawtime);
-    timeinfo = localtime(&rawtime);
-    strftime(currtime,80,"%a %b %d %H:%M:%S %Y", timeinfo);
-    g_string_printf(message, "*** Current Time: %s %s Localwatchdog at: %s\n",
-                    currtime,
-                    (modified_wd) ? " User Adjusted" : "",
-                    task_run_data->expire_time);
-    g_message ("%s", message->str);
-    connections_write(app_data, LOG_PATH_HARNESS, message->str, message->len);
-    g_string_free(message, TRUE);
+    restraint_log_lwd_message(task_run_data->app_data,
+                              task_run_data->expire_time,
+                              modified_wd);
     return G_SOURCE_CONTINUE;
 }
 
@@ -603,13 +616,16 @@ task_run (AppData *app_data)
         entry_point = g_strdup_printf ("%s %s", TASK_PLUGIN_SCRIPT, DEFAULT_ENTRY_POINT);
     }
     if (task->metadata->nolocalwatchdog) {
-      task->remaining_time = HEARTBEAT;
+      task->remaining_time = 0;
     }
 
     task_run_data->logpath = LOG_PATH_TASK;
-    restraint_start_heartbeat(task_run_data,
-                              task->metadata->nolocalwatchdog ? 0 : task->remaining_time,
-                              NULL);
+    restraint_start_heartbeat(task_run_data, task->remaining_time, NULL);
+    if (task->metadata->nolocalwatchdog) {
+        restraint_log_lwd_message(task_run_data->app_data,
+                                  task_run_data->expire_time,
+                                  FALSE);
+    }
     process_run ((const gchar *) entry_point,
                  (const gchar **)task->env->pdata,
                  task->path,

@@ -130,7 +130,6 @@ typedef struct {
     TaskSetupState fail_state;
     gchar expire_time[80];
     const gchar *logpath;
-    gboolean skip_remaining;
 } TaskRunData;
 
 Task *restraint_task_new(void);
