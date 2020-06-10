@@ -220,7 +220,7 @@ static void test_no_hang(void) {
     // Watchdog fail to command time > max time
     const guint64 maximumtime = 60;
     const gchar *command = "hang_test";
-    gchar *expected = "foo\nbar\n";
+    gchar *expected = "use_pty:FALSE hang_test\nfoo\nbar\n";
     GString *output = g_string_new(NULL);
     gchar **outsplit = NULL;
 
@@ -274,7 +274,7 @@ static void test_use_pty(void) {
     // Watchdog fail to command time > max time
     const guint64 maximumtime = 60;
     const gchar *command = "is_tty";
-    gchar *expected = "True\r\n";
+    gchar *expected = "use_pty:TRUE is_tty\r\nTrue\r\n";
 
     run_data = g_slice_new0 (RunData);
     run_data->loop = g_main_loop_new (NULL, TRUE);
@@ -311,7 +311,7 @@ static void test_dont_use_pty(void) {
     RunData *run_data;
     const guint64 maximumtime = 60;
     const gchar *command = "is_tty";
-    gchar *expected = "False\n";
+    gchar *expected = "use_pty:FALSE is_tty\nFalse\n";
 
     run_data = g_slice_new0 (RunData);
     run_data->loop = g_main_loop_new (NULL, TRUE);
@@ -354,7 +354,7 @@ test_process_read_empty_stdin (void)
 
     maximumtime = 3;
     command = "cat";
-    expected = "";
+    expected ="use_pty:FALSE cat\n";
 
     run_data = g_slice_new0 (RunData);
     run_data->loop = g_main_loop_new (NULL, TRUE);
@@ -391,12 +391,14 @@ test_process_read_content_input (void)
 {
     RunData *run_data;
     gchar   *command;
+    gchar   *content_input;
     gchar   *expected;
     guint64  maximumtime;
 
     maximumtime = 3;
     command = "cat";
-    expected = "Some text for stdin\n";
+    content_input = "Some text for stdin\n";
+    expected = "use_pty:FALSE cat\nSome text for stdin\n";
 
     run_data = g_slice_new0 (RunData);
     run_data->loop = g_main_loop_new (NULL, TRUE);
@@ -410,7 +412,7 @@ test_process_read_content_input (void)
                  NULL,
                  test_process_io_cb,
                  test_process_finish_cb,
-                 expected,
+                 content_input,
                  strlen (expected),
                  FALSE,
                  NULL,
@@ -438,7 +440,7 @@ test_process_read_empty_stdin_pty (void)
 
     maximumtime = 3;
     command = "cat";
-    expected = "";
+    expected = "use_pty:TRUE cat\r\n";
 
     run_data = g_slice_new0 (RunData);
     run_data->loop = g_main_loop_new (NULL, TRUE);

@@ -304,6 +304,11 @@ process_run (const gchar *command,
         if (envp)
             environ = (gchar **) envp;
 
+        // Print the command being executed.
+        gchar *pcommand = g_strjoinv (" ", (gchar **) process_data->command);
+        g_print ("use_pty:%s %s\n", use_pty ? "TRUE" : "FALSE", pcommand);
+        g_free (pcommand);
+
         /* Spawn the command */
         if (execvp (*process_data->command, (gchar **) process_data->command) == -1) {
             g_warning ("Failed to exec() %s, %s error:%s\n",
@@ -315,11 +320,6 @@ process_run (const gchar *command,
     }
 
     /* Parent process. */
-
-    // Print the command being executed.
-    gchar *pcommand = g_strjoinv (" ", (gchar **) process_data->command);
-    g_message ("use_pty:%s %s\n", use_pty ? "TRUE" : "FALSE", pcommand);
-    g_free (pcommand);
 
     // If we get the cancel signal kill any running process
     if (process_data->cancellable) {
