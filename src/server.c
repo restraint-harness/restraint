@@ -677,10 +677,7 @@ int main(int argc, char *argv[]) {
     exit (PARSE_ARGS_FAILED);
   }
 
-  if (app_data->stdin) {
-      g_set_printerr_handler (null_print);
-      g_log_set_writer_func (null_log_writer, NULL, NULL);
-  } else {
+  if (!app_data->stdin) {
       app_data->config_file = g_build_filename (VAR_LIB_PATH, config, NULL);
       app_data->recipe_url = restraint_config_get_string (app_data->config_file,
                                                           "restraint",
@@ -739,6 +736,8 @@ int main(int argc, char *argv[]) {
   // Read job.xml from STDIN
   if (app_data->stdin) {
       read_job_xml(app_data, soup_server);
+      g_set_printerr_handler (null_print);
+      g_log_set_writer_func (null_log_writer, NULL, NULL);
   }
 
   /* enter mainloop */
