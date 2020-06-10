@@ -592,6 +592,12 @@ null_log_writer (GLogLevelFlags   log_level,
   return G_LOG_WRITER_HANDLED;
 }
 
+static void
+null_print (const gchar *string)
+{
+    return;
+}
+
 /* Bind server to available IPv4 and IPv6 local addresses
  *
  * The server must NOT already be listening on any interface.
@@ -672,7 +678,7 @@ int main(int argc, char *argv[]) {
   }
 
   if (app_data->stdin) {
-      g_set_printerr_handler (NULL);
+      g_set_printerr_handler (null_print);
       g_log_set_writer_func (null_log_writer, NULL, NULL);
   } else {
       app_data->config_file = g_build_filename (VAR_LIB_PATH, config, NULL);
