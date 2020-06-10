@@ -19,6 +19,9 @@
 
 #define HEARTBEAT 1 * 60 // heartbeat every 1 minute
 
+/* Used for process IO callbacks */
+#define IO_BUFFER_SIZE 8192
+
 typedef void (*ProcessTimeoutCallback) (gpointer user_data,
                                         guint64 *time_remain);
 

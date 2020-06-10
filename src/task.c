@@ -206,12 +206,11 @@ io_callback (GIOChannel *io, GIOCondition condition, const gchar *logpath, gpoin
     AppData *app_data = (AppData *) user_data;
     GError *tmp_error = NULL;
 
-    gchar buf[10000];
-    gsize bytes_read;
+    gchar buf[IO_BUFFER_SIZE] = { 0 };
+    gsize bytes_read = 0;
 
     if (condition & G_IO_IN) {
-        //switch (g_io_channel_read_line_string(io, s, NULL, &tmp_error)) {
-        switch (g_io_channel_read_chars(io, buf, 10000, &bytes_read, &tmp_error)) {
+        switch (g_io_channel_read_chars (io, buf, IO_BUFFER_SIZE, &bytes_read, &tmp_error)) {
           case G_IO_STATUS_NORMAL:
             /* Push data to our connections.. */
 
