@@ -156,10 +156,17 @@ server_io_callback (GIOChannel *io, GIOCondition condition, gpointer user_data) 
     gsize bytes_read = 0;
 
     if (condition & G_IO_IN) {
-        switch (g_io_channel_read_chars (io, buf, IO_BUFFER_SIZE, &bytes_read, &tmp_error)) {
+        switch (g_io_channel_read_chars (io, buf, IO_BUFFER_SIZE - 1, &bytes_read, &tmp_error)) {
           case G_IO_STATUS_NORMAL:
-            if (fwrite (buf, sizeof(gchar), bytes_read, stdout) != bytes_read)
-              g_warning ("failed to write message");
+
+            /* Don't print to STDOUT when restraintd is launched by
+               restraint client, to avoid duplicated messages.
+               stdin is used when the client runs restraintd, and the
+               output from restraintd is provided to the client through
+               STDOUT using restraint_stdout_message in
+               connections_write. */
+            if (!app_data->stdin)
+                g_print ("%s", buf);
 
             /* Push data to our connections.. */
             connections_write(app_data, LOG_PATH_HARNESS, buf, bytes_read);

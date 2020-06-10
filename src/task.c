@@ -210,13 +210,14 @@ io_callback (GIOChannel *io, GIOCondition condition, const gchar *logpath, gpoin
     gsize bytes_read = 0;
 
     if (condition & G_IO_IN) {
-        switch (g_io_channel_read_chars (io, buf, IO_BUFFER_SIZE, &bytes_read, &tmp_error)) {
+        switch (g_io_channel_read_chars (io, buf, IO_BUFFER_SIZE - 1, &bytes_read, &tmp_error)) {
           case G_IO_STATUS_NORMAL:
+
+            /* Suppress task output in restraintd stdout/stderr unless
+               G_MESSAGES_DEBUG is used. */
+            g_debug ("%s", buf);
+
             /* Push data to our connections.. */
-
-            if (fwrite (buf, sizeof (gchar), bytes_read, stdout) != bytes_read)
-                g_warning ("failed to write message");
-
             connections_write(app_data, logpath, buf, bytes_read);
             return G_SOURCE_CONTINUE;
 
