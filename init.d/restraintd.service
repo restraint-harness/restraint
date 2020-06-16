@@ -10,6 +10,7 @@ ExecStartPre=/usr/bin/check_beaker
 ExecStart=/usr/bin/restraintd --port 8081
 KillMode=process
 OOMScoreAdjust=-1000
+TimeoutStartSec=180
 
 [Install]
 WantedBy=multi-user.target

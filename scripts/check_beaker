@@ -27,3 +27,31 @@ recipe_url=$BEAKER_LAB_CONTROLLER_URL/recipes/$BEAKER_RECIPE_ID/
 EOF
 fi
 fi
+
+# Try for up to 60 seconds to make sure system has an IP address
+if command -v hostname; then
+    COUNT=0
+    # 12 tries * 5 seconds = Maximum 60 seconds
+    MAX_TRIES=12
+    # Set to -1, so that if already have an IP address we won't print message
+    IP_FAIL="-1"
+    # Loop until we have an IP address.
+    # 'hostname -I' will output something like: 192.168.1.1 if we have an
+    # IP address. If no IP address it will output a blank line.
+    while ! hostname -I | grep '[0-9]'
+    do
+        IP_FAIL=0
+        COUNT=$(( COUNT + 1 ))
+        echo "$0: Waiting for IP address. Attempt: ${COUNT} of ${MAX_TRIES} failed" >&2
+        if [[ ${COUNT} -ge ${MAX_TRIES} ]]; then
+            IP_FAIL=1
+            break
+        fi
+        sleep 5.0
+    done
+    if [[ ${IP_FAIL} -eq 0 ]]; then
+        echo "$0: IP address acquired" >&2
+    elif [[ ${IP_FAIL} -eq 1 ]]; then
+        echo "$0: Failed to acquire IP address" >&2
+    fi
+fi
