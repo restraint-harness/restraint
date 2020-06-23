@@ -24,7 +24,7 @@
 #include <libxml/tree.h>
 
 // XXX make this configurable
-#define TASK_LOCATION "/mnt/tests"
+#define TASK_LOCATION "/var/lib/restraint/tests"
 
 extern SoupSession *soup_session;
 

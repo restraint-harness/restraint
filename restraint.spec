@@ -182,6 +182,24 @@ make -C selinux -f %{_datadir}/selinux/devel/Makefile
 %endif
 make -C legacy
 
+%pre
+# If performing an rpm upgrade, first move /mnt/subdirs to /var/lib/restraint/subdirs
+if [ $1 == 2 ]; then
+    if [ ! -d /var/lib/restraint ]; then
+        mkdir 755 /var/lib/restraint
+    fi
+    if [ -d /mnt/tests -a ! -h /mnt/tests ]; then
+        mv /mnt/tests /var/lib/restraint/tests
+    fi
+    if [ -d /mnt/testarea -a ! -h /mnt/testarea ]; then
+        mv /mnt/testarea /var/lib/restraint/testarea
+    fi
+    if [ -d /mnt/scratchspace -a ! -h /mnt/scratchspace ]; then
+        mv /mnt/scratchspace /var/lib/restraint/scratchspace
+    fi
+
+fi
+
 %install
 %{__rm} -rf %{buildroot}
 
@@ -211,8 +229,10 @@ ln -s rstrnt-sync-block $RPM_BUILD_ROOT/usr/bin/rhts_recipe_sync_block
 ln -s rstrnt-sync-block $RPM_BUILD_ROOT/usr/bin/rhts-sync-block
 ln -s rstrnt-sync-block $RPM_BUILD_ROOT/usr/bin/rhts_sync_block
 ln -s rstrnt-abort $RPM_BUILD_ROOT/usr/bin/rhts-abort
-mkdir -p $RPM_BUILD_ROOT/mnt/scratchspace
-mkdir -p $RPM_BUILD_ROOT/mnt/testarea
+mkdir $RPM_BUILD_ROOT/mnt
+ln -s ../var/lib/%{name}/scratchspace $RPM_BUILD_ROOT/mnt/scratchspace
+ln -s ../var/lib/%{name}/tests $RPM_BUILD_ROOT/mnt/tests
+ln -s ../var/lib/%{name}/testarea $RPM_BUILD_ROOT/mnt/testarea
 
 %if 0%{?rhel}%{?fedora} > 4
 # Build RHTS Selinux Testing Policy
@@ -364,8 +384,9 @@ fi
 %{_bindir}/rhts_recipe_sync_block
 %{_bindir}/rhts-abort
 %{_datadir}/rhts/lib/rhts-make.include
+/mnt/testarea
+/mnt/tests
 /mnt/scratchspace
-%attr(1777,root,root)/mnt/testarea
 %if 0%{?rhel}%{?fedora} > 4
 %{_datadir}/selinux/packages/%{name}/rhts.pp
 %endif

@@ -9,6 +9,9 @@ all:
 install:
 	set -e; for i in $(SUBDIRS); do $(MAKE) -C $$i install; done
 	install -m0755 -d $(DESTDIR)/var/lib/restraint
+	install -m0755 -d $(DESTDIR)/var/lib/restraint/scratchspace
+	install -m1777 -d $(DESTDIR)/var/lib/restraint/testarea
+	install -m0755 -d $(DESTDIR)/var/lib/restraint/tests
 
 .PHONY: check
 check:
