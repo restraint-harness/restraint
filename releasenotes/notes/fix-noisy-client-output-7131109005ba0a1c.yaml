@@ -1,0 +1,7 @@
+fixes:
+  - |
+    Fix noisy Restraint client output
+    The Restraint client was not honoring the verbosity levels and it
+    was printing all output available even when the verbosity level was
+    the lowest.
+    The Restraint client output now behaves similarly to release 0.1.45.
