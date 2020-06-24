@@ -444,7 +444,7 @@ task_handler_callback (gint pid_result, gboolean localwatchdog, gpointer user_da
 
     task->version = get_package_version(task->fetch.package_name, &tmp_error);
     if (tmp_error) {  // Error: However, report and continue on
-        g_print("FAILED Get RPM version: %s", tmp_error->message);
+        g_warning ("FAILED Get RPM version: %s", tmp_error->message);
         g_clear_error(&tmp_error);
     }
     if (error) {
