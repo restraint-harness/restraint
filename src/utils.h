@@ -24,6 +24,10 @@
 #define CMD_ENV_DIR "/var/lib/restraint"
 #define CMD_ENV_FILE_FORMAT "%s/rstrnt-commands-env-%u.sh"
 
+#define INSTALL_CONFIG_FILE "/var/lib/restraint/install_config"
+#define INSTALL_DIR_VAR "INSTALL_DIR"
+#define INSTALL_DIR_DEFAULT "/var/lib/restraint/tests"
+
 #define STREQ(a, b) (g_strcmp0 (a, b) == 0)
 
 void update_env_file(gchar *prefix, gchar *restraint_url,
@@ -34,5 +38,6 @@ gchar *get_envvar_filename(guint port);
 guint64 parse_time_string (gchar *time_string, GError **error);
 gboolean file_exists (gchar *filename);
 gchar *get_package_version(gchar *pkg_name, GError **error);
+gchar * get_install_dir(const gchar *filename, GError **error);
 
 #endif
