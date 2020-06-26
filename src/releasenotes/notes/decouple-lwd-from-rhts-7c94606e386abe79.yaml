@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    Remove restraint-rhts dependency from local watchdog plugins
+    The sysinfo plugin depended on a path provided by restraint-rhts,
+    and failed when the package was not installed.
