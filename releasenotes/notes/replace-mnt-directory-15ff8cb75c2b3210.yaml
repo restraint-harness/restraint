@@ -1,0 +1,11 @@
+fixes:
+  - |
+    Use new task install default for non-RHTS package
+
+    For restraint-rhts package, tasks are installed and executed
+    beneath `/mnt/tests`.  For non-rhts `restraint`
+    installations, this path has changed to a more appropriate
+    location.
+
+    The `20_sysinfo` plugin processes journalctl log in a temporary location
+    instead of `/mnt` as it is just an interim event.

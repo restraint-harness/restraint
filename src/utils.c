@@ -207,3 +207,54 @@ get_envvar_filename(guint port)
     }
     return(filename);
 }
+
+/* get_install_dir()
+ *
+ * Get directory to install tasks by configured file or default.
+ *
+ * If there was an unexpected result in getting data from
+ * configured install_config file, an error will be returned
+ * with default_install_path.
+ */
+gchar *
+get_install_dir(const gchar *filename, GError **error)
+{
+    GKeyFile *keyfile = NULL;
+    gchar *install_dir_value;
+
+    g_return_val_if_fail(filename != NULL, NULL);
+
+    if (g_file_test(filename, G_FILE_TEST_EXISTS)) {
+        keyfile = g_key_file_new();
+        /* Load the GKeyFile from install_dir. */
+        if (g_key_file_load_from_file(keyfile, filename,
+                                      G_KEY_FILE_NONE, error)) {
+            install_dir_value = g_key_file_get_string(keyfile,
+                                                      "General",
+                                                      INSTALL_DIR_VAR,
+                                                      error);
+            if (install_dir_value)  {
+                if (strlen(install_dir_value) == 0) {
+                    free(install_dir_value);
+                    g_set_error (error, RESTRAINT_ERROR,
+                                 RESTRAINT_PARSE_ERROR_BAD_SYNTAX,
+                                 "No value set in var %s file %s",
+                                 INSTALL_DIR_VAR, filename);
+                } else {
+                    goto get_install_dir_exit;
+                }
+            }
+        }
+    }
+
+    // If install_config file doesn't exist or there was a failure
+    // getting data from it, provide default and error.
+
+    install_dir_value = g_strdup_printf(INSTALL_DIR_DEFAULT);
+
+get_install_dir_exit:
+    if (keyfile != NULL) {
+        g_key_file_free(keyfile);
+    }
+    return install_dir_value;
+}

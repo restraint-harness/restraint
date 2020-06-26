@@ -8,7 +8,7 @@ PS_LWD=$(mktemp -d)
 # Check to see if journalctl exists.
 if command -v journalctl 2> /dev/null; then
     JOURNALCTL=true
-    LOGFILE=/mnt/testarea/journalctl
+    LOGFILE=/var/tmp/journalctl
 else
     JOURNALCTL=false
     LOGFILE=/var/log/messages
@@ -18,7 +18,7 @@ function WatchFile ()
 {
     FILE=$1
 
-    TMPFILE=$(mktemp -p /mnt/testarea -t Watch.XXXXX)
+    TMPFILE=$(mktemp -p /var/tmp -t Watch.XXXXX)
     while true; do
         if [ $JOURNALCTL = true ]; then
             journalctl -b > $FILE
@@ -76,7 +76,7 @@ echo "Dumping slabinfo - Stop - $timestamp" >> $SLABLOG
 logger -p local2.info -t "SlabCacheInfo" -f $SLABLOG
 
 if [ $JOURNALCTL = true ]; then
-    journalctl -b > /mnt/testarea/journalctl
+    journalctl -b > $LOGFILE
 fi
 
 # Submit dmesg log if any output

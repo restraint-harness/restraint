@@ -15,7 +15,10 @@
     along with Restraint.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <stdio.h>
 #include <glib.h>
+#include <glib/gstdio.h>
+#include "errors.h"
 #include "utils.h"
 
 static gboolean
@@ -259,6 +262,106 @@ test_environment_file (void)
     g_assert_false(check_env_file_present(port));
 }
 
+/*
+ * Ensure ability to get a named variable from Install Config file
+ * works properly.
+ */
+void
+test_install_config_file (void)
+{
+    gchar install_cfg_filename[] = "./install_config";
+    GError *error = NULL;
+    FILE *install_cfg_file;
+    gchar *result_data;
+
+    // Initialize success test
+    install_cfg_file = g_fopen(install_cfg_filename, "w");
+    g_fprintf(install_cfg_file, "[General]\nINSTALL_DIR=%s\n", "./tests");
+    fclose(install_cfg_file);
+
+    g_assert_true(g_file_test(install_cfg_filename, G_FILE_TEST_EXISTS));
+
+    // TestCase: Check variable exists in install_config file
+    //           and is returned.
+    result_data = get_install_dir(install_cfg_filename, &error);
+    // Validate variable content
+    g_assert(g_strcmp0(result_data, "./tests") == 0);
+    g_free(result_data);
+    g_assert_no_error(error);
+
+    // Initialize empty install_config file test
+    install_cfg_file = g_fopen(install_cfg_filename, "w");
+    fclose(install_cfg_file);
+
+    g_assert_true(g_file_test(install_cfg_filename, G_FILE_TEST_EXISTS));
+
+    // TestCase: Test empty install_config file
+    //           and default is returned.
+    result_data = get_install_dir(install_cfg_filename, &error);
+    // Validate variable content
+    g_assert(g_strcmp0(result_data, INSTALL_DIR_DEFAULT) == 0);
+    g_free(result_data);
+    g_assert_nonnull(error);
+    g_assert_error(error, G_KEY_FILE_ERROR,
+                   G_KEY_FILE_ERROR_GROUP_NOT_FOUND);
+    g_clear_error (&error);
+
+    // Initialize bad value
+    install_cfg_file = g_fopen(install_cfg_filename, "w");
+    g_fprintf(install_cfg_file, "[General]\nINSTALL_DIR=\n");
+    fclose(install_cfg_file);
+
+    g_assert_true(g_file_test(install_cfg_filename, G_FILE_TEST_EXISTS));
+
+    // TestCase: Check results of bad var content
+    //
+    result_data = get_install_dir(install_cfg_filename, &error);
+    g_assert(g_strcmp0(result_data, INSTALL_DIR_DEFAULT) == 0);
+    g_free(result_data);
+    g_assert_nonnull(error);
+    g_assert_error(error, RESTRAINT_ERROR,
+                   RESTRAINT_PARSE_ERROR_BAD_SYNTAX);
+    g_assert_cmpstr (error->message, ==,
+                     "No value set in var INSTALL_DIR file ./install_config");
+    g_clear_error (&error);
+
+    // Initialize bad file content
+    install_cfg_file = g_fopen(install_cfg_filename, "w");
+    g_fprintf(install_cfg_file, "%s\n", "./tests");
+    fclose(install_cfg_file);
+
+    // TestCase: Check results of bad file content
+    //
+    result_data = get_install_dir(install_cfg_filename, &error);
+    g_assert(g_strcmp0(result_data, INSTALL_DIR_DEFAULT) == 0);
+    g_free(result_data);
+    g_assert_nonnull(error);
+    g_assert_error(error, G_KEY_FILE_ERROR, G_KEY_FILE_ERROR_PARSE);
+    g_clear_error (&error);
+
+    // Initialize variable not present test
+    install_cfg_file = g_fopen(install_cfg_filename, "w");
+    g_fprintf(install_cfg_file, "[General]\nNOT_MY_VAR=%s\n", "./tests");
+    fclose(install_cfg_file);
+
+    // TestCase: Check results when variable not present
+    result_data = get_install_dir(install_cfg_filename, &error);
+    g_assert(g_strcmp0(result_data, INSTALL_DIR_DEFAULT) == 0);
+    g_free(result_data);
+    g_assert_error(error, G_KEY_FILE_ERROR, G_KEY_FILE_ERROR_KEY_NOT_FOUND);
+    g_clear_error (&error);
+
+    // TestCase: Test default value since install_config file not present
+    //
+    g_remove(install_cfg_filename);
+    result_data = get_install_dir(install_cfg_filename, &error);
+    g_assert(g_strcmp0(result_data, INSTALL_DIR_DEFAULT) == 0);
+    g_free(result_data);
+    g_assert_no_error(error);
+
+    g_assert_false(g_file_test(install_cfg_filename, G_FILE_TEST_EXISTS));
+}
+
 static void
 test_parse_time_string_units (void)
 {
@@ -342,6 +445,8 @@ main (int   argc,
                      test_get_package_version_stderr);
     g_test_add_func ("/utils/test_environment_file",
                      test_environment_file);
+    g_test_add_func ("/utils/test_install_config_file",
+                     test_install_config_file);
     g_test_add_func ("/utils/parse_time_string",
                      test_parse_time_string);
     g_test_add_func ("/utils/parse_time_string/recognized_units",

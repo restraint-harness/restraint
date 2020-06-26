@@ -394,6 +394,7 @@ void restraint_recipe_free(Recipe *recipe) {
     g_free(recipe->osvariant);
     g_free(recipe->osarch);
     g_free(recipe->owner);
+    g_free(recipe->base_path);
     soup_uri_free(recipe->recipe_uri);
     g_list_free_full(recipe->tasks, (GDestroyNotify) restraint_task_free);
     g_list_free_full(recipe->params, (GDestroyNotify) restraint_param_free);
@@ -445,7 +446,15 @@ recipe_parse (xmlDoc *doc, SoupURI *recipe_uri, GError **error, gchar **cfg_file
         g_free (tmp_str);
     }
     result->recipe_uri = recipe_uri;
-    result->base_path = TASK_LOCATION;
+
+    // Gather the location in which to install tasks
+    result->base_path = get_install_dir(INSTALL_CONFIG_FILE, &tmp_error);
+    if (tmp_error != NULL) {
+        g_warning("* Fail getting task install path using default. Error: %s",
+                  tmp_error->message);
+        g_clear_error(&tmp_error);
+    }
+
 
     GList *tasks = NULL;
     xmlNode *child = recipe->children;
@@ -589,7 +598,7 @@ recipe_handler (gpointer user_data)
             break;
         case RECIPE_COMPLETE:
             if (app_data->error) {
-                g_string_printf(message, "* WARNING **:%s\n", app_data->error->message);
+                g_string_printf(message, "* WARNING **: %s\n", app_data->error->message);
             } else {
                 g_string_printf(message, "* Finished recipe\n");
                 if (app_data->close_message && app_data->message_data) {

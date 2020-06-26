@@ -8,7 +8,8 @@ This requires the exclusion of the legacy RHTS package or `restraint-rhts`
 package installation.  Below lists areas to draw attention in order
 to eliminate RHTS references.
 
-#. Use the `restraint` harness package and not `restraint-rhts` in your jobs.
+#. Install the `restraint` harness package and not `restraint-rhts` in
+   your jobs.
 #. Avoid defining tasks or dependencies which cause installation of the `RHTS` library.
 #. Replace `RHTS` scripts with `Restraint` scripts.  :ref:`legacy_rhts_cmds` provides
    a table which maps legacy to restraint scripts.

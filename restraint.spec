@@ -324,10 +324,11 @@ fi
 /usr/share/%{name}/plugins/report_result.d
 /usr/share/%{name}/plugins/task_run.d
 /usr/share/%{name}/pkg_commands.d
-/var/lib/%{name}
 %if %{with_selinux_policy}
 %{_datadir}/selinux/packages/%{name}/restraint.pp
 %endif
+
+%dir /var/lib/%{name}
 
 %files client
 %attr(0755, root, root)%{_bindir}/%{name}
@@ -346,6 +347,7 @@ fi
 %attr(0755, root, root)%{_bindir}/rhts-lint
 %attr(0755, root, root)%{_bindir}/rhts-report-result
 %attr(0755, root, root)%{_bindir}/rhts-flush
+%config(noreplace)/var/lib/%{name}/install_config
 
 # Symlinks do not have attributes
 %{_bindir}/rhts-sync-set
