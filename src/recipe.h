@@ -26,8 +26,8 @@
 // XXX make this configurable
 #define TASK_LOCATION "/mnt/tests"
 
-#define RECIPE_FETCH_RETRIES 3
 #define RECIPE_FETCH_INTERVAL 10
+#define RECIPE_FETCH_RETRIES 12
 
 extern SoupSession *soup_session;
 
