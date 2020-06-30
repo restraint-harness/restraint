@@ -1,0 +1,5 @@
+fixes:
+  - |
+    Increase retries for recipe fetching
+    Retries for recipe fetching are increased from 3 attempts in 10
+    seconds intervals to 12 attempts in 10 seconds intervals.
