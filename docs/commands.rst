@@ -274,6 +274,8 @@ command. However, there exists an environment variable which may be used::
                         your files backed up in a directory other than default.
                         The default is in the subdirectory `/backup`.
 
+.. _rstrnt-package:
+
 rstrnt-package
 ~~~~~~~~~~~~~~
 
@@ -447,10 +449,12 @@ The rhts extension of restraint uses --rhts.  The command line would appear as f
 Where:
 
 .. option::  TESTNAME
+   :noindex:
 
    Testname of the task. This is a required argument.
 
 .. option::  TESTRESULT
+   :noindex:
 
    Indicates results of job.  It can be one of PASS|FAIL|WARN.
    This is a required argument.
@@ -461,6 +465,7 @@ Where:
    environment variable $OUTPUTFILE is used if available.
 
 .. option::  METRIC
+   :noindex:
 
     Optional result metric
 

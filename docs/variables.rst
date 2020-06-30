@@ -120,7 +120,7 @@ These variables are often set by the user.  They are as follows:
 +----------------------+------------------------------------------------------+-----------+
 | RSTRNT_PKG_CMD       | These variables are used to control the behavior of  | Default/  |
 | RSTRNT_PKG_ARGS      | the command rstrnt-package.  For more details, refer | User      |
-| RSTRNT_PKG_INSTALL   | to TBD Make reference to rstrnt-package              |           |
+| RSTRNT_PKG_INSTALL   | to :ref:`rstrnt-package` command.                    |           |
 | RSTRNT_PKG_REMOVE    |                                                      |           |
 | RSTRNT_PKG_RETRIES   |                                                      |           |
 | RSTRNT_PKG_DELAY     |                                                      |           |
