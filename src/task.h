@@ -37,6 +37,12 @@
 #define LOG_PATH_HARNESS "logs/harness.log"
 #define LOG_PATH_TASK "logs/taskout.log"
 
+#define ROLE_REFRESH_INTERVAL 10
+#define ROLE_REFRESH_RETRIES 3
+
+#define TASK_FETCH_INTERVAL 10
+#define TASK_FETCH_RETRIES 3
+
 typedef enum {
     TASK_IDLE,
     TASK_FETCH,
