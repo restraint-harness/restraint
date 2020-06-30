@@ -105,11 +105,11 @@ fetch_finish_callback (GError *error, guint32 match_cnt,
     GString *message = g_string_new (NULL);
 
     if (error) {
-        if (app_data->fetch_retries < FETCH_RETRIES) {
+        if (app_data->fetch_retries < TASK_FETCH_RETRIES) {
             g_warning("* RETRY fetch [%d]**:%s\n", ++app_data->fetch_retries,
                     error->message);
             g_clear_error(&error);
-            g_timeout_add_seconds(FETCH_INTERVAL, fetch_retry, app_data);
+            g_timeout_add_seconds (TASK_FETCH_INTERVAL, fetch_retry, app_data);
             return;
         } else {
             g_propagate_error (&task->error, error);
@@ -891,10 +891,10 @@ recipe_fetch_complete(GError *error, xmlDoc *doc, gpointer user_data)
     Task *task = app_data->tasks->data;
 
     if (error) {
-        if (app_data->fetch_retries < FETCH_RETRIES) {
+        if (app_data->fetch_retries < ROLE_REFRESH_RETRIES) {
             g_print("* RETRY refresh roles [%d]**:%s\n", ++app_data->fetch_retries,
                     error->message);
-            g_timeout_add_seconds(FETCH_INTERVAL, refresh_role_retry, app_data);
+            g_timeout_add_seconds (ROLE_REFRESH_INTERVAL, refresh_role_retry, app_data);
             return;
         } else {
             g_warn_if_fail(!doc);

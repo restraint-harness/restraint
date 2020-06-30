@@ -26,7 +26,6 @@
 #include "param.h"
 #include "role.h"
 #include "task.h"
-#include "server.h"
 #include "metadata.h"
 #include "utils.h"
 #include "config.h"
@@ -510,10 +509,10 @@ fetch_completed(GError *error, xmlDoc *doc, gpointer user_data)
 
     if (error) {
         g_warn_if_fail(!doc);
-        if (app_data->fetch_retries < FETCH_RETRIES) {
+        if (app_data->fetch_retries < RECIPE_FETCH_RETRIES) {
             g_print("* RETRY [%d]**:%s\n", ++app_data->fetch_retries,
                     error->message);
-            g_timeout_add_seconds(FETCH_INTERVAL, fetch_retry, app_data);
+            g_timeout_add_seconds (RECIPE_FETCH_INTERVAL, fetch_retry, app_data);
         } else {
             g_propagate_prefixed_error(&app_data->error, error,
                     "While fetching recipe XML: ");
