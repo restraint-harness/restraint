@@ -259,6 +259,73 @@ test_environment_file (void)
     g_assert_false(check_env_file_present(port));
 }
 
+static void
+test_parse_time_string_units (void)
+{
+    GError *tmp_error = NULL;
+
+    g_assert_true (parse_time_string ("1d", &tmp_error) == 60 * 60 * 24);
+    g_assert_no_error (tmp_error);
+
+    g_assert_true (parse_time_string ("1h", &tmp_error) == 60 * 60);
+    g_assert_no_error (tmp_error);
+
+    g_assert_true (parse_time_string ("1m", &tmp_error) == 60);
+    g_assert_no_error (tmp_error);
+
+    g_assert_true (parse_time_string ("1s", &tmp_error) == 1);
+    g_assert_no_error (tmp_error);
+
+    g_assert_true (parse_time_string ("1", &tmp_error) == 1);
+    g_assert_no_error (tmp_error);
+}
+
+static void
+test_parse_time_string_wrong_unit (void)
+{
+    GError *tmp_error = NULL;
+
+    g_assert_true (parse_time_string ("1x", &tmp_error) == 1);
+    g_assert_nonnull (tmp_error);
+
+    g_clear_error (&tmp_error);
+}
+
+static void
+test_parse_time_string_wrong_string (void)
+{
+    GError *tmp_error = NULL;
+
+    g_assert_true (parse_time_string ("One day", &tmp_error) == 0);
+    g_assert_nonnull (tmp_error);
+
+    g_clear_error (&tmp_error);
+
+    g_assert_true (parse_time_string ("d", &tmp_error) == 0);
+    g_assert_nonnull (tmp_error);
+
+    g_clear_error (&tmp_error);
+}
+
+static void
+test_parse_time_string (void)
+{
+    GError  *tmp_error = NULL;
+    guint64  expected_seconds = 30 * 60 * 60;
+
+    g_assert_true (expected_seconds == parse_time_string ("30h", &tmp_error));
+    g_assert_no_error (tmp_error);
+
+    g_assert_true (expected_seconds == parse_time_string ("30H", &tmp_error));
+    g_assert_no_error (tmp_error);
+
+    g_assert_true (expected_seconds == parse_time_string ("30 h", &tmp_error));
+    g_assert_no_error (tmp_error);
+
+    g_assert_true (expected_seconds == parse_time_string ("30 H", &tmp_error));
+    g_assert_no_error (tmp_error);
+}
+
 int
 main (int   argc,
       char *argv[])
@@ -275,6 +342,14 @@ main (int   argc,
                      test_get_package_version_stderr);
     g_test_add_func ("/utils/test_environment_file",
                      test_environment_file);
+    g_test_add_func ("/utils/parse_time_string",
+                     test_parse_time_string);
+    g_test_add_func ("/utils/parse_time_string/recognized_units",
+                     test_parse_time_string_units);
+    g_test_add_func ("/utils/parse_time_string/wrong_unit",
+                     test_parse_time_string_wrong_unit);
+    g_test_add_func ("/utils/parse_time_string/wrong_string",
+                     test_parse_time_string_wrong_string);
 
     return g_test_run ();
 }
