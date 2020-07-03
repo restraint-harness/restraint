@@ -339,11 +339,9 @@ server_recipe_callback (SoupServer *server, SoupMessage *client_msg,
         server_msg = soup_message_new_from_uri ("PUT", server_uri);
     } else if (g_str_has_suffix (path, "watchdog")) {
         GHashTable *data_table;
-        GHashTable *new_table;
-        gchar      *form_data;
-        gchar      *form_seconds;
+        gchar      *encoded_form;
         gchar      *seconds_string;
-        guint64     max_time = 0;
+        guint64     max_time;
 
         // Extract the number of watchdog seconds
         data_table = soup_form_decode(client_msg->request_body->data);
@@ -362,21 +360,23 @@ server_recipe_callback (SoupServer *server, SoupMessage *client_msg,
 
         // Update the number of watchdog seconds for External watchdog
         // by increasing it by EWD_TIME
-        form_seconds = g_strdup_printf("%" G_GUINT64_FORMAT,
-                                       (max_time + EWD_TIME));
-        new_table = g_hash_table_new (NULL, NULL);
-        g_hash_table_insert(new_table, "seconds", form_seconds);
-        form_data = soup_form_encode_hash (new_table);
+        seconds_string = g_strdup_printf ("%" G_GUINT64_FORMAT,
+                                          (max_time + EWD_TIME));
+        encoded_form = soup_form_encode ("seconds", seconds_string, NULL);
+
+        g_free (seconds_string);
 
         // Update client_msg with new data which gets copied
         // to server_msg further down
         soup_message_body_truncate(client_msg->request_body);
-        soup_message_set_request (client_msg, "application/x-www-form-urlencoded",
-                          SOUP_MEMORY_TAKE, form_data, strlen (form_data));
+        soup_message_set_request (client_msg,
+                                  "application/x-www-form-urlencoded",
+                                  SOUP_MEMORY_TAKE,
+                                  encoded_form,
+                                  strlen (encoded_form));
+
         // Init header length to force soup to reset it when sending message.
         soup_message_headers_set_content_length(client_msg->request_headers, 0);
-        g_free (form_seconds);
-        g_hash_table_destroy(new_table);
 
         // Start msg to send adjusted external watchdog timer to the lab controller
         // Client msg content gets copied further below.
