@@ -75,6 +75,8 @@ remove_env_file(guint port)
  *     3m -> 180
  *     2h -> 7200
  *     600s -> 600
+ *
+ * If parsing fails, error is set and 0 is returned.
  */
 guint64
 parse_time_string (gchar *time_string, GError **error)
@@ -120,7 +122,7 @@ parse_time_string (gchar *time_string, GError **error)
         break;
     }
 
-    return time_value;
+    return 0;
 }
 
 gboolean
