@@ -358,6 +358,16 @@ server_recipe_callback (SoupServer *server, SoupMessage *client_msg,
 
         g_hash_table_destroy (form_data);
 
+        // This updates the local watchdog
+        if (task->metadata->nolocalwatchdog) {
+            g_warning ("Adjustment to local watchdog ignored since "
+                       "'no_localwatchdog' metadata is set");
+        } else {
+            task->remaining_time = max_time;
+            task->time_chged = g_malloc (sizeof (time_t));
+            *task->time_chged = time (NULL);
+        }
+
         // Update the number of watchdog seconds for External watchdog
         // by increasing it by EWD_TIME
         seconds_string = g_strdup_printf ("%" G_GUINT64_FORMAT,
@@ -368,7 +378,7 @@ server_recipe_callback (SoupServer *server, SoupMessage *client_msg,
 
         // Update client_msg with new data which gets copied
         // to server_msg further down
-        soup_message_body_truncate(client_msg->request_body);
+        soup_message_body_truncate (client_msg->request_body);
         soup_message_set_request (client_msg,
                                   "application/x-www-form-urlencoded",
                                   SOUP_MEMORY_TAKE,
@@ -376,22 +386,13 @@ server_recipe_callback (SoupServer *server, SoupMessage *client_msg,
                                   strlen (encoded_form));
 
         // Init header length to force soup to reset it when sending message.
-        soup_message_headers_set_content_length(client_msg->request_headers, 0);
+        soup_message_headers_set_content_length (client_msg->request_headers, 0);
 
         // Start msg to send adjusted external watchdog timer to the lab controller
         // Client msg content gets copied further below.
         server_uri = soup_uri_new_with_base (task->recipe->recipe_uri, "watchdog");
         server_msg = soup_message_new_from_uri ("POST", server_uri);
 
-        // This updates the local watchdog
-        if (task->metadata->nolocalwatchdog) {
-            g_warning("Adjustment to local watchdog ignored since 'no_localwatchdog'"
-                      " metadata is set\n");
-        } else {
-            task->remaining_time = max_time;
-            task->time_chged = g_malloc (sizeof (time_t));
-            *task->time_chged = time (NULL);
-        }
     } else if (g_str_has_suffix(path, "status")) {
         gchar **splitpath = g_strsplit(path, "/", -1);
         guint pathlen = g_strv_length(splitpath);
