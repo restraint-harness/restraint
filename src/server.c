@@ -338,14 +338,14 @@ server_recipe_callback (SoupServer *server, SoupMessage *client_msg,
         g_free (uri);
         server_msg = soup_message_new_from_uri ("PUT", server_uri);
     } else if (g_str_has_suffix (path, "watchdog")) {
-        GHashTable *data_table;
+        GHashTable *form_data;
         gchar      *encoded_form;
         gchar      *seconds_string;
         guint64     max_time;
 
         // Extract the number of watchdog seconds
-        data_table = soup_form_decode(client_msg->request_body->data);
-        seconds_string = g_hash_table_lookup(data_table, "seconds");
+        form_data = soup_form_decode (client_msg->request_body->data);
+        seconds_string = g_hash_table_lookup (form_data, "seconds");
 
         if (seconds_string != NULL) {
             max_time = g_ascii_strtoull (seconds_string, NULL, BASE10);
@@ -356,7 +356,7 @@ server_recipe_callback (SoupServer *server, SoupMessage *client_msg,
             max_time = 0;
         }
 
-        g_hash_table_destroy (data_table);
+        g_hash_table_destroy (form_data);
 
         // Update the number of watchdog seconds for External watchdog
         // by increasing it by EWD_TIME
