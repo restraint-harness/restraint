@@ -69,41 +69,58 @@ remove_env_file(guint port)
     g_remove(filename);
     g_free(filename);
 }
+
+/* Convert time string to number of seconds.
+ *     5d -> 432000
+ *     3m -> 180
+ *     2h -> 7200
+ *     600s -> 600
+ */
 guint64
-parse_time_string(gchar *time_string, GError **error)
+parse_time_string (gchar *time_string, GError **error)
 {
-    /* Convert time string to number of seconds.
-     *     5d -> 432000
-     *     3m -> 180
-     *     2h -> 7200
-     *     600s -> 600
-     */
-    gchar time_unit;
-    guint64 max_time = 0;
-    gint read = sscanf(time_string, "%" G_GUINT64_FORMAT " %c", &max_time, &time_unit);
-    if (read == 2) {
-        time_unit = g_ascii_toupper(time_unit);
-        if (time_unit == 'D')
-            max_time = 24 * 3600 * max_time;
-        else if (time_unit == 'H')
-            max_time = 3600 * max_time;
-        else if (time_unit == 'M')
-            max_time = 60 * max_time;
-        else if (time_unit == 'S')
-            max_time = max_time;
-        else {
-            g_set_error (error, RESTRAINT_ERROR,
-                         RESTRAINT_PARSE_ERROR_BAD_SYNTAX,
-                         "Unrecognised time unit '%c'", time_unit);
-        }
-    } else if (read == 1) {
-        max_time = max_time;
-    } else {
-        g_set_error (error, RESTRAINT_ERROR,
+    gchar   time_unit;
+    gint    read;
+    guint64 time_value = 0;
+
+    g_return_val_if_fail (time_string != NULL && strlen (time_string) > 0, 0);
+    g_return_val_if_fail (error == NULL || *error == NULL, 0);
+
+    errno = 0;
+
+    read = sscanf (time_string, "%" G_GUINT64_FORMAT " %c", &time_value, &time_unit);
+
+    if (read == 0 || errno != 0) {
+        g_set_error (error,
+                     RESTRAINT_ERROR,
                      RESTRAINT_PARSE_ERROR_BAD_SYNTAX,
-                     "Failed to parse time string: %s", time_string);
+                     "Failed to parse time string: %s",
+                     time_string);
+
+        return 0;
     }
-    return max_time;
+
+    time_unit = read == 1 ? 'S' : g_ascii_toupper (time_unit);
+
+    switch (time_unit) {
+    case 'D':
+        return time_value * 24 * 60 * 60;
+    case 'H':
+        return time_value * 60 * 60;
+    case 'M':
+        return time_value * 60;
+    case 'S':
+        return time_value;
+    default:
+        g_set_error (error,
+                     RESTRAINT_ERROR,
+                     RESTRAINT_PARSE_ERROR_BAD_SYNTAX,
+                     "Unrecognised time unit '%c'",
+                     time_unit);
+        break;
+    }
+
+    return time_value;
 }
 
 gboolean
