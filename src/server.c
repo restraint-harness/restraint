@@ -388,13 +388,9 @@ server_recipe_callback (SoupServer *server, SoupMessage *client_msg,
             g_warning("Adjustment to local watchdog ignored since 'no_localwatchdog'"
                       " metadata is set\n");
         } else {
-            task->remaining_time = 0;
-            if (max_time > 0) {
-                task->remaining_time = max_time;
-            }
-            time_t rawtime;
-            time(&rawtime);
-            task->time_chged = g_memdup(&rawtime, sizeof(time_t));
+            task->remaining_time = max_time;
+            task->time_chged = g_malloc (sizeof (time_t));
+            *task->time_chged = time (NULL);
         }
     } else if (g_str_has_suffix(path, "status")) {
         gchar **splitpath = g_strsplit(path, "/", -1);
