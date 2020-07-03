@@ -356,7 +356,17 @@ check_param_for_override (Param *param, Task *task)
 {
     if (g_strcmp0 (param->name, "KILLTIMEOVERRIDE") == 0 ||
         g_strcmp0 (param->name, "RSTRNT_MAX_TIME") == 0) {
-        task->remaining_time = parse_time_string (param->value, NULL);
+        GError  *error = NULL;
+        guint64  time_value;
+
+        time_value = parse_time_string (param->value, &error);
+
+        if (error == NULL) {
+            task->remaining_time = time_value;
+        } else {
+            g_warning ("'max_time' override failed: %s", error->message);
+            g_clear_error (&error);
+        }
     }
     if (g_strcmp0 (param->name, "RSTRNT_USE_PTY") == 0) {
         gchar *value = g_ascii_strup(param->value, -1);
