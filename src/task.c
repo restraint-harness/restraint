@@ -354,8 +354,13 @@ task_finish_callback (gint pid_result, gboolean localwatchdog, gpointer user_dat
 static void
 check_param_for_override (Param *param, Task *task)
 {
-    if (g_strcmp0 (param->name, "KILLTIMEOVERRIDE") == 0 ||
-        g_strcmp0 (param->name, "RSTRNT_MAX_TIME") == 0) {
+    const gchar *name;
+
+    g_return_if_fail (param != NULL && task != NULL);
+
+    name = param->name;
+
+    if (STREQ (name, "KILLTIMEOVERRIDE") || STREQ (name, "RSTRNT_MAX_TIME")) {
         GError  *error = NULL;
         guint64  time_value;
 
@@ -367,15 +372,12 @@ check_param_for_override (Param *param, Task *task)
             g_warning ("'max_time' override failed: %s", error->message);
             g_clear_error (&error);
         }
-    }
-    if (g_strcmp0 (param->name, "RSTRNT_USE_PTY") == 0) {
-        gchar *value = g_ascii_strup(param->value, -1);
-        if (g_strcmp0 (value, "TRUE") == 0) {
-            task->metadata->use_pty = TRUE;
-        } else {
-            task->metadata->use_pty = FALSE;
-        }
-        g_free(value);
+    } else if (STREQ (name, "RSTRNT_USE_PTY")) {
+        gchar *value = g_ascii_strup (param->value, -1);
+
+        task->metadata->use_pty = STREQ (value, "TRUE");
+
+        g_free (value);
     }
 }
 

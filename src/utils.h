@@ -1,4 +1,4 @@
-/*  
+/*
     This file is part of Restraint.
 
     Restraint is free software: you can redistribute it and/or modify
@@ -23,6 +23,8 @@
 
 #define CMD_ENV_DIR "/var/lib/restraint"
 #define CMD_ENV_FILE_FORMAT "%s/rstrnt-commands-env-%u.sh"
+
+#define STREQ(a, b) (g_strcmp0 (a, b) == 0)
 
 void update_env_file(gchar *prefix, gchar *restraint_url,
                      gchar *recipe_id, gchar *task_id,
