@@ -285,7 +285,7 @@ test_parse_time_string_wrong_unit (void)
 {
     GError *tmp_error = NULL;
 
-    g_assert_true (parse_time_string ("1x", &tmp_error) == 1);
+    g_assert_true (parse_time_string ("1x", &tmp_error) == 0);
     g_assert_nonnull (tmp_error);
 
     g_clear_error (&tmp_error);
