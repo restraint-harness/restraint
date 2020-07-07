@@ -39,10 +39,10 @@ Included in the table are the `Restraint` substitutes and which RHTS commands ar
 +--------------------------------+-------------------------------------------+
 | rhts-backup                    | rstrnt-backup                             |
 +--------------------------------+-------------------------------------------+
-| rhts-db-submit-result,         | rstrnt-report-result.d plugin             |
+| rhts-db-submit-result          | rstrnt-report-result.d plugin             |
 | rhts_db_submit_result          | :ref:`rpt_result` (See Note)              |
 +--------------------------------+-------------------------------------------+
-| rhts-environment.sh,           | None                                      |
+| rhts-environment.sh            | None                                      |
 | rhts_environment.sh            |                                           |
 +--------------------------------+-------------------------------------------+
 | rhts-extend                    | rstrnt-adjust-watchdog                    |
@@ -55,10 +55,10 @@ Included in the table are the `Restraint` substitutes and which RHTS commands ar
 +--------------------------------+-------------------------------------------+
 | rhts-reboot                    | rstrnt-reboot                             |
 +--------------------------------+-------------------------------------------+
-| rhts-recipe-sync-block,        | rstrnt-sync-block                         |
+| rhts-recipe-sync-block         | rstrnt-sync-block                         |
 | rhts_recipe_sync_block         |                                           |
 +--------------------------------+-------------------------------------------+
-| rhts-recipe-sync-set,          | rstrnt-sync-set                           |
+| rhts-recipe-sync-set           | rstrnt-sync-set                           |
 | rhts_recipe_sync_set           |                                           |
 +--------------------------------+-------------------------------------------+
 | rhts-report-result             | rstrnt-report-result                      |
@@ -67,13 +67,13 @@ Included in the table are the `Restraint` substitutes and which RHTS commands ar
 +--------------------------------+-------------------------------------------+
 | rhts-run-simple-test           | None                                      |
 +--------------------------------+-------------------------------------------+
-| rhts-submit-log,               | rstrnt-report-log                         |
+| rhts-submit-log                | rstrnt-report-log                         |
 | rhts_submit_log                |                                           |
 +--------------------------------+-------------------------------------------+
-| rhts-sync-block,               | rstrnt-sync-block                         |
+| rhts-sync-block                | rstrnt-sync-block                         |
 | rhts_sync_block                |                                           |
 +--------------------------------+-------------------------------------------+
-| rhts-sync-set,                 | rstrnt-sync-set                           |
+| rhts-sync-set                  | rstrnt-sync-set                           |
 | rhts_sync_set                  |                                           |
 +--------------------------------+-------------------------------------------+
 | rhts-system-info               | localwatchdog.d 20_sysinfo plugin         |
