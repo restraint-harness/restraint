@@ -373,8 +373,8 @@ The command `rstrnt-report-result` sends a result report and alters the
 status of the task.  This command can be called multiple times for a
 single task each concluding with their own status results.   At conclusion
 of the task, the final task result is the most severe rating. So if you
-call the command with FAIL, then WARN, then PASS, the task status results
-in FAIL.
+call the command with FAIL, then WARN, then PASS, or SKIP, the task status
+results in FAIL.
 
 This program runs in two modes.  One provides backward compatibility to
 legacy harness and libraries and the other is restraint specific.
@@ -431,7 +431,13 @@ Where:
 
 .. option::  TESTRESULT
 
-   Indicates results of job.  It can be one of PASS|FAIL|WARN.
+   Indicates results of job.  It can be one of SKIP|PASS|WARN|FAIL (listed by
+   increasing severity).  The highest severity received for a task becomes the
+   final task result. The only result type that may need further explanation
+   is SKIP. SKIP is useful when conditions on the device does not apply to
+   this test. The task can be skipped and marked as such.  This
+   allows the user the flexibility to use the same job for multiple hardware
+   types, or OSs, or architectures, etc and omit tasks when not applicable.
    This is a required argument.
 
 .. option::  METRIC
@@ -456,7 +462,13 @@ Where:
 .. option::  TESTRESULT
    :noindex:
 
-   Indicates results of job.  It can be one of PASS|FAIL|WARN.
+   Indicates results of job.  It can be one of SKIP|PASS|WARN|FAIL (listed by
+   increasing severity).  The highest severity received for a task becomes the
+   final task result. The only result type that may need further explanation
+   is SKIP. SKIP is useful when conditions on the device does not apply to
+   this test. The task can be skipped and marked as such.  This
+   allows the user the flexibility to use the same job for multiple hardware
+   types, or OSs, or architectures, etc and omit tasks when not applicable.
    This is a required argument.
 
 .. option::  LOGFILE
