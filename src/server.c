@@ -364,7 +364,10 @@ server_recipe_callback (SoupServer *server, SoupMessage *client_msg,
                        "'no_localwatchdog' metadata is set");
         } else {
             task->remaining_time = max_time;
-            task->time_chged = g_malloc (sizeof (time_t));
+
+            if (task->time_chged == NULL)
+                task->time_chged = g_malloc (sizeof (time_t));
+
             *task->time_chged = time (NULL);
         }
 
