@@ -160,7 +160,7 @@ test_cmd_utils: test_cmd_utils.o cmd_utils.o env.o utils.o errors.o
 test_utils: test_utils.o utils.o errors.o
 
 test_logging: test_logging.o message.o
-test_logging.o: test_logging.c
+test_logging.o: test_logging.c logging.c
 
 test-data/git-remote: test-data/git-remote.tgz
 	tar --no-same-owner -C test-data -xzf $<
