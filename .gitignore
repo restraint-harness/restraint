@@ -64,3 +64,4 @@ rel-eng/lib/__pycache__/
 tags
 cscope.out
 .tox/
+tito-test-build/
