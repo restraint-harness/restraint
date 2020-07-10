@@ -9,7 +9,8 @@ dnf install -y 'dnf-command(config-manager)' \
 	       python3-flask \
 	       python3-requests \
 	       python3-pytest \
-	       python3-six
+	       python3-six \
+	       epel-release
 
 dnf config-manager -y --enable PowerTools
 
