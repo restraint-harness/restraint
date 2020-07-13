@@ -56,7 +56,7 @@ restAPI allowing all results and logs to be recorded from the test machine.
 export CFLAGS="$RPM_OPT_FLAGS"
 
 pushd src
-make
+make %{?_smp_mflags}
 popd
 
 make -C selinux -f %{_datadir}/selinux/devel/Makefile
