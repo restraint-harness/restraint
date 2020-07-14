@@ -56,10 +56,7 @@ archive_entry_callback (const gchar *entry, gpointer user_data)
     GString *message = g_string_new (NULL);
 
     g_string_printf (message, "** Extracting %s\n", entry);
-
-    rstrnt_log_bytes (app_data->tasks->data, RSTRNT_LOG_TYPE_HARNESS,
-                      message->str, message->len);
-
+    restraint_log_task (app_data, RSTRNT_LOG_TYPE_HARNESS, message->str, message->len);
     g_string_free (message, TRUE);
 }
 
@@ -126,10 +123,7 @@ fetch_finish_callback (GError *error, guint32 match_cnt,
             g_string_printf (message, "** Fetch Summary: Match %d, "
                              "Nonmatch %d\n",
                              match_cnt, nonmatch_cnt);
-
-            rstrnt_log_bytes (app_data->tasks->data, RSTRNT_LOG_TYPE_HARNESS,
-                              message->str, message->len);
-
+            restraint_log_task (app_data, RSTRNT_LOG_TYPE_HARNESS, message->str, message->len);
             g_string_free (message, TRUE);
         }
     }
@@ -228,7 +222,7 @@ io_callback (GIOChannel    *io,
                G_MESSAGES_DEBUG is used. */
             g_debug ("%s", buf);
 
-            rstrnt_log_bytes (app_data->tasks->data, log_type, buf, bytes_read);
+            restraint_log_task (app_data, log_type, buf, bytes_read);
 
             return G_SOURCE_CONTINUE;
 
@@ -514,11 +508,9 @@ restraint_log_lwd_message (AppData *app_data,
                     currtime,
                     (modified_wd) ? " User Adjusted" : "",
                     expire_time);
-    g_message("%s", message->str);
 
-    rstrnt_log_bytes (app_data->tasks->data, RSTRNT_LOG_TYPE_HARNESS,
-                      message->str, message->len);
-
+    g_printerr ("%s", message->str);
+    restraint_log_task (app_data, RSTRNT_LOG_TYPE_HARNESS, message->str, message->len);
     g_string_free (message, TRUE);
 }
 
@@ -1137,7 +1129,8 @@ task_handler (gpointer user_data)
       break;
     case TASK_COMPLETED:
     {
-      rstrnt_upload_logs (task, app_data, soup_session, app_data->cancellable);
+      if (!app_data->stdin)
+        rstrnt_upload_logs (task, app_data, soup_session, app_data->cancellable);
 
       // Some step along the way failed.
       if (task->error) {
@@ -1168,10 +1161,11 @@ task_handler (gpointer user_data)
   }
 
   if (message->len > 0) {
-    g_printerr ("%s", message->str);
-    rstrnt_log_bytes (app_data->tasks->data, RSTRNT_LOG_TYPE_HARNESS,
-                      message->str, message->len);
+      g_printerr ("%s", message->str);
+      restraint_log_task (app_data, RSTRNT_LOG_TYPE_HARNESS, message->str, message->len);
   }
-  g_string_free(message, TRUE);
+
+  g_string_free (message, TRUE);
+
   return result;
 }

@@ -56,6 +56,6 @@ typedef struct RstrntServerAppData {
   guint last_signal;
 } AppData;
 
-void connections_write (AppData *app_data, const gchar *path,
-                        const gchar *msg_data, gsize msg_len);
+void restraint_log_task (AppData *app_data, RstrntLogType type, const char *data, gsize size);
+
 #endif
