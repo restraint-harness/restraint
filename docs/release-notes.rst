@@ -1,6 +1,24 @@
 Release Notes
 =============
 
+Restraint 0.2.3
+---------------
+
+Bug Fixes
+---------
+
+- Fix noisy Restraint client output
+
+  The Restraint client was not honoring the verbosity levels and it
+  was printing all output available even when the verbosity level was
+  the lowest.
+  The Restraint client output now behaves similarly to release 0.1.45.
+
+- Increase retries for recipe fetching
+
+  Retries for recipe fetching are increased from 3 attempts in 10
+  seconds intervals to 12 attempts in 10 seconds intervals.
+
 Restraint 0.2.2
 ---------------
 
