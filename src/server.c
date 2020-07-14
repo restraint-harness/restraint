@@ -103,6 +103,89 @@ static void restraint_free_app_data(AppData *app_data)
   g_slice_free(AppData, app_data);
 }
 
+static void
+client_write (AppData     *app_data,
+              const gchar *path,
+              const gchar *msg_data,
+              gsize        msg_len)
+{
+    SoupMessage         *server_msg;
+    Task                *task;
+    goffset             *offset;
+    g_autoptr (SoupURI)  task_output_uri = NULL;
+    g_autofree gchar    *section = NULL;
+
+    if (app_data->tasks == NULL || g_cancellable_is_cancelled (app_data->cancellable))
+        return;
+
+    task = (Task *) app_data->tasks->data;
+    task_output_uri = soup_uri_new_with_base (task->task_uri, path);
+    server_msg = soup_message_new_from_uri ("PUT", task_output_uri);
+
+    g_return_if_fail (server_msg != NULL);
+
+    offset = g_hash_table_lookup (task->offsets, path);
+
+    if (offset == NULL) {
+        offset = g_malloc0 (sizeof (goffset));
+        g_hash_table_insert (task->offsets, g_strdup (path), offset);
+    }
+
+    soup_message_headers_set_content_range (server_msg->request_headers,
+                                            *offset,
+                                            *offset + msg_len - 1,
+                                            -1);
+    *offset += msg_len;
+
+    soup_message_headers_append (server_msg->request_headers, "log-level", "2");
+    soup_message_set_request (server_msg, "text/plain", SOUP_MEMORY_COPY, msg_data, msg_len);
+
+    app_data->queue_message (soup_session,
+                             server_msg,
+                             app_data->message_data,
+                             NULL,
+                             app_data->cancellable,
+                             NULL);
+
+    section = g_strdup_printf ("offsets_%s", task->task_id);
+    restraint_config_set (app_data->config_file, section, path, NULL, G_TYPE_UINT64, *offset);
+}
+
+void
+restraint_log_task (AppData       *app_data,
+                    RstrntLogType  type,
+                    const char    *data,
+                    gsize          size)
+{
+    const char *log_path = NULL;
+
+    g_return_if_fail (app_data != NULL);
+    g_return_if_fail (data != NULL && size > 0);
+
+    if (!app_data->stdin){
+        rstrnt_log_bytes (app_data->tasks->data, type, data, size);
+
+        return;
+    }
+
+    switch (type) {
+    case RSTRNT_LOG_TYPE_TASK:
+        log_path = LOG_PATH_TASK;
+
+        break;
+    case RSTRNT_LOG_TYPE_HARNESS:
+        log_path = LOG_PATH_HARNESS;
+
+        break;
+    default:
+        g_warn_if_reached ();
+
+        return;
+    }
+
+    client_write (app_data, log_path, data, size);
+}
+
 gboolean
 server_io_callback (GIOChannel *io, GIOCondition condition, gpointer user_data) {
     //ProcessData *process_data = (ProcessData *) user_data;
@@ -127,9 +210,7 @@ server_io_callback (GIOChannel *io, GIOCondition condition, gpointer user_data) 
             if (!app_data->stdin)
                 g_print ("%s", buf);
 
-            rstrnt_log_bytes (app_data->tasks->data,
-                              RSTRNT_LOG_TYPE_HARNESS,
-                              buf, bytes_read);
+            restraint_log_task (app_data, RSTRNT_LOG_TYPE_HARNESS, buf, bytes_read);
 
             return G_SOURCE_CONTINUE;
 
@@ -630,7 +711,6 @@ int main(int argc, char *argv[]) {
   SoupServer *soup_server = NULL;
   GError *error = NULL;
   app_data->port = 0;
-  RstrntLogManager *log_manager;
 
   GOptionEntry entries [] = {
     { "port", 'p', 0, G_OPTION_ARG_INT, &app_data->port, "Port to listen on", "PORT" },
@@ -729,13 +809,16 @@ int main(int argc, char *argv[]) {
   soup_server_disconnect(soup_server);
   g_object_unref(soup_server);
 
-  restraint_free_app_data(app_data);
-
   g_main_loop_unref(loop);
 
-  log_manager = rstrnt_log_manager_get_instance ();
+  if (!app_data->stdin) {
+      RstrntLogManager *log_manager;
 
-  g_object_unref (log_manager);
+      log_manager = rstrnt_log_manager_get_instance ();
+      g_object_unref (log_manager);
+  }
+
+  restraint_free_app_data (app_data);
 
   return 0;
 }
