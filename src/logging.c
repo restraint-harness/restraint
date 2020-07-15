@@ -144,12 +144,13 @@ rstrnt_write_log_func (gpointer data,
     bool success;
 
     writer_data = data;
+    variant = writer_data->variant;
 
-    message = g_variant_get_fixed_array (writer_data->variant, &message_length,
-                                         sizeof(*message));
+    message = g_variant_get_fixed_array (variant, &message_length, sizeof (*message));
     success = g_output_stream_write_all (G_OUTPUT_STREAM (writer_data->log_data->output_stream),
                                          message, message_length,
                                          NULL, NULL, &error);
+
     if (!success)
     {
         g_warning ("%s(): Failed to write out log message: %s",
@@ -411,6 +412,7 @@ rstrnt_log_manager_append_to_log (RstrntLogManager    *self,
 
             break;
     }
+
     writer_data->variant = g_variant_new_fixed_array (G_VARIANT_TYPE_BYTE,
                                                       message, message_length,
                                                       sizeof(*message));

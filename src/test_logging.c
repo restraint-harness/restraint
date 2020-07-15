@@ -156,7 +156,7 @@ main (int    argc,
     g_autoptr (RstrntLogManager) log_manager = NULL;
     SoupServer *server;
     g_autoptr (GError) error = NULL;
-    g_autoptr (GSList) uris = NULL;
+    g_autoslist (SoupURI) uris = NULL;
     g_autofree gchar *task_id = NULL;
     RstrntTask task;
     int retval;
