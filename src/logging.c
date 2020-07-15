@@ -18,6 +18,10 @@
 #include "logging.h"
 #include "task.h"
 
+#ifndef LOG_MANAGER_DIR
+#define LOG_MANAGER_DIR VAR_LIB_PATH "/logs"
+#endif
+
 struct _RstrntLogManager
 {
     GObject parent_instance;
@@ -165,9 +169,7 @@ rstrnt_task_log_data_new (const RstrntTask  *task,
     g_autoptr (GFileOutputStream) harness_log_file_output_stream = NULL;
     RstrntTaskLogData *data;
 
-    log_directory_path = g_build_path ("/",
-                                       VAR_LIB_PATH, "logs", task->task_id,
-                                       NULL);
+    log_directory_path = g_build_path ("/", LOG_MANAGER_DIR, task->task_id, NULL);
     log_directory = g_file_new_for_path (log_directory_path);
 
     if (!g_file_make_directory_with_parents (log_directory, NULL, error))
