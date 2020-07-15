@@ -190,7 +190,7 @@ $(XZ).tar.gz:
 
 TAR_BALLS += $(SQLITE).tar.gz
 $(SQLITE).tar.gz:
-	curl -f -L -O http://sqlite.org/2020/$@
+	curl -f -L -O https://sqlite.org/2020/$@
 
 TAR_BALLS += $(INTLTOOL).tar.gz
 $(INTLTOOL).tar.gz:
