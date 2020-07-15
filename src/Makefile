@@ -180,4 +180,4 @@ install: all
 
 .PHONY: clean
 clean:
-	rm -f $(PROGRAMS) $(TEST_PROGRAMS) *.o rstrnt-commands-env-*.sh
+	rm -rf $(PROGRAMS) $(TEST_PROGRAMS) *.o rstrnt-commands-env-*.sh test_logging_logs/

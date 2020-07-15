@@ -15,9 +15,11 @@
   along with Restraint.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "logging.c"
-
 #include <glib.h>
+
+#define LOG_MANAGER_DIR "./test_logging_logs"
+
+#include "logging.c"
 
 static bool listening = true;
 
@@ -35,9 +37,7 @@ check_log_file_contents (const RstrntTask *task,
     char *file_contents;
     size_t contents_length;
 
-    path = g_build_path ("/",
-                         VAR_LIB_PATH, "logs", task->task_id,
-                         NULL);
+    path = g_build_path ("/", LOG_MANAGER_DIR, task->task_id, NULL);
     log_directory_file = g_file_new_for_path (path);
     child_file = g_file_get_child (log_directory_file, child);
     child_path = g_file_get_path (child_file);

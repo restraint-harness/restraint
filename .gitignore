@@ -40,6 +40,8 @@
 /src/test_cmd_utils
 /src/test_cmd_watchdog
 /src/test_fetch_task
+/src/test_logging
+/src/test_logging_logs/
 /src/test_metadata
 /src/test_recipe
 /src/test_task
