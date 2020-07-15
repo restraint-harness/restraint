@@ -157,6 +157,7 @@ main (int    argc,
     SoupServer *server;
     g_autoptr (GError) error = NULL;
     g_autoptr (GSList) uris = NULL;
+    g_autofree gchar *task_id = NULL;
     RstrntTask task;
     int retval;
 
@@ -179,8 +180,9 @@ main (int    argc,
     }
 
     uris = soup_server_get_uris (server);
+    task_id = g_strdup_printf ("%" G_GINT64_FORMAT, g_get_real_time ());
 
-    task.task_id = "1997";
+    task.task_id = task_id;
     task.task_uri = uris->data;
 
     retval = g_test_run ();
