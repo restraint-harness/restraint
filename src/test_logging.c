@@ -21,7 +21,7 @@
 
 #include "logging.c"
 
-static bool listening = true;
+static int message_callback_calls = 0;
 
 static void
 check_log_file_contents (const RstrntTask *task,
@@ -98,13 +98,6 @@ server_callback (SoupServer        *server,
         soup_server_remove_handler (server, "/" LOG_PATH_HARNESS);
     }
 
-    if (task_log_handled && harness_log_handled)
-    {
-        listening = false;
-
-        soup_server_disconnect (server);
-    }
-
     soup_message_set_status (msg, SOUP_STATUS_OK);
 }
 
@@ -113,7 +106,22 @@ message_callback (SoupSession *session,
                   SoupMessage *msg,
                   gpointer     user_data)
 {
+    MessageData *message_data;
+
     g_assert_cmpint (msg->status_code, ==, SOUP_STATUS_OK);
+    g_assert_nonnull (user_data);
+
+    message_data = (MessageData *) user_data;
+
+    g_assert_nonnull (message_data->finish_callback);
+
+    /* Call to rstrnt_on_log_uploaded() */
+    g_assert_true (message_data->finish_callback == rstrnt_on_log_uploaded);
+    message_data->finish_callback (session, msg, message_data->user_data);
+
+    g_slice_free (MessageData, message_data);
+
+    message_callback_calls++;
 }
 
 static void
@@ -124,7 +132,15 @@ queue_message (SoupSession           *session,
                GCancellable          *cancellable,
                gpointer               user_data)
 {
-    soup_session_queue_message (session, msg, message_callback, NULL);
+    MessageData *message_data;
+
+    message_data = g_slice_new0 (MessageData);
+    message_data->session = session;
+    message_data->msg = msg;
+    message_data->user_data = user_data;
+    message_data->finish_callback = finish_callback;
+
+    soup_session_queue_message (session, msg, message_callback, message_data);
 }
 
 static void
@@ -133,6 +149,7 @@ test_rstrnt_log_upload (gconstpointer user_data)
     const RstrntTask *task;
     RstrntServerAppData app_data;
     SoupSession *session;
+    int expected_calls;
 
     task = user_data;
     session = soup_session_new ();
@@ -141,10 +158,14 @@ test_rstrnt_log_upload (gconstpointer user_data)
 
     rstrnt_upload_logs (task, &app_data, session, NULL);
 
-    while (listening)
-    {
+    expected_calls = 2;
+
+    while (message_callback_calls < expected_calls)
         g_main_context_iteration (NULL, TRUE);
-    }
+
+    g_assert_cmpint (message_callback_calls, ==, expected_calls);
+
+    message_callback_calls = 0;
 
     g_object_unref (session);
 }
@@ -187,6 +208,7 @@ main (int    argc,
 
     retval = g_test_run ();
 
+    soup_server_disconnect (server);
     g_object_unref (server);
 
     return retval;
