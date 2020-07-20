@@ -153,7 +153,7 @@ The following are examples of each method using the command `rstrnt-abort` as an
 
 rstrnt-abort
 ~~~~~~~~~~~~
-Running this command sets a recipe or a task to `Aborted` status. For an aborted recipe, the current
+Running this command sets a recipe to `Aborted` status. As a result, the current
 task as well as subsequent tasks in the recipe will be marked as `aborted` and the job is discontinued.
 
 Arguments for this command are as follows::

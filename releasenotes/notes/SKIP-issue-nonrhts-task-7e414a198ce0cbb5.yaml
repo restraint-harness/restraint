@@ -1,0 +1,20 @@
+fixes:
+  - |
+    Recognize results reported for non-rhts tasks
+
+    When the task reports just `SKIP` for results, the final task result
+    should be `SKIP`. An extra task result is occurring when a non-rhts task
+    is executed.  An non-rhts task is one that uses the `metadata` file
+    instead of `testinfo` file.  Bugzilla 1334893 made a change to always
+    report results `PASS` for task exiting with zero or `FAIL` when
+    exit non-zero for non-rhts tasks.  As a result, `PASS` was being
+    reported which has a high priority then `SKIP` so the final task
+    result was `PASS`
+
+    Code changes monitor whether user reports results by way of
+    `rstrnt-report-result`.  If so, give those results priority; otherwise,
+    hardcode `PASS` task result for user.
+
+    When process exits with non-zero, `FAIL` for non-rhts will remain as this
+    provides the user the option to continue with the job.  If they want
+    legacy behavior, they should make a call to `rstrnt-abort` in their task.

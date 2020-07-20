@@ -18,6 +18,13 @@ to eliminate RHTS references.
    on how your task is written, you may have to update or remove `Makefiles` so they
    do not process the `testinfo.desc` file.  An example of this is also
    included in the referenced section.
+#. The final results for a task is influenced by whether your task is defined with
+   a `metadata` file (non-rhts) versus `Makefile/testinfo.desc` (rhts).  If a task
+   exits with a zero and the user did not call rstrnt-report-result,
+   the task will conclude with `PASS` instead of `New` making sure there is some
+   valid conclusion to this task.  If task exits with non-zero, the task will
+   result with `FAIL` for non-rhts instead of `ABORT`.  For further details,
+   refer to :ref:`task_results`.
 #. Replace `RHTS` environment variables with `Restraint` variables. A table listing
    `RHTS Legacy Variables` to `Restraint Substitute` can be found in
    :ref:`legacy_env_var`.

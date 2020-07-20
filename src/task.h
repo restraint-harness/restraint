@@ -96,6 +96,8 @@ typedef struct {
     gboolean started;
     /* Has this task finished already? */
     gboolean finished;
+    /* Has this task reported results? */
+    gboolean results_reported;
     /* Has this task triggered the localwatchdog? */
     gboolean localwatchdog;
     /* Are we running in rhts_compat mode? */

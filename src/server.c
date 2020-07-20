@@ -330,6 +330,9 @@ server_recipe_callback (SoupServer *server, SoupMessage *client_msg,
     if (g_str_has_suffix (path, "/results/")) {
         server_uri = soup_uri_new_with_base (task->task_uri, "results/");
         server_msg = soup_message_new_from_uri ("POST", server_uri);
+        if (task != NULL) {
+            task->results_reported = TRUE;
+        }
     } else if (g_strrstr (path, "/logs/") != NULL) {
         gchar *uri = soup_uri_to_string(task->task_uri, FALSE);
         gchar *log_url = swap_base(path, uri, "/recipes/");
