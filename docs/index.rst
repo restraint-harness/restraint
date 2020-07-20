@@ -48,6 +48,7 @@ Contents:
    jobs
    tasks
    variables
+   results
    plugins
    using
    release-notes

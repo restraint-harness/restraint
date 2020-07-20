@@ -281,8 +281,9 @@ task_finish_callback (gint pid_result, gboolean localwatchdog, gpointer user_dat
     if (pid_result == 0) {
         task->state = task_run_data->pass_state;
 
-        // If not running in rhts compat mode report PASS for exit code 0
-        if (!task->rhts_compat) {
+        // If not running in rhts compat mode and user hasn't reported results,
+        // report PASS for exit code 0.
+        if (!task->rhts_compat && !task->results_reported) {
             restraint_task_result(task, app_data, "PASS", 0, "exit_code", NULL);
         }
     } else {
