@@ -318,6 +318,8 @@ rstrnt_upload_log (const RstrntTask    *task,
     SoupMessage *message;
     const char *contents;
     size_t length;
+    GFile *data_file = NULL;
+    gchar *log_path = NULL;
 
     manager = rstrnt_log_manager_get_instance ();
     data = rstrnt_log_manager_get_task_data (manager, task, &error);
@@ -328,38 +330,31 @@ rstrnt_upload_log (const RstrntTask    *task,
     {
         case RSTRNT_LOG_TYPE_TASK:
         {
-            path = g_file_get_path (data->task_log_data->file);
+            data_file = data->task_log_data->file;
+            log_path = LOG_PATH_TASK;
         }
         break;
 
         case RSTRNT_LOG_TYPE_HARNESS:
         {
-            path = g_file_get_path (data->harness_log_data->file);
+            data_file = data->harness_log_data->file;
+            log_path = LOG_PATH_HARNESS;
         }
         break;
     }
+
+    path = g_file_get_path (data_file);
     file = g_mapped_file_new (path, false, &error);
+
     if (NULL == file)
     {
         g_warning ("Task log file mapping failed: %s", error->message);
 
         g_return_if_reached ();
     }
-    switch (type)
-    {
-        case RSTRNT_LOG_TYPE_TASK:
-        {
-            uri = soup_uri_new_with_base (task->task_uri, LOG_PATH_TASK);
-        }
-        break;
 
-        case RSTRNT_LOG_TYPE_HARNESS:
-        {
-            uri = soup_uri_new_with_base (task->task_uri, LOG_PATH_HARNESS);
-        }
-        break;
 
-    }
+    uri = soup_uri_new_with_base (task->task_uri, log_path);
     message = soup_message_new_from_uri ("PUT", uri);
     contents = g_mapped_file_get_contents (file);
     length = g_mapped_file_get_length (file);
