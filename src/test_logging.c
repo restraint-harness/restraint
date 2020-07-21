@@ -170,6 +170,91 @@ test_rstrnt_log_upload (gconstpointer user_data)
     g_object_unref (session);
 }
 
+static gchar *
+assert_content_range (SoupMessage *msg,
+                      goffset      expected_start,
+                      gsize        expected_len)
+{
+    gboolean has_header;
+    goffset start;
+    goffset end;
+    goffset len;
+    GString *msg_content = NULL;
+    g_autoptr (SoupBuffer) buffer = NULL;
+
+    has_header = soup_message_headers_get_content_range (msg->request_headers,
+                                                         &start,
+                                                         &end,
+                                                         &len);
+
+    g_assert_true (has_header);
+
+    buffer = soup_message_body_get_chunk (msg->request_body, 0);
+
+    g_assert_nonnull (buffer);
+    g_assert_cmpint (start, ==, expected_start);
+    g_assert_cmpint (end, ==, expected_start + buffer->length - 1);
+    g_assert_cmpint (len, ==, expected_len);
+
+    g_assert_cmpint (buffer->length, ==, end - start + 1);
+
+    msg_content = g_string_new_len (buffer->data, buffer->length);
+
+    return g_string_free (msg_content, FALSE);
+}
+
+static void
+test_rstrnt_chunk_log (void)
+{
+    g_autoptr (GString) actual_log = NULL;
+    g_autoptr (SoupURI) uri = NULL;
+    g_autofree SoupMessage **msgv = NULL;
+    int msgc = 0;
+    int expected_msgc;
+    const char *content;
+    gsize content_len;
+    int chunk_len;
+
+    chunk_len = 10;
+    content = "This strin" \
+              "g should b" \
+              "e 3 msgs";
+    expected_msgc = 3;
+
+    content_len = strlen (content);
+
+    uri = soup_uri_new ("http://internets:8000");
+
+    msgv = rstrnt_chunk_log (uri, content, strlen (content), chunk_len, &msgc);
+
+    g_assert_nonnull (msgv);
+    g_assert_cmpint (msgc, ==, expected_msgc);
+
+    actual_log = g_string_new (NULL);
+
+    for (int i = 0; i < msgc; i++) {
+        char *msg_content;
+        goffset start;
+
+        g_assert_nonnull (msgv[i]);
+        g_assert_true (soup_message_headers_header_equals (msgv[i]->request_headers,
+                                                           "log-level",
+                                                           "2"));
+
+        start = i * chunk_len;
+
+        msg_content = assert_content_range (msgv[i], start, content_len);
+
+        g_assert_nonnull (msg_content);
+        actual_log = g_string_append (actual_log, msg_content);
+
+        g_free (msg_content);
+        g_object_unref (msgv[i]);
+    }
+
+    g_assert_cmpstr (actual_log->str, ==, content);
+}
+
 int
 main (int    argc,
       char **argv)
@@ -194,6 +279,7 @@ main (int    argc,
 
     g_test_add_data_func ("/logging/write", &task, test_rstrnt_log_write);
     g_test_add_data_func ("/logging/upload", &task, test_rstrnt_log_upload);
+    g_test_add_func ("/logging/chunking", test_rstrnt_chunk_log);
 
     if (!soup_server_listen_local (server, 43770, SOUP_SERVER_LISTEN_IPV4_ONLY, &error))
     {

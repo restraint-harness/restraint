@@ -18,6 +18,8 @@
 #ifndef _RESTRAINT_BEAKER_HARNESS_H
 #define _RESTRAINT_BEAKER_HARNESS_H
 
+#define BKR_MAX_CONTENT_LENGTH 10 * 1024 * 1024  /* 10MB */
+
 #define BKR_ENV_EXISTS()           (rstrnt_bkr_env_exists () != 0)
 #define BKR_RECIPE_IS_HEALTHY(url) (BKR_HEALTH_STATUS_GOOD == rstrnt_bkr_check_recipe (url))
 
