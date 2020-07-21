@@ -17,6 +17,7 @@
 
 #include "logging.h"
 #include "task.h"
+#include "beaker_harness.h"
 
 #ifndef LOG_MANAGER_DIR
 #define LOG_MANAGER_DIR VAR_LIB_PATH "/logs"
@@ -302,6 +303,62 @@ rstrnt_flush_logs (const RstrntTask *task,
     }
 }
 
+/*
+ * Splits content in SoupMessages of up to chunk_len bytes.
+ *
+ * content must be non-NULL and content_len greater than 0.
+ *
+ * Memory in content must remain accesible until the last message in the
+ * vector is freed.
+ *
+ * chunk_len  must be greater than 0.
+ *
+ * Returns a SoupMessage vector of msgc elements. Caller must free the
+ * vector and the SoupMessages.
+ */
+static SoupMessage **
+rstrnt_chunk_log (SoupURI    *uri,
+                  const char *content,
+                  gsize       content_len,
+                  gsize       chunk_len,
+                  int        *msgc)
+{
+    SoupMessage **msgv;
+    SoupMessage **msg;
+    gsize         content_left;
+
+    g_return_val_if_fail (uri != NULL, NULL);
+    g_return_val_if_fail (content != NULL && content_len > 0, NULL);
+    g_return_val_if_fail (chunk_len > 0, NULL);
+    g_return_val_if_fail (msgc != NULL, NULL);
+
+    *msgc = content_len / chunk_len + (content_len % chunk_len > 0);
+    msgv = g_malloc0 (sizeof (SoupMessage *) * *msgc);
+
+    msg = msgv;
+    content_left = content_len;
+
+    while (content_left > 0) {
+        gsize   msg_len;
+        goffset start;
+        goffset end;
+
+        msg_len = content_left > chunk_len ? chunk_len : content_left;
+        start = content_len - content_left;
+        end = start + msg_len - 1;
+
+        *msg = soup_message_new_from_uri ("PUT", uri);
+        soup_message_headers_set_content_range ((*msg)->request_headers, start, end, content_len);
+        soup_message_headers_append ((*msg)->request_headers, "log-level", "2");
+        soup_message_set_request (*msg, "text/plain", SOUP_MEMORY_TEMPORARY, &content[start], msg_len);
+
+        content_left -= msg_len;
+        msg++;
+    }
+
+    return msgv;
+}
+
 static void
 rstrnt_upload_log (const RstrntTask    *task,
                    RstrntServerAppData *app_data,
@@ -315,7 +372,8 @@ rstrnt_upload_log (const RstrntTask    *task,
     g_autofree char *path = NULL;
     GMappedFile *file;
     SoupURI *uri = NULL;
-    SoupMessage *message;
+    g_autofree SoupMessage **msgv = NULL;
+    int msgc = 0;
     const char *contents;
     size_t length;
     GFile *data_file = NULL;
@@ -353,18 +411,20 @@ rstrnt_upload_log (const RstrntTask    *task,
         g_return_if_reached ();
     }
 
-
     uri = soup_uri_new_with_base (task->task_uri, log_path);
-    message = soup_message_new_from_uri ("PUT", uri);
     contents = g_mapped_file_get_contents (file);
     length = g_mapped_file_get_length (file);
 
-    soup_message_headers_append (message->request_headers, "log-level", "2");
-    soup_message_set_request (message, "text/plain", SOUP_MEMORY_TEMPORARY,
-                              contents, length);
+    msgv = rstrnt_chunk_log (uri, contents, length, BKR_MAX_CONTENT_LENGTH, &msgc);
 
+    g_return_if_fail (msgv != NULL && msgc > 0);
+
+    for (int i = 0; i < msgc - 1; i++)
+        app_data->queue_message (session, msgv[i], NULL, NULL, cancellable, NULL);
+
+    /* Last message sent sets the callback to cleanup the mapped file. */
     app_data->queue_message (session,
-                             message,
+                             msgv[msgc - 1],
                              NULL,
                              rstrnt_on_log_uploaded,
                              cancellable,
