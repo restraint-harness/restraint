@@ -1,4 +1,4 @@
-/*  
+/*
     This file is part of Restraint.
 
     Restraint is free software: you can redistribute it and/or modify
@@ -15,9 +15,14 @@
     along with Restraint.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifndef _RESTRAINT_UPLOAD_H
+#define _RESTRAINT_UPLOAD_H
+
 gboolean
 upload_file (SoupSession *session,
              gchar *filepath,
              gchar *filename,
              SoupURI *results_uri,
              GError **error);
+
+#endif
