@@ -1,4 +1,4 @@
-/*  
+/*
     This file is part of Restraint.
 
     Restraint is free software: you can redistribute it and/or modify
@@ -14,6 +14,9 @@
     You should have received a copy of the GNU General Public License
     along with Restraint.  If not, see <http://www.gnu.org/licenses/>.
 */
+
+#ifndef _RESTRAINT_DEPENDENCY_H
+#define _RESTRAINT_DEPENDENCY_H
 
 #include <glib.h>
 #include <stdint.h>
@@ -58,3 +61,5 @@ void restraint_install_dependencies (Task *task, GIOFunc io_callback,
                                      DependencyCallback finish_cb,
                                      GCancellable *cancellable,
                                      gpointer user_data);
+
+#endif

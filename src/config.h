@@ -1,4 +1,4 @@
-/*  
+/*
     This file is part of Restraint.
 
     Restraint is free software: you can redistribute it and/or modify
@@ -15,6 +15,9 @@
     along with Restraint.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifndef _RESTRAINT_CONFIG_H
+#define _RESTRAINT_CONFIG_H
+
 gint64 restraint_config_get_int64 (gchar *config_file, gchar *section, gchar *key, GError **error);
 guint64 restraint_config_get_uint64 (gchar *config_file, gchar *section, gchar *key, GError **error);
 gboolean restraint_config_get_boolean (gchar *config_file, gchar *section, gchar *key, GError **error);
@@ -23,3 +26,5 @@ gchar **restraint_config_get_keys (gchar *config_file, gchar *section, GError **
 void restraint_config_set (gchar *config_file, const gchar *section,
                            const gchar *key, GError **gerror, GType type, ...);
 void restraint_config_trunc (gchar *config_file, GError **error);
+
+#endif

@@ -15,6 +15,11 @@
     along with Restraint.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifndef _RESTRAINT_ENV_H
+#define _RESTRAINT_ENV_H
+
 #include "task.h"
 
 void build_env(gchar *restraint_url, guint port, Task *task);
+
+#endif

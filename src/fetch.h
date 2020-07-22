@@ -1,4 +1,4 @@
-/*  
+/*
     This file is part of Restraint.
 
     Restraint is free software: you can redistribute it and/or modify
@@ -14,6 +14,9 @@
     You should have received a copy of the GNU General Public License
     along with Restraint.  If not, see <http://www.gnu.org/licenses/>.
 */
+
+#ifndef _RESTRAINT_FETCH_H
+#define _RESTRAINT_FETCH_H
 
 #include "utils.h"
 
@@ -69,3 +72,5 @@ typedef enum {
 GQuark restraint_fetch_libarchive_error(void);
 
 int rmrf(const char *path);
+
+#endif

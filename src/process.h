@@ -1,4 +1,4 @@
-/*  
+/*
     This file is part of Restraint.
 
     Restraint is free software: you can redistribute it and/or modify
@@ -14,6 +14,9 @@
     You should have received a copy of the GNU General Public License
     along with Restraint.  If not, see <http://www.gnu.org/licenses/>.
 */
+
+#ifndef _RESTRAINT_PROCESS_H
+#define _RESTRAINT_PROCESS_H
 
 #include <gio/gio.h>
 
@@ -98,3 +101,5 @@ void process_free (ProcessData *process_data);
 
 extern char **environ;
 int    kill(pid_t, int);
+
+#endif

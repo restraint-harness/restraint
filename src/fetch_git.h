@@ -1,4 +1,4 @@
-/*  
+/*
     This file is part of Restraint.
 
     Restraint is free software: you can redistribute it and/or modify
@@ -15,6 +15,9 @@
     along with Restraint.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifndef _RESTRAINT_FETCH_GIT_H
+#define _RESTRAINT_FETCH_GIT_H
+
 #define GIT_PORT 9418
 #define GIT_BRANCH "master"
 #define HDR_LEN_SIZE 4
@@ -27,3 +30,5 @@ void restraint_fetch_git (SoupURI *url,
                      ArchiveEntryCallback entry_callback,
                      FetchFinishCallback finish_callback,
                      gpointer user_data);
+
+#endif

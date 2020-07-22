@@ -1,4 +1,4 @@
-/*  
+/*
     This file is part of Restraint.
 
     Restraint is free software: you can redistribute it and/or modify
@@ -15,6 +15,8 @@
     along with Restraint.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifndef _RESTRAINT_FETCH_URI_H
+#define _RESTRAINT_FETCH_URI_H
 
 #include <libsoup/soup.h>
 
@@ -25,3 +27,5 @@ void restraint_fetch_uri(SoupURI *url,
                      ArchiveEntryCallback entry_callback,
                      FetchFinishCallback finish_callback,
                      gpointer user_data);
+
+#endif
