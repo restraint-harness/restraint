@@ -33,6 +33,7 @@
 /third-party/tarballs
 /third-party/tree/
 /src/test-data/git-remote/
+/src/test_beaker_harness
 /src/test_cmd_abort
 /src/test_cmd_log
 /src/test_cmd_result

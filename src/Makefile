@@ -88,9 +88,10 @@ config.o: config.h
 errors.o: errors.h
 xml.o: xml.h
 restraint_forkpty.o:
+beaker_harness.o:
 
 # Tests
-
+TEST_PROGRAMS += test_beaker_harness
 TEST_PROGRAMS += test_cmd_abort
 TEST_PROGRAMS += test_cmd_log
 TEST_PROGRAMS += test_cmd_result
@@ -108,6 +109,14 @@ TEST_PROGRAMS += test_utils
 
 test_%: test_%.o
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
+
+MOCKS_BEAKER_HARNESS = -Wl,--wrap=soup_session_send_message
+
+test_beaker_harness: test_beaker_harness.o beaker_harness.o
+	$(CC) $(MOCKS_BEAKER_HARNESS) $(LDFLAGS) -o $@ $^ $(LIBS)
+
+test_beaker_harness.o: test_beaker_harness.c
+	$(CC) $(MOCKS_BEAKER_HARNESS) $(CFLAGS) -c -o $@ $^ $(LIBS)
 
 test_fetch_git: fetch.o fetch_git.o errors.o
 test_fetch_git.o: fetch_git.h
