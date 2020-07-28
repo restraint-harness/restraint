@@ -59,7 +59,7 @@ function runcon_unconfined() {
   fi
 }
 
-if selinuxenabled; then
+if command -v selinuxenabled >/dev/null && selinuxenabled; then
   if [ 4 -le 0$RSTRNT_DEBUG ]; then
       rstrnt_info "selinux enabled: trying to switch context..."
   fi
