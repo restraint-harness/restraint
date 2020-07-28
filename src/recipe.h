@@ -1,4 +1,4 @@
-/*  
+/*
     This file is part of Restraint.
 
     Restraint is free software: you can redistribute it and/or modify
@@ -69,4 +69,6 @@ void restraint_recipe_parse_stream (GInputStream *stream, gpointer user_data);
 void restraint_recipe_update_roles(Recipe *recipe, xmlDoc *doc, GError **error);
 void restraint_recipe_free(Recipe *recipe);
 void recipe_handler_finish (gpointer user_data);
+gboolean recipe_wait_on_beaker (const gchar *recipe_url, const gchar *state_tag);
+
 #endif

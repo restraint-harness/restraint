@@ -30,6 +30,7 @@
 #include "utils.h"
 #include "config.h"
 #include "xml.h"
+#include "beaker_harness.h"
 
 GQuark restraint_recipe_parse_error_quark(void) {
     return g_quark_from_static_string("restraint-recipe-parse-error-quark");
@@ -545,6 +546,9 @@ recipe_handler (gpointer user_data)
 
     switch (app_data->state) {
         case RECIPE_FETCH:
+            if (!app_data->stdin && recipe_wait_on_beaker (app_data->recipe_url, "* Recipe fetch"))
+                break;
+
             g_string_printf(message, "* Fetching recipe: %s\n", app_data->recipe_url);
             app_data->state = RECIPE_FETCHING;
             restraint_xml_parse_from_url(soup_session, app_data->recipe_url,
@@ -645,4 +649,26 @@ recipe_handler_finish (gpointer user_data)
         soup_server_unpause_message (client_data->server, client_data->client_msg);
     }
     g_clear_error (&app_data->error);
+}
+
+/*
+ * Waits for 60 seconds if Beaker's recipe health status is not GOOD.
+ *
+ * Returns TRUE if wait was done, FALSE otherwise.
+ */
+gboolean
+recipe_wait_on_beaker (const gchar *recipe_url, const gchar *state_tag)
+{
+    g_return_val_if_fail (recipe_url != NULL, FALSE);
+    g_return_val_if_fail (state_tag != NULL, FALSE);
+    g_return_val_if_fail (BKR_ENV_EXISTS (), FALSE);
+
+    if (BKR_RECIPE_IS_HEALTHY (recipe_url))
+        return FALSE;
+
+    g_printerr ("%s", state_tag);
+    g_printerr (": Waiting on Beaker for 60 seconds\n");
+    g_usleep (60 * G_USEC_PER_SEC);
+
+    return TRUE;
 }
