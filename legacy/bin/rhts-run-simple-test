@@ -30,7 +30,7 @@
 #
 # Tests using this should have a runtest.sh that reads:
 #
-#  #!/bin/sh
+#  #!/bin/bash
 #  rhts-run-simple-test [-u user-to-run-as] name-of-test name-of-my-executable
 # you can have multiple lines for multiple tests...
 
