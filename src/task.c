@@ -986,14 +986,17 @@ task_handler (gpointer user_data)
       }
       break;
     case TASK_FETCH:
-      // Fetch Task from rpm or url
-      if (app_data->fetch_retries > 0) {
-          g_string_printf(message, "** Fetching task: Retries %" G_GINT32_FORMAT "\n",
-                          app_data->fetch_retries);
-      }
-      restraint_task_fetch (app_data);
-      result = G_SOURCE_REMOVE;
-      break;
+        if (!app_data->stdin && recipe_wait_on_beaker (app_data->recipe_url, "** Task fetch"))
+            break;
+
+        // Fetch Task from rpm or url
+        if (app_data->fetch_retries > 0) {
+            g_string_printf(message, "** Fetching task: Retries %" G_GINT32_FORMAT "\n",
+                            app_data->fetch_retries);
+        }
+        restraint_task_fetch (app_data);
+        result = G_SOURCE_REMOVE;
+        break;
     case TASK_METADATA_PARSE:
       g_string_printf (message, "** Preparing metadata\n");
       task->rhts_compat = restraint_get_metadata(task->path,
@@ -1004,6 +1007,9 @@ task_handler (gpointer user_data)
       break;
     case TASK_REFRESH_ROLES:
       if (app_data->recipe_url) {
+          if (!app_data->stdin && recipe_wait_on_beaker (app_data->recipe_url, "** Task role refresh"))
+              break;
+
           g_string_printf(message, "** Refreshing peer role hostnames: Retries %"
                                      G_GINT32_FORMAT "\n", app_data->fetch_retries);
           restraint_xml_parse_from_url(soup_session, app_data->recipe_url,
@@ -1036,6 +1042,9 @@ task_handler (gpointer user_data)
       // All dependencies are installed with system package command
       // All repodependencies are installed via fetch_git
       if (!task->started) {
+          if (!app_data->stdin && recipe_wait_on_beaker (app_data->recipe_url, "** Task dependencies"))
+              break;
+
           g_string_printf(message, "** Installing dependencies\n");
           TaskRunData *task_run_data = g_slice_new0(TaskRunData);
           task_run_data->app_data = app_data;
