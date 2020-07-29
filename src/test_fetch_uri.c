@@ -15,11 +15,13 @@
     along with Restraint.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#define _XOPEN_SOURCE 500
 
 #include <glib.h>
 #include <glib/gstdio.h>
 #include <archive.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 #include "fetch.h"
@@ -53,6 +55,8 @@ static void test_fetch_http_nofragment_success(void) {
     RunData *run_data;
 
     gchar *expected = "././Makefile./metadata./subdir/./subdir/datafile./PURPOSE./runtest.sh";
+    guint32 file_mode = 0;
+    GFileInfo *file_info = NULL;
     // read archive data in
 
     run_data = g_slice_new0 (RunData);
@@ -97,9 +101,14 @@ static void test_fetch_http_nofragment_success(void) {
     g_object_unref(file);
 
     file = g_file_get_child(base, "runtest.sh");
-    g_assert(g_file_query_exists (file, NULL) != FALSE);
+    g_assert (g_file_query_exists (file, NULL) != FALSE);
+    file_info = g_file_query_info (file, G_FILE_ATTRIBUTE_UNIX_MODE, G_FILE_QUERY_INFO_NONE, NULL, NULL);
+    file_mode = g_file_info_get_attribute_uint32 (file_info, G_FILE_ATTRIBUTE_UNIX_MODE);
+    g_assert (file_mode == (S_IFREG | S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH));
+
     g_file_delete (file, NULL, NULL);
-    g_object_unref(file);
+    g_object_unref (file_info);
+    g_object_unref (file);
 
     g_object_unref(base);
 
