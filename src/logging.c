@@ -146,6 +146,13 @@ rstrnt_write_log_func (gpointer data,
     writer_data = data;
     variant = writer_data->variant;
 
+    /* This is a sentinel */
+    if (variant == NULL && writer_data->log_data == NULL) {
+        g_debug ("%s(): Got data sentinel", __func__);
+
+        return;
+    }
+
     message = g_variant_get_fixed_array (variant, &message_length, sizeof (*message));
     success = g_output_stream_write_all (G_OUTPUT_STREAM (writer_data->log_data->output_stream),
                                          message, message_length,
@@ -251,6 +258,7 @@ rstrnt_flush_logs (const RstrntTask *task,
     RstrntTaskLogData *data;
     GOutputStream *stream;
     g_autoptr (GError) error = NULL;
+    RstrntLogWriterData *sentinel;
 
     g_return_if_fail (NULL != task);
 
@@ -258,6 +266,12 @@ rstrnt_flush_logs (const RstrntTask *task,
     data = rstrnt_log_manager_get_task_data (manager, task, &error);
 
     g_return_if_fail (NULL != data);
+
+    /* Sentinel to make sure all logged data is done. Prevents the
+       race condition where the last thread with data finishes after
+       flushing the stream. */
+    sentinel = g_new0 (RstrntLogWriterData, 1);
+    (void) g_thread_pool_push (data->thread_pool, sentinel, NULL);
 
     while (g_thread_pool_unprocessed (data->thread_pool) > 0 &&
            g_thread_pool_get_num_threads (data->thread_pool) > 0)
@@ -271,7 +285,7 @@ rstrnt_flush_logs (const RstrntTask *task,
     {
         if (G_IO_ERROR_CANCELLED != error->code)
         {
-            g_warning ("%s(): Failed to flush log stream: %s",
+            g_warning ("%s(): Failed to flush task log stream: %s",
                        __func__, error->message);
         }
     }
@@ -282,7 +296,7 @@ rstrnt_flush_logs (const RstrntTask *task,
     {
         if (G_IO_ERROR_CANCELLED != error->code)
         {
-            g_warning ("%s(): Failed to flush log stream: %s",
+            g_warning ("%s(): Failed to flush harness log stream: %s",
                        __func__, error->message);
         }
     }
