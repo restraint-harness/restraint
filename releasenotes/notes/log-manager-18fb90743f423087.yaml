@@ -1,0 +1,6 @@
+features:
+  - |
+    Log manager for log caching
+    When Restraint runs under Beaker, harness and task logs are cached
+    in the system. Logs are uploaded to Beaker after the task completes.
+    Contributed by Ernestas Kulik <ernestask@gnome.org>
