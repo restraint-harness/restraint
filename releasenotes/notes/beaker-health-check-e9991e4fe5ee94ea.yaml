@@ -1,0 +1,6 @@
+features:
+  - |
+    Wait on Beaker's health status
+    When Restraint runs under Beaker, Beaker's health status is checked
+    before performing steps that require communication with Beaker.
+    Recipe execution is held until Beaker is available.
