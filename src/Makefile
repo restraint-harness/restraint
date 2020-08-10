@@ -4,7 +4,6 @@ CC = gcc
 LIBS =
 PACKAGES =
 PROGRAMS =
-TEST_PROGRAMS =
 
 PACKAGES += gio-2.0
 PACKAGES += gio-unix-2.0
@@ -91,89 +90,9 @@ restraint_forkpty.o:
 beaker_harness.o:
 logging.o: logging.c logging.h task.h
 
-# Tests
-TEST_PROGRAMS += test_beaker_harness
-TEST_PROGRAMS += test_cmd_abort
-TEST_PROGRAMS += test_cmd_log
-TEST_PROGRAMS += test_cmd_result
-TEST_PROGRAMS += test_cmd_utils
-TEST_PROGRAMS += test_cmd_watchdog
-TEST_PROGRAMS += test_dependency
-TEST_PROGRAMS += test_env
-TEST_PROGRAMS += test_fetch_git
-TEST_PROGRAMS += test_fetch_uri
-TEST_PROGRAMS += test_metadata
-TEST_PROGRAMS += test_process
-#TEST_PROGRAMS += test_recipe
-TEST_PROGRAMS += test_task
-TEST_PROGRAMS += test_utils
-TEST_PROGRAMS += test_logging
-
-test_%: test_%.o
-	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
-
-MOCKS_BEAKER_HARNESS = -Wl,--wrap=soup_session_send_message
-
-test_beaker_harness: test_beaker_harness.o beaker_harness.o
-	$(CC) $(MOCKS_BEAKER_HARNESS) $(LDFLAGS) -o $@ $^ $(LIBS)
-
-test_beaker_harness.o: test_beaker_harness.c
-	$(CC) $(MOCKS_BEAKER_HARNESS) $(CFLAGS) -c -o $@ $^ $(LIBS)
-
-test_fetch_git: fetch.o fetch_git.o errors.o
-test_fetch_git.o: fetch_git.h
-
-test_fetch_uri: fetch.o fetch_uri.o errors.o
-test_fetch_uri.o: fetch_uri.h
-
-test_process: process.o errors.o restraint_forkpty.o
-test_process.o: process.h
-
-test_dependency: dependency.o errors.o process.o fetch.o fetch_uri.o fetch_git.o metadata.o utils.o param.o restraint_forkpty.o
-test_dependency.o: dependency.h errors.h process.h param.h
-
-test_env: test_env.o errors.o env.o utils.o cmd_utils.o
-
-# Note that test_task.c includes task.c, therefore there is no need to
-# link task.o
-test_task: recipe.o xml.o utils.o config.o beaker_harness.o param.o role.o errors.o metadata.o fetch.o fetch_uri.o fetch_git.o process.o restraint_forkpty.o env.o dependency.o logging.o
-test_task.o: test_task.c task.c
-
-test_recipe: recipe.o task.o fetch_git.o param.o role.o metadata.o
-test_recipe.o: recipe.h task.h param.h
-
-test_metadata: metadata.o utils.o errors.o process.o param.o restraint_forkpty.o
-test_metadata.o: metadata.h utils.h errors.h process.h param.h
-
-test_cmd_abort: cmd_abort.o utils.o cmd_utils.o errors.o
-test_cmd_abort.o: cmd_abort.h utils.h cmd_utils.h errors.h
-
-test_cmd_log: cmd_log.o utils.o cmd_utils.o upload.o errors.o
-test_cmd_log.o: cmd_log.h utils.h cmd_utils.h upload.h errors.h
-
-test_cmd_result: cmd_result.o utils.o cmd_utils.o upload.o errors.o
-test_cmd_result.o: cmd_result.h utils.h cmd_utils.h upload.h errors.h
-
-test_cmd_watchdog: cmd_watchdog.o utils.o cmd_utils.o errors.o
-test_cmd_watchdog.o: cmd_watchdog.h utils.h cmd_utils.h errors.h
-
-test_cmd_utils: test_cmd_utils.o cmd_utils.o env.o utils.o errors.o
-
-test_utils: test_utils.o utils.o errors.o
-
-test_logging: test_logging.o message.o task.o recipe.o xml.o utils.o config.o beaker_harness.o param.o role.o errors.o metadata.o fetch.o fetch_uri.o fetch_git.o process.o restraint_forkpty.o env.o dependency.o
-test_logging.o: test_logging.c logging.c
-
-test-data/git-remote: test-data/git-remote.tgz
-	tar --no-same-owner -C test-data -xzf $<
-
-.PHONY: check
-check: $(TEST_PROGRAMS) test-data/git-remote
-	./run-tests.sh $(TEST_PROGRAMS)
-
-.PHONY: valgrind
-valgrind: $(TEST_PROGRAMS) test-data/git-remote
-	./run-tests.sh --valgrind $(TEST_PROGRAMS)
+.PHONY: check valgrind
+check valgrind:
+	make -C ../tests $@
 
 .PHONY: install
 install: all
@@ -182,4 +101,5 @@ install: all
 
 .PHONY: clean
 clean:
-	rm -rf $(PROGRAMS) $(TEST_PROGRAMS) *.o rstrnt-commands-env-*.sh test_logging_logs/
+	rm -f $(PROGRAMS) *.o
+	make -C ../tests clean
