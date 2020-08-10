@@ -54,6 +54,7 @@ Contents:
    release-notes
    develop
    remove_rhts
+   release
 
 Additional Information
 ======================
