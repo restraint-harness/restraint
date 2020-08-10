@@ -606,6 +606,7 @@ Where:
 
 
 .. option:: --timeout <minutes>
+   :noindex:
 
    This optional argument ``--timeout`` specifies the time in minutes for
    ssh to timeout.  This option takes affect when the `rsh` argument is not
