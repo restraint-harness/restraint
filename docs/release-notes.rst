@@ -1,11 +1,67 @@
 Release Notes
 =============
 
+Restraint 0.3.0
+---------------
+
+What’s New
+~~~~~~~~~~
+
+* | Wait on Beaker's health status
+  | When Restraint runs under Beaker, Beaker's health status is checked
+    before performing steps that require communication with Beaker.
+    Recipe execution is held until Beaker is available.
+* | Log manager for log caching
+  | When Restraint runs under Beaker, harness and task logs are cached
+    in the system. Logs are uploaded to Beaker after the task completes.
+  | Contributed by Ernestas Kulik <ernestask@gnome.org>
+
+
+Bug Fixes
+~~~~~~~~~
+
+* | Recognize results reported for non-rhts tasks
+  | When the task reports just `SKIP` for results, the final task result
+    should be `SKIP`. An extra task result is occurring when a non-rhts task
+    is executed.  An non-rhts task is one that uses the `metadata` file
+    instead of `testinfo` file.  Bugzilla 1334893 made a change to always
+    report results `PASS` for task exiting with zero or `FAIL` when
+    exit non-zero for non-rhts tasks.  As a result, `PASS` was being
+    reported which has a high priority then `SKIP` so the final task
+    result was `PASS`.
+  | Code changes monitor whether user reports results by way of
+    `rstrnt-report-result`.  If so, give those results priority; otherwise,
+    hardcode `PASS` task result for user.
+  | When process exits with non-zero, `FAIL` for non-rhts will remain as this
+    provides the user the option to continue with the job.  If they want
+    legacy behavior, they should make a call to `rstrnt-abort` in their task.
+
+* | Stop logging `LWD is disabled` every minute
+  | When LWD (Local Watchdog) is disabled, there is a message in the
+    harness log that reports this every minute.  The message looks
+    like: `Localwatchdog at:  Disabled! `.  This changeset makes sure
+    it is no longer reported repeatedly when `no_localwatchdog=true`
+    is configured in the task `metadata` file.  To ensure there is some
+    type of keepalive mechanism, the client now performs ssh keepalive
+    towards the server.  This timeout value is configurable by use
+    of the restraint client option `--timeout` which only affects default
+    behavior. The timeout value has no effect when the `rsh` argument
+    is used.
+
+* | Use new task install default for non-RHTS package
+  | For restraint-rhts package, tasks are installed and executed
+    beneath `/mnt/tests`.  For non-rhts `restraint`
+    installations, this path has changed to a more appropriate
+    location.
+  | The `20_sysinfo` plugin processes journalctl log in a temporary location
+    instead of `/mnt` as it is just an interim event.
+
+
 Restraint 0.2.3
 ---------------
 
 Bug Fixes
----------
+~~~~~~~~~
 
 - Fix noisy Restraint client output
 
@@ -23,7 +79,7 @@ Restraint 0.2.2
 ---------------
 
 Bug Fixes
----------
+~~~~~~~~~
 
 - restraint client now honors recipe params as well as task params.
 
