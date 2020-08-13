@@ -106,10 +106,11 @@ class RestraintVersionTagger(VersionTagger):
         self._clear_package_metadata()
 
         # Write out our package metadata:
+        new_version_w_suffix = self._get_suffixed_version(new_version)
         metadata_file = os.path.join(self.rel_eng_dir, "packages", self.project_name)
 
         with open(metadata_file, 'w') as f:
-            f.write("%s %s\n" % (new_version.split('-')[0], self.relative_project_dir))
+            f.write("%s %s\n" % (new_version_w_suffix, self.relative_project_dir))
 
         # Git add it (in case it's a new file):
         run_command("git add %s" % metadata_file)
@@ -120,7 +121,7 @@ class RestraintVersionTagger(VersionTagger):
         fmt = 'Automatic commit of package [%(name)s] %(release_type)s [%(version)s].'
         if self.config.has_option(BUILDCONFIG_SECTION, "tag_commit_message_format"):
             fmt = self.config.get(BUILDCONFIG_SECTION, "tag_commit_message_format")
-        new_version_w_suffix = self._get_suffixed_version(new_version)
+
         try:
             msg = fmt % {
                 'name': self.project_name,
