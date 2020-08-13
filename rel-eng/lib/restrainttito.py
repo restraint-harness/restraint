@@ -142,9 +142,10 @@ class RestraintVersionTagger(VersionTagger):
 
         # Optionally gpg sign the tag
         sign_tag = ""
-        if self.config.has_option(BUILDCONFIG_SECTION, "sign_tag"):
-            if self.config.getboolean(BUILDCONFIG_SECTION, "sign_tag"):
-                sign_tag = "-s "
+        if self.config.has_option(
+            BUILDCONFIG_SECTION, "sign_tag"
+        ) and self.config.getboolean(BUILDCONFIG_SECTION, "sign_tag"):
+            sign_tag = "-s "
 
         run_command('git tag %s -m "%s" %s' % (sign_tag, tag_msg, new_tag))
         print()
