@@ -450,7 +450,7 @@ recipe_parse (xmlDoc *doc, SoupURI *recipe_uri, GError **error, gchar **cfg_file
     // Gather the location in which to install tasks
     result->base_path = get_install_dir(INSTALL_CONFIG_FILE, &tmp_error);
     if (tmp_error != NULL) {
-        g_warning("* Fail getting task install path using default. Error: %s",
+        g_warning("* Fail getting task install path. Using default. Error: %s",
                   tmp_error->message);
         g_clear_error(&tmp_error);
     }
