@@ -31,6 +31,10 @@ jobs:
       - fedora-32-i386
       - fedora-32-s390x
       - fedora-32-x86_64
+      - fedora-33-aarch64
+      - fedora-33-armhfp
+      - fedora-33-s390x
+      - fedora-33-x86_64
       - fedora-rawhide-aarch64
       - fedora-rawhide-armhfp
       - fedora-rawhide-i386
