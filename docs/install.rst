@@ -60,7 +60,7 @@ versions are listed):
  - libxml2-2.9.10
  - libarchive-3.4.0
  - xz-5.2.4
- - libsoup-2.52.2
+ - libsoup-2.62.3
  - intltool-0.51.0
  - selinux-2.7
  - curl-7.68.0

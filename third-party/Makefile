@@ -7,7 +7,7 @@ LIBXML2 = libxml2-2.9.10
 CURL = curl-7.68.0
 LIBARCHIVE = libarchive-3.4.0
 XZ = xz-5.2.4
-LIBSOUP = libsoup-2.52.2
+LIBSOUP = libsoup-2.62.3
 OPENSSL = openssl-1.0.1m
 SQLITE = sqlite-autoconf-3310100
 INTLTOOL = intltool-0.51.0
@@ -198,7 +198,7 @@ $(INTLTOOL).tar.gz:
 
 TAR_BALLS += $(LIBSOUP).tar.xz
 $(LIBSOUP).tar.xz:
-	curl -f -L -O http://ftp.gnome.org/pub/GNOME/sources/libsoup/2.52/$@
+	curl -f -L -O http://ftp.gnome.org/pub/GNOME/sources/libsoup/2.62/$@
 
 TAR_BALLS += $(AUTOCONF).tar.gz
 $(AUTOCONF).tar.gz:
