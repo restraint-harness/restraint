@@ -10,7 +10,7 @@ jobs:
         container: ["fedora:31", "fedora:32", "fedora:rawhide"]
     runs-on: ubuntu-latest
     container:
-      image: ${{ matrix.container }}
+      image: registry.fedoraproject.org/${{ matrix.container }}
 
     steps:
     - uses: actions/checkout@v1
@@ -37,7 +37,7 @@ jobs:
         container: ["fedora:31", "fedora:32", "fedora:rawhide"]
     runs-on: ubuntu-latest
     container:
-      image: ${{ matrix.container }}
+      image: registry.fedoraproject.org/${{ matrix.container }}
 
     steps:
     - uses: actions/checkout@v1
