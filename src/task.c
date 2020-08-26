@@ -44,6 +44,7 @@
 #include "utils.h"
 #include "env.h"
 #include "xml.h"
+#include "logging.h"
 
 void
 restraint_task_result (Task *task, AppData *app_data, gchar *result,
@@ -1129,7 +1130,7 @@ task_handler (gpointer user_data)
       break;
     case TASK_COMPLETED:
     {
-      if (!app_data->stdin)
+      if (LOG_MANAGER_ENABLED && !app_data->stdin)
         rstrnt_upload_logs (task, app_data, soup_session, app_data->cancellable);
 
       // Some step along the way failed.

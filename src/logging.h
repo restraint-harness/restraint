@@ -23,6 +23,8 @@
 
 #include <stdbool.h>
 
+#define LOG_MANAGER_ENABLED 0
+
 #define RSTRNT_TYPE_LOG_MANAGER rstrnt_log_manager_get_type ()
 
 G_DECLARE_FINAL_TYPE (RstrntLogManager, rstrnt_log_manager, RSTRNT, LOG_MANAGER, GObject)
