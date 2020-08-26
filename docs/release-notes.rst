@@ -1,6 +1,16 @@
 Release Notes
 =============
 
+Restraint 0.3.1
+---------------
+
+Bug Fixes
+~~~~~~~~~
+
+* | Disable log manager
+  | The log manager is disabled and the behavior for taskout.log and
+   harness.log is the same as before it was introduced.
+
 Restraint 0.3.0
 ---------------
 
