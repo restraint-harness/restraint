@@ -1,0 +1,5 @@
+fixes:
+  - |
+    Disable log manager
+    The log manager is disabled and the behavior for taskout.log and
+    harness.log is the same as before it was introduced.
