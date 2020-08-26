@@ -104,10 +104,10 @@ static void restraint_free_app_data(AppData *app_data)
 }
 
 static void
-client_write (AppData     *app_data,
-              const gchar *path,
-              const gchar *msg_data,
-              gsize        msg_len)
+connections_write (AppData     *app_data,
+                   const gchar *path,
+                   const gchar *msg_data,
+                   gsize        msg_len)
 {
     SoupMessage         *server_msg;
     Task                *task;
@@ -162,7 +162,7 @@ restraint_log_task (AppData       *app_data,
     g_return_if_fail (app_data != NULL);
     g_return_if_fail (data != NULL && size > 0);
 
-    if (!app_data->stdin){
+    if (LOG_MANAGER_ENABLED && !app_data->stdin){
         rstrnt_log_bytes (app_data->tasks->data, type, data, size);
 
         return;
@@ -183,7 +183,7 @@ restraint_log_task (AppData       *app_data,
         return;
     }
 
-    client_write (app_data, log_path, data, size);
+    connections_write (app_data, log_path, data, size);
 }
 
 gboolean
@@ -811,7 +811,7 @@ int main(int argc, char *argv[]) {
 
   g_main_loop_unref(loop);
 
-  if (!app_data->stdin) {
+  if (LOG_MANAGER_ENABLED && !app_data->stdin) {
       RstrntLogManager *log_manager;
 
       log_manager = rstrnt_log_manager_get_instance ();
