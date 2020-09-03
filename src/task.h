@@ -146,5 +146,9 @@ void restraint_init_result_hash (AppData *app_data);
 gboolean task_io_callback (GIOChannel *io, GIOCondition condition, gpointer user_data);
 void task_handler_callback (gint pid_result, gboolean localwatchdog, gpointer user_data, GError *error);
 gboolean idle_task_setup (gpointer user_data);
+
+void restraint_log_task (AppData *app_data, RstrntLogType type, const char *data, gsize size);
+
 extern SoupSession *soup_session;
+
 #endif
