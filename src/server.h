@@ -1,4 +1,4 @@
-/*  
+/*
     This file is part of Restraint.
 
     Restraint is free software: you can redistribute it and/or modify
@@ -55,7 +55,5 @@ typedef struct RstrntServerAppData {
   gboolean stdin;
   guint last_signal;
 } AppData;
-
-void restraint_log_task (AppData *app_data, RstrntLogType type, const char *data, gsize size);
 
 #endif
