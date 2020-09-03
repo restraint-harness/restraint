@@ -840,6 +840,42 @@ restraint_next_task (AppData *app_data, TaskSetupState task_state) {
     return FALSE;
 }
 
+static goffset *
+restraint_task_new_offset (GHashTable  *offsets,
+                           const gchar *path,
+                           goffset      value)
+{
+    goffset *offset;
+
+    g_return_val_if_fail (offsets != NULL, NULL);
+    g_return_val_if_fail (path != NULL, NULL);
+
+    offset = g_malloc (sizeof (goffset));
+
+    *offset = value;
+
+    g_warn_if_fail (g_hash_table_insert (offsets, g_strdup (path), offset));
+
+    return offset;
+}
+
+goffset *
+restraint_task_get_offset (Task        *task,
+                           const gchar *path)
+{
+    goffset *offset;
+
+    g_return_val_if_fail (task != NULL, NULL);
+    g_return_val_if_fail (path != NULL, NULL);
+
+    offset = g_hash_table_lookup (task->offsets, path);
+
+    if (offset == NULL)
+        offset = restraint_task_new_offset (task->offsets, path, 0);
+
+    return offset;
+}
+
 static gboolean
 parse_task_config (gchar   *config_file,
                    Task    *task,
@@ -872,19 +908,20 @@ parse_task_config (gchar   *config_file,
     if (offsets) {
       gchar **iter = offsets;
       while (*iter) {
-        goffset *offset = g_malloc0(sizeof(goffset));
-        *offset = restraint_config_get_uint64(config_file, section, *iter,
-                                              &tmp_error);
+        goffset value;
+
+        value = restraint_config_get_uint64 (config_file, section, *iter,
+                                             &tmp_error);
         if (tmp_error) {
             g_propagate_prefixed_error(error, tmp_error,
                         "Task %s:  parse_task_config,", task->task_id);
             g_free(section);
-            g_free(offset);
             goto error;
         }
         g_clear_error (&tmp_error);
 
-        g_hash_table_insert(task->offsets, g_strdup(*iter), offset);
+        (void) restraint_task_new_offset (task->offsets, *iter, value);
+
         iter++;
       }
       g_strfreev(offsets);
@@ -1198,12 +1235,7 @@ connections_write (AppData     *app_data,
 
     g_return_if_fail (server_msg != NULL);
 
-    offset = g_hash_table_lookup (task->offsets, path);
-
-    if (offset == NULL) {
-        offset = g_malloc0 (sizeof (goffset));
-        g_hash_table_insert (task->offsets, g_strdup (path), offset);
-    }
+    offset = restraint_task_get_offset (task, path);
 
     soup_message_headers_set_content_range (server_msg->request_headers,
                                             *offset,
