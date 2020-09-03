@@ -148,6 +148,8 @@ gboolean task_io_callback (GIOChannel *io, GIOCondition condition, gpointer user
 void task_handler_callback (gint pid_result, gboolean localwatchdog, gpointer user_data, GError *error);
 gboolean idle_task_setup (gpointer user_data);
 
+gboolean task_config_set_offset (const gchar *config_file, Task *task, const gchar *path, goffset value, GError **error);
+
 void restraint_log_task (AppData *app_data, RstrntLogType type, const char *data, gsize size);
 
 extern SoupSession *soup_session;

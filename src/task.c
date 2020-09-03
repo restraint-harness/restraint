@@ -840,6 +840,32 @@ restraint_next_task (AppData *app_data, TaskSetupState task_state) {
     return FALSE;
 }
 
+gboolean
+task_config_set_offset (const gchar  *config_file,
+                        Task         *task,
+                        const gchar  *path,
+                        goffset       value,
+                        GError      **error)
+{
+    GError           *tmp_err = NULL;
+    g_autofree gchar *section = NULL;
+
+    g_return_val_if_fail (task != NULL, FALSE);
+    g_return_val_if_fail (config_file != NULL, FALSE);
+    g_return_val_if_fail (path != NULL, FALSE);
+
+    section = g_strdup_printf ("offsets_%s", task->task_id);
+
+    restraint_config_set ((gchar *) config_file, section, path, &tmp_err, G_TYPE_UINT64, value);
+
+    if (NULL == tmp_err)
+        return TRUE;
+
+    g_propagate_error (error, tmp_err);
+
+    return FALSE;
+}
+
 static goffset *
 restraint_task_new_offset (GHashTable  *offsets,
                            const gchar *path,
@@ -1253,8 +1279,7 @@ connections_write (AppData     *app_data,
                              app_data->cancellable,
                              NULL);
 
-    section = g_strdup_printf ("offsets_%s", task->task_id);
-    restraint_config_set (app_data->config_file, section, path, NULL, G_TYPE_UINT64, *offset);
+    (void) task_config_set_offset (app_data->config_file, task, path, *offset, NULL);
 }
 
 void
