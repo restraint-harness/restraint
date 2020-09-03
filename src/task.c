@@ -792,7 +792,10 @@ Task *restraint_task_new(void) {
 void restraint_task_free(Task *task) {
     g_return_if_fail(task != NULL);
     g_free(task->task_id);
-    soup_uri_free(task->task_uri);
+
+    if (NULL != task->task_uri)
+        soup_uri_free (task->task_uri);
+
     g_free(task->name);
     g_free(task->version);
     g_free(task->path);
@@ -802,7 +805,8 @@ void restraint_task_free(Task *task) {
             g_free(task->fetch.package_name);
             break;
         case TASK_FETCH_UNPACK:
-            soup_uri_free(task->fetch.url);
+            if (NULL != task->fetch.url)
+                soup_uri_free (task->fetch.url);
             break;
         default:
             g_return_if_reached();
