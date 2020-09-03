@@ -105,7 +105,7 @@ TEST_PROGRAMS += test_fetch_uri
 TEST_PROGRAMS += test_metadata
 TEST_PROGRAMS += test_process
 #TEST_PROGRAMS += test_recipe
-#TEST_PROGRAMS += test_task
+TEST_PROGRAMS += test_task
 TEST_PROGRAMS += test_utils
 TEST_PROGRAMS += test_logging
 
@@ -134,8 +134,7 @@ test_dependency.o: dependency.h errors.h process.h param.h
 
 test_env: test_env.o errors.o env.o utils.o cmd_utils.o
 
-test_task: task.o fetch_git.o expect_http.o param.o role.o metadata.o
-test_task.o: task.h expect_http.h
+test_task: task.o recipe.o xml.o utils.o config.o beaker_harness.o param.o role.o errors.o metadata.o fetch.o fetch_uri.o fetch_git.o process.o restraint_forkpty.o env.o dependency.o
 
 test_recipe: recipe.o task.o fetch_git.o param.o role.o metadata.o
 test_recipe.o: recipe.h task.h param.h
