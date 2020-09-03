@@ -16,10 +16,13 @@
 */
 
 #include <glib.h>
+#include <glib/gstdio.h>
 
 #include "task.c"
 
 SoupSession *soup_session;
+
+gchar *tmp_test_dir = NULL;
 
 static void
 assert_offset (GHashTable  *offsets,
@@ -156,10 +159,65 @@ test_restraint_task_get_offset (void)
     restraint_task_free (task);
 }
 
+static void
+assert_key_file_offset (Task        *task,
+                        const gchar *path,
+                        const gchar *key,
+                        goffset      expected_value)
+{
+    g_autofree gchar     *section = NULL;
+    g_autoptr (GError)    err = NULL;
+    g_autoptr (GKeyFile)  key_file = NULL;
+    goffset               value;
+
+    key_file = g_key_file_new ();
+
+    g_assert_true (g_key_file_load_from_file (key_file, path, G_KEY_FILE_NONE, &err));
+    g_assert_no_error (err);
+
+    section = g_strdup_printf ("offsets_%s", task->task_id);
+
+    value = g_key_file_get_int64 (key_file, section, key, &err);
+
+    g_assert_no_error (err);
+    g_assert_cmpint (value, ==, expected_value);
+}
+
+static void
+test_task_config_set_offset (void)
+{
+    Task               *task;
+    const gchar        *path;
+    g_autofree gchar   *config_file;
+    g_autoptr (GError)  err = NULL;
+    goffset             value;
+
+    config_file = g_build_filename (tmp_test_dir, "config.conf", NULL);
+    path = "/some/random/path.log";
+    value = 42;
+
+    task = restraint_task_new ();
+
+    g_assert_nonnull (task);
+
+    task->task_id = g_strdup_printf ("%" G_GINT64_FORMAT, g_get_real_time ());
+
+    g_assert_true (task_config_set_offset (config_file, task, path, value, &err));
+    g_assert_no_error (err);
+    assert_key_file_offset (task, config_file, path, value);
+
+    restraint_task_free (task);
+    g_remove (config_file);
+}
+
 int
 main (int   argc,
       char *argv[])
 {
+    gboolean success;
+
+    tmp_test_dir = g_dir_make_tmp ("test_task_XXXXXX", NULL);
+
     g_test_init (&argc, &argv, NULL);
 
     g_test_add_func ("/task/restraint_task_new", test_restraint_task_new);
@@ -168,6 +226,12 @@ main (int   argc,
     g_test_add_func ("/task/parse_task_config/file_exists", test_parse_task_config_file_exists);
     g_test_add_func ("/task/parse_task_config/bad_file", test_parse_task_config_bad_file);
     g_test_add_func ("/task/restraint_task_get_offset", test_restraint_task_get_offset);
+    g_test_add_func ("/task/task_config_set_offset", test_task_config_set_offset);
 
-    return g_test_run ();
+    success = g_test_run ();
+
+    g_remove (tmp_test_dir);
+    g_free (tmp_test_dir);
+
+    return success;
 }
