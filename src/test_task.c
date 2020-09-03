@@ -134,6 +134,28 @@ test_restraint_task_free (void)
     restraint_task_free (task);
 }
 
+static void
+test_restraint_task_get_offset (void)
+{
+    Task        *task;
+    const gchar *path;
+    goffset     *offset;
+
+    path = "/some/random/path.log";
+
+    task = restraint_task_new ();
+
+    g_assert_nonnull (task);
+
+    offset = restraint_task_get_offset (task, path);
+
+    assert_offset (task->offsets, path, 0);
+
+    g_assert_true (offset == restraint_task_get_offset (task, path));
+
+    restraint_task_free (task);
+}
+
 int
 main (int   argc,
       char *argv[])
@@ -145,6 +167,7 @@ main (int   argc,
     g_test_add_func ("/task/parse_task_config/no_file", test_parse_task_config_no_file);
     g_test_add_func ("/task/parse_task_config/file_exists", test_parse_task_config_file_exists);
     g_test_add_func ("/task/parse_task_config/bad_file", test_parse_task_config_bad_file);
+    g_test_add_func ("/task/restraint_task_get_offset", test_restraint_task_get_offset);
 
     return g_test_run ();
 }

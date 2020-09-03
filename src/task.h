@@ -142,6 +142,7 @@ gboolean restraint_build_env(Task *task, GError **error);
 void restraint_task_status (Task *task, AppData *app_data, gchar *, gchar *, GError *reason);
 void restraint_task_run(Task *task);
 void restraint_task_free(Task *task);
+goffset *restraint_task_get_offset (Task *task, const gchar *path);
 void restraint_init_result_hash (AppData *app_data);
 gboolean task_io_callback (GIOChannel *io, GIOCondition condition, gpointer user_data);
 void task_handler_callback (gint pid_result, gboolean localwatchdog, gpointer user_data, GError *error);
