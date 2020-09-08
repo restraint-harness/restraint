@@ -15,10 +15,9 @@
     along with Restraint.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-
 #include <glib.h>
 
-#include "task.h"
+#include "task.c"
 
 SoupSession *soup_session;
 
