@@ -840,8 +840,10 @@ restraint_next_task (AppData *app_data, TaskSetupState task_state) {
     return FALSE;
 }
 
-gboolean
-parse_task_config (gchar *config_file, Task *task, GError **error)
+static gboolean
+parse_task_config (gchar   *config_file,
+                   Task    *task,
+                   GError **error)
 {
     GError *tmp_error = NULL;
 
