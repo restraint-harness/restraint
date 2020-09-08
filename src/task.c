@@ -951,48 +951,38 @@ parse_task_config (gchar   *config_file,
                                                  task->task_id,
                                                  "reboots",
                                                  &tmp_error);
-    if (tmp_error) {
-        g_propagate_prefixed_error(error, tmp_error,
-                    "Task %s:  parse_task_config,", task->task_id);
-        goto error;
-    }
-    g_clear_error (&tmp_error);
 
+    if (NULL != tmp_error)
+        goto error;
 
     task_config_get_offsets (config_file, task, &tmp_error);
 
-    if (tmp_error) {
-        g_propagate_prefixed_error(error, tmp_error,
-                    "Task %s:  parse_task_config,", task->task_id);
+    if (NULL != tmp_error)
         goto error;
-    }
-    g_clear_error (&tmp_error);
 
     task->started = restraint_config_get_boolean (config_file,
                                                   task->task_id,
                                                   "started",
                                                   &tmp_error);
-    if (tmp_error) {
-        g_propagate_prefixed_error(error, tmp_error,
-                    "Task %s:  parse_task_config,", task->task_id);
+
+    if (NULL != tmp_error)
         goto error;
-    }
-    g_clear_error (&tmp_error);
 
     task->localwatchdog = restraint_config_get_boolean (config_file,
                                                         task->task_id,
                                                         "localwatchdog",
                                                         &tmp_error);
-    if (tmp_error) {
-        g_propagate_prefixed_error(error, tmp_error,
-                    "Task %s:  parse_task_config,", task->task_id);
+
+    if (NULL != tmp_error)
         goto error;
-    }
-    g_clear_error (&tmp_error);
 
     return TRUE;
 
-error:
+  error:
+    g_propagate_prefixed_error (error, tmp_error,
+                                "Task %s:  %s,",
+                                task->task_id, __func__);
+
     return FALSE;
 }
 
