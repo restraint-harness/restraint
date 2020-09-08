@@ -902,6 +902,44 @@ restraint_task_get_offset (Task        *task,
     return offset;
 }
 
+static void
+task_config_get_offsets (const gchar  *config_file,
+                         Task         *task,
+                         GError      **error)
+{
+    g_autofree gchar  *section = NULL;
+    gchar            **pathv = NULL;
+    GError            *tmp_err = NULL;
+
+    section = g_strdup_printf ("offsets_%s", task->task_id);
+    pathv = restraint_config_get_keys ((gchar *) config_file, section, &tmp_err);
+
+    if (NULL != tmp_err)
+        goto error;
+
+    if (NULL == pathv)
+        return;
+
+    for (int i = 0; pathv[i] != NULL; i++) {
+        goffset value;
+
+        value = restraint_config_get_uint64 ((gchar *) config_file, section, pathv[i], &tmp_err);
+
+        if (NULL != tmp_err)
+            goto error;
+
+        (void) restraint_task_new_offset (task->offsets, pathv[i], value);
+    }
+
+    goto cleanup;
+
+  error:
+    g_propagate_error (error, tmp_err);
+
+  cleanup:
+    g_strfreev (pathv);
+}
+
 static gboolean
 parse_task_config (gchar   *config_file,
                    Task    *task,
@@ -920,39 +958,8 @@ parse_task_config (gchar   *config_file,
     }
     g_clear_error (&tmp_error);
 
-    gchar *section = g_strdup_printf("offsets_%s", task->task_id);
-    gchar **offsets = restraint_config_get_keys(config_file, section, &tmp_error);
 
-    if (tmp_error) {
-        g_propagate_prefixed_error(error, tmp_error,
-                    "Task %s:  parse_task_config,", task->task_id);
-        g_free(section);
-        goto error;
-    }
-    g_clear_error (&tmp_error);
-
-    if (offsets) {
-      gchar **iter = offsets;
-      while (*iter) {
-        goffset value;
-
-        value = restraint_config_get_uint64 (config_file, section, *iter,
-                                             &tmp_error);
-        if (tmp_error) {
-            g_propagate_prefixed_error(error, tmp_error,
-                        "Task %s:  parse_task_config,", task->task_id);
-            g_free(section);
-            goto error;
-        }
-        g_clear_error (&tmp_error);
-
-        (void) restraint_task_new_offset (task->offsets, *iter, value);
-
-        iter++;
-      }
-      g_strfreev(offsets);
-    }
-    g_free(section);
+    task_config_get_offsets (config_file, task, &tmp_error);
 
     if (tmp_error) {
         g_propagate_prefixed_error(error, tmp_error,
