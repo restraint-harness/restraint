@@ -210,6 +210,70 @@ test_task_config_set_offset (void)
     g_remove (config_file);
 }
 
+static void
+test_task_config_get_offsets_file_exists (void)
+{
+    GError *err = NULL;
+    Task   *task;
+
+    task = restraint_task_new ();
+
+    g_assert_nonnull (task);
+
+    task->task_id = g_strdup ("42");
+
+    task_config_get_offsets ("test-data/task42.conf", task, &err);
+
+    g_assert_no_error (err);
+
+    g_assert_cmpint (g_hash_table_size (task->offsets), ==, 2);
+    assert_offset (task->offsets, "logs/taskout.log", 42);
+    assert_offset (task->offsets, "logs/harness.log", 58);
+
+    restraint_task_free (task);
+}
+
+static void
+test_task_config_get_offsets_no_file (void)
+{
+    GError *err = NULL;
+    Task   *task;
+
+    task = restraint_task_new ();
+
+    g_assert_nonnull (task);
+
+    task->task_id = g_strdup ("42");
+
+    task_config_get_offsets ("there/is/no/file", task, &err);
+
+    g_assert_no_error (err);
+
+    g_assert_cmpint (g_hash_table_size (task->offsets), ==, 0);
+
+    restraint_task_free (task);
+}
+
+static void
+test_task_config_get_offsets_bad_file (void)
+{
+    Task               *task;
+    g_autoptr (GError)  err = NULL;
+
+    task = restraint_task_new ();
+
+    g_assert_nonnull (task);
+
+    task->task_id = g_strdup ("42");
+
+    task_config_get_offsets ("test-data/bad.conf", task, &err);
+
+    g_assert_error (err, G_KEY_FILE_ERROR, G_KEY_FILE_ERROR_INVALID_VALUE);
+
+    restraint_task_free (task);
+}
+
+
 int
 main (int   argc,
       char *argv[])
@@ -227,6 +291,9 @@ main (int   argc,
     g_test_add_func ("/task/parse_task_config/bad_file", test_parse_task_config_bad_file);
     g_test_add_func ("/task/restraint_task_get_offset", test_restraint_task_get_offset);
     g_test_add_func ("/task/task_config_set_offset", test_task_config_set_offset);
+    g_test_add_func ("/task/task_config_get_offsets/file_exists", test_task_config_get_offsets_file_exists);
+    g_test_add_func ("/task/task_config_get_offsets/no_file", test_task_config_get_offsets_no_file);
+    g_test_add_func ("/task/task_config_get_offsets/bad_file", test_task_config_get_offsets_bad_file);
 
     success = g_test_run ();
 
