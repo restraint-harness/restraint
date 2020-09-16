@@ -252,12 +252,29 @@ rstrnt_on_log_uploaded (SoupSession *session,
 }
 
 static void
+rstrnt_flush_log_data (const RstrntLogData *log_data,
+                       GCancellable        *cancellable)
+{
+    GOutputStream      *stream;
+    g_autofree gchar   *path = NULL;
+    g_autoptr (GError)  error = NULL;
+
+    stream = G_OUTPUT_STREAM (log_data->output_stream);
+
+    if (g_output_stream_flush (stream, cancellable, &error)
+        || G_IO_ERROR_CANCELLED == error->code)
+        return;
+
+    path = g_file_get_path (log_data->file);
+    g_warning ("%s(): Failed to flush %s stream: %s", __func__, path, error->message);
+}
+
+static void
 rstrnt_flush_logs (const RstrntTask *task,
                    GCancellable     *cancellable)
 {
     RstrntLogManager *manager;
     RstrntTaskLogData *data;
-    GOutputStream *stream;
     g_autoptr (GError) error = NULL;
     RstrntLogWriterData *sentinel;
 
@@ -280,27 +297,8 @@ rstrnt_flush_logs (const RstrntTask *task,
         g_usleep (G_USEC_PER_SEC / 4);
     }
 
-    stream = G_OUTPUT_STREAM (data->task_log_data->output_stream);
-
-    if (!g_output_stream_flush (stream, cancellable, &error))
-    {
-        if (G_IO_ERROR_CANCELLED != error->code)
-        {
-            g_warning ("%s(): Failed to flush task log stream: %s",
-                       __func__, error->message);
-        }
-    }
-
-    stream = G_OUTPUT_STREAM (data->harness_log_data->output_stream);
-
-    if (!g_output_stream_flush (stream, cancellable, &error))
-    {
-        if (G_IO_ERROR_CANCELLED != error->code)
-        {
-            g_warning ("%s(): Failed to flush harness log stream: %s",
-                       __func__, error->message);
-        }
-    }
+    rstrnt_flush_log_data (data->task_log_data, cancellable);
+    rstrnt_flush_log_data (data->harness_log_data, cancellable);
 }
 
 /*
