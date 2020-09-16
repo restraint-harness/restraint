@@ -357,6 +357,41 @@ rstrnt_chunk_log (SoupURI    *uri,
     return msgv;
 }
 
+const gchar *
+rstrnt_log_type_get_path (RstrntLogType type)
+{
+    switch (type) {
+    case RSTRNT_LOG_TYPE_TASK:
+        return LOG_PATH_TASK;
+
+    case RSTRNT_LOG_TYPE_HARNESS:
+        return LOG_PATH_HARNESS;
+
+    default:
+        g_warn_if_reached ();
+    }
+
+    return NULL;
+}
+
+static RstrntLogData *
+rstrnt_task_log_get_data (RstrntTaskLogData *task_logs,
+                          RstrntLogType type)
+{
+    switch (type) {
+    case RSTRNT_LOG_TYPE_TASK:
+        return task_logs->task_log_data;
+
+    case RSTRNT_LOG_TYPE_HARNESS:
+        return task_logs->harness_log_data;
+
+    default:
+        g_warn_if_reached ();
+    }
+
+    return NULL;
+}
+
 static void
 rstrnt_upload_log (const RstrntTask    *task,
                    RstrntServerAppData *app_data,
@@ -374,32 +409,18 @@ rstrnt_upload_log (const RstrntTask    *task,
     int msgc = 0;
     const char *contents;
     size_t length;
-    GFile *data_file = NULL;
-    gchar *log_path = NULL;
+    const gchar *log_path = NULL;
+    RstrntLogData *log_data = NULL;
 
     manager = rstrnt_log_manager_get_instance ();
     data = rstrnt_log_manager_get_task_data (manager, task, &error);
 
     g_return_if_fail (NULL != data);
 
-    switch (type)
-    {
-        case RSTRNT_LOG_TYPE_TASK:
-        {
-            data_file = data->task_log_data->file;
-            log_path = LOG_PATH_TASK;
-        }
-        break;
+    log_path = rstrnt_log_type_get_path (type);
+    log_data = rstrnt_task_log_get_data (data, type);
 
-        case RSTRNT_LOG_TYPE_HARNESS:
-        {
-            data_file = data->harness_log_data->file;
-            log_path = LOG_PATH_HARNESS;
-        }
-        break;
-    }
-
-    path = g_file_get_path (data_file);
+    path = g_file_get_path (log_data->file);
     file = g_mapped_file_new (path, false, &error);
 
     if (NULL == file)
@@ -467,18 +488,7 @@ rstrnt_log_manager_append_to_log (RstrntLogManager    *self,
     }
     writer_data = g_new0 (RstrntLogWriterData, 1);
 
-    switch (type)
-    {
-        case RSTRNT_LOG_TYPE_TASK:
-            writer_data->log_data = data->task_log_data;
-
-            break;
-
-        case RSTRNT_LOG_TYPE_HARNESS:
-            writer_data->log_data = data->harness_log_data;
-
-            break;
-    }
+    writer_data->log_data = rstrnt_task_log_get_data (data, type);
 
     writer_data->variant = g_variant_new_fixed_array (G_VARIANT_TYPE_BYTE,
                                                       message, message_length,
