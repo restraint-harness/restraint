@@ -136,7 +136,7 @@ test_env: test_env.o errors.o env.o utils.o cmd_utils.o
 
 # Note that test_task.c includes task.c, therefore there is no need to
 # link task.o
-test_task: recipe.o xml.o utils.o config.o beaker_harness.o param.o role.o errors.o metadata.o fetch.o fetch_uri.o fetch_git.o process.o restraint_forkpty.o env.o dependency.o
+test_task: recipe.o xml.o utils.o config.o beaker_harness.o param.o role.o errors.o metadata.o fetch.o fetch_uri.o fetch_git.o process.o restraint_forkpty.o env.o dependency.o logging.o
 test_task.o: test_task.c task.c
 
 test_recipe: recipe.o task.o fetch_git.o param.o role.o metadata.o

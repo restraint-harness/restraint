@@ -1242,20 +1242,10 @@ restraint_log_task (AppData       *app_data,
         return;
     }
 
-    switch (type) {
-    case RSTRNT_LOG_TYPE_TASK:
-        log_path = LOG_PATH_TASK;
+    log_path = rstrnt_log_type_get_path (type);
 
-        break;
-    case RSTRNT_LOG_TYPE_HARNESS:
-        log_path = LOG_PATH_HARNESS;
-
-        break;
-    default:
-        g_warn_if_reached ();
-
+    if (NULL == log_path)
         return;
-    }
 
     connections_write (app_data, log_path, data, size);
 }

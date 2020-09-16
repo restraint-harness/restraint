@@ -56,4 +56,6 @@ void              rstrnt_log                      (const RstrntTask    *task,
 
 RstrntLogManager *rstrnt_log_manager_get_instance (void);
 
+const gchar *     rstrnt_log_type_get_path        (RstrntLogType type);
+
 #endif
