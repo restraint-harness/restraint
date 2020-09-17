@@ -161,7 +161,7 @@ test_cmd_utils: test_cmd_utils.o cmd_utils.o env.o utils.o errors.o
 
 test_utils: test_utils.o utils.o errors.o
 
-test_logging: test_logging.o message.o
+test_logging: test_logging.o message.o task.o recipe.o xml.o utils.o config.o beaker_harness.o param.o role.o errors.o metadata.o fetch.o fetch_uri.o fetch_git.o process.o restraint_forkpty.o env.o dependency.o
 test_logging.o: test_logging.c logging.c
 
 test-data/git-remote: test-data/git-remote.tgz

@@ -21,6 +21,8 @@
 
 #include "logging.c"
 
+SoupSession *soup_session;
+
 static int message_callback_calls = 0;
 
 static void
@@ -148,15 +150,14 @@ test_rstrnt_log_upload (gconstpointer user_data)
 {
     const RstrntTask *task;
     RstrntServerAppData app_data;
-    SoupSession *session;
     int expected_calls;
 
     task = user_data;
-    session = soup_session_new ();
 
     app_data.queue_message = queue_message;
+    app_data.config_file = LOG_MANAGER_DIR "/config.conf";
 
-    rstrnt_upload_logs (task, &app_data, session, NULL);
+    rstrnt_upload_logs (task, &app_data, soup_session, NULL);
 
     expected_calls = 2;
 
@@ -166,8 +167,23 @@ test_rstrnt_log_upload (gconstpointer user_data)
     g_assert_cmpint (message_callback_calls, ==, expected_calls);
 
     message_callback_calls = 0;
+}
 
-    g_object_unref (session);
+static void
+test_rstrnt_log_upload_no_logs (void)
+{
+    RstrntTask          *task;
+    RstrntServerAppData  app_data;
+
+    task = restraint_task_new ();
+    task->task_id = g_strdup_printf ("%" G_GINT64_FORMAT, g_get_real_time ());
+
+    app_data.queue_message = NULL;  /* Ensures failure if queue_message is called */
+    app_data.config_file = LOG_MANAGER_DIR "/config.conf";
+
+    rstrnt_upload_logs (task, &app_data, soup_session, NULL);
+
+    restraint_task_free (task);
 }
 
 static gchar *
@@ -204,7 +220,7 @@ assert_content_range (SoupMessage *msg,
 }
 
 static void
-test_rstrnt_chunk_log (void)
+test_rstrnt_chunk_log_zero_offset (void)
 {
     g_autoptr (GString) actual_log = NULL;
     g_autoptr (SoupURI) uri = NULL;
@@ -212,7 +228,6 @@ test_rstrnt_chunk_log (void)
     int msgc = 0;
     int expected_msgc;
     const char *content;
-    gsize content_len;
     int chunk_len;
 
     chunk_len = 10;
@@ -221,11 +236,9 @@ test_rstrnt_chunk_log (void)
               "e 3 msgs";
     expected_msgc = 3;
 
-    content_len = strlen (content);
-
     uri = soup_uri_new ("http://internets:8000");
 
-    msgv = rstrnt_chunk_log (uri, content, strlen (content), chunk_len, &msgc);
+    msgv = rstrnt_chunk_log (uri, content, 0, strlen (content), chunk_len, &msgc);
 
     g_assert_nonnull (msgv);
     g_assert_cmpint (msgc, ==, expected_msgc);
@@ -243,7 +256,7 @@ test_rstrnt_chunk_log (void)
 
         start = i * chunk_len;
 
-        msg_content = assert_content_range (msgv[i], start, content_len);
+        msg_content = assert_content_range (msgv[i], start, -1);
 
         g_assert_nonnull (msg_content);
         actual_log = g_string_append (actual_log, msg_content);
@@ -255,6 +268,37 @@ test_rstrnt_chunk_log (void)
     g_assert_cmpstr (actual_log->str, ==, content);
 }
 
+static void
+test_rstrnt_chunk_log_nonzero_offset (void)
+{
+    const gchar             *content;
+    const gchar             *expected_chunk;
+    g_autofree SoupMessage **msgv = NULL;
+    g_autofree gchar        *msg_content = NULL;
+    g_autoptr (SoupURI)      uri = NULL;
+    goffset                  offset;
+    gsize                    chunk_len;
+    int                      msgc = 0;
+
+    content = "aaa bbb ccc";
+    offset = 8;
+    chunk_len = 4;
+    expected_chunk = "ccc";
+
+    uri = soup_uri_new ("http://internets:8000");
+    msgv = rstrnt_chunk_log (uri, content, offset, strlen (content), chunk_len, &msgc);
+
+    g_assert_nonnull (msgv);
+    g_assert_cmpint (msgc, ==, 1);
+    g_assert_nonnull (msgv[0]);
+
+    msg_content = assert_content_range (msgv[0], offset, -1);
+
+    g_assert_cmpstr (msg_content, ==, expected_chunk);
+
+    g_object_unref (msgv[0]);
+}
+
 int
 main (int    argc,
       char **argv)
@@ -262,24 +306,28 @@ main (int    argc,
     g_autoptr (RstrntLogManager) log_manager = NULL;
     SoupServer *server;
     g_autoptr (GError) error = NULL;
-    g_autoslist (SoupURI) uris = NULL;
-    g_autofree gchar *task_id = NULL;
-    RstrntTask task;
+    g_autoptr (GSList) uris = NULL;
+    RstrntTask *task;
     int retval;
 
     g_test_init (&argc, &argv, NULL);
 
+    soup_session = soup_session_new ();
+
     log_manager = rstrnt_log_manager_get_instance ();
     server = soup_server_new (NULL, NULL);
+    task = restraint_task_new ();
 
     soup_server_add_handler (server, "/" LOG_PATH_TASK, server_callback,
                              GINT_TO_POINTER (RSTRNT_LOG_TYPE_TASK), NULL);
     soup_server_add_handler (server, "/" LOG_PATH_HARNESS, server_callback,
                              GINT_TO_POINTER (RSTRNT_LOG_TYPE_HARNESS), NULL);
 
-    g_test_add_data_func ("/logging/write", &task, test_rstrnt_log_write);
-    g_test_add_data_func ("/logging/upload", &task, test_rstrnt_log_upload);
-    g_test_add_func ("/logging/chunking", test_rstrnt_chunk_log);
+    g_test_add_data_func ("/logging/write", task, test_rstrnt_log_write);
+    g_test_add_data_func ("/logging/upload", task, test_rstrnt_log_upload);
+    g_test_add_func ("/logging/upload/no_logs", test_rstrnt_log_upload_no_logs);
+    g_test_add_func ("/logging/chunking/zero_offset", test_rstrnt_chunk_log_zero_offset);
+    g_test_add_func ("/logging/chunking/nonzero_offset", test_rstrnt_chunk_log_nonzero_offset);
 
     if (!soup_server_listen_local (server, 43770, SOUP_SERVER_LISTEN_IPV4_ONLY, &error))
     {
@@ -287,15 +335,16 @@ main (int    argc,
     }
 
     uris = soup_server_get_uris (server);
-    task_id = g_strdup_printf ("%" G_GINT64_FORMAT, g_get_real_time ());
 
-    task.task_id = task_id;
-    task.task_uri = uris->data;
+    task->task_id = g_strdup_printf ("%" G_GINT64_FORMAT, g_get_real_time ());
+    task->task_uri = uris->data;
 
     retval = g_test_run ();
 
     soup_server_disconnect (server);
     g_object_unref (server);
+    g_object_unref (soup_session);
+    restraint_task_free (task);
 
     return retval;
 }
