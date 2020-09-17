@@ -302,14 +302,17 @@ rstrnt_flush_logs (const RstrntTask *task,
 }
 
 /*
- * Splits content in SoupMessages of up to chunk_len bytes.
+ * Splits content, starting from offset, in SoupMessages of up to
+ * chunk_len bytes.
  *
  * content must be non-NULL and content_len greater than 0.
  *
- * Memory in content must remain accesible until the last message in the
+ * offset must be lesser than content_len.
+ *
+ * Memory in content must remain accessible until the last message in the
  * vector is freed.
  *
- * chunk_len  must be greater than 0.
+ * chunk_len must be greater than 0.
  *
  * Returns a SoupMessage vector of msgc elements. Caller must free the
  * vector and the SoupMessages.
@@ -317,6 +320,7 @@ rstrnt_flush_logs (const RstrntTask *task,
 static SoupMessage **
 rstrnt_chunk_log (SoupURI    *uri,
                   const char *content,
+                  goffset     offset,
                   gsize       content_len,
                   gsize       chunk_len,
                   int        *msgc)
@@ -327,8 +331,11 @@ rstrnt_chunk_log (SoupURI    *uri,
 
     g_return_val_if_fail (uri != NULL, NULL);
     g_return_val_if_fail (content != NULL && content_len > 0, NULL);
+    g_return_val_if_fail (content_len > offset, NULL);
     g_return_val_if_fail (chunk_len > 0, NULL);
     g_return_val_if_fail (msgc != NULL, NULL);
+
+    content_len -= offset;
 
     *msgc = content_len / chunk_len + (content_len % chunk_len > 0);
     msgv = g_malloc0 (sizeof (SoupMessage *) * *msgc);
@@ -342,11 +349,15 @@ rstrnt_chunk_log (SoupURI    *uri,
         goffset end;
 
         msg_len = content_left > chunk_len ? chunk_len : content_left;
-        start = content_len - content_left;
+        start = offset + content_len - content_left;
         end = start + msg_len - 1;
 
         *msg = soup_message_new_from_uri ("PUT", uri);
-        soup_message_headers_set_content_range ((*msg)->request_headers, start, end, content_len);
+
+        /* With incremental uploads, the total length of the resource is
+           unknown. */
+        soup_message_headers_set_content_range ((*msg)->request_headers, start, end, -1);
+
         soup_message_headers_append ((*msg)->request_headers, "log-level", "2");
         soup_message_set_request (*msg, "text/plain", SOUP_MEMORY_TEMPORARY, &content[start], msg_len);
 
@@ -404,13 +415,14 @@ rstrnt_upload_log (const RstrntTask    *task,
     RstrntTaskLogData *data;
     g_autofree char *path = NULL;
     GMappedFile *file;
-    SoupURI *uri = NULL;
+    g_autoptr (SoupURI) uri = NULL;
     g_autofree SoupMessage **msgv = NULL;
     int msgc = 0;
     const char *contents;
     size_t length;
     const gchar *log_path = NULL;
     RstrntLogData *log_data = NULL;
+    goffset *offset;
 
     manager = rstrnt_log_manager_get_instance ();
     data = rstrnt_log_manager_get_task_data (manager, task, &error);
@@ -436,7 +448,23 @@ rstrnt_upload_log (const RstrntTask    *task,
     contents = g_mapped_file_get_contents (file);
     length = g_mapped_file_get_length (file);
 
-    msgv = rstrnt_chunk_log (uri, contents, length, BKR_MAX_CONTENT_LENGTH, &msgc);
+    offset = restraint_task_get_offset ((Task *) task, log_path);
+
+    /* The offset as used in task and config.conf indicates the range
+       start for the next upload. It cannot be lesser than the current
+       length of the file. */
+    g_return_if_fail (length >= *offset);
+
+    if (length == *offset) {
+        g_debug ("%s(): task %s: %s: No content to upload",
+                 __func__, task->task_id, log_path);
+
+        g_mapped_file_unref (file);
+
+        return;
+    }
+
+    msgv = rstrnt_chunk_log (uri, contents, *offset, length, BKR_MAX_CONTENT_LENGTH, &msgc);
 
     g_return_if_fail (msgv != NULL && msgc > 0);
 
@@ -451,7 +479,18 @@ rstrnt_upload_log (const RstrntTask    *task,
                              cancellable,
                              file);
 
-    soup_uri_free (uri);
+    /* Notice that the offset is updated in the task even if setting the
+       offset in the config failed. The offset in the file is used only
+       for task restarts.
+       TODO: Instead of using the config file, the offset value could be
+       obtained after a restart using a HEAD request to the log URL.
+    */
+    *offset = length;
+
+    if (!task_config_set_offset (app_data->config_file, (Task *) task, log_path, *offset, &error)) {
+        g_warning ("%s(): Failed to set offset in config for task %s: %s",
+                   __func__, task->task_id, error->message);
+    }
 }
 
 void
