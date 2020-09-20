@@ -16,11 +16,16 @@ PACKAGES += libcurl
 PACKAGES += libsoup-2.4
 PACKAGES += libxml-2.0
 
-SRC_DIR = ../src
+SRC_DIR = $(abspath ../src)
 
 CFLAGS ?= -Og -g
 CFLAGS += -iquote $(SRC_DIR)
 CFLAGS += -Wall -Werror -std=c99 $(shell pkg-config --cflags $(PACKAGES))
+
+ifeq ($(COVERAGE), 1)
+    CFLAGS += --coverage
+    LDFLAGS ?= --coverage
+endif
 
 ifeq ($(STATIC), 1)
     # The right thing to do here is `pkg-config --libs --static`, which would
@@ -297,9 +302,10 @@ test_utils: $(UTILS_OBJS)
 
 ### Restraint objects
 #
-$(sort $(RESTRAINT_OBJS)): %.o: $(SRC_DIR)/%.c
-	$(CC) $(CFLAGS) -c $< -o $@
+RESTRAINT_OBJS := $(sort $(RESTRAINT_OBJS))
 
+$(RESTRAINT_OBJS): %.o: $(SRC_DIR)/%.c
+	$(CC) $(CFLAGS) -c $< -o $@
 
 test-data/git-remote: test-data/git-remote.tgz
 	tar --no-same-owner -C test-data -xzf $<
@@ -312,6 +318,14 @@ check: $(TEST_PROGRAMS) test-data/git-remote
 valgrind: $(TEST_PROGRAMS) test-data/git-remote
 	./run-tests.sh --valgrind $(TEST_PROGRAMS)
 
+.PHONY: coverage
+coverage:
+	gcov -s $(SRC_DIR) -o . $(SRC_DIR)/*.c
+
+.PHONY: check-coverage
+check-coverage:
+	$(MAKE) COVERAGE=1 clean check coverage
+
 .PHONY: clean
 clean:
-	rm -rf $(TEST_PROGRAMS) *.o rstrnt-commands-env-*.sh test_logging_logs/
+	rm -rf $(TEST_PROGRAMS) *.o *.gcov *.gcda *.gcno rstrnt-commands-env-*.sh test_logging_logs/
