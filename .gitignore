@@ -70,3 +70,6 @@ tags
 cscope.out
 .tox/
 tito-test-build/
+*.gcov
+*.gcno
+*.gcda
