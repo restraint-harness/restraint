@@ -1019,6 +1019,64 @@ recipe_fetch_complete(GError *error, xmlDoc *doc, gpointer user_data)
             task_handler, app_data, NULL);
 }
 
+static gboolean
+uploader_func (gpointer user_data)
+{
+    AppData *app_data;
+    Task    *task;
+
+    g_return_val_if_fail (NULL != user_data, G_SOURCE_REMOVE);
+
+    app_data = user_data;
+
+    g_return_val_if_fail (NULL != app_data->tasks, G_SOURCE_REMOVE);
+    g_return_val_if_fail (NULL != app_data->tasks->data, G_SOURCE_REMOVE);
+
+    task = app_data->tasks->data;
+
+    g_debug ("%s(): Upload event for task %s", __func__, task->task_id);
+
+    rstrnt_upload_logs (task, app_data, soup_session, app_data->cancellable);
+
+    return G_SOURCE_CONTINUE;
+}
+
+static void
+start_uploader (AppData *app_data)
+{
+    Task  *task;
+
+    g_return_if_fail (NULL != app_data);
+    g_return_if_fail (app_data->uploader_interval > 0);
+
+    app_data->uploader_source_id = g_timeout_add_seconds (app_data->uploader_interval,
+                                                          uploader_func,
+                                                          app_data);
+
+    task = app_data->tasks->data;
+
+    g_debug ("%s(): Added upload event source %d for task %s",
+             __func__, app_data->uploader_source_id, task->task_id);
+}
+
+static void
+stop_uploader (AppData *app_data)
+{
+    Task *task;
+
+    g_return_if_fail (NULL != app_data);
+    g_return_if_fail (0 != app_data->uploader_source_id);
+
+    g_source_remove (app_data->uploader_source_id);
+
+    task = app_data->tasks->data;
+
+    g_debug ("%s(): Removed upload event source %d for task %s",
+             __func__, app_data->uploader_source_id, task->task_id);
+
+    app_data->uploader_source_id = 0;
+}
+
 gboolean
 task_handler (gpointer user_data)
 {
@@ -1196,9 +1254,12 @@ task_handler (gpointer user_data)
       break;
     case TASK_COMPLETED:
     {
-      if (LOG_MANAGER_ENABLED && !app_data->stdin)
-        rstrnt_upload_logs (task, app_data, soup_session, app_data->cancellable);
+      if (rstrnt_log_manager_enabled (app_data)) {
+          if (0 != app_data->uploader_source_id)
+              stop_uploader (app_data);
 
+          rstrnt_upload_logs (task, app_data, soup_session, app_data->cancellable);
+      }
       // Some step along the way failed.
       if (task->error) {
         restraint_task_status(task, app_data, "Aborted", task->version, task->error);
@@ -1290,16 +1351,18 @@ restraint_log_task (AppData       *app_data,
     g_return_if_fail (app_data != NULL);
     g_return_if_fail (data != NULL && size > 0);
 
-    if (LOG_MANAGER_ENABLED && !app_data->stdin){
+    if (rstrnt_log_manager_enabled (app_data)) {
         rstrnt_log_bytes (app_data->tasks->data, type, data, size);
+
+        if (0 == app_data->uploader_source_id)
+            start_uploader (app_data);
 
         return;
     }
 
     log_path = rstrnt_log_type_get_path (type);
 
-    if (NULL == log_path)
-        return;
+    g_return_if_fail (NULL != log_path);
 
     connections_write (app_data, log_path, data, size);
 }

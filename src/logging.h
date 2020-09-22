@@ -23,8 +23,6 @@
 
 #include <stdbool.h>
 
-#define LOG_MANAGER_ENABLED 0
-
 #define RSTRNT_TYPE_LOG_MANAGER rstrnt_log_manager_get_type ()
 
 G_DECLARE_FINAL_TYPE (RstrntLogManager, rstrnt_log_manager, RSTRNT, LOG_MANAGER, GObject)
@@ -56,6 +54,8 @@ void              rstrnt_log                      (const RstrntTask    *task,
 
 RstrntLogManager *rstrnt_log_manager_get_instance (void);
 
-const gchar *     rstrnt_log_type_get_path        (RstrntLogType type);
+const gchar      *rstrnt_log_type_get_path        (RstrntLogType type);
+
+gboolean          rstrnt_log_manager_enabled      (RstrntServerAppData *app_data);
 
 #endif

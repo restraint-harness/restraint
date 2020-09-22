@@ -603,3 +603,11 @@ rstrnt_log_manager_get_instance (void)
 
     return once.retval;
 }
+
+gboolean
+rstrnt_log_manager_enabled (RstrntServerAppData *app_data)
+{
+    g_assert (NULL != app_data);
+
+    return !app_data->stdin && app_data->uploader_interval > 0;
+}

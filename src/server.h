@@ -25,6 +25,8 @@
 #define TASK_PLUGIN_SCRIPT "/usr/share/restraint/plugins/run_task_plugins"
 #define PLUGIN_DIR "/usr/share/restraint/plugins"
 
+#define LOG_UPLOAD_INTERVAL 15  /* Seconds */
+
 typedef enum {
   ABORTED_NONE,
   ABORTED_RECIPE,
@@ -54,6 +56,8 @@ typedef struct RstrntServerAppData {
   guint fetch_retries;
   gboolean stdin;
   guint last_signal;
+  guint uploader_source_id; /* Event source ID for log uploader */
+  guint uploader_interval; /* In seconds. 0 disables the log manager */
 } AppData;
 
 #endif
