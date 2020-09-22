@@ -299,6 +299,32 @@ test_rstrnt_chunk_log_nonzero_offset (void)
     g_object_unref (msgv[0]);
 }
 
+static void
+test_rstrnt_log_manager_enabled (void)
+{
+    AppData app_data;
+
+    app_data.stdin = FALSE;
+    app_data.uploader_interval = 0;
+
+    g_assert_false (rstrnt_log_manager_enabled (&app_data));
+
+    app_data.stdin = FALSE;
+    app_data.uploader_interval = 15;
+
+    g_assert_true (rstrnt_log_manager_enabled (&app_data));
+
+    app_data.stdin = TRUE;
+    app_data.uploader_interval = 0;
+
+    g_assert_false (rstrnt_log_manager_enabled (&app_data));
+
+    app_data.stdin = TRUE;
+    app_data.uploader_interval = 10;
+
+    g_assert_false (rstrnt_log_manager_enabled (&app_data));
+}
+
 int
 main (int    argc,
       char **argv)
@@ -328,6 +354,7 @@ main (int    argc,
     g_test_add_func ("/logging/upload/no_logs", test_rstrnt_log_upload_no_logs);
     g_test_add_func ("/logging/chunking/zero_offset", test_rstrnt_chunk_log_zero_offset);
     g_test_add_func ("/logging/chunking/nonzero_offset", test_rstrnt_chunk_log_nonzero_offset);
+    g_test_add_func ("/logging/enabled", test_rstrnt_log_manager_enabled);
 
     if (!soup_server_listen_local (server, 43770, SOUP_SERVER_LISTEN_IPV4_ONLY, &error))
     {

@@ -620,14 +620,18 @@ rstrnt_listen_any_local (SoupServer *server, guint port)
 }
 
 int main(int argc, char *argv[]) {
-  AppData *app_data = g_slice_new0(AppData);
-  app_data->cancellable = g_cancellable_new ();
-  app_data->aborted = ABORTED_NONE;
-  app_data->config_file = NULL;
+  AppData *app_data;
   const gchar *config = "config.conf";
   SoupServer *soup_server = NULL;
   GError *error = NULL;
+
+  app_data = g_slice_new0 (AppData);
+  app_data->cancellable = g_cancellable_new ();
+  app_data->aborted = ABORTED_NONE;
+  app_data->config_file = NULL;
   app_data->port = 0;
+  app_data->uploader_source_id = 0;
+  app_data->uploader_interval = LOG_UPLOAD_INTERVAL;
 
   GOptionEntry entries [] = {
     { "port", 'p', 0, G_OPTION_ARG_INT, &app_data->port, "Port to listen on", "PORT" },
@@ -728,7 +732,7 @@ int main(int argc, char *argv[]) {
 
   g_main_loop_unref(loop);
 
-  if (LOG_MANAGER_ENABLED && !app_data->stdin) {
+  if (rstrnt_log_manager_enabled (app_data)) {
       RstrntLogManager *log_manager;
 
       log_manager = rstrnt_log_manager_get_instance ();
