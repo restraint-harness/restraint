@@ -417,6 +417,8 @@ rstrnt_upload_log (const RstrntTask    *task,
 
     g_return_if_fail (NULL != data);
 
+    g_clear_error (&error);
+
     log_path = rstrnt_log_type_get_path (type);
     log_data = rstrnt_task_log_get_data (data, type);
 
