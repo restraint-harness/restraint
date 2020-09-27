@@ -20,6 +20,11 @@
 
 #include "task.c"
 
+#define rstrnt_test_add_cases(f, c)                             \
+    ({ for (int i = 0; i < (sizeof (c) / sizeof (c[0])); i++) { \
+            g_test_add_data_func (c[i].name, &c[i], f);         \
+        }; })
+
 SoupSession *soup_session;
 
 gchar *tmp_test_dir = NULL;
@@ -273,6 +278,80 @@ test_task_config_get_offsets_bad_file (void)
     restraint_task_free (task);
 }
 
+#define TEST_PARAM_OVERRIDE_MAX_TIME "/task/check_param_for_override/max_time"
+
+typedef struct param_override_max_time_case {
+    const gchar *name;
+    Param param;
+    guint64 expected;
+} param_override_max_time_case_t;
+
+param_override_max_time_case_t param_override_max_time_cases[] = {
+    { .name = TEST_PARAM_OVERRIDE_MAX_TIME "/killtime",
+      .param = { .name = "KILLTIMEOVERRIDE", .value = "10" },
+      .expected = 10, },
+    { .name = TEST_PARAM_OVERRIDE_MAX_TIME "/rstrnt_max_time",
+      .param = { .name = "RSTRNT_MAX_TIME", .value = "1m" },
+      .expected = 60, },
+};
+
+static void
+test_param_override_max_time (gconstpointer user_data)
+{
+    param_override_max_time_case_t *test_case;
+    Task task;
+
+    test_case = (param_override_max_time_case_t *) user_data;
+
+    task.remaining_time = 0;
+
+    check_param_for_override (&test_case->param, &task);
+
+    g_assert_cmpint (task.remaining_time, ==, test_case->expected);
+}
+
+#define TEST_PARAM_OVERRIDE_PTY "/task/check_param_for_override/use_pty"
+
+typedef struct param_override_use_pty_case {
+    gchar *name;
+    Param param;
+    gboolean expected;
+} param_override_use_pty_case_t;
+
+param_override_use_pty_case_t param_override_use_pty_cases[] = {
+    { .name = TEST_PARAM_OVERRIDE_PTY "/high_true",
+      .param = { .name = "RSTRNT_USE_PTY", .value = "TRUE" },
+      .expected = TRUE },
+    { .name = TEST_PARAM_OVERRIDE_PTY "/low_true",
+      .param = { .name = "RSTRNT_USE_PTY", .value = "true" },
+      .expected = TRUE },
+    { .name = TEST_PARAM_OVERRIDE_PTY "/false",
+      .param = { .name = "RSTRNT_USE_PTY", .value = "FALSE" },
+      .expected = FALSE },
+    { .name = TEST_PARAM_OVERRIDE_PTY "/other",
+      .param = { .name = "RSTRNT_USE_PTY", .value = "Other" },
+      .expected = FALSE },
+    { .name = TEST_PARAM_OVERRIDE_PTY "/empty",
+      .param = { .name = "RSTRNT_USE_PTY", .value = "" },
+      .expected = FALSE },
+};
+
+static void
+test_param_override_use_pty (gconstpointer user_data)
+{
+    Task task;
+    MetaData metadata;
+    param_override_use_pty_case_t *test_case;
+
+    test_case = (param_override_use_pty_case_t *) user_data;
+
+    metadata.use_pty = FALSE;
+    task.metadata = &metadata;
+
+    check_param_for_override (&test_case->param, &task);
+
+    g_assert_true (metadata.use_pty == test_case->expected);
+}
 
 int
 main (int   argc,
@@ -294,6 +373,9 @@ main (int   argc,
     g_test_add_func ("/task/task_config_get_offsets/file_exists", test_task_config_get_offsets_file_exists);
     g_test_add_func ("/task/task_config_get_offsets/no_file", test_task_config_get_offsets_no_file);
     g_test_add_func ("/task/task_config_get_offsets/bad_file", test_task_config_get_offsets_bad_file);
+
+    rstrnt_test_add_cases (test_param_override_max_time, param_override_max_time_cases);
+    rstrnt_test_add_cases (test_param_override_use_pty, param_override_use_pty_cases);
 
     success = g_test_run ();
 
