@@ -26,6 +26,8 @@
 #define PLUGIN_DIR "/usr/share/restraint/plugins"
 
 #define LOG_UPLOAD_INTERVAL 15  /* Seconds */
+#define LOG_UPLOAD_MIN_INTERVAL 3  /* Seconds */
+#define LOG_UPLOAD_MAX_INTERVAL 60  /* Seconds */
 
 typedef enum {
   ABORTED_NONE,
