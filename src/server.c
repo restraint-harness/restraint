@@ -619,6 +619,47 @@ rstrnt_listen_any_local (SoupServer *server, guint port)
     return is_listening ? port : 0;
 }
 
+static void
+rstrnt_uploader_override (AppData *app_data)
+{
+    g_autofree gchar     *file = NULL;
+    g_autoptr (GError)    err = NULL;
+    g_autoptr (GKeyFile)  key_file = NULL;
+    gint                  interval;
+
+    g_return_if_fail (NULL != app_data);
+
+    key_file = g_key_file_new ();
+
+    file = g_build_filename (VAR_LIB_PATH, "log_manager.conf", NULL);
+
+    if (!g_key_file_load_from_file (key_file, file, G_KEY_FILE_NONE, &err)) {
+        g_debug ("%s(): %s: %s", __func__, file, err->message);
+
+        return;
+    }
+
+    interval = g_key_file_get_integer (key_file, "log-manager", "upload_interval", &err);
+
+    if (NULL != err) {
+        g_debug ("%s(): %s", __func__, err->message);
+
+        return;
+    }
+
+    if (0 == interval)
+        /* Printed to stderr to make sure it ends up in console log. */
+        g_printerr ("Log manager disabled in configuration\n");
+    else if (interval < LOG_UPLOAD_MIN_INTERVAL)
+        interval = LOG_UPLOAD_MIN_INTERVAL;
+    else if (interval > LOG_UPLOAD_MAX_INTERVAL)
+        interval = LOG_UPLOAD_MAX_INTERVAL;
+
+    g_debug ("%s(): Log manager upload interval overridden to %d", __func__, interval);
+
+    app_data->uploader_interval = interval;
+}
+
 int main(int argc, char *argv[]) {
   AppData *app_data;
   const gchar *config = "config.conf";
@@ -632,6 +673,8 @@ int main(int argc, char *argv[]) {
   app_data->port = 0;
   app_data->uploader_source_id = 0;
   app_data->uploader_interval = LOG_UPLOAD_INTERVAL;
+
+  rstrnt_uploader_override (app_data);
 
   GOptionEntry entries [] = {
     { "port", 'p', 0, G_OPTION_ARG_INT, &app_data->port, "Port to listen on", "PORT" },
