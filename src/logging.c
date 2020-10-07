@@ -19,8 +19,10 @@
 #include "task.h"
 #include "beaker_harness.h"
 
+/* FIX: Use /var/lib/restraint/logs instead. Needs SELinux policy
+   updates. */
 #ifndef LOG_MANAGER_DIR
-#define LOG_MANAGER_DIR VAR_LIB_PATH "/logs"
+#define LOG_MANAGER_DIR "/var/tmp/restraintd/logs"
 #endif
 
 struct _RstrntLogManager
