@@ -183,8 +183,6 @@ server_msg_complete (SoupSession *session, SoupMessage *server_msg, gpointer use
     SoupMessageHeadersIter iter;
     const gchar *name, *value;
 
-    //SOUP_STATUS_IS_SUCCESSFUL(server_msg->status_code
-
     soup_message_headers_iter_init (&iter, server_msg->response_headers);
     while (soup_message_headers_iter_next (&iter, &name, &value))
         copy_header (soup_message_get_uri (client_msg), name, value, client_msg->response_headers);
