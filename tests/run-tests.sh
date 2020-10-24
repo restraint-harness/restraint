@@ -40,7 +40,7 @@ cleanup()
 }
 trap cleanup EXIT
 
-if [[ -f /usr/libexec/git-core/git-daemon ]] ; then
+if [[ -f /usr/libexec/git-core/git-daemon ]] || [[ -f /usr/lib/git-core/git-daemon ]]; then
     git daemon --reuseaddr --listen=127.0.0.1 \
         --base-path=test-data/git-remote --export-all --enable=upload-archive \
         --verbose --detach --pid-file=${GITD_PID_FILE}
