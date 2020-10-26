@@ -56,6 +56,7 @@ TEST_PROGRAMS += test_metadata
 TEST_PROGRAMS += test_process
 #TEST_PROGRAMS += test_recipe
 TEST_PROGRAMS += test_task
+TEST_PROGRAMS += test_upload
 TEST_PROGRAMS += test_utils
 
 .PHONY: all
@@ -299,6 +300,15 @@ RESTRAINT_OBJS += $(TASK_OBJS)
 
 test_task: $(TASK_OBJS)
 test_task.o: $(SRC_DIR)/task.c
+
+### test_upload
+#
+UPLOAD_OBJS =
+UPLOAD_OBJS += upload.o
+
+RESTRAINT_OBJS += $(UPLOAD_OBJS)
+
+test_upload: $(UPLOAD_OBJS)
 
 ### test_utils
 #
