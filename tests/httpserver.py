@@ -7,6 +7,18 @@ from six.moves import SimpleHTTPServer
 from six.moves import socketserver
 
 
+class TestsHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
+    """
+    This class is used to implement handlers for requests from restraint
+    tests.
+    """
+
+    def do_PUT(self):
+        """This is a dummy request that always returns 200 responses."""
+        self.send_response_only(200)
+        self.end_headers()
+
+
 def sigterm_handler(signal, frame):
     raise SystemExit("received sigterm")
 
@@ -20,7 +32,7 @@ def main():
     args = parser.parse_args()
 
     server_address = (args.host, int(args.port))
-    handler = SimpleHTTPServer.SimpleHTTPRequestHandler
+    handler = TestsHandler
     httpd = socketserver.TCPServer(
         server_address, handler, bind_and_activate=False
     )
