@@ -1,6 +1,24 @@
 Release Notes
 =============
 
+Restraint 0.3.2
+---------------
+
+What’s New
+~~~~~~~~~~
+
+* Enable log manager for log caching
+
+
+Bug Fixes
+~~~~~~~~~
+
+* | Upload cached logs in time intervals
+  | The log manager uploads the cached contents of taskout.log and
+   harness.log every 15 seconds. This allows to follow task progress
+   and avoids missing logs when the external watchdog aborts the
+   recipe.
+
 Restraint 0.3.1
 ---------------
 
