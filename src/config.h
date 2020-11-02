@@ -18,6 +18,9 @@
 #ifndef _RESTRAINT_CONFIG_H
 #define _RESTRAINT_CONFIG_H
 
+#include <glib.h>
+#include <glib-object.h>
+
 gint64 restraint_config_get_int64 (gchar *config_file, gchar *section, gchar *key, GError **error);
 guint64 restraint_config_get_uint64 (gchar *config_file, gchar *section, gchar *key, GError **error);
 gboolean restraint_config_get_boolean (gchar *config_file, gchar *section, gchar *key, GError **error);

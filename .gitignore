@@ -50,6 +50,7 @@
 /tests/test_cmd_result
 /tests/test_cmd_utils
 /tests/test_cmd_watchdog
+/tests/test_config
 /tests/test_dependency
 /tests/test_env
 /tests/test_fetch_git

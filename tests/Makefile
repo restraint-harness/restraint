@@ -41,6 +41,7 @@ TEST_PROGRAMS += test_cmd_log
 TEST_PROGRAMS += test_cmd_result
 TEST_PROGRAMS += test_cmd_utils
 TEST_PROGRAMS += test_cmd_watchdog
+TEST_PROGRAMS += test_config
 TEST_PROGRAMS += test_dependency
 TEST_PROGRAMS += test_env
 TEST_PROGRAMS += test_fetch_git
@@ -134,6 +135,15 @@ CMD_WATCHDOG_OBJS += utils.o
 RESTRAINT_OBJS += $(CMD_WATCHDOG_OBJS)
 
 test_cmd_watchdog: $(CMD_WATCHDOG_OBJS)
+
+### test_config
+#
+CONFIG_OBJS =
+CONFIG_OBJS += config.o
+
+RESTRAINT_OBJS += $(CONFIG_OBJS)
+
+test_config: $(CONFIG_OBJS)
 
 ### test_dependency
 #
