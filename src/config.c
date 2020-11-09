@@ -275,11 +275,9 @@ restraint_config_set (gchar *config_file, const gchar *section,
                                  NULL);
     }
 
-    s_data = g_key_file_to_data (keyfile, &length, &tmp_error);
-    if (!s_data) {
-        g_propagate_error (gerror, tmp_error);
-        goto error;
-    }
+    /* g_key_file_to_data never reports errors, and always returns a NULL
+       terminated string. */
+    s_data = g_key_file_to_data (keyfile, &length, NULL);
 
     if (!g_file_set_contents (config_file, s_data, length,  &tmp_error)) {
         g_propagate_error (gerror, tmp_error);
