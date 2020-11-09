@@ -29,6 +29,22 @@
 #include "errors.h"
 #include "config.h"
 
+static GKeyFile *
+restraint_config_read_key_file (const gchar  *file,
+                                GError      **err)
+{
+    GKeyFile *key_file;
+    GKeyFileFlags flags;
+
+    key_file = g_key_file_new ();
+
+    flags = G_KEY_FILE_KEEP_COMMENTS | G_KEY_FILE_KEEP_TRANSLATIONS;
+
+    g_key_file_load_from_file (key_file, file, flags, err);
+
+    return key_file;
+}
+
 gint64
 restraint_config_get_int64 (gchar *config_file, gchar *section, gchar *key, GError **error)
 {
@@ -37,13 +53,10 @@ restraint_config_get_int64 (gchar *config_file, gchar *section, gchar *key, GErr
     g_return_val_if_fail(error == NULL || *error == NULL, -1);
 
     GKeyFile *keyfile;
-    GKeyFileFlags flags;
     GError *tmp_error = NULL;
 
-    flags = G_KEY_FILE_KEEP_COMMENTS | G_KEY_FILE_KEEP_TRANSLATIONS;
+    keyfile = restraint_config_read_key_file (config_file, NULL);
 
-    keyfile = g_key_file_new ();
-    g_key_file_load_from_file (keyfile, config_file, flags, NULL);
     gint64 value = g_key_file_get_int64 (keyfile,
                                          section,
                                          key,
@@ -69,13 +82,10 @@ restraint_config_get_uint64 (gchar *config_file, gchar *section, gchar *key, GEr
     g_return_val_if_fail(error == NULL || *error == NULL, -1);
 
     GKeyFile *keyfile;
-    GKeyFileFlags flags;
     GError *tmp_error = NULL;
 
-    flags = G_KEY_FILE_KEEP_COMMENTS | G_KEY_FILE_KEEP_TRANSLATIONS;
+    keyfile = restraint_config_read_key_file (config_file, NULL);
 
-    keyfile = g_key_file_new ();
-    g_key_file_load_from_file (keyfile, config_file, flags, NULL);
     guint64 value = g_key_file_get_uint64 (keyfile,
                                            section,
                                            key,
@@ -101,13 +111,10 @@ restraint_config_get_boolean (gchar *config_file, gchar *section, gchar *key, GE
     g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
 
     GKeyFile *keyfile;
-    GKeyFileFlags flags;
     GError *tmp_error = NULL;
 
-    flags = G_KEY_FILE_KEEP_COMMENTS | G_KEY_FILE_KEEP_TRANSLATIONS;
+    keyfile = restraint_config_read_key_file (config_file, NULL);
 
-    keyfile = g_key_file_new ();
-    g_key_file_load_from_file (keyfile, config_file, flags, NULL);
     gboolean value = g_key_file_get_boolean (keyfile,
                                             section,
                                             key,
@@ -133,13 +140,10 @@ restraint_config_get_string (gchar *config_file, gchar *section, gchar *key, GEr
     g_return_val_if_fail(error == NULL || *error == NULL, NULL);
 
     GKeyFile *keyfile;
-    GKeyFileFlags flags;
     GError *tmp_error = NULL;
 
-    flags = G_KEY_FILE_KEEP_COMMENTS | G_KEY_FILE_KEEP_TRANSLATIONS;
+    keyfile = restraint_config_read_key_file (config_file, NULL);
 
-    keyfile = g_key_file_new ();
-    g_key_file_load_from_file (keyfile, config_file, flags, NULL);
     gchar *value = g_key_file_get_string (keyfile,
                                           section,
                                           key,
@@ -167,10 +171,9 @@ restraint_config_get_keys (gchar *config_file, gchar *section, GError **error)
     GKeyFile *keyfile = NULL;
     GError *tmp_error = NULL;
     gchar **ret = NULL;
-    GKeyFileFlags flags = G_KEY_FILE_KEEP_COMMENTS | G_KEY_FILE_KEEP_TRANSLATIONS;
 
-    keyfile = g_key_file_new ();
-    g_key_file_load_from_file (keyfile, config_file, flags, NULL);
+    keyfile = restraint_config_read_key_file (config_file, NULL);
+
     ret = g_key_file_get_keys(keyfile, section, NULL, &tmp_error);
 
     if (tmp_error) {
@@ -222,15 +225,11 @@ restraint_config_set (gchar *config_file, const gchar *section,
     gchar *s_data = NULL;
     gsize length;
     GKeyFile *keyfile;
-    GKeyFileFlags flags;
     GError *tmp_error = NULL;
-
-    flags = G_KEY_FILE_KEEP_COMMENTS | G_KEY_FILE_KEEP_TRANSLATIONS;
 
     restraint_mkdir_parent (config_file);
 
-    keyfile = g_key_file_new ();
-    g_key_file_load_from_file (keyfile, config_file, flags, NULL);
+    keyfile = restraint_config_read_key_file (config_file, NULL);
 
     if (key && type != -1) {
         va_start (args, type);
