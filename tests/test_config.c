@@ -15,6 +15,11 @@
   along with Restraint.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#define _XOPEN_SOURCE 500
+
+#include <unistd.h>
+#include <sys/stat.h>
+#include <gio/gio.h>
 #include <glib.h>
 #include <glib/gstdio.h>
 
@@ -329,6 +334,34 @@ test_restraint_config_get_keys (void)
     g_strfreev (value);
 }
 
+static void
+test_restraint_config_set_mkdir (void)
+{
+    guint32 dir_mode;
+    g_autofree gchar *config_file = NULL;
+    g_autofree gchar *parent = NULL;
+    g_autoptr (GError) err = NULL;
+    g_autoptr (GFile) dir = NULL;
+    g_autoptr (GFileInfo) dir_info = NULL;
+
+    parent = g_build_filename (tmp_test_dir, "subdir", NULL);
+    config_file = g_build_filename (parent, "config.conf", NULL);
+
+    restraint_config_set (config_file, "section", "key", &err, G_TYPE_STRING, "value");
+
+    g_assert_no_error (err);
+    assert_key_val (config_file, "section", "key", "value");
+
+    dir = g_file_new_for_path (parent);
+    dir_info = g_file_query_info (dir, G_FILE_ATTRIBUTE_UNIX_MODE, G_FILE_QUERY_INFO_NONE, NULL, NULL);
+    g_assert_nonnull (dir_info);
+    dir_mode = g_file_info_get_attribute_uint32 (dir_info, G_FILE_ATTRIBUTE_UNIX_MODE);
+    g_assert_cmpuint (dir_mode, ==, (S_IFDIR | S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH));
+
+    g_remove (config_file);
+    g_remove (parent);
+}
+
 int
 main (int   argc,
       char *argv[])
@@ -346,6 +379,7 @@ main (int   argc,
     g_test_add_func ("/config/get/keys", test_restraint_config_get_keys);
     g_test_add_func ("/config/set/types", test_restraint_config_set_types);
     g_test_add_func ("/config/set/remove", test_restraint_config_set_remove);
+    g_test_add_func ("/config/set/mkdir", test_restraint_config_set_mkdir);
 
     success = g_test_run ();
 

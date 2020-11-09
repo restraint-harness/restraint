@@ -185,6 +185,16 @@ restraint_config_get_keys (gchar *config_file, gchar *section, GError **error)
     return ret;
 }
 
+static gint
+restraint_mkdir_parent (const gchar *file)
+{
+    g_autofree gchar *dirname = NULL;
+
+    dirname = g_path_get_dirname (file);
+
+    return g_mkdir_with_parents (dirname, 0755 /* drwxr-xr-x */);
+}
+
 void
 restraint_config_trunc (gchar *config_file, GError **error)
 {
@@ -192,9 +202,7 @@ restraint_config_trunc (gchar *config_file, GError **error)
 
     GError *tmp_error = NULL;
 
-    gchar *dirname = g_path_get_dirname (config_file);
-    g_mkdir_with_parents (dirname, 0755 /* drwxr-xr-x */);
-    g_free (dirname);
+    restraint_mkdir_parent (config_file);
 
     if (!g_file_set_contents (config_file, "", -1,  &tmp_error)) {
         g_propagate_error (error, tmp_error);
@@ -219,9 +227,8 @@ restraint_config_set (gchar *config_file, const gchar *section,
 
     flags = G_KEY_FILE_KEEP_COMMENTS | G_KEY_FILE_KEEP_TRANSLATIONS;
 
-    gchar *dirname = g_path_get_dirname (config_file);
-    g_mkdir_with_parents (dirname, 0755 /* drwxr-xr-x */);
-    g_free (dirname);
+    restraint_mkdir_parent (config_file);
+
     keyfile = g_key_file_new ();
     g_key_file_load_from_file (keyfile, config_file, flags, NULL);
 
