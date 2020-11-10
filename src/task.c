@@ -1309,6 +1309,7 @@ connections_write (AppData     *app_data,
     goffset             *offset;
     g_autoptr (SoupURI)  task_output_uri = NULL;
     g_autofree gchar    *section = NULL;
+    g_autoptr (GError)   err = NULL;
 
     if (app_data->tasks == NULL || g_cancellable_is_cancelled (app_data->cancellable))
         return;
@@ -1337,7 +1338,10 @@ connections_write (AppData     *app_data,
                              app_data->cancellable,
                              NULL);
 
-    (void) task_config_set_offset (app_data->config_file, task, path, *offset, NULL);
+    if (!task_config_set_offset (app_data->config_file, task, path, *offset, &err)) {
+        g_warning ("%s(): Failed to set offset in config for task %s: %s",
+                   __func__, task->task_id, err->message);
+    }
 }
 
 void
