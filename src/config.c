@@ -29,10 +29,6 @@
 #include "errors.h"
 #include "config.h"
 
-#define unrecognised(error_code, message, ...) g_set_error(error, RESTRAINT_ERROR, \
-        error_code, \
-        message, ##__VA_ARGS__)
-
 gint64
 restraint_config_get_int64 (gchar *config_file, gchar *section, gchar *key, GError **error)
 {
