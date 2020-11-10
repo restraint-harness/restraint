@@ -113,6 +113,222 @@ test_restraint_config_set_remove (void)
     g_remove (config_file);
 }
 
+static void
+test_restraint_config_get_int64 (void)
+{
+    gint64 value;
+    gchar *config_file;
+    g_autoptr (GError) err = NULL;
+
+    /* Missing file. */
+    config_file = "the/file/that/doesnt/exist";
+
+    value = restraint_config_get_int64 (config_file, "types", "int", &err);
+
+    /* Notice that after return, there is now way to tell that the file
+       didn't exist. The code using this function expects this
+       behavior. */
+    g_assert_no_error (err);
+    g_assert_cmpint (value, ==, 0);
+
+    config_file = "./test-data/config_types.conf";
+
+    /* Missing group */
+    value = restraint_config_get_int64 (config_file, "neexistuje", "neexistuje", &err);
+
+    g_assert_no_error (err);
+    g_assert_cmpint (value, ==, 0);
+
+    /* Missing key */
+    value = restraint_config_get_int64 (config_file, "types", "neexistuje", &err);
+
+    g_assert_no_error (err);
+    g_assert_cmpint (value, ==, 0);
+
+    /* Found key with proper value */
+    value = restraint_config_get_int64 (config_file, "types", "int", &err);
+
+    g_assert_no_error (err);
+    g_assert_cmpint (value, ==, -42);
+
+    /* Found key with wrong value */
+    value = restraint_config_get_int64 (config_file, "types", "string", &err);
+
+    g_assert_error (err, G_KEY_FILE_ERROR, G_KEY_FILE_ERROR_INVALID_VALUE);
+    g_assert_cmpint (value, ==, 0);
+}
+
+static void
+test_restraint_config_get_uint64 (void)
+{
+    guint64 value;
+    gchar *config_file;
+    g_autoptr (GError) err = NULL;
+
+    /* Missing file. */
+    config_file = "the/file/that/doesnt/exist";
+
+    value = restraint_config_get_uint64 (config_file, "types", "uint", &err);
+
+    /* Notice that after return, there is now way to tell that the file
+       didn't exist. The code using this function expects this
+       behavior. */
+    g_assert_no_error (err);
+    g_assert_cmpuint (value, ==, 0);
+
+    config_file = "./test-data/config_types.conf";
+
+    /* Missing group */
+    value = restraint_config_get_uint64 (config_file, "neexistuje", "neexistuje", &err);
+
+    g_assert_no_error (err);
+    g_assert_cmpuint (value, ==, 0);
+
+    /* Missing key */
+    value = restraint_config_get_uint64 (config_file, "types", "neexistuje", &err);
+
+    g_assert_no_error (err);
+    g_assert_cmpuint (value, ==, 0);
+
+    /* Found key with proper value */
+    value = restraint_config_get_uint64 (config_file, "types", "uint", &err);
+
+    g_assert_no_error (err);
+    g_assert_cmpuint (value, ==, 42);
+
+    /* Found key with wrong value */
+    value = restraint_config_get_uint64 (config_file, "types", "string", &err);
+
+    g_assert_error (err, G_KEY_FILE_ERROR, G_KEY_FILE_ERROR_INVALID_VALUE);
+    g_assert_cmpuint (value, ==, 0);
+}
+
+static void
+test_restraint_config_get_boolean (void)
+{
+    gboolean value;
+    gchar *config_file;
+    g_autoptr (GError) err = NULL;
+
+    /* Missing file. */
+    config_file = "the/file/that/doesnt/exist";
+
+    value = restraint_config_get_boolean (config_file, "types", "bool", &err);
+
+    /* Notice that after return, there is now way to tell that the file
+       didn't exist. The code using this function expects this
+       behavior. */
+    g_assert_no_error (err);
+    g_assert_false (value);
+
+    config_file = "./test-data/config_types.conf";
+
+    /* Missing group */
+    value = restraint_config_get_boolean (config_file, "neexistuje", "neexistuje", &err);
+
+    g_assert_no_error (err);
+    g_assert_false (value);
+
+    /* Missing key */
+    value = restraint_config_get_boolean (config_file, "types", "neexistuje", &err);
+
+    g_assert_no_error (err);
+    g_assert_false (value);
+
+    /* Found key with proper value */
+    value = restraint_config_get_boolean (config_file, "types", "bool", &err);
+
+    g_assert_no_error (err);
+    g_assert_true (value);
+
+    /* Found key with wrong value */
+    value = restraint_config_get_boolean (config_file, "types", "string", &err);
+
+    g_assert_error (err, G_KEY_FILE_ERROR, G_KEY_FILE_ERROR_INVALID_VALUE);
+    g_assert_false (value);
+}
+
+static void
+test_restraint_config_get_string (void)
+{
+    g_autofree gchar *value = NULL;
+    gchar *config_file;
+    g_autoptr (GError) err = NULL;
+
+    /* Missing file. */
+    config_file = "the/file/that/doesnt/exist";
+
+    value = restraint_config_get_string (config_file, "types", "string", &err);
+
+    /* Notice that after return, there is now way to tell that the file
+       didn't exist. The code using this function expects this
+       behavior. */
+    g_assert_no_error (err);
+    g_assert_null (value);
+
+    config_file = "./test-data/config_types.conf";
+
+    /* Missing group */
+    value = restraint_config_get_string (config_file, "neexistuje", "neexistuje", &err);
+
+    g_assert_no_error (err);
+    g_assert_null (value);
+
+    /* Missing key */
+    value = restraint_config_get_string (config_file, "types", "neexistuje", &err);
+
+    g_assert_no_error (err);
+    g_assert_null (value);
+
+    /* Found key with proper value */
+    value = restraint_config_get_string (config_file, "types", "string", &err);
+
+    g_assert_no_error (err);
+    g_assert_nonnull (value);
+    g_assert_cmpstr (value, ==, "The string value");
+}
+
+static void
+test_restraint_config_get_keys (void)
+{
+    gchar **value;
+    gchar *config_file = NULL;
+    g_autoptr (GError) err = NULL;
+
+    /* Missing file. */
+    config_file = "the/file/that/doesnt/exist";
+
+    value = restraint_config_get_keys (config_file, "types", &err);
+
+    /* Notice that after return, there is now way to tell that the file
+       didn't exist. The code using this function expects this
+       behavior. */
+    g_assert_no_error (err);
+    g_assert_null (value);
+
+    /* Missing group */
+    config_file = "./test-data/config_types.conf";
+
+    value = restraint_config_get_keys (config_file, "neexistuje", &err);
+
+    g_assert_no_error (err);
+    g_assert_null (value);
+
+    /* Found group and keys */
+    value = restraint_config_get_keys (config_file, "types", &err);
+
+    g_assert_no_error (err);
+    g_assert_nonnull (value);
+    g_assert_nonnull (value[0]);
+    /* This assumes that the keys in the array are in the same order as
+       in the file, but, the function doesn't guarantee anything. */
+    g_assert_cmpstr (value[0], ==, "int");
+    g_assert_cmpstr (value[3], ==, "string");
+    g_assert_null (value[4]);
+
+    g_strfreev (value);
+}
+
 int
 main (int   argc,
       char *argv[])
@@ -123,6 +339,11 @@ main (int   argc,
 
     g_test_init (&argc, &argv, NULL);
 
+    g_test_add_func ("/config/get/int64", test_restraint_config_get_int64);
+    g_test_add_func ("/config/get/uint64", test_restraint_config_get_uint64);
+    g_test_add_func ("/config/get/boolean", test_restraint_config_get_boolean);
+    g_test_add_func ("/config/get/string", test_restraint_config_get_string);
+    g_test_add_func ("/config/get/keys", test_restraint_config_get_keys);
     g_test_add_func ("/config/set/types", test_restraint_config_set_types);
     g_test_add_func ("/config/set/remove", test_restraint_config_set_remove);
 
