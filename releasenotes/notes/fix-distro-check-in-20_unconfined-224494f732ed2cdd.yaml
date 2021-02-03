@@ -1,0 +1,8 @@
+fixes:
+  - |
+    Fix distro version check in 20_unconfined
+
+    Make it better at detecting Fedora 34 as Fedora and distinguish RHEL
+    from Fedora in version comparison. The main difference is that it
+    now picks the right SELinux context for test jobs on Fedora 34
+    (Rawhide at the time of writing).
