@@ -5,25 +5,28 @@
 rstrnt_info "*** Running Plugin: $0"
 
 _is_rhfamily() {
-  local family=$1
-  local op=$2
-  local ver=$3
+  local family="$1"
+  local op="$2"
+  local ver="$3"
   shift 3
-  local the_rpms="$(rpm -q --whatprovides redhat-release)"
-  if [[ -z $the_rpms ]]; then
-    false
+  local the_rpms
+  if rpm -q --whatprovides redhat-release &>/dev/null; then
+    the_rpms="$(rpm -q --whatprovides redhat-release)"
+  elif rpm -q --whatprovides fedora-release &>/dev/null; then
+    the_rpms="$(rpm -q --whatprovides fedora-release)"
   else
-    local the_ver="$(rpm -q --qf="%{VERSION}" $the_rpms | sed "s/^\([0-9]\+\)[^0-9]\+.*$/\1/")"
-    if [[ "$op" == "show" ]]; then
-      rstrnt_debug "Family: $family"
-      rstrnt_debug "Version: $the_ver"
-      rstrnt_debug "Rpms: $the_rpms"
-    elif [[ -n "$op" && -n "$ver" ]]; then
-      eval "[[ $the_ver $op $ver ]]"
-    else
-      true
-    fi
+    return 1
   fi
+  local the_fam="$(rpm -q --qf="%{NAME}" $the_rpms)"
+  the_fam="${the_fam%%-*}"
+  local the_ver="$(rpm -q --qf="%{VERSION}" $the_rpms | sed "s/^\([0-9]\+\)[^0-9]\+.*$/\1/")"
+  if [[ "$op" == "show" ]]; then
+    rstrnt_debug "Family: $the_fam"
+    rstrnt_debug "Version: $the_ver"
+    rstrnt_debug "Rpms: $the_rpms"
+    return 0
+  fi
+  [ "$the_fam" = "$family" ] && [ "$the_ver" "$op" "$ver" ]
 }
 is_rhel() { _is_rhfamily redhat "$1" "$2"; }
 is_fedora() { _is_rhfamily fedora "$1" "$2"; }
