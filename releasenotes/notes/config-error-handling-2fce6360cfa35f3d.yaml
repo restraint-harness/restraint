@@ -1,0 +1,5 @@
+fixes:
+  - |
+    Improve error handling on recipe and task state management
+    Some errors that could indicate a bad saved state are now handled
+    and reported. :bug: '1783283'
