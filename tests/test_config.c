@@ -161,6 +161,16 @@ test_restraint_config_get_int64 (void)
 
     g_assert_error (err, G_KEY_FILE_ERROR, G_KEY_FILE_ERROR_INVALID_VALUE);
     g_assert_cmpint (value, ==, 0);
+
+    g_clear_error (&err);
+
+    /* Bad format file */
+    config_file = "./test-data/ill_formed.conf";
+
+    value = restraint_config_get_int64 (config_file, "types", "int", &err);
+
+    g_assert_error (err, G_KEY_FILE_ERROR, G_KEY_FILE_ERROR_PARSE);
+    g_assert_cmpint (value, ==, 0);
 }
 
 static void
@@ -205,6 +215,16 @@ test_restraint_config_get_uint64 (void)
     value = restraint_config_get_uint64 (config_file, "types", "string", &err);
 
     g_assert_error (err, G_KEY_FILE_ERROR, G_KEY_FILE_ERROR_INVALID_VALUE);
+    g_assert_cmpuint (value, ==, 0);
+
+    g_clear_error (&err);
+
+    /* Bad file */
+    config_file = "./test-data/ill_formed.conf";
+
+    value = restraint_config_get_uint64 (config_file, "types", "uint", &err);
+
+    g_assert_error (err, G_KEY_FILE_ERROR, G_KEY_FILE_ERROR_PARSE);
     g_assert_cmpuint (value, ==, 0);
 }
 
@@ -251,6 +271,16 @@ test_restraint_config_get_boolean (void)
 
     g_assert_error (err, G_KEY_FILE_ERROR, G_KEY_FILE_ERROR_INVALID_VALUE);
     g_assert_false (value);
+
+    g_clear_error (&err);
+
+    /* Bad file */
+    config_file = "./test-data/ill_formed.conf";
+
+    value = restraint_config_get_boolean (config_file, "types", "bool", &err);
+
+    g_assert_error (err, G_KEY_FILE_ERROR, G_KEY_FILE_ERROR_PARSE);
+    g_assert_false (value);
 }
 
 static void
@@ -291,6 +321,16 @@ test_restraint_config_get_string (void)
     g_assert_no_error (err);
     g_assert_nonnull (value);
     g_assert_cmpstr (value, ==, "The string value");
+
+    g_free (value);
+
+    /* Bad file */
+    config_file = "./test-data/ill_formed.conf";
+
+    value = restraint_config_get_string (config_file, "types", "string", &err);
+
+    g_assert_error (err, G_KEY_FILE_ERROR, G_KEY_FILE_ERROR_PARSE);
+    g_assert_null (value);
 }
 
 static void
@@ -332,6 +372,14 @@ test_restraint_config_get_keys (void)
     g_assert_null (value[4]);
 
     g_strfreev (value);
+
+    /* Bad file */
+    config_file = "./test-data/ill_formed.conf";
+
+    value = restraint_config_get_keys (config_file, "types", &err);
+
+    g_assert_error (err, G_KEY_FILE_ERROR, G_KEY_FILE_ERROR_PARSE);
+    g_assert_null (value);
 }
 
 static void
@@ -362,6 +410,34 @@ test_restraint_config_set_mkdir (void)
     g_remove (parent);
 }
 
+static void
+test_restraint_config_set_bad_file (void)
+{
+    gsize config_src_len = 0;
+    g_autofree gchar *config_file = NULL;
+    g_autofree gchar *contents = NULL;
+    g_autoptr (GError) err = NULL;
+
+    config_file = g_build_filename (tmp_test_dir, "bad_file.conf", NULL);
+
+    g_assert_true (g_file_get_contents ("./test-data/ill_formed.conf", &contents, &config_src_len, NULL));
+    g_assert_cmpuint (config_src_len, >, 0);
+    g_assert_true (g_file_set_contents (config_file, contents, -1, NULL));
+
+    restraint_config_set (config_file, "section", "key", &err, G_TYPE_STRING, "value");
+
+    g_assert_error (err, G_KEY_FILE_ERROR, G_KEY_FILE_ERROR_PARSE);
+
+    g_free (contents);
+    contents = NULL;
+
+    g_assert_true (g_file_get_contents (config_file, &contents, NULL, NULL));
+    g_assert_nonnull (contents);
+    g_assert_cmpuint (strlen (contents), ==, config_src_len);
+
+    g_remove (config_file);
+}
+
 int
 main (int   argc,
       char *argv[])
@@ -380,6 +456,7 @@ main (int   argc,
     g_test_add_func ("/config/set/types", test_restraint_config_set_types);
     g_test_add_func ("/config/set/remove", test_restraint_config_set_remove);
     g_test_add_func ("/config/set/mkdir", test_restraint_config_set_mkdir);
+    g_test_add_func ("/config/set/bad_file", test_restraint_config_set_bad_file);
 
     success = g_test_run ();
 
