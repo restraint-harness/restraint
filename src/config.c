@@ -29,20 +29,42 @@
 #include "errors.h"
 #include "config.h"
 
+#define is_key_file_not_found_error(e) (G_KEY_FILE_ERROR_KEY_NOT_FOUND == e->code \
+                                        || G_KEY_FILE_ERROR_GROUP_NOT_FOUND == e->code)
+
+/*
+ * Returns the content of file into a new GKeyFile structure.
+ *
+ * If the file doesn't exist, an empty GKeyFile is returned.
+ *
+ * If the file cannot be loaded, NULL is returned and err is set.
+ */
 static GKeyFile *
 restraint_config_read_key_file (const gchar  *file,
                                 GError      **err)
 {
     GKeyFile *key_file;
     GKeyFileFlags flags;
+    GError *tmp_err = NULL;
 
     key_file = g_key_file_new ();
 
     flags = G_KEY_FILE_KEEP_COMMENTS | G_KEY_FILE_KEEP_TRANSLATIONS;
 
-    g_key_file_load_from_file (key_file, file, flags, err);
+    if (!g_key_file_load_from_file (key_file, file, flags, &tmp_err)) {
+        if (!g_error_matches (tmp_err, G_FILE_ERROR, G_FILE_ERROR_NOENT))
+            goto error;
+
+        g_clear_error (&tmp_err);
+    }
 
     return key_file;
+
+  error:
+    g_propagate_error (err, tmp_err);
+    g_key_file_free (key_file);
+
+    return NULL;
 }
 
 gint64
@@ -52,26 +74,32 @@ restraint_config_get_int64 (gchar *config_file, gchar *section, gchar *key, GErr
     g_return_val_if_fail(section != NULL, -1);
     g_return_val_if_fail(error == NULL || *error == NULL, -1);
 
-    GKeyFile *keyfile;
+    g_autoptr (GKeyFile) keyfile = NULL;
     GError *tmp_error = NULL;
 
-    keyfile = restraint_config_read_key_file (config_file, NULL);
+    keyfile = restraint_config_read_key_file (config_file, &tmp_error);
+
+    if (NULL != tmp_error)
+        goto error;
 
     gint64 value = g_key_file_get_int64 (keyfile,
                                          section,
                                          key,
                                          &tmp_error);
-    if (tmp_error) {
-        if (tmp_error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND &&
-            tmp_error->code != G_KEY_FILE_ERROR_GROUP_NOT_FOUND ) {
-            g_propagate_prefixed_error(error, tmp_error, "config get int64,");
-        } else {
-            g_clear_error(&tmp_error);
-        }
+
+    if (NULL != tmp_error) {
+        if (!is_key_file_not_found_error (tmp_error))
+            goto error;
+
+        g_clear_error (&tmp_error);
     }
 
-    g_key_file_free (keyfile);
     return value;
+
+  error:
+    g_propagate_prefixed_error (error, tmp_error, "config get int64,");
+
+    return 0;
 }
 
 guint64
@@ -81,26 +109,31 @@ restraint_config_get_uint64 (gchar *config_file, gchar *section, gchar *key, GEr
     g_return_val_if_fail(section != NULL, -1);
     g_return_val_if_fail(error == NULL || *error == NULL, -1);
 
-    GKeyFile *keyfile;
+    g_autoptr (GKeyFile) keyfile = NULL;
     GError *tmp_error = NULL;
 
-    keyfile = restraint_config_read_key_file (config_file, NULL);
+    keyfile = restraint_config_read_key_file (config_file, &tmp_error);
+
+    if (NULL != tmp_error)
+        goto error;
 
     guint64 value = g_key_file_get_uint64 (keyfile,
                                            section,
                                            key,
                                            &tmp_error);
-    if (tmp_error) {
-        if (tmp_error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND &&
-            tmp_error->code != G_KEY_FILE_ERROR_GROUP_NOT_FOUND ) {
-            g_propagate_prefixed_error(error, tmp_error, "config get uint64,");
-        } else {
-            g_clear_error(&tmp_error);
-        }
+    if (NULL != tmp_error) {
+        if (!is_key_file_not_found_error (tmp_error))
+            goto error;
+
+        g_clear_error (&tmp_error);
     }
 
-    g_key_file_free (keyfile);
     return value;
+
+  error:
+    g_propagate_prefixed_error (error, tmp_error, "config get uint64,");
+
+    return 0;
 }
 
 gboolean
@@ -110,26 +143,30 @@ restraint_config_get_boolean (gchar *config_file, gchar *section, gchar *key, GE
     g_return_val_if_fail(section != NULL, FALSE);
     g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
 
-    GKeyFile *keyfile;
+    g_autoptr (GKeyFile) keyfile = NULL;
     GError *tmp_error = NULL;
+    gboolean value;
 
-    keyfile = restraint_config_read_key_file (config_file, NULL);
+    keyfile = restraint_config_read_key_file (config_file, &tmp_error);
 
-    gboolean value = g_key_file_get_boolean (keyfile,
-                                            section,
-                                            key,
-                                            &tmp_error);
-    if (tmp_error) {
-        if (tmp_error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND &&
-            tmp_error->code != G_KEY_FILE_ERROR_GROUP_NOT_FOUND ) {
-            g_propagate_prefixed_error(error, tmp_error, "config get gboolean,");
-        } else {
-            g_clear_error(&tmp_error);
-        }
+    if (NULL != tmp_error)
+        goto error;
+
+    value = g_key_file_get_boolean (keyfile, section, key, &tmp_error);
+
+    if (NULL != tmp_error) {
+        if (!is_key_file_not_found_error (tmp_error))
+            goto error;
+
+        g_clear_error(&tmp_error);
     }
 
-    g_key_file_free (keyfile);
     return value;
+
+  error:
+    g_propagate_prefixed_error (error, tmp_error, "config get gboolean,");
+
+    return FALSE;
 }
 
 gchar *
@@ -139,26 +176,31 @@ restraint_config_get_string (gchar *config_file, gchar *section, gchar *key, GEr
     g_return_val_if_fail(section != NULL, NULL);
     g_return_val_if_fail(error == NULL || *error == NULL, NULL);
 
-    GKeyFile *keyfile;
+    g_autoptr (GKeyFile) keyfile = NULL;
     GError *tmp_error = NULL;
 
-    keyfile = restraint_config_read_key_file (config_file, NULL);
+    keyfile = restraint_config_read_key_file (config_file, &tmp_error);
+
+    if (NULL != tmp_error)
+        goto error;
 
     gchar *value = g_key_file_get_string (keyfile,
                                           section,
                                           key,
                                           &tmp_error);
-    if (tmp_error) {
-        if (tmp_error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND &&
-            tmp_error->code != G_KEY_FILE_ERROR_GROUP_NOT_FOUND ) {
-            g_propagate_prefixed_error(error, tmp_error, "config get string,");
-        } else {
-            g_clear_error(&tmp_error);
-        }
+    if (NULL != tmp_error) {
+        if (!is_key_file_not_found_error (tmp_error))
+            goto error;
+
+        g_clear_error(&tmp_error);
     }
 
-    g_key_file_free (keyfile);
     return value;
+
+  error:
+    g_propagate_prefixed_error (error, tmp_error, "config get string,");
+
+    return NULL;
 }
 
 gchar **
@@ -168,24 +210,30 @@ restraint_config_get_keys (gchar *config_file, gchar *section, GError **error)
     g_return_val_if_fail(section != NULL, NULL);
     g_return_val_if_fail(error == NULL || *error == NULL, NULL);
 
-    GKeyFile *keyfile = NULL;
+    g_autoptr (GKeyFile) keyfile = NULL;
     GError *tmp_error = NULL;
     gchar **ret = NULL;
 
-    keyfile = restraint_config_read_key_file (config_file, NULL);
+    keyfile = restraint_config_read_key_file (config_file, &tmp_error);
+
+    if (NULL != tmp_error)
+        goto error;
 
     ret = g_key_file_get_keys(keyfile, section, NULL, &tmp_error);
 
-    if (tmp_error) {
-        if (tmp_error->code != G_KEY_FILE_ERROR_GROUP_NOT_FOUND ) {
-            g_propagate_prefixed_error(error, tmp_error, "config get keys,");
-        } else {
-            g_clear_error(&tmp_error);
-        }
+    if (NULL != tmp_error) {
+        if (!is_key_file_not_found_error (tmp_error))
+            goto error;
+
+        g_clear_error(&tmp_error);
     }
 
-    g_key_file_free (keyfile);
     return ret;
+
+  error:
+    g_propagate_prefixed_error(error, tmp_error, "config get keys,");
+
+    return NULL;
 }
 
 static gint
@@ -222,14 +270,17 @@ restraint_config_set (gchar *config_file, const gchar *section,
     va_list args;
     GValue value;
 
-    gchar *s_data = NULL;
+    g_autofree gchar *s_data = NULL;
     gsize length;
-    GKeyFile *keyfile;
+    g_autoptr (GKeyFile) keyfile = NULL;
     GError *tmp_error = NULL;
 
     restraint_mkdir_parent (config_file);
 
-    keyfile = restraint_config_read_key_file (config_file, NULL);
+    keyfile = restraint_config_read_key_file (config_file, &tmp_error);
+
+    if (NULL != tmp_error)
+        goto error;
 
     if (key && type != -1) {
         va_start (args, type);
@@ -261,8 +312,9 @@ restraint_config_set (gchar *config_file, const gchar *section,
                                        g_value_get_string (&value));
                 break;
             default:
-                g_warning ("invalid GType\n");
-                goto error;
+                g_critical ("%s (): invalid GType", __func__);
+
+                return;
         }
     } else if (key) {
         // no value, remove the key
@@ -281,12 +333,11 @@ restraint_config_set (gchar *config_file, const gchar *section,
        terminated string. */
     s_data = g_key_file_to_data (keyfile, &length, NULL);
 
-    if (!g_file_set_contents (config_file, s_data, length,  &tmp_error)) {
-        g_propagate_error (gerror, tmp_error);
+    if (!g_file_set_contents (config_file, s_data, length,  &tmp_error))
         goto error;
-    }
 
-error:
-    g_free (s_data);
-    g_key_file_free (keyfile);
+    return;
+
+  error:
+    g_propagate_error (gerror, tmp_error);
 }
