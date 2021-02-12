@@ -312,7 +312,8 @@ restraint_config_set (gchar *config_file, const gchar *section,
                                        g_value_get_string (&value));
                 break;
             default:
-                g_warning ("invalid GType\n");
+                g_critical ("%s (): invalid GType", __func__);
+
                 return;
         }
     } else if (key) {
