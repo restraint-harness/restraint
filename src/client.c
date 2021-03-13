@@ -1100,7 +1100,8 @@ gen_new_filename(char *prefix, char *suffix, int random_byte_size)
 static xmlNodePtr
 new_recipe (xmlDocPtr xml_doc_ptr, xmlChar *recipe_id,
             xmlNodePtr recipe_set_node_ptr, const xmlChar *wboard,
-            const xmlChar *role, const xmlChar *owner, const xmlChar *family)
+            const xmlChar *role, const xmlChar *owner, const xmlChar *family,
+            const xmlChar *job_id)
 {
     xmlNodePtr recipe_node_ptr = xmlNewTextChild (recipe_set_node_ptr,
                                        NULL,
@@ -1128,6 +1129,9 @@ new_recipe (xmlDocPtr xml_doc_ptr, xmlChar *recipe_id,
     }
     if (family != NULL) {
         xmlSetProp(recipe_node_ptr, (xmlChar *)"family", family);
+    }
+    if (job_id != NULL) {
+        xmlSetProp(recipe_node_ptr, (xmlChar *)"job_id", job_id);
     }
     return recipe_node_ptr;
 }
@@ -1368,6 +1372,7 @@ static gchar *copy_job_as_template(gchar *job, gboolean novalid,
             xmlChar *role = xmlGetNoNsProp(node, (xmlChar*)"role");
             xmlChar *owner = xmlGetNoNsProp(node, (xmlChar*)"owner");
             xmlChar *family = xmlGetNoNsProp(node, (xmlChar*)"family");
+            xmlChar *job_id = xmlGetNoNsProp(node, (xmlChar*)"job_id");
 
             if (id == NULL) {
                 /* This is so that we know the 'id' pointer is always an
@@ -1390,7 +1395,7 @@ static gchar *copy_job_as_template(gchar *job, gboolean novalid,
             get_node_role(node, rroles, recipe_data);
             xmlNodePtr new_recipe_ptr = new_recipe(new_xml_doc_ptr, id,
                                            recipe_set_node_ptr, wboard,
-                                           role, owner, family);
+                                           role, owner, family, job_id);
 
             // Copy recipe params
             xmlXPathObjectPtr params_node = get_node_set(template_xml_doc_ptr,
