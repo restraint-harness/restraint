@@ -166,8 +166,8 @@ gboolean idle_task_setup (gpointer user_data);
 
 gboolean task_config_set_offset (const gchar *config_file, Task *task, const gchar *path, goffset value, GError **error);
 
-void restraint_log_task (AppData *app_data, RstrntLogType type, const char *data, gsize size);
-
 extern SoupSession *soup_session;
 
+void restraint_log_task (ThreadData *thrdata, RstrntLogType type, const char *data, gsize size);
+extern guint64 nproc;
 #endif
