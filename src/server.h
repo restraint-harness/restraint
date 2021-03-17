@@ -47,6 +47,7 @@ typedef struct RstrntServerAppData {
   GList *pre_tasks;
   GList *post_tasks;
   GList *parallel_tasks;
+  GList *waiting_tasks; // list of waiting tasks *
   GError *error;
   gchar *config_file;
   gchar *restraint_url;

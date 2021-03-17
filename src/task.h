@@ -131,6 +131,8 @@ typedef struct RstrntTask {
     /* Start stop times */
     time_t starttime;
     time_t endtime;
+	/* task conflict state */
+    gboolean conflicted;
 } Task;
 
 //per-thread specified data
@@ -149,6 +151,11 @@ typedef struct {
     RstrntLogType log_type;
     guint overload;
 } TaskRunData;
+
+typedef struct {
+	gboolean blocked;
+	char *text;
+} KeywordInfo;
 
 Task *restraint_task_new(void);
 gboolean task_handler (gpointer user_data);

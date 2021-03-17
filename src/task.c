@@ -47,6 +47,7 @@
 #include "logging.h"
 
 GList *curr_task;
+static GList *global_confkywds;
 
 void
 restraint_task_result (Task *task, ThreadData *thrdata, gchar *result,
@@ -383,6 +384,72 @@ check_param_for_override (Param *param, Task *task)
     }
 }
 
+static void
+check_conflict_kywds (char *global_keyword, KeywordInfo *info)
+{
+	if(g_strcmp0(global_keyword, info->text) == 0) {
+		g_print("key is %s, text is %s\n", global_keyword, info->text);
+		info->blocked = TRUE;
+	}
+}
+
+static void
+process_conflict_keywords (char *conflict_kywd, ThreadData *thrdata)
+{
+	KeywordInfo *info = NULL;
+    Task *task = thrdata->task;
+    AppData *app_data = thrdata->app_data;
+	gboolean try_add_again = FALSE;
+    GList *temp = NULL;
+	if (task->conflicted) {
+		g_print("task %s try add again\n", task->task_id);
+		try_add_again = TRUE;
+	}
+    if (g_strcmp0(conflict_kywd, "zreboot") == 0) {
+        switch (test_round) {
+            case 0:
+		    break;
+	    case 1:
+		    temp = g_list_find(app_data->parallel_tasks, task);
+		    app_data->parallel_tasks = g_list_remove_link(app_data->parallel_tasks, temp);
+		    app_data->post_tasks = g_list_concat(app_data->post_tasks, temp);
+		    task->conflicted = TRUE;
+		    break;
+	    case 2:
+	    default:
+		    break;
+		}
+    } else if (test_round == 1) {
+        g_print("task %s conflict keywords is %s\n", task->task_id, conflict_kywd);
+		info = g_slice_new0(KeywordInfo);
+		info->text = conflict_kywd;
+		g_list_foreach(global_confkywds, (GFunc) check_conflict_kywds, info);
+		if (info->blocked == FALSE) {
+			if (try_add_again == TRUE) {
+				g_print("task %s waking up\n", task->task_id);
+		    	temp = g_list_find(app_data->waiting_tasks, task);
+		    	app_data->waiting_tasks = g_list_remove_link(app_data->waiting_tasks, temp);
+		    	app_data->parallel_tasks = g_list_concat(app_data->parallel_tasks, temp);
+		    	task->conflicted = FALSE;
+			} else {
+				global_confkywds = g_list_prepend(global_confkywds, conflict_kywd);
+			}
+		} else {
+				g_print("task %s sleeping\n", task->task_id);
+		    	temp = g_list_find(app_data->parallel_tasks, task);
+		    	app_data->parallel_tasks = g_list_remove_link(app_data->parallel_tasks, temp);
+		    	app_data->waiting_tasks = g_list_concat(app_data->waiting_tasks, temp);
+		    	task->conflicted = TRUE;
+		}
+		g_slice_free(KeywordInfo, info);
+    }
+}
+
+void iterate_task_kywds(Task *task, ThreadData *thrdata)
+{
+        g_slist_foreach (task->metadata->conflict_kywds, (GFunc) process_conflict_keywords, thrdata);
+}
+
 void metadata_finish_cb(gpointer user_data, GError *error)
 {
     ThreadData *thrdata = (ThreadData *) user_data;
@@ -419,6 +486,13 @@ void metadata_finish_cb(gpointer user_data, GError *error)
         if (task->name == NULL) {
             task->name = task->metadata->name;
         }
+		// get conflict keywords, keyword reboot need move to post_tasks list
+		g_print("task %s metadata processing conflict keywords\n", task->task_id);
+		iterate_task_kywds(task, thrdata);
+        if (task->conflicted == TRUE) {
+			g_print("task %s blocked, execute next\n", task->task_id);
+            restraint_next_task (thrdata, TASK_IDLE);
+		}
     }
 
     task_handler_attach(thrdata);
@@ -839,6 +913,27 @@ void restraint_task_free(Task *task) {
     g_slice_free(Task, task);
 }
 
+static void remove_keywords (char *keyword, void *unused)
+{
+	GList *temp = NULL;
+	temp = g_list_find(global_confkywds, keyword);
+	g_print("remove keyword is %s\n", (char *)(temp->data));
+	global_confkywds = g_list_delete_link(global_confkywds, temp);
+	g_print("global_keywords is: ");
+	GList *l = NULL;
+	for (l = global_confkywds; l != NULL; l = l->next)
+	{
+		g_print("%s ", (char *)(l->data));
+	}
+	g_print("\n");
+}
+
+static void wakeup_tasks (Task *task, ThreadData *thrdata)
+{
+	g_print("wakeup task %s pick up keywords\n", task->task_id);
+	thrdata->task = task;
+	iterate_task_kywds(task, thrdata);
+}
 
 gboolean
 restraint_next_task (ThreadData *thrdata, TaskSetupState task_state) {
@@ -846,6 +941,19 @@ restraint_next_task (ThreadData *thrdata, TaskSetupState task_state) {
     GList *iterator = NULL;
     AppData *app_data = thrdata->app_data;
     static GMutex mutex;
+
+	if(task->conflicted != TRUE && task->metadata != NULL && task->metadata->conflict_kywds != NULL && test_round == 1) {
+		//remove keywords and add waiting task back to parallel list
+		g_slist_foreach(task->metadata->conflict_kywds, (GFunc) remove_keywords, NULL);
+		if (g_list_length(app_data->waiting_tasks) != 0) {
+			g_list_foreach(app_data->waiting_tasks, (GFunc) wakeup_tasks, thrdata);
+			task = thrdata->task;
+			if (task->conflicted == FALSE) {
+        		task->state = task_state;
+				return TRUE;
+			}
+		}
+	}
 
     g_mutex_lock(&mutex);
     if (curr_task != NULL) {
@@ -857,6 +965,11 @@ restraint_next_task (ThreadData *thrdata, TaskSetupState task_state) {
         return TRUE;
     }
     g_mutex_unlock(&mutex);
+
+	if (g_list_length(app_data->waiting_tasks) != 0) {
+		thread_loop_stop(thrdata);
+		return FALSE;
+	}
 
     //only return to recipe_hander after last finished task.
     if (test_round == 0)
