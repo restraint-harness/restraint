@@ -147,6 +147,7 @@ typedef struct {
     TaskSetupState fail_state;
     gchar expire_time[80];
     RstrntLogType log_type;
+    guint overload;
 } TaskRunData;
 
 Task *restraint_task_new(void);
