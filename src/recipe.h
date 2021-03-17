@@ -70,6 +70,7 @@ void restraint_recipe_update_roles(Recipe *recipe, xmlDoc *doc, GError **error);
 void restraint_recipe_free(Recipe *recipe);
 void recipe_handler_finish (gpointer user_data);
 gboolean recipe_wait_on_beaker (const gchar *recipe_url, const gchar *state_tag);
+gboolean load_eval();
 guint test_round;
 void thread_loop_stop(gpointer user_data);
 
