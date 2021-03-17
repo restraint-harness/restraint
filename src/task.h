@@ -133,8 +133,16 @@ typedef struct RstrntTask {
     time_t endtime;
 } Task;
 
-typedef struct {
+//per-thread specified data
+typedef struct TaskThreadData {
     AppData *app_data;
+    GMainContext *ctxt;
+    Task *task;
+    GMainLoop *loop;
+} ThreadData;
+
+typedef struct {
+    ThreadData *thrdata;
     TaskSetupState pass_state;
     TaskSetupState fail_state;
     gchar expire_time[80];
@@ -145,9 +153,9 @@ Task *restraint_task_new(void);
 gboolean task_handler (gpointer user_data);
 void task_finish (gpointer user_data);
 void
-restraint_task_fetch(AppData *app_data);
+restraint_task_fetch(ThreadData *thrdata);
 gboolean restraint_build_env(Task *task, GError **error);
-void restraint_task_status (Task *task, AppData *app_data, gchar *, gchar *, GError *reason);
+void restraint_task_status (Task *task, ThreadData *thrdata, gchar *, gchar *, GError *reason);
 void restraint_task_run(Task *task);
 void restraint_task_free(Task *task);
 goffset *restraint_task_get_offset (Task *task, const gchar *path);

@@ -820,23 +820,56 @@ void restraint_task_free(Task *task) {
     g_slice_free(Task, task);
 }
 
-gboolean
-restraint_next_task (AppData *app_data, TaskSetupState task_state) {
-    Task *task = NULL;
 
-    while ((app_data->tasks = g_list_next (app_data->tasks)) != NULL) {
-        task = (Task *) app_data->tasks->data;
+gboolean
+restraint_next_task (ThreadData *thrdata, TaskSetupState task_state) {
+    Task *task = thrdata->task;
+    GList *iterator = NULL;
+    AppData *app_data = thrdata->app_data;
+    static GMutex mutex;
+
+    g_mutex_lock(&mutex);
+    if (curr_task != NULL) {
+        task = (Task *) curr_task->data;
+		thrdata->task = task;
         task->state = task_state;
+        curr_task = g_list_next(curr_task);
+        g_mutex_unlock(&mutex);
         return TRUE;
+    }
+    g_mutex_unlock(&mutex);
+
+    //only return to recipe_hander after last finished task.
+    if (test_round == 0)
+        iterator = app_data->pre_tasks;
+    else if (test_round == 1)
+        iterator = app_data->parallel_tasks;
+    else if (test_round == 2)
+        iterator = app_data->post_tasks;
+
+    while (iterator != NULL)
+    {
+	    task = (Task *) iterator->data;
+	    if (task->state != TASK_NEXT) {
+		    thread_loop_stop(thrdata);
+		    return FALSE;
+		}
+		iterator = iterator->next;
     }
 
     // No more tasks, let the recipe_handler know we are done.
-    app_data->state = RECIPE_COMPLETE;
+    if (test_round != 2) {
+        app_data->state = RECIPE_RUN;
+        test_round++;
+    }
+    else
+        app_data->state = RECIPE_COMPLETE;
     app_data->aborted = ABORTED_NONE;
     app_data->recipe_handler_id = g_idle_add_full(G_PRIORITY_DEFAULT_IDLE,
                                                   recipe_handler,
                                                   app_data,
                                                   recipe_handler_finish);
+    thread_loop_stop(thrdata);
     return FALSE;
 }
 
