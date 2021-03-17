@@ -44,6 +44,8 @@
 #define TASK_FETCH_INTERVAL 10
 #define TASK_FETCH_RETRIES 3
 
+extern GList *curr_task;
+
 typedef enum {
     TASK_IDLE,
     TASK_FETCH,
@@ -65,6 +67,12 @@ typedef enum {
     TASK_FETCH_INSTALL_PACKAGE,
     TASK_FETCH_UNPACK,
 } TaskFetchMethod;
+
+typedef enum {
+    TASK_PARALLEL,
+    TASK_PRE,
+    TASK_POST,
+} TaskParallelType;
 
 typedef struct RstrntTask {
     /* Beaker ID for this task */

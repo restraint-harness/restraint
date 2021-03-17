@@ -32,6 +32,9 @@
 #include "xml.h"
 #include "beaker_harness.h"
 
+GThreadPool *pool;
+guint test_round;
+
 GQuark restraint_recipe_parse_error_quark(void) {
     return g_quark_from_static_string("restraint-recipe-parse-error-quark");
 }
@@ -402,6 +405,18 @@ void restraint_recipe_free(Recipe *recipe) {
     g_slice_free(Recipe, recipe);
 }
 
+static void parallel_opt_parse(Param *param, guint *type)
+{
+    if (g_strcmp0((gchar *)param->name, "PARALLEL") == 0) {
+        if (g_strcmp0((gchar *)param->value, "parallel") == 0)
+            *type = TASK_PARALLEL;
+        else if (g_strcmp0((gchar *)param->value, "post") == 0)
+            *type = TASK_POST;
+        else
+            *type = TASK_PRE;
+    }
+}
+
 static Recipe *
 recipe_parse (xmlDoc *doc, SoupURI *recipe_uri, GError **error, gchar **cfg_file)
 {
@@ -457,6 +472,10 @@ recipe_parse (xmlDoc *doc, SoupURI *recipe_uri, GError **error, gchar **cfg_file
 
 
     GList *tasks = NULL;
+    GList *pre_tasks = NULL;
+    GList *post_tasks = NULL;
+    GList *parallel_tasks = NULL;
+    guint parallel_type = TASK_PRE; //default pre tasks
     xmlNode *child = recipe->children;
     while (child != NULL) {
         if (child->type == XML_ELEMENT_NODE &&
@@ -469,6 +488,20 @@ recipe_parse (xmlDoc *doc, SoupURI *recipe_uri, GError **error, gchar **cfg_file
             /* link task to recipe for additional attributes */
             task->recipe = result;
             task->order = i++*2;
+            parallel_type = TASK_PRE;
+            g_list_foreach(task->params, (GFunc) parallel_opt_parse, &parallel_type);
+            if (parallel_type == TASK_PRE) {
+                pre_tasks = g_list_prepend(pre_tasks, task);
+                g_print("pre task %s added\n", task->task_id);
+            }
+            else if (parallel_type == TASK_POST) {
+                post_tasks = g_list_prepend(post_tasks, task);
+                g_print("post task %s added\n", task->task_id);
+            }
+            else {
+                parallel_tasks = g_list_prepend(parallel_tasks, task);
+                g_print("parallel task %s added\n", task->task_id);
+            }
             tasks = g_list_prepend(tasks, task);
         } else
         if (child->type == XML_ELEMENT_NODE &&
@@ -494,8 +527,14 @@ recipe_parse (xmlDoc *doc, SoupURI *recipe_uri, GError **error, gchar **cfg_file
         child = child->next;
     }
     tasks = g_list_reverse(tasks);
+    parallel_tasks = g_list_reverse(parallel_tasks);
+    pre_tasks = g_list_reverse(pre_tasks);
+    post_tasks = g_list_reverse(post_tasks);
 
     result->tasks = tasks;
+    result->pre_tasks = pre_tasks;
+    result->post_tasks = post_tasks;
+    result->parallel_tasks = parallel_tasks;
     return result;
 
 error:
@@ -572,6 +611,9 @@ recipe_handler (gpointer user_data)
                                             &app_data->error, &app_data->config_file);
             if (app_data->recipe && ! app_data->error) {
                 app_data->tasks = app_data->recipe->tasks;
+                app_data->pre_tasks = app_data->recipe->pre_tasks;
+                app_data->post_tasks = app_data->recipe->post_tasks;
+                app_data->parallel_tasks = app_data->recipe->parallel_tasks;
                 app_data->state = RECIPE_RUN;
             } else {
                 app_data->state = RECIPE_COMPLETE;

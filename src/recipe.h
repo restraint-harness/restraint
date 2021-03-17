@@ -50,6 +50,9 @@ typedef struct {
     gchar *owner;
     gchar *base_path;
     GList *tasks; // list of Task *
+    GList *parallel_tasks; // list of Task *
+    GList *pre_tasks; // list of Pre_Task *
+    GList *post_tasks; // list of Post_Task *
     GList *params; // list of Params
     GList *roles; // list of Roles
     SoupURI *recipe_uri;
