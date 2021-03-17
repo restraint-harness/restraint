@@ -400,6 +400,9 @@ void restraint_recipe_free(Recipe *recipe) {
     g_free(recipe->base_path);
     soup_uri_free(recipe->recipe_uri);
     g_list_free_full(recipe->tasks, (GDestroyNotify) restraint_task_free);
+    g_list_free_full(recipe->pre_tasks, (GDestroyNotify) restraint_task_free);
+    g_list_free_full(recipe->parallel_tasks, (GDestroyNotify) restraint_task_free);
+    g_list_free_full(recipe->post_tasks, (GDestroyNotify) restraint_task_free);
     g_list_free_full(recipe->params, (GDestroyNotify) restraint_param_free);
     g_list_free_full(recipe->roles, (GDestroyNotify) restraint_role_free);
     g_slice_free(Recipe, recipe);
