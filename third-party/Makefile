@@ -2,7 +2,7 @@
 ZLIB = zlib-1.2.11
 BZIP2 = bzip2-1.0.8
 LIBFFI = libffi-3.1
-GLIB = glib-2.56.4
+GLIB = glib-2.68.0
 LIBXML2 = libxml2-2.9.10
 CURL = curl-7.68.0
 LIBARCHIVE = libarchive-3.4.0
@@ -162,7 +162,7 @@ $(LIBFFI).tar.gz:
 
 TAR_BALLS += $(GLIB).tar.xz
 $(GLIB).tar.xz:
-	curl -f -L -O https://ftp.gnome.org/pub/gnome/sources/glib/2.56/$@
+	curl -f -L -O https://ftp.gnome.org/pub/gnome/sources/glib/2.68/$@
 
 TAR_BALLS += $(ZLIB).tar.gz
 $(ZLIB).tar.gz:
