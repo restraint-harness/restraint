@@ -7,7 +7,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        container: ["fedora:32", "fedora:33", "fedora:rawhide"]
+        container: ["fedora:32", "fedora:33", "fedora:34", "fedora:rawhide"]
     runs-on: ubuntu-latest
     container:
       image: registry.fedoraproject.org/${{ matrix.container }}
@@ -34,7 +34,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        container: ["fedora:32", "fedora:33", "fedora:rawhide"]
+        container: ["fedora:32", "fedora:33", "fedora:34", "fedora:rawhide"]
     runs-on: ubuntu-latest
     container:
       image: registry.fedoraproject.org/${{ matrix.container }}
