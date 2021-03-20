@@ -3,7 +3,7 @@ name: Review-checks
 on: [pull_request]
 
 jobs:
-  unittests:
+  unit-tests:
     strategy:
       fail-fast: false
       matrix:
@@ -56,4 +56,33 @@ jobs:
       with:
         name: valgrind.out
         path: /home/runner/work/valgrind.out
+
+  static-build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        container: ["fedora:32", "fedora:33", "fedora:34", "fedora:rawhide", "centos:7", "centos:8"]
+    container:
+      image: ${{ matrix.container }}
+
+    steps:
+      - uses: actions/checkout@v1
+      - name: Enable EPEL
+        run: |
+          yum install epel-release -y
+        if: contains(matrix.container, 'centos')
+      - name: Install deps
+        run: |
+          yum install -y dnf 'dnf-command(builddep)' tito
+      - name: Enable PowerTools
+        run: |
+          yum config-manager --set-enabled powertools
+        if: contains(matrix.container, 'centos:8')
+      - name: Install restraint deps for static build
+        run: |
+          dnf builddep -y --spec restraint.spec
+      - name: Tito Build
+        run: |
+          tito build --rpm --test
 
