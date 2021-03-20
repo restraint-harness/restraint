@@ -2,7 +2,6 @@ import os
 import re
 import shutil
 import sys
-from shlex import quote
 
 from tito.builder import Builder
 from tito.common import (
@@ -18,6 +17,11 @@ from tito.common import (
 )
 from tito.exception import TitoException
 from tito.tagger import VersionTagger
+
+try:
+    from shlex import quote
+except ImportError:
+    from pipes import quote
 
 
 class RestraintBuilder(Builder):
