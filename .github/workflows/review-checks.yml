@@ -62,7 +62,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        container: ["fedora:32", "fedora:33", "fedora:34", "fedora:rawhide", "centos:7", "centos:8"]
+        container: ["fedora:32", "fedora:33", "fedora:34", "fedora:rawhide", "centos:7"]
     container:
       image: ${{ matrix.container }}
 
