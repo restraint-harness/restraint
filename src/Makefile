@@ -34,14 +34,10 @@ CFLAGS += -Wall -Werror -std=c99 $(shell pkg-config --cflags $(PACKAGES))
 CFLAGS += -Wno-deprecated-declarations
 
 ifeq ($(STATIC), 1)
-    # The right thing to do here is `pkg-config --libs --static`, which would
-    # include Libs.private in the link command.
-    # But really old pkg-config versions don't understand that so let's just
-    # hardcode the "private" libs here.
     # The -( -) grouping means we don't have to worry about getting all the
     # dependent libs in the right order (normally pkg-config would do that for
     # us).
-    LIBS = -Wl,-Bstatic -Wl,-\( $(shell pkg-config --libs $(PACKAGES)) -lgmodule-2.0 -llzma -lbz2 -lz -lffi -lssl -lcrypto -lselinux -Wl,-\) -Wl,-Bdynamic -lm -pthread -lrt -lresolv -ldl -lutil $(LFLAGS)
+    LIBS = -Wl,-\( -Wl,-Bdynamic -lm -pthread -lrt -lresolv -ldl -lutil -Wl,-\) -Wl,-Bstatic -Wl,-\( $(shell pkg-config --static --libs $(PACKAGES)) -Wl,-\) -Wl,-Bdynamic $(LFLAGS)
 else
     LIBS = $(shell pkg-config --libs $(PACKAGES) $(XTRAPKGS)) -lutil -pthread
 endif
