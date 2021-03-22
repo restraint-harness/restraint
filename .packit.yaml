@@ -19,8 +19,8 @@ jobs:
   trigger: pull_request
   metadata:
     targets:
-      - centos-stream-aarch64
-      - centos-stream-x86_64
+      - centos-stream-8-aarch64
+      - centos-stream-8-x86_64
       - fedora-32-aarch64
       - fedora-32-armhfp
       - fedora-32-s390x
