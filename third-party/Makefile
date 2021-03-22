@@ -8,7 +8,7 @@ CURL = curl-7.68.0
 LIBARCHIVE = libarchive-3.4.0
 XZ = xz-5.2.4
 LIBSOUP = libsoup-2.52.2
-OPENSSL = openssl-1.0.1m
+OPENSSL = openssl-1.1.1k
 SQLITE = sqlite-autoconf-3310100
 INTLTOOL = intltool-0.51.0
 LIBJSONC = json-c-0.13.1
@@ -209,7 +209,7 @@ $(LIBJSONC).tar.gz:
 
 TAR_BALLS += $(OPENSSL).tar.gz
 $(OPENSSL).tar.gz:
-	curl -f -L -O https://www.openssl.org/source/old/1.0.1/$@
+	curl -f -L -O https://www.openssl.org/source/$@
 
 TAR_BALLS += $(M4).tar.xz
 $(M4).tar.xz:

@@ -33,7 +33,7 @@ Source109:      sqlite-autoconf-3310100.tar.gz
 Source110:      intltool-0.51.0.tar.gz
 Source111:      libsoup-2.52.2.tar.xz
 Source112:      json-c-0.13.1.tar.gz
-Source114:      openssl-1.0.1m.tar.gz
+Source114:      openssl-1.1.1k.tar.gz
 Source115:      autoconf-2.69.tar.gz
 Source116:      m4-1.4.18.tar.xz
 %endif
@@ -105,6 +105,8 @@ BuildRequires:  tar
 %endif
 # GLib
 %{?with_static:BuildRequires: meson}
+# OpenSSL
+%{?with_static:BuildRequires: perl(FindBin), perl(lib)}
 
 %description
 restraint harness which can run standalone or with beaker.  when provided a recipe xml it will execute
