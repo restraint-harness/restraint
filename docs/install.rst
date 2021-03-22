@@ -65,7 +65,7 @@ versions are listed):
  - selinux-2.7
  - curl-7.68.0
  - json-c-0.13.1
- - openssl-1.0.1m
+ - openssl-1.1.1k
 
 
 Commands that will make sure most of the development libraries required are
