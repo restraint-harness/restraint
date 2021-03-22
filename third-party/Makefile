@@ -1,8 +1,8 @@
 
 ZLIB = zlib-1.2.11
 BZIP2 = bzip2-1.0.8
-LIBFFI = libffi-3.1
-GLIB = glib-2.56.4
+LIBFFI = libffi-3.3
+GLIB = glib-2.68.0
 LIBXML2 = libxml2-2.9.10
 CURL = curl-7.68.0
 LIBARCHIVE = libarchive-3.4.0
@@ -95,14 +95,13 @@ tree/lib/pkgconfig/libffi.pc: $(LIBFFI) $(LIBFFI)/.patches-done
 	$(MAKE) -C $(LIBFFI) install
 
 tree/lib/pkgconfig/glib-2.0.pc: $(GLIB) $(GLIB)/.patches-done tree/lib/pkgconfig/zlib.pc tree/lib/pkgconfig/libffi.pc
-	( cd $(GLIB) && PKG_CONFIG_PATH=../tree/lib/pkgconfig ./configure --prefix=$(CURDIR)/tree \
-	    --disable-libelf --disable-fam --disable-xattr --disable-systemtap \
-	    --disable-dtrace --disable-gtk-doc --disable-gtk-doc-html \
-	    --disable-man \
-	    --with-python=$(PYTHON) --with-pcre=internal --disable-libmount \
-	    --enable-static --disable-shared )
-	$(MAKE) -C $(GLIB)
-	$(MAKE) -C $(GLIB) install
+	( PKG_CONFIG_PATH=$(CURDIR)/tree/lib/pkgconfig \
+	    meson setup \
+		--prefix=$(CURDIR)/tree --libdir=lib \
+		--default-library=static \
+		-Dtests=false -Dlibelf=disabled -Dxattr=false -Dlibmount=disabled -Dinternal_pcre=true \
+	    $(CURDIR)/$(GLIB)/build $(CURDIR)/$(GLIB))
+	meson install -C $(CURDIR)/$(GLIB)/build
 #   this is a dirty hack to stop gcc reporting on warnings in the glib headers.
 	sed -i -e 's/\-I/\-isystem/g' $(CURDIR)/tree/lib/pkgconfig/glib-2.0.pc
 
@@ -162,7 +161,7 @@ $(LIBFFI).tar.gz:
 
 TAR_BALLS += $(GLIB).tar.xz
 $(GLIB).tar.xz:
-	curl -f -L -O https://ftp.gnome.org/pub/gnome/sources/glib/2.56/$@
+	curl -f -L -O https://ftp.gnome.org/pub/gnome/sources/glib/2.68/$@
 
 TAR_BALLS += $(ZLIB).tar.gz
 $(ZLIB).tar.gz:
@@ -229,15 +228,9 @@ tarballs: $(TAR_BALLS)
 	$(CURDIR)/tree/bin/xzcat $< | tar -xf -
 
 $(LIBFFI)/.patches-done: $(LIBFFI)
-	patch -d$(LIBFFI) -p1 <libffi-3.1-toolexeclibdir.patch
 	touch $@
 
 $(GLIB)/.patches-done: $(GLIB)
-	patch -d$(GLIB) -p1 < glib-nullstrings-gdbusauth.patch
-	patch -d$(GLIB) -p1 < glib-nullstrings.patch
-	if [ -e glib-rhel6-s390.patch ]; then\
-		patch -d$(GLIB) -p1 < glib-rhel6-s390.patch;\
-	fi
 	touch $@
 
 $(INTLTOOL)/.patches-done: $(INTLTOOL)

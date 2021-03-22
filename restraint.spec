@@ -21,8 +21,8 @@ Source0:	https://github.com/beaker-project/restraint/archive/%{name}-%{version}.
 
 %if 0%{?with_static:1}
 # Sources for bundled, statically linked libraries
-Source101:      libffi-3.1.tar.gz
-Source102:      glib-2.56.4.tar.xz
+Source101:      libffi-3.3.tar.gz
+Source102:      glib-2.68.0.tar.xz
 Source103:      zlib-1.2.11.tar.gz
 Source104:      bzip2-1.0.8.tar.gz
 Source105:      libxml2-2.9.10.tar.gz
@@ -103,6 +103,8 @@ BuildRequires:  tar
 %{?with_static:BuildRequires: python27}
 %endif
 %endif
+# GLib
+%{?with_static:BuildRequires: meson}
 
 %description
 restraint harness which can run standalone or with beaker.  when provided a recipe xml it will execute
@@ -158,15 +160,6 @@ export CFLAGS="$RPM_OPT_FLAGS -march=i486"
 
 %if 0%{?with_static:1}
 pushd third-party
-%if 0%{?rhel} != 6
-# If this is not RHEL6, remove the patch.
-rm glib-rhel6-s390.patch
-%else
-%ifnarch s390x s390
-# If this is RHEL6, and not a s390 machine, remove the patch.
-rm glib-rhel6-s390.patch
-%endif
-%endif
 %if 0%{?fedora} < 35 || 0%{?rhel}
 rm m4-1.4.18-glibc-sigstksz.patch
 %endif
