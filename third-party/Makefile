@@ -70,9 +70,9 @@ tree/lib/pkgconfig/libjson-c.pc: tree/bin/autoheader $(LIBJSONC)
 
 tree/lib/pkgconfig/openssl.pc: $(OPENSSL)
     ifeq ("$(arch)", "ppc64")
-	( cd $(OPENSSL) && PATH=$(CURDIR)/tree/bin:$(PATH) ./Configure --prefix=$(CURDIR)/tree -DPURIFY linux-ppc64)
+	( cd $(OPENSSL) && PATH=$(CURDIR)/tree/bin:$(PATH) ./Configure --prefix=$(CURDIR)/tree --libdir=$(CURDIR)/tree/lib -DPURIFY linux-ppc64)
     else
-	( cd $(OPENSSL) && PATH=$(CURDIR)/tree/bin:$(PATH) ./config --prefix=$(CURDIR)/tree -DPURIFY )
+	( cd $(OPENSSL) && PATH=$(CURDIR)/tree/bin:$(PATH) ./config --prefix=$(CURDIR)/tree --libdir=$(CURDIR)/tree/lib -DPURIFY )
     endif
 	$(MAKE) -C $(OPENSSL)
 	$(MAKE) -C $(OPENSSL) PREFIX=$(CURDIR)/tree install_sw
