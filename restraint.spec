@@ -107,6 +107,13 @@ BuildRequires:  tar
 %{?with_static:BuildRequires: meson}
 # OpenSSL
 %{?with_static:BuildRequires: perl(FindBin), perl(lib)}
+# libselinux Requires.private
+%{?with_static:BuildRequires: libsepol-static}
+%if 0%{?fedora}
+%{?with_static:BuildRequires: pcre2-static}
+%else
+%{?with_static:BuildRequires: pcre-static}
+%endif
 
 %description
 restraint harness which can run standalone or with beaker.  when provided a recipe xml it will execute
