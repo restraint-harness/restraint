@@ -259,6 +259,9 @@ $(AUTOCONF)/.patches-done: $(AUTOCONF)
 
 $(M4)/.patches-done: $(M4)
 	patch -d$(M4) -p1 < m4-1.4.18-glibc-change-work-around.patch
+	if [ -e m4-1.4.18-glibc-sigstksz.patch ]; then\
+		patch -d$(M4) -p1 < m4-1.4.18-glibc-sigstksz.patch;\
+	fi
 	touch $@
 
 .PHONY: clean

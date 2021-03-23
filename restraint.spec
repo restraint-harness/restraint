@@ -167,6 +167,9 @@ rm glib-rhel6-s390.patch
 rm glib-rhel6-s390.patch
 %endif
 %endif
+%if 0%{?fedora} < 35 || 0%{?rhel}
+rm m4-1.4.18-glibc-sigstksz.patch
+%endif
 %if 0%{?fedora} || 0%{?rhel} >= 8
 make PYTHON=%{__python3}
 %else
