@@ -1,6 +1,24 @@
 Release Notes
 =============
 
+Restraint 0.3.3
+---------------
+
+Bug Fixes
+~~~~~~~~~
+
+* | Restraint client honors job_id defined in <recipe> tag.
+
+* | Improve error handling on recipe and task state management
+  | Some errors that could indicate a bad saved state are now handled
+    and reported.
+
+* | Fix distro version check in 20_unconfined
+  | Make it better at detecting Fedora 34 as Fedora and distinguish RHEL
+    from Fedora in version comparison. The main difference is that it
+    now picks the right SELinux context for test jobs on Fedora 34
+    (Rawhide at the time of writing).
+
 Restraint 0.3.2
 ---------------
 
