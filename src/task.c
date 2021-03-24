@@ -399,13 +399,14 @@ process_conflict_keywords (char *conflict_kywd, ThreadData *thrdata)
 	KeywordInfo *info = NULL;
     Task *task = thrdata->task;
     AppData *app_data = thrdata->app_data;
-	gboolean try_add_again = FALSE;
+    gboolean try_add_again = FALSE;
     GList *temp = NULL;
+    static GMutex mutex;
 	if (task->conflicted) {
 		g_print("task %s try add again\n", task->task_id);
 		try_add_again = TRUE;
 	}
-    if (g_strcmp0(conflict_kywd, "zreboot") == 0) {
+    if (g_strcmp0(conflict_kywd, "reboot") == 0) {
         switch (test_round) {
             case 0:
 		    break;
@@ -423,19 +424,23 @@ process_conflict_keywords (char *conflict_kywd, ThreadData *thrdata)
         g_print("task %s conflict keywords is %s\n", task->task_id, conflict_kywd);
 		info = g_slice_new0(KeywordInfo);
 		info->text = conflict_kywd;
+		g_mutex_lock(&mutex);
 		g_list_foreach(global_confkywds, (GFunc) check_conflict_kywds, info);
 		if (info->blocked == FALSE) {
 			if (try_add_again == TRUE) {
+				g_mutex_unlock(&mutex);
 				g_print("task %s waking up\n", task->task_id);
-		    	temp = g_list_find(app_data->waiting_tasks, task);
-		    	app_data->waiting_tasks = g_list_remove_link(app_data->waiting_tasks, temp);
-		    	app_data->parallel_tasks = g_list_concat(app_data->parallel_tasks, temp);
-		    	task->conflicted = FALSE;
+				temp = g_list_find(app_data->waiting_tasks, task);
+				app_data->waiting_tasks = g_list_remove_link(app_data->waiting_tasks, temp);
+				app_data->parallel_tasks = g_list_concat(app_data->parallel_tasks, temp);
+				task->conflicted = FALSE;
 			} else {
 				global_confkywds = g_list_prepend(global_confkywds, conflict_kywd);
+				g_mutex_unlock(&mutex);
 			}
 		} else {
-				g_print("task %s sleeping\n", task->task_id);
+			g_mutex_unlock(&mutex);
+			g_print("task %s sleeping\n", task->task_id);
 		    	temp = g_list_find(app_data->parallel_tasks, task);
 		    	app_data->parallel_tasks = g_list_remove_link(app_data->parallel_tasks, temp);
 		    	app_data->waiting_tasks = g_list_concat(app_data->waiting_tasks, temp);
