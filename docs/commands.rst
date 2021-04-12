@@ -620,6 +620,13 @@ Where:
    reported.  If you pass another ``-v`` you will get the output from the tasks
    written to your screen as well.
 
+.. option:: -e, --rsh <command>
+
+    You can pass ``-e/--rsh`` and define command that will be used to connect
+    restraint client to restraintd.
+    Default value is ``ssh -o ServerAliveInterval=60 -o ServerAliveCountMax=5``.
+    Value ``ServerAliveCountMax`` is controlled by ``--timeout`` option mentioned above.
+
 A sample of restraint command line is as follows:
 
 .. code-block:: console
