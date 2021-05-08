@@ -518,6 +518,17 @@ rstrnt_upload_logs (const RstrntTask    *task,
     rstrnt_upload_log (task, app_data, session, cancellable, RSTRNT_LOG_TYPE_HARNESS);
 }
 
+void
+rstrnt_close_logs (const RstrntTask *task)
+{
+    RstrntLogManager *manager;
+    
+    g_return_if_fail (NULL != task);
+    manager = rstrnt_log_manager_get_instance ();
+
+    g_hash_table_remove(manager->logs, task->task_id);
+}
+
 static void
 rstrnt_log_manager_append_to_log (RstrntLogManager    *self,
                                   const RstrntTask    *task,
