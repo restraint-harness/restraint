@@ -1202,17 +1202,19 @@ void task_handler_attach(gpointer user_data)
 static gboolean
 uploader_func (gpointer user_data)
 {
+    ThreadData *thrdata;
     AppData *app_data;
     Task    *task;
 
     g_return_val_if_fail (NULL != user_data, G_SOURCE_REMOVE);
 
-    app_data = user_data;
+    thrdata = user_data;
+    app_data = thrdata->app_data;
 
     g_return_val_if_fail (NULL != app_data->tasks, G_SOURCE_REMOVE);
     g_return_val_if_fail (NULL != app_data->tasks->data, G_SOURCE_REMOVE);
 
-    task = app_data->tasks->data;
+    task = thrdata->task;
 
     g_debug ("%s(): Upload event for task %s", __func__, task->task_id);
 
@@ -1222,26 +1224,28 @@ uploader_func (gpointer user_data)
 }
 
 static void
-start_uploader (AppData *app_data)
+start_uploader (ThreadData *thrdata)
 {
     Task  *task;
+    AppData *app_data = thrdata->app_data;
 
     g_return_if_fail (NULL != app_data);
     g_return_if_fail (app_data->uploader_interval > 0);
 
     app_data->uploader_source_id = g_timeout_add_seconds (app_data->uploader_interval,
                                                           uploader_func,
-                                                          app_data);
+							  thrdata);
 
-    task = app_data->tasks->data;
+    task = thrdata->task;
 
     g_debug ("%s(): Added upload event source %d for task %s",
              __func__, app_data->uploader_source_id, task->task_id);
 }
 
 static void
-stop_uploader (AppData *app_data)
+stop_uploader (ThreadData *thrdata)
 {
+    AppData *app_data = thrdata->app_data;
     Task *task;
 
     g_return_if_fail (NULL != app_data);
@@ -1249,7 +1253,7 @@ stop_uploader (AppData *app_data)
 
     g_source_remove (app_data->uploader_source_id);
 
-    task = app_data->tasks->data;
+    task = thrdata->task;
 
     g_debug ("%s(): Removed upload event source %d for task %s",
              __func__, app_data->uploader_source_id, task->task_id);
@@ -1431,7 +1435,7 @@ task_handler (gpointer user_data)
     {
       if (rstrnt_log_manager_enabled (app_data)) {
           if (0 != app_data->uploader_source_id)
-              stop_uploader (app_data);
+              stop_uploader (thrdata);
 
           rstrnt_upload_logs (task, app_data, soup_session, app_data->cancellable);
       }
@@ -1531,10 +1535,10 @@ restraint_log_task (ThreadData	*thrdata,
     g_return_if_fail (data != NULL && size > 0);
 
     if (rstrnt_log_manager_enabled (app_data)) {
-        rstrnt_log_bytes (app_data->tasks->data, type, data, size);
+        rstrnt_log_bytes (thrdata->task, type, data, size);
 
         if (0 == app_data->uploader_source_id)
-            start_uploader (app_data);
+            start_uploader (thrdata);
 
         return;
     }
