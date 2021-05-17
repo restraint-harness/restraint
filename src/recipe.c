@@ -410,7 +410,7 @@ void restraint_recipe_free(Recipe *recipe) {
 
 static void parallel_opt_parse(Param *param, guint *type)
 {
-    if (g_strcmp0((gchar *)param->name, "PARALLEL") == 0) {
+    if (g_strcmp0((gchar *)param->name, "RSTRNT_PARALLEL") == 0) {
         if (g_strcmp0((gchar *)param->value, "parallel") == 0)
             *type = TASK_PARALLEL;
         else if (g_strcmp0((gchar *)param->value, "post") == 0)
