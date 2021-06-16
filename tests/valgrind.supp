@@ -84,8 +84,16 @@
 {
     pthread_create
     Memcheck:Leak
+    fun:calloc
     ...
     fun:pthread_create@@*
+}
+{
+    pthread_create
+    Memcheck:Leak
+    fun:calloc
+    ...
+    fun:pthread_create*
 }
 
 # libsoup
@@ -634,6 +642,16 @@
    match-leak-kinds: definite
    ...
    fun:__resolv_conf_get_current
+   ...
+   fun:getaddrinfo
+   ...
+}
+{
+   g_thread_proxy
+   Memcheck:Leak
+   match-leak-kinds: definite
+   ...
+   fun:__resolv_context_get
    ...
    fun:getaddrinfo
    ...
