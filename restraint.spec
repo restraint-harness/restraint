@@ -190,7 +190,11 @@ make -C legacy
 %install
 %{__rm} -rf %{buildroot}
 
+%if 0%{?fedora} || 0%{?rhel} >= 9
 make DESTDIR=%{buildroot} install
+%else
+make DESTDIR=%{buildroot} SYSTEMD=-legacy install
+%endif
 %if %{with_selinux_policy}
 if [ -e "selinux/restraint%{?dist}.pp" ]; then
     install -p -m 644 -D selinux/restraint%{?dist}.pp $RPM_BUILD_ROOT%{_datadir}/selinux/packages/%{name}/restraint.pp
