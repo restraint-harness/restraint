@@ -34,10 +34,13 @@ CFLAGS += -Wall -Werror -std=c99 $(shell pkg-config --cflags $(PACKAGES))
 CFLAGS += -Wno-deprecated-declarations
 
 ifeq ($(STATIC), 1)
-    # The -( -) grouping means we don't have to worry about getting all the
-    # dependent libs in the right order (normally pkg-config would do that for
-    # us).
-    LIBS = -Wl,-\( -Wl,-Bdynamic -lm -pthread -lrt -lresolv -ldl -lutil -Wl,-\) -Wl,-Bstatic -Wl,-\( $(shell pkg-config --static --libs $(PACKAGES)) -Wl,-\) -Wl,-Bdynamic $(LFLAGS)
+    # The LIBS list must start with static then followed with dynamic.
+    # DYNAMICLIBS must be stripped out of THIRDPTYLIBS leaving
+    # the STATICLIBS list.  The DYNAMICLIBS is already listed
+    # in dynamic list so it is redundant.
+    DYNAMICLIBS:=-lm -ldl -lresolve -lrt -lutil
+    THIRDPTYLIBS:=$(shell pkg-config --libs $(PACKAGES))
+    LIBS = -Wl,-Bstatic -Wl,-\( $(filter-out $(DYNAMICLIBS),$(THIRDPTYLIBS)) -llzma -lbz2 -lz -lffi -lssl -lcrypto -Wl,-\) -Wl,-Bdynamic -lm -pthread -lrt -lresolv -ldl -lutil $(LFLAGS)
 else
     LIBS = $(shell pkg-config --libs $(PACKAGES) $(XTRAPKGS)) -lutil -pthread
 endif
