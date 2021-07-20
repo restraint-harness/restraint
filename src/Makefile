@@ -38,7 +38,7 @@ ifeq ($(STATIC), 1)
     # DYNAMICLIBS must be stripped out of THIRDPTYLIBS leaving
     # the STATICLIBS list.  The DYNAMICLIBS is already listed
     # in dynamic list so it is redundant.
-    DYNAMICLIBS:=-lm -ldl -lresolve -lrt -lutil
+    DYNAMICLIBS:=-lm -ldl -lresolv -lrt -lutil
     THIRDPTYLIBS:=$(shell pkg-config --libs $(PACKAGES))
     LIBS = -Wl,-Bstatic -Wl,-\( $(filter-out $(DYNAMICLIBS),$(THIRDPTYLIBS)) -llzma -lbz2 -lz -lffi -lssl -lcrypto -Wl,-\) -Wl,-Bdynamic -lm -pthread -lrt -lresolv -ldl -lutil $(LFLAGS)
 else
