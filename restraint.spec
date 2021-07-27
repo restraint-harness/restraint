@@ -171,6 +171,7 @@ export CFLAGS="$RPM_OPT_FLAGS -march=i486"
 pushd third-party
 %if 0%{?fedora} < 35 || 0%{?rhel}
 rm m4-1.4.18-glibc-sigstksz.patch
+rm glib_new_close_range_arg.patch
 %endif
 %if 0%{?fedora} || 0%{?rhel} >= 8
 make PYTHON=%{__python3}
