@@ -231,6 +231,9 @@ $(LIBFFI)/.patches-done: $(LIBFFI)
 	touch $@
 
 $(GLIB)/.patches-done: $(GLIB)
+	if [ -e glib_new_close_range_arg.patch ]; then\
+		patch -d$(GLIB) -p1 < glib_new_close_range_arg.patch;\
+	fi
 	touch $@
 
 $(INTLTOOL)/.patches-done: $(INTLTOOL)
