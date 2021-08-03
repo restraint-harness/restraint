@@ -1,0 +1,8 @@
+fixes:
+  - |
+    Fix: rstrnt-reboot to ignore SIGTERM
+    When this scripts performs a reboot, it does a loop forever to prevent
+    from returning to the calling process.  This changeset ignores SIGTERMs
+    to keep it from interrupting the loop.  We must keep the SIGKILL in place
+    however so there is still a small window of opportunity of returning to
+    caller but the window has been narrowed with this change.
