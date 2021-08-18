@@ -169,7 +169,7 @@ export CFLAGS="$RPM_OPT_FLAGS -march=i486"
 
 %if 0%{?with_static:1}
 pushd third-party
-%if 0%{?fedora} < 35 || 0%{?rhel}
+%if ( 0%{?fedora} && 0%{?fedora} < 35 ) || ( 0%{?rhel} && 0%{?rhel} < 9 )
 rm m4-1.4.18-glibc-sigstksz.patch
 rm glib_new_close_range_arg.patch
 %endif
