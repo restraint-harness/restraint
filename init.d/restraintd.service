@@ -5,7 +5,7 @@ Requires=network-online.target
 
 [Service]
 Type=simple
-StandardError=syslog+console
+StandardError=journal+console
 ExecStartPre=/usr/bin/check_beaker
 ExecStart=/usr/bin/restraintd --port 8081
 KillMode=process
