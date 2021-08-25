@@ -11,6 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: registry.fedoraproject.org/${{ matrix.container }}
+      options: --security-opt seccomp=unconfined
 
     steps:
     - uses: actions/checkout@v1
@@ -38,6 +39,7 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: registry.fedoraproject.org/${{ matrix.container }}
+      options: --security-opt seccomp=unconfined
 
     steps:
     - uses: actions/checkout@v1
@@ -65,6 +67,7 @@ jobs:
         container: ["fedora:32", "fedora:33", "fedora:34", "fedora:rawhide", "centos:7"]
     container:
       image: ${{ matrix.container }}
+      options: --security-opt seccomp=unconfined
 
     steps:
       - uses: actions/checkout@v1
