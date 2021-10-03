@@ -7,10 +7,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        container: ["fedora:33", "fedora:34", "fedora:rawhide"]
+        version: ["33", "34", "35", "rawhide"]
     runs-on: ubuntu-latest
     container:
-      image: registry.fedoraproject.org/${{ matrix.container }}
+      image: registry.fedoraproject.org/fedora:${{ matrix.version }}
 
     steps:
     - uses: actions/checkout@v1
@@ -34,10 +34,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        container: ["fedora:33", "fedora:34", "fedora:rawhide"]
+        version: ["33", "34", "35", "rawhide"]
     runs-on: ubuntu-latest
     container:
-      image: registry.fedoraproject.org/${{ matrix.container }}
+      image: registry.fedoraproject.org/fedora:${{ matrix.version }}
 
     steps:
     - uses: actions/checkout@v1
@@ -62,7 +62,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        container: ["fedora:32", "fedora:33", "fedora:34", "fedora:rawhide", "centos:7"]
+        container: ["fedora:32", "fedora:33", "fedora:34", "fedora:35", "fedora:rawhide", "centos:7"]
     container:
       image: ${{ matrix.container }}
 
