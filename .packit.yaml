@@ -21,10 +21,6 @@ jobs:
     targets:
       - centos-stream-8-aarch64
       - centos-stream-8-x86_64
-      - fedora-32-aarch64
-      - fedora-32-armhfp
-      - fedora-32-s390x
-      - fedora-32-x86_64
       - fedora-33-aarch64
       - fedora-33-armhfp
       - fedora-33-s390x
@@ -33,6 +29,10 @@ jobs:
       - fedora-34-armhfp
       - fedora-34-s390x
       - fedora-34-x86_64
+      - fedora-35-aarch64
+      - fedora-35-armhfp
+      - fedora-35-s390x
+      - fedora-35-x86_64
       - fedora-rawhide-aarch64
       - fedora-rawhide-armhfp
       - fedora-rawhide-i386
