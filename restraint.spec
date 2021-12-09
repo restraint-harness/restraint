@@ -10,7 +10,7 @@
 %endif
 
 Name:		restraint
-Version:	0.3.3
+Version:	0.4.0
 Release:	1%{?dist}
 Summary:	Simple test harness which can be used with beaker
 
@@ -109,7 +109,7 @@ BuildRequires:  tar
 %{?with_static:BuildRequires: perl(FindBin), perl(lib)}
 # libselinux Requires.private
 %{?with_static:BuildRequires: libsepol-static}
-%if 0%{?fedora}
+%if 0%{?rhel} >= 8 || 0%{?fedora}
 %{?with_static:BuildRequires: pcre2-static}
 %else
 %{?with_static:BuildRequires: pcre-static}
@@ -169,8 +169,9 @@ export CFLAGS="$RPM_OPT_FLAGS -march=i486"
 
 %if 0%{?with_static:1}
 pushd third-party
-%if 0%{?fedora} < 35 || 0%{?rhel}
+%if ( 0%{?fedora} && 0%{?fedora} < 35 ) || ( 0%{?rhel} && 0%{?rhel} < 9 )
 rm m4-1.4.18-glibc-sigstksz.patch
+rm glib_new_close_range_arg.patch
 %endif
 %if 0%{?fedora} || 0%{?rhel} >= 8
 make PYTHON=%{__python3}
@@ -190,7 +191,11 @@ make -C legacy
 %install
 %{__rm} -rf %{buildroot}
 
+%if 0%{?fedora} || 0%{?rhel} >= 9
 make DESTDIR=%{buildroot} install
+%else
+make DESTDIR=%{buildroot} SYSTEMD=-legacy install
+%endif
 %if %{with_selinux_policy}
 if [ -e "selinux/restraint%{?dist}.pp" ]; then
     install -p -m 644 -D selinux/restraint%{?dist}.pp $RPM_BUILD_ROOT%{_datadir}/selinux/packages/%{name}/restraint.pp
@@ -381,6 +386,9 @@ fi
 %{__rm} -rf %{buildroot}
 
 %changelog
+* Thu Aug 05 2021 Carol Bouchard <cbouchar@redhat.com> 0.4.0-1
+- Upstream release 0.4.0
+  https://restraint.readthedocs.io/en/latest/release-notes.html#restraint-0-4-0
 * Tue Mar 23 2021 Carol Bouchard <cbouchar@redhat.com> 0.3.3-1
 - Upstream release 0.3.3
   https://restraint.readthedocs.io/en/latest/release-notes.html#restraint-0-3-3

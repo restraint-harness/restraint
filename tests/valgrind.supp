@@ -681,4 +681,23 @@
    ...
    fun:_dl_init
 }
-
+{
+   glib/malloc
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   fun:UnknownInlinedFun
+   fun:_dl_close_worker
+   fun:_dl_close
+   fun:_dl_catch_exception
+   fun:_dl_catch_error
+   fun:_dlerror_run
+   ...
+   fun:g_module_close
+   ...
+   fun:g_type_module_unuse
+   ...
+   fun:g_io_extension_point_get_extensions
+   ...
+   fun:g_proxy_resolver_get_default
+}

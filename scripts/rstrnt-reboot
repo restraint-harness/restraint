@@ -5,13 +5,18 @@
 # the Free Software Foundation; either version 2 of the License, or
 # (at your option) any later version.
 
+# Prevent SIGTERM from interrupting this process causing it to return
+# to caller.  Expectation is SIGKILL will kill this process but
+# should then be out of harm's way.
+trap "" SIGTERM
+
 PATH=/sbin:/usr/sbin:$PATH
 
 /usr/bin/rstrnt-prepare-reboot
 shutdown -r now
 
-# Wait for the shutdown to kill us..  we don't want control to go back
-#  to the test harness.
+# Wait for the shutdown to kill us.  Sleep to avoid returning
+# control back to the test harness. ref: SIGTERM comments above
 while (true); do
     sleep 666
 done

@@ -1,0 +1,7 @@
+fixes:
+  - |
+    Fix: Set OOMPolicy=continue to prevent killing restraintd (Fedora/RHEL9+)
+    Upon memory depletion, prevent the kernel from killing restraintd service.
+    Keep restraintd running, but log the service event. This OOMPolicy setting
+    is only available for RHEL9+ and Fedora distros.  Other distros will
+    remain unchanged.

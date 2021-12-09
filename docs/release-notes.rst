@@ -1,6 +1,38 @@
 Release Notes
 =============
 
+Restraint 0.4.0
+---------------
+
+Bug Fixes
+~~~~~~~~~
+
+* | Set OOMPolicy=continue to prevent killing restraintd (Fedora/RHEL9+)
+  | Upon memory depletion, prevent the kernel from killing restraintd service.
+    Keep restraintd running, but log the service event. This OOMPolicy setting
+    is only available for RHEL9+ and Fedora distros.  Other distros will
+    remain unchanged.
+
+* | Prevent restraint client from being interrupted by SIGPIPE signal
+  | Code change is to ignore SIGPIPE then client code will naturally
+    attempt to retry once determined that the path is broken.
+
+* | rstrnt-reboot to ignore SIGTERM
+  | When this scripts performs a reboot, it does a loop forever to prevent
+    from returning to the calling process.  This changeset ignores SIGTERMs
+    to keep it from interrupting the loop.  We must keep the SIGKILL in place
+    however so there is still a small window of opportunity of returning to
+    caller but the window has been narrowed with this change.
+
+Other Notable Changes
+~~~~~~~~~~~~~~~~~~~~~
+
+* | RHEL 5 and 6 builds are no longer created from this version onward.
+  | This is partly due to upgrades of libraries used by restraint which
+    are not compatible with the older RHEL releases. Older restraint releases
+    for RHEL 5 and 6 prior to this 0.4.0 release will still exist in the
+    download repositories.
+
 Restraint 0.3.3
 ---------------
 

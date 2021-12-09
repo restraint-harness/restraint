@@ -1,0 +1,5 @@
+fixes:
+  - |
+    Prevent restraint client from being interrupted by SIGPIPE signal. 
+    Code change is to ignore SIGPIPE then client code will naturally
+    attempt to retry once determined that the path is broken.

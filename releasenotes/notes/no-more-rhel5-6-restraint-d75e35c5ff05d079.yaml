@@ -1,0 +1,7 @@
+other:
+  - |
+    RHEL 5 and 6 builds are no longer created from this version onward.
+    This is partly due to upgrades of libraries used by restraint which
+    are not compatible with the older RHEL releases. Older restraint releases
+    for RHEL 5 and 6 prior to this 0.4.0 release will still exist in the
+    download repositories.
