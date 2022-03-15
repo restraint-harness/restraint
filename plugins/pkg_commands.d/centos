@@ -1,0 +1,7 @@
+#!/bin/bash
+
+# CentOS uses yum/dnf or rpm-ostree(edge images) as the package command
+if [[ -x /run/ostree-booted ]]; then
+    RSTRNT_PKG_CMD=${RSTRNT_PKG_CMD:-rpm-ostree}
+    RSTRNT_PKG_ARGS=${RSTRNT_PKG_ARGS:-A --idempotent --allow-inactive}
+fi
