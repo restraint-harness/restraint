@@ -30,10 +30,12 @@ if efibootmgr &>/dev/null ; then
     if [[ -n "$os_boot_entry" ]] ; then
         logger -s "efibootmgr -n $os_boot_entry"
         efibootmgr -n $os_boot_entry
-        create_nextboot_timer
-        # Adjust watchdog if running inside of test case
-        if [[ -n $RSTRNT_RECIPE_URL && $RSTRNT_MAXTIME ]] ; then
-            rstrnt-adjust-watchdog $(($RSTRNT_MAXTIME + $NEXTBOOT_VALID_TIME))
+        if [[ -z "$REGULAR_REBOOT" ]]; then
+            create_nextboot_timer
+            # Adjust watchdog if running inside of test case
+            if [[ -n $RSTRNT_RECIPE_URL && $RSTRNT_MAXTIME ]] ; then
+                rstrnt-adjust-watchdog $(($RSTRNT_MAXTIME + $NEXTBOOT_VALID_TIME))
+            fi
         fi
     else
         logger -s "Could not determine value for BootNext!"
