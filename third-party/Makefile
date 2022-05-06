@@ -77,7 +77,7 @@ tree/lib/pkgconfig/openssl.pc: $(OPENSSL)
 	$(MAKE) -C $(OPENSSL)
 	$(MAKE) -C $(OPENSSL) PREFIX=$(CURDIR)/tree install_sw
 
-tree/lib/libbz2.a: $(BZIP2)
+tree/lib/libbz2.a: $(BZIP2) $(BZIP2)/.patches-done
 	$(MAKE) -C $(BZIP2)
 	$(MAKE) -C $(BZIP2) PREFIX=$(CURDIR)/tree install
 
@@ -150,6 +150,10 @@ tree/lib/pkgconfig/libarchive.pc: $(LIBARCHIVE) $(LIBARCHIVE)/.patches-done \
 	    --enable-static --disable-shared --without-zstd )
 	$(MAKE) -C $(LIBARCHIVE)
 	$(MAKE) -C $(LIBARCHIVE) install
+
+$(BZIP2)/.patches-done: $(BZIP2)
+	patch -d$(BZIP2) -p1 <bzip2-add-fPIE.patch
+	touch $@
 
 $(LIBARCHIVE)/.patches-done: $(LIBARCHIVE)
 	patch -d$(LIBARCHIVE) -p1 <libarchive-use-pkgconfig.patch
