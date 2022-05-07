@@ -23,7 +23,7 @@ Source0:	https://github.com/beaker-project/restraint/archive/%{name}-%{version}.
 # Sources for bundled, statically linked libraries
 Source101:      libffi-3.3.tar.gz
 Source102:      glib-2.68.0.tar.xz
-Source103:      zlib-1.2.11.tar.gz
+Source103:      zlib-1.2.12.tar.gz
 Source104:      bzip2-1.0.8.tar.gz
 Source105:      libxml2-2.9.10.tar.gz
 Source106:      curl-7.68.0.tar.bz2
