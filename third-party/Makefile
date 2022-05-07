@@ -1,5 +1,5 @@
 
-ZLIB = zlib-1.2.11
+ZLIB = zlib-1.2.12
 BZIP2 = bzip2-1.0.8
 LIBFFI = libffi-3.3
 GLIB = glib-2.68.0
