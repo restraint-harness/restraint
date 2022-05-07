@@ -7,7 +7,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version: ["34", "35", "rawhide"]
+        version: ["35", "36", "rawhide"]
     runs-on: ubuntu-latest
     container:
       image: registry.fedoraproject.org/fedora:${{ matrix.version }}
@@ -35,7 +35,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version: ["34", "35", "rawhide"]
+        version: ["35", "36", "rawhide"]
     runs-on: ubuntu-latest
     container:
       image: registry.fedoraproject.org/fedora:${{ matrix.version }}
@@ -64,7 +64,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        container: ["fedora:32", "fedora:33", "fedora:34", "fedora:35", "fedora:rawhide", "centos:7"]
+        container: ["fedora:35", "fedora:36", "fedora:rawhide", "centos:7"]
     container:
       image: ${{ matrix.container }}
       options: --security-opt seccomp=unconfined
