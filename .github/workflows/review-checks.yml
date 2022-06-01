@@ -70,11 +70,20 @@ jobs:
       options: --security-opt seccomp=unconfined
 
     steps:
-      - uses: actions/checkout@v3
       - name: Enable EPEL
         run: |
-          yum install epel-release -y
+          yum install -y epel-release
         if: contains(matrix.container, 'centos')
+      - name: Install Git client (Fedora)
+        run: |
+          dnf install -y git
+        if: contains(matrix.container, 'fedora')
+      - name: Install Git client (CentOS)
+        run: |
+          yum install -y https://repo.ius.io/ius-release-el7.rpm
+          yum install -y git236-core
+        if: contains(matrix.container, 'centos:7')
+      - uses: actions/checkout@v3
       - name: Install deps
         run: |
           yum install -y dnf 'dnf-command(builddep)' tito
