@@ -94,6 +94,9 @@ jobs:
       - name: Install restraint deps for static build
         run: |
           dnf builddep -y --spec restraint.spec
+      - name: Mark git directories safe
+        run: |
+          git config --global --add safe.directory '*'
       - name: Tito Build
         run: |
           tito build --rpm --test
