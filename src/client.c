@@ -831,9 +831,7 @@ remote_io_callback (GIOChannel *io, GIOCondition condition, gpointer user_data) 
              break;
         }
     }
-    if (condition & G_IO_HUP){
-        return FALSE;
-    }
+
     return FALSE;
 }
 
