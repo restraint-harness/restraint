@@ -128,15 +128,16 @@ myclose(struct archive *a, void *client_data)
 static gboolean
 archive_finish_callback (gpointer user_data)
 {
-    FetchData *fetch_data = (FetchData*)user_data;
-    struct curl_data *cd = fetch_data->private_data;
-    CURLM *curlm = cd->curlm;
+    FetchData *fetch_data;
+    struct curl_data *cd;
+    CURLM *curlm;
     gint free_result;
 
-    if (fetch_data == NULL) {
-        g_warning("%s: fetch_data is NULL", __func__);
-        return FALSE;
-    }
+    g_return_val_if_fail (user_data != NULL, G_SOURCE_REMOVE);
+
+    fetch_data = user_data;
+    cd = fetch_data->private_data;
+    curlm = cd->curlm;
 
     if (fetch_data->ext != NULL) {
         free_result = archive_write_free(fetch_data->ext);
@@ -161,7 +162,7 @@ archive_finish_callback (gpointer user_data)
     curl_multi_cleanup(curlm);
     g_free(fetch_data->private_data);
     g_slice_free(FetchData, fetch_data);
-    return FALSE;
+    return G_SOURCE_REMOVE;
 }
 
 static gboolean
