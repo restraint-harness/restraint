@@ -74,7 +74,7 @@ parse_watchdog_arguments(WatchdogAppData *app_data, int argc, char *argv[], GErr
     }
 
     app_data->seconds = parse_time_string (argv[1], error);
-    if (*error) {
+    if (error != NULL && *error != NULL) {
         ret = FALSE;
         goto parse_cleanup;
      }
