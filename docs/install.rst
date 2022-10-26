@@ -53,7 +53,7 @@ and linked dynamically or statically. To build it dynamically you will
 need the development libraries for the following packages installed (minimum
 versions are listed):
 
- - zlib-1.2.11
+ - zlib-1.2.13
  - bzip2-1.0.8
  - libffi-3.3
  - glib2-2.68.0
