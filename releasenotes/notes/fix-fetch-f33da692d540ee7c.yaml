@@ -1,0 +1,17 @@
+fixes:
+  - |
+    Fix: Fetch URL extract too many matched directories
+    When `fetch` url is used, restraint is copying anything that
+    matches the pattern in `https://<snip>#pattern` regardless
+    of the location in the received path.  If pattern is `include`,
+    both `general/include, include` directories will match
+    when it should only be `include`.  Restraint will
+    now only select if it matches starting from beginning 
+    of received path NOT throughout directory path. But first,
+    the first `string/` must be ignored from the received
+    path since it is superfluous for the match since it
+    includes the repo and branch name added by curl.
+    Jobs that include this repo-branch prefix in the
+    fetch pattern will now fail with this changeset.
+    So fetching `https://<snip>#repo-branch/pattern`
+    will fail.
