@@ -13,7 +13,7 @@ SQLITE = sqlite-autoconf-3310100
 INTLTOOL = intltool-0.51.0
 LIBJSONC = json-c-0.13.1
 AUTOCONF = autoconf-2.69
-M4 = m4-1.4.18
+M4 = m4-1.4.19
 
 arch := $(shell uname -m)
 
@@ -258,10 +258,6 @@ $(AUTOCONF)/.patches-done: $(AUTOCONF)
 	touch $@
 
 $(M4)/.patches-done: $(M4)
-	patch -d$(M4) -p1 < m4-1.4.18-glibc-change-work-around.patch
-	if [ -e m4-1.4.18-glibc-sigstksz.patch ]; then\
-		patch -d$(M4) -p1 < m4-1.4.18-glibc-sigstksz.patch;\
-	fi
 	touch $@
 
 .PHONY: clean

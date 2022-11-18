@@ -35,7 +35,7 @@ Source111:      libsoup-2.52.2.tar.xz
 Source112:      json-c-0.13.1.tar.gz
 Source114:      openssl-1.1.1k.tar.gz
 Source115:      autoconf-2.69.tar.gz
-Source116:      m4-1.4.18.tar.xz
+Source116:      m4-1.4.19.tar.xz
 %endif
 
 BuildRoot:	%(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
@@ -170,7 +170,6 @@ export CFLAGS="$RPM_OPT_FLAGS -march=i486"
 %if 0%{?with_static:1}
 pushd third-party
 %if ( 0%{?fedora} && 0%{?fedora} < 35 ) || ( 0%{?rhel} && 0%{?rhel} < 9 )
-rm m4-1.4.18-glibc-sigstksz.patch
 rm glib_new_close_range_arg.patch
 %endif
 %if 0%{?fedora} || 0%{?rhel} >= 8
