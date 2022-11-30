@@ -8,10 +8,6 @@
 PATH=/sbin:/usr/sbin:$PATH
 
 create_nextboot_timer() {
-        if [ -z "$NEXTBOOT_VALID_TIME" ] ; then
-                NEXTBOOT_VALID_TIME=180
-        fi
-
         # For future reference, it's possible to use `at` if supported everywhere
         nohup bash -c "
                 logger -s 'NextBoot value is valid for the next $NEXTBOOT_VALID_TIME seconds';
@@ -22,6 +18,14 @@ create_nextboot_timer() {
 }
 
 if efibootmgr &>/dev/null ; then
+    # if not defined
+    if [ -z "$NEXTBOOT_VALID_TIME" ] ; then
+            NEXTBOOT_VALID_TIME=180
+    # elif not a valid number
+    elif [[ $NEXTBOOT_VALID_TIME =~ [^0-9] ]]; then
+            logger -s "NEXTBOOT_VALID_TIME not numeric. Changing to default of 180"
+            NEXTBOOT_VALID_TIME=180
+    fi
     os_boot_entry=$(efibootmgr | awk '/BootCurrent/ { print $2 }')
     # fall back to /root/EFI_BOOT_ENTRY.TXT if it exists and BootCurrent is not available
     if [[ -z "$os_boot_entry" && -f /root/EFI_BOOT_ENTRY.TXT ]] ; then
@@ -30,10 +34,15 @@ if efibootmgr &>/dev/null ; then
     if [[ -n "$os_boot_entry" ]] ; then
         logger -s "efibootmgr -n $os_boot_entry"
         efibootmgr -n $os_boot_entry
-        create_nextboot_timer
-        # Adjust watchdog if running inside of test case
-        if [[ -n $RSTRNT_RECIPE_URL && $RSTRNT_MAXTIME ]] ; then
-            rstrnt-adjust-watchdog $(($RSTRNT_MAXTIME + $NEXTBOOT_VALID_TIME))
+        if [[ $NEXTBOOT_VALID_TIME > 0 ]]; then
+            create_nextboot_timer
+            # Adjust watchdog if running inside of test case
+            if [[ -n $RSTRNT_RECIPE_URL && $RSTRNT_MAXTIME ]] ; then
+                rstrnt-adjust-watchdog $(($RSTRNT_MAXTIME + $NEXTBOOT_VALID_TIME))
+            fi
+        else
+            logger -s "NEXTBOOT_VALID_TIME is zero. BootNext setting will persist."
+            sleep 5
         fi
     else
         logger -s "Could not determine value for BootNext!"

@@ -315,8 +315,10 @@ but does not actually trigger the reboot.
 If machine is UEFI and has efibootmgr installed, sets BootNext to
 BootCurrent and uses :envvar:`NEXTBOOT_VALID_TIME` to determine for
 how long (in seconds) this value is valid. After the specified time,
-BootOrder is reset to previous state. Default value for
-:envvar:`NEXTBOOT_VALID_TIME` is 180 seconds.
+BootNext setting is cleared so BootOrder takes precedence. Default
+value for :envvar:`NEXTBOOT_VALID_TIME` is 180 seconds. To prevent
+the clearing of BootNext, set :envvar:`NEXTBOOT_VALID_TIME` to
+0 seconds.
 
 Tasks can run this command before triggering a crash or rebooting
 through some other non-standard means. For example::

@@ -12,7 +12,7 @@ trap "" SIGTERM
 
 PATH=/sbin:/usr/sbin:$PATH
 
-/usr/bin/rstrnt-prepare-reboot
+NEXTBOOT_VALID_TIME=0 /usr/bin/rstrnt-prepare-reboot
 shutdown -r now
 
 # Wait for the shutdown to kill us.  Sleep to avoid returning

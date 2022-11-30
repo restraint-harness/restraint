@@ -1,0 +1,10 @@
+fixes:
+  - |
+    Fix: rstrnt-reboot not reliable for UEFI systems
+    When `efibootmgr` is present, the `NextBoot` variable is set to reboot
+    to `Current`.  When `rstrnt-prepare-reboot` was written, a timer was set
+    to remove `NextBoot` setting after 180 seconds. `rstrnt-reboot`
+    uses the `prepare` script and the timer wasn't long enough and not
+    needed for `rstrnt-reboot`. This changeset allows `NEXTBOOT_VALID_TIME`
+    to be set to 0.  When 0, the timer is not set and as a result
+    `NextBoot` will not be removed. `rstrnt-reboot` now uses a 0 timer.
