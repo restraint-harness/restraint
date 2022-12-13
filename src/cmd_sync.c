@@ -113,7 +113,7 @@ static gboolean handle_rconn(GIOChannel *source, GIOCondition condition,
     close(rsock);
   } else {
     struct wentry *w = malloc(sizeof(struct wentry));
-    w->event = g_strdup(buf);
+    w->event = g_strndup(buf, rcv);
     w->sockfd = rsock;
     sd->wlist = g_slist_prepend(sd->wlist, w);
   }
@@ -155,7 +155,7 @@ static gboolean handle_lconn(GIOChannel *source, GIOCondition condition,
     return TRUE;
   }
 
-  g_hash_table_add(sd->events, g_strdup(buf));
+  g_hash_table_add(sd->events, g_strndup(buf, rcv));
 
   close(rsock);
 
