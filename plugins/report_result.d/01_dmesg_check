@@ -34,7 +34,7 @@ FAILUREFILENM=${FAILUREFILENM:-"/usr/share/rhts/failurestrings"}
 if [ ! -s "${FAILUREFILENM}" ]; then
     if [ -z "${FAILURESTRINGS}" ]; then
         DMESG_FAIL_SELECTOR="Default FAILURESTRINGS"
-        FAILURESTRINGS="Oops|BUG|NMI appears to be stuck|Badness at"
+        FAILURESTRINGS="\bOops\b|\bBUG\b|NMI appears to be stuck|Badness at"
     else
         DMESG_FAIL_SELECTOR="FAILURESTRINGS Environment Variable"
     fi

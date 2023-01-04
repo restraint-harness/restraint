@@ -80,7 +80,7 @@ NMI appears to be stuck
 DMESG Selectors:
 Used Default FAILURESTRINGS and Default FALSESTRINGS
 ====================================================
-FAILURESTRINGS: Oops|BUG|NMI appears to be stuck|Badness at
+FAILURESTRINGS: \bOops\b|\bBUG\b|NMI appears to be stuck|Badness at
 FailureStrings file not found.
 ====================================================
 FALSESTRINGS: BIOS BUG|DEBUG|mapping multiple BARs.*IBM System X3250 M4
