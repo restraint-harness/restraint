@@ -19,7 +19,9 @@
 #define _RESTRAINT_FETCH_GIT_H
 
 #define GIT_PORT 9418
-#define GIT_BRANCH "master"
+#define GIT_BRANCHES_DELIMITER ","
+#define GIT_BRANCHES "main,master"
+#define GIT_BRANCHES_SIZE 2
 #define HDR_LEN_SIZE 4
 
 #include <libsoup/soup.h>

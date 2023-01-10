@@ -230,9 +230,22 @@ myopen(FetchData *fetch_data, GError **error)
                 "While writing to %s: ", fetch_data->url->host);
         goto error;
     }
-    write_succeeded = packet_write(fetch_data->ostream, &tmp_error, "argument %s:%s\0",
-                           fetch_data->url->query == NULL ? GIT_BRANCH : fetch_data->url->query, 
-                           fetch_data->url->fragment == NULL ? "" : fetch_data->url->fragment + fragment_offset);
+
+    // get all branches and have a try one by one
+    char *branches[GIT_BRANCHES_SIZE + 1] = {};
+    char *branch = strtok(GIT_BRANCHES, GIT_BRANCHES_DELIMITER);
+    int i = 0;
+    while (branch != NULL && i < GIT_BRANCHES_SIZE) {
+        branches[i++] = branch;
+        branch = strtok(NULL, GIT_BRANCHES_DELIMITER);
+    }
+    for (i = 0; i < GIT_BRANCHES_SIZE; i++) {
+        write_succeeded = packet_write(fetch_data->ostream, &tmp_error, "argument %s:%s\0",
+                               fetch_data->url->query == NULL ? branches[i]: fetch_data->url->query,
+                               fetch_data->url->fragment == NULL ? "" : fetch_data->url->fragment + fragment_offset);
+        if (write_succeeded)
+            break;
+    }
     if (!write_succeeded) {
         g_propagate_prefixed_error(error, tmp_error,
                 "While writing to %s: ", fetch_data->url->host);
