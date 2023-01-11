@@ -1,4 +1,4 @@
-/*  
+/*
     This file is part of Restraint.
 
     Restraint is free software: you can redistribute it and/or modify
@@ -29,6 +29,11 @@
 
 #include "fetch.h"
 #include "fetch_git.h"
+
+// The main branch ("main") is fetched by default, but we also support to
+// fetch the legacy one (i.e. "master") because it is required by some old
+// repositories.
+static const gchar *g_git_branches[] = {"main", "master"};
 
 static gint
 packet_length(const gchar *linelen)
@@ -231,17 +236,11 @@ myopen(FetchData *fetch_data, GError **error)
         goto error;
     }
 
-    // get all branches and have a try one by one
-    char *branches[GIT_BRANCHES_SIZE + 1] = {};
-    char *branch = strtok(GIT_BRANCHES, GIT_BRANCHES_DELIMITER);
-    int i = 0;
-    while (branch != NULL && i < GIT_BRANCHES_SIZE) {
-        branches[i++] = branch;
-        branch = strtok(NULL, GIT_BRANCHES_DELIMITER);
-    }
-    for (i = 0; i < GIT_BRANCHES_SIZE; i++) {
+    // traverse git branches one by one
+    for (gint i = 0; i < sizeof (g_git_branches) / sizeof (const gchar *); i++) {
+        gchar *branch = (gchar *)(g_git_branches[i]);
         write_succeeded = packet_write(fetch_data->ostream, &tmp_error, "argument %s:%s\0",
-                               fetch_data->url->query == NULL ? branches[i]: fetch_data->url->query,
+                               fetch_data->url->query == NULL ? branch: fetch_data->url->query,
                                fetch_data->url->fragment == NULL ? "" : fetch_data->url->fragment + fragment_offset);
         if (write_succeeded)
             break;
