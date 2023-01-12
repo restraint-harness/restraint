@@ -18,6 +18,12 @@
 #ifndef _RESTRAINT_FETCH_GIT_H
 #define _RESTRAINT_FETCH_GIT_H
 
+/*
+ * The main branch ("main") is fetched by default, but we also support to
+ * fetch the legacy one (i.e. "master") because it is required by some old
+ * repositories.
+ */
+#define GIT_BRANCHES "main", "master"
 #define GIT_PORT 9418
 #define HDR_LEN_SIZE 4
 

@@ -30,10 +30,7 @@
 #include "fetch.h"
 #include "fetch_git.h"
 
-// The main branch ("main") is fetched by default, but we also support to
-// fetch the legacy one (i.e. "master") because it is required by some old
-// repositories.
-static const gchar *g_git_branches[] = {"main", "master"};
+static const gchar *g_git_branches[] = {GIT_BRANCHES};
 
 static gint
 packet_length(const gchar *linelen)
