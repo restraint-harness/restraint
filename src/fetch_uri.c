@@ -201,8 +201,11 @@ http_archive_read_callback (gpointer user_data)
     r = archive_read_next_header(fetch_data->a, &entry);
     if (r == ARCHIVE_EOF) {
         if (fetch_data->match_cnt == 0) {
+            gchar *archive_error = archive_error_string(entry->archive);
+            if (archive_error == NULL)
+                    archive_error = "unknown archive error";
             g_set_error(&fetch_data->error, RESTRAINT_FETCH_LIBARCHIVE_ERROR, ARCHIVE_WARN,
-                    "Nothing was extracted from archive");
+                    "Nothing was extracted from archive: %s", archive_error);
         }
         g_idle_add (archive_finish_callback, fetch_data);
         return FALSE;

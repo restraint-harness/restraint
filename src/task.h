@@ -42,7 +42,7 @@
 #define ROLE_REFRESH_RETRIES 3
 
 #define TASK_FETCH_INTERVAL 10
-#define TASK_FETCH_RETRIES 3
+#define TASK_FETCH_RETRIES 9
 
 typedef enum {
     TASK_IDLE,
