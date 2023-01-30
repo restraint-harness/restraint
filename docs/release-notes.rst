@@ -1,6 +1,44 @@
 Release Notes
 =============
 
+Restraint 0.4.1
+---------------
+
+Bug Fixes
+~~~~~~~~~
+
+* | Fix: Fetch either branch 'main' or 'master'
+  | When performing a `fetch` operation, restraint will look
+    for either `main` or `master` branch.
+
+* | Fix: rstrnt-reboot not reliable for UEFI systems
+  | When `efibootmgr` is present, the `BootNext` variable is set to reboot
+    to `Current`.  When `rstrnt-prepare-reboot` was written, a timer was set
+    to remove `BootNext` setting after 180 seconds. `rstrnt-reboot`
+    uses the `prepare` script and the timer wasn't long enough and not
+    needed for `rstrnt-reboot`. This changeset allows `NEXTBOOT_VALID_TIME`
+    to be set to 0.  When 0, the timer is not set and as a result
+    `BootNext` will not be removed. `rstrnt-reboot` now uses a 0 timer.
+
+* | Fix: Fetch URL extract too many matched directories
+  | When `fetch` url is used, restraint is copying anything that
+    matches the pattern in `https://<snip>#pattern` regardless
+    of the location in the received path.  If pattern is `include`,
+    both `general/include, include` directories will match when it
+    should only be `include`.  Restraint will now only select if it
+    matches starting from beginning of received path NOT throughout
+    directory path. But first, the first `string/` must be ignored from
+    the received path since it is superfluous for the match since it
+    includes the repo and branch name added by curl.  Jobs that include
+    this repo-branch prefix in the fetch pattern will now fail with this
+    changeset.  So fetching `https://<snip>#repo-branch/pattern`
+    will fail.
+
+* | Fix: Use of FALSE/FAILURESTRINGS results in 'too many arguments'
+  | Seeing the following errors in restraint.log files.
+    `restraintd[2330]: ./01_dmesg_check: line 53: [: too many arguments`
+    Added Quote around the value to prevent this.
+
 Restraint 0.4.0
 ---------------
 
