@@ -10,7 +10,7 @@
 %endif
 
 Name:		restraint
-Version:	0.4.0
+Version:	0.4.2
 Release:	1%{?dist}
 Summary:	Simple test harness which can be used with beaker
 
@@ -385,6 +385,42 @@ fi
 %{__rm} -rf %{buildroot}
 
 %changelog
+* Mon Jan 30 2023 Carol Bouchard <cbouchar@redhat.com> 0.4.2-1
+- drop fedora 35, add fedora 38 in tito rel-eng file (jbastian@redhat.com)
+- Release notes for Restraint version 0.4.1 (cbouchar@redhat.com)
+- Use macro GIT_BRANCHES (huanli@redhat.com)
+- Use global variable instead of macros (huanli@redhat.com)
+- Fetch default branch 'main' instead of 'master' (huanli@redhat.com)
+- Remove reset of UEFI NextBoot for rstrnt-reboot (cbouchar@redhat.com)
+- Upgrade M4 third-party source code (cbouchar@redhat.com)
+- Fetch URI extract too many matched directories (cbouchar@redhat.com)
+- Fix: Upgrade ZLIB to zlib-1.2.13 (cbouchar@redhat.com)
+- ci: mark git dirs safe (mart.styk@gmail.com)
+- ci: install git client before running checkout (mart.styk@gmail.com)
+- ci: use v3 for checkout (mart.styk@gmail.com)
+- ci(merge-check): Use F35 and F36 for merge checks (mart.styk@gmail.com)
+- ci: align targets with current Fedora distros (mart.styk@gmail.com)
+- build: bump third-party zlib (mart.styk@gmail.com)
+- Add Fedora36/Drop Fedora34 from container testing (cbouchar@redhat.com)
+- Drop Fedora34/Add Fedora37&RHEL-9 to release file a Please enter the commit
+  message for your changes. Lines starting (cbouchar@redhat.com)
+- Quote variable usage in 01_dmesg_check (john@sodarock.com)
+- Resolve Restraint Valgrind error (cbouchar@redhat.com)
+- libarchive requires bzip2 compiled with -fPIE (cbouchar@redhat.com)
+- Fedora 33 EOL (188918+StykMartin@users.noreply.github.com)
+- Add Fedora35/Drop 33 in container provision script (cbouchar@redhat.com)
+- Drop Fedora33/add Fedora36 to release file (cbouchar@redhat.com)
+- Add fedora:35/Drop 33 to github checks files (cbouchar@redhat.com)
+- Close log files upon task completion (efuller@redhat.com)
+- Set FD_CLOEXEC on log files (efuller@redhat.com)
+- ci: suppress glib false positive (mart.styk@gmail.com)
+- ci: enable Fedora 35 (mart.styk@gmail.com)
+- ci: temporarily disable seccomp (mart.styk@gmail.com)
+- ci: enable Fedora 35 prerelease (mart.styk@gmail.com)
+- Replace the deprecated syslog+console target with journal+console
+  (frantisek@sumsal.cz)
+- Fix: RHEL9 beta build failing (cbouchar@redhat.com)
+
 * Thu Aug 05 2021 Carol Bouchard <cbouchar@redhat.com> 0.4.0-1
 - Upstream release 0.4.0
   https://restraint.readthedocs.io/en/latest/release-notes.html#restraint-0-4-0
