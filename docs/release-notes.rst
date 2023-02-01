@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Restraint 0.4.1
+Restraint 0.4.2
 ---------------
 
 Bug Fixes
@@ -38,6 +38,14 @@ Bug Fixes
   | Seeing the following errors in restraint.log files.
     `restraintd[2330]: ./01_dmesg_check: line 53: [: too many arguments`
     Added Quote around the value to prevent this.
+
+Restraint 0.4.1
+---------------
+
+Other
+~~~~~
+
+ * | Tag `0.4.1` was intentionally skipped.
 
 Restraint 0.4.0
 ---------------
