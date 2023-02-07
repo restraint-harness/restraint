@@ -54,6 +54,7 @@ restAPI allowing all results and logs to be recorded from the test machine.
 
 %build
 export CFLAGS="$RPM_OPT_FLAGS"
+export LDFLAGS="$RPM_LD_FLAGS"
 
 pushd src
 make %{?_smp_mflags}

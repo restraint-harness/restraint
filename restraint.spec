@@ -160,6 +160,7 @@ cp %{_sourcedir}/*.tar.* third-party/
 
 %build
 export CFLAGS="$RPM_OPT_FLAGS"
+export LDFLAGS="$RPM_LD_FLAGS"
 %if 0%{?rhel} == 5
 %ifarch i386
 # glib wants at least i486 for atomic instructions. RHEL6+ is already using i686.
