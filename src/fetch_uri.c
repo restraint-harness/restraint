@@ -167,20 +167,36 @@ static gboolean
 is_entry_prefixed_with_fragment(const gchar *entry_path,
                                 const gchar *fragment)
 {
-   
-    gchar *skip_entry_branch = NULL;
+    gint repo_prefix_len = 0;
+    const gchar *start_compare = NULL;
    
     if (fragment == NULL)
         return FALSE;
 
-    skip_entry_branch = g_strstr_len(entry_path, -1, "/");
-    if (skip_entry_branch == NULL) {
+    /*
+     The entry_path always starts with the prefix 'reponame_branch'. If the
+     user hasn't provided a good fetch URL, it could also be
+     'reponame_branch_hashValue'.
+     The fragment may or may not start with 'reponame_branch'. This varies
+     by users choice.  If fragment is from repoRequires, it will not contain
+     'reponame_branch'. If 'reponame_branch" exists, then we'll compare fragment
+     to the entire entry_path; otherwise, fragment will compare just after
+     'reponame_branch/' of entry_path.
+     */
+    // find end of repo_branch
+    start_compare = g_strstr_len(entry_path, -1, "/");
+    if (start_compare == NULL) {
         return FALSE;
     }
-    skip_entry_branch++;  // Skip '/'
-    if (fragment == NULL ||
-            (g_strstr_len(skip_entry_branch, strlen(fragment), fragment) != NULL &&
-            !(fragment[strlen(fragment)] != '/' && strlen(skip_entry_branch) ==
+    repo_prefix_len = strlen(entry_path) - strlen(start_compare);
+    if (strncmp(entry_path, fragment, repo_prefix_len) == 0) {
+        // put it back to beginning of entry_path
+        start_compare = entry_path;
+    } else {
+        start_compare++;  // Skip '/'
+    }
+    if ((g_strstr_len(start_compare, strlen(fragment), fragment) != NULL &&
+            !(fragment[strlen(fragment)] != '/' && strlen(start_compare) ==
                 strlen(fragment) + 1))
             ) {
         return TRUE;
@@ -240,7 +256,7 @@ http_archive_read_callback (gpointer user_data)
                 return FALSE;
             }
             gchar *strbegin = NULL;
-            if (fragment) {
+            if (fragment && (strlen(fragment) > 0)) {
                 strbegin = g_strstr_len(archive_entry_pathname(entry), -1,
                                         fragment);
             } else {
