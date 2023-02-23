@@ -30,8 +30,6 @@
 #include "fetch.h"
 #include "fetch_git.h"
 
-static const gchar *g_git_branches[] = {GIT_BRANCHES};
-
 static gint
 packet_length(const gchar *linelen)
 {
@@ -232,16 +230,9 @@ myopen(FetchData *fetch_data, GError **error)
                 "While writing to %s: ", fetch_data->url->host);
         goto error;
     }
-
-    // traverse git branches one by one
-    for (gint i = 0; i < sizeof (g_git_branches) / sizeof (const gchar *); i++) {
-        gchar *branch = (gchar *)(g_git_branches[i]);
-        write_succeeded = packet_write(fetch_data->ostream, &tmp_error, "argument %s:%s\0",
-                               fetch_data->url->query == NULL ? branch: fetch_data->url->query,
-                               fetch_data->url->fragment == NULL ? "" : fetch_data->url->fragment + fragment_offset);
-        if (write_succeeded)
-            break;
-    }
+    write_succeeded = packet_write(fetch_data->ostream, &tmp_error, "argument %s:%s\0",
+                           fetch_data->url->query == NULL ? GIT_BRANCH : fetch_data->url->query,
+                           fetch_data->url->fragment == NULL ? "" : fetch_data->url->fragment + fragment_offset);
     if (!write_succeeded) {
         g_propagate_prefixed_error(error, tmp_error,
                 "While writing to %s: ", fetch_data->url->host);
