@@ -163,31 +163,6 @@ archive_finish_callback (gpointer user_data)
     g_slice_free(FetchData, fetch_data);
     return FALSE;
 }
-static gboolean
-is_entry_prefixed_with_fragment(const gchar *entry_path,
-                                const gchar *fragment)
-{
-   
-    gchar *skip_entry_branch = NULL;
-   
-    if (fragment == NULL)
-        return FALSE;
-
-    skip_entry_branch = g_strstr_len(entry_path, -1, "/");
-    if (skip_entry_branch == NULL) {
-        return FALSE;
-    }
-    skip_entry_branch++;  // Skip '/'
-    if (fragment == NULL ||
-            (g_strstr_len(skip_entry_branch, strlen(fragment), fragment) != NULL &&
-            !(fragment[strlen(fragment)] != '/' && strlen(skip_entry_branch) ==
-                strlen(fragment) + 1))
-            ) {
-        return TRUE;
-    }
-
-    return FALSE;
-}
 
 static gboolean
 http_archive_read_callback (gpointer user_data)
@@ -217,8 +192,10 @@ http_archive_read_callback (gpointer user_data)
 
     const gchar *fragment = fetch_data->url->fragment;
     const gchar *entry_path = archive_entry_pathname(entry);
-    if (fragment == NULL || is_entry_prefixed_with_fragment(entry_path, fragment))
-        {
+    if (fragment == NULL || (g_strstr_len(entry_path, -1, fragment) != NULL &&
+            !(fragment[strlen(fragment)] != '/' && strlen(entry_path) ==
+                strlen(fragment) + 1))
+            ) {
         // Update pathname
         if (fragment != NULL) {
             newPath = g_build_filename(fetch_data->base_path,
