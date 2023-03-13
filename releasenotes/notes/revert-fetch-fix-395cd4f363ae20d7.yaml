@@ -1,0 +1,12 @@
+fixes:
+  - |
+    Fix: Revert Fetch URL fix
+    Backing out fix to provide precise directory matching for
+    `repoRequires` and `fetch` operation. The problem is user's
+    selection data is not precise.  User's testing will be hindered
+    with this change.  This issue was presented to some user's
+    who chose to instead make their directory definitions more precise.
+    Refer to close comment in Issue 272 on 3/13 for more details.
+    If folks decide to reintroduce this change, they should also
+    apply pull 289.
+
