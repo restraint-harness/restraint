@@ -1,6 +1,26 @@
 Release Notes
 =============
 
+Restraint 0.4.3
+---------------
+
+Bug Fixes
+~~~~~~~~~
+
+* | Fix: Revert fix to fetch either branch 'main' or 'master'
+  | When performing a `fetch` operation, restraint will continue
+    to look for `master` branch only.
+
+* | Fix: Revert Fetch URL fix
+  | Backing out fix to provide precise directory matching for
+    `repoRequires` and `fetch` operation. The problem is not all user
+    selection data is precise.  Some user testing will be hindered
+    with this change.  Due to these unknown cases, requesting users
+    chose to instead make their directory definitions more precise.
+    Refer to comment in Issue 272 on 3/13 for more details.
+    If folks decide to reintroduce this change, they should also
+    apply pull 289 which provides more flexibility.
+
 Restraint 0.4.2
 ---------------
 
