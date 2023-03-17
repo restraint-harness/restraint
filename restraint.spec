@@ -10,7 +10,7 @@
 %endif
 
 Name:		restraint
-Version:	0.4.2
+Version:	0.4.3
 Release:	1%{?dist}
 Summary:	Simple test harness which can be used with beaker
 
@@ -385,6 +385,11 @@ fi
 %{__rm} -rf %{buildroot}
 
 %changelog
+* Fri Mar 17 2023 Carol Bouchard <cbouchar@redhat.com> 0.4.3-1
+- Release Notes for Restraint version 0.4.3 (cbouchar@redhat.com)
+- Fix: Revert Fetch URL fix (cbouchar@redhat.com)
+- Back out the default 'main' branch change (huanli@redhat.com)
+
 * Mon Jan 30 2023 Carol Bouchard <cbouchar@redhat.com> 0.4.2-1
 - drop fedora 35, add fedora 38 in tito rel-eng file (jbastian@redhat.com)
 - Release notes for Restraint version 0.4.1 (cbouchar@redhat.com)
