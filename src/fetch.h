@@ -54,6 +54,7 @@ typedef struct {
     guint32 nonmatch_cnt;
     gboolean keepchanges;
     gboolean ssl_verify;
+    gboolean abort_recipeset_on_fail;
     gpointer private_data;
     gchar curl_error_buf[CURL_ERROR_SIZE];
 } FetchData;

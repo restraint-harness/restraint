@@ -395,6 +395,7 @@ restraint_fetch_uri (SoupURI *url,
                      const gchar *base_path,
                      gboolean keepchanges,
                      gboolean ssl_verify,
+                     gboolean abort_recipeset_on_fail,
                      ArchiveEntryCallback archive_entry_callback,
                      FetchFinishCallback finish_callback,
                      gpointer user_data)
@@ -411,6 +412,7 @@ restraint_fetch_uri (SoupURI *url,
     fetch_data->match_cnt = 0;
     fetch_data->keepchanges = keepchanges;
     fetch_data->ssl_verify = ssl_verify;
+    fetch_data->abort_recipeset_on_fail = abort_recipeset_on_fail;
 
     GError *tmp_error = NULL;
 

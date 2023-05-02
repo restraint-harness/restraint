@@ -116,6 +116,7 @@ fetch_finish_callback (GError *error, guint32 match_cnt,
         } else {
             g_propagate_error (&task->error, error);
             task->state = TASK_COMPLETE;
+            task->fetch_succeeded = false;
         }
     } else {
         task->state = TASK_METADATA_PARSE;
@@ -159,6 +160,7 @@ restraint_task_fetch(AppData *app_data) {
                                       task->path,
                                       task->keepchanges,
                                       task->ssl_verify,
+                                      task->abort_recipeset_on_fail,
                                       archive_entry_callback,
                                       fetch_finish_callback,
                                       app_data);
@@ -786,6 +788,7 @@ Task *restraint_task_new(void) {
     task->remaining_time = -1;
     task->offsets = g_hash_table_new_full(g_str_hash, g_str_equal, g_free,
                                           g_free);
+    task->fetch_succeeded = true;
     return task;
 }
 
@@ -1105,6 +1108,9 @@ task_handler (gpointer user_data)
    */
   switch (task->state) {
     case TASK_IDLE:
+      if(app_data->state == RECIPE_ABORT){
+          g_cancellable_cancel(app_data->cancellable);
+      }
       // Read in previous state..
       if (parse_task_config (app_data->config_file, task, &task->error)) {
           if (task->finished) {
@@ -1281,6 +1287,10 @@ task_handler (gpointer user_data)
       break;
     }
     case TASK_NEXT:
+      if (!task->fetch_succeeded && task->abort_recipeset_on_fail) {
+        app_data->state = RECIPE_ABORT;
+        app_data->aborted = ABORTED_TASK; 
+      }
       // Get the next task and run it.
       result = restraint_next_task (app_data, TASK_IDLE);
       break;

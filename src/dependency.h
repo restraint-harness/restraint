@@ -54,6 +54,7 @@ typedef struct {
     GString *install_rpms;
     GString *remove_rpms;
     gboolean ssl_verify;
+    gboolean abort_recipeset_on_fail;
 } DependencyData;
 
 void restraint_install_dependencies (Task *task, GIOFunc io_callback,
