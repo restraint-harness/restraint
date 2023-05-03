@@ -16,6 +16,8 @@ reporting results.  But it can also be used stand alone.
 
 Full Documentation is `here <http://restraint.readthedocs.org/en/latest/>`_.
 
+Packages are generated via packit.
+
 .. [#] `Job XML <http://beaker-project.org/docs/user-guide/job-xml.html>`_.
 .. [#] `Beaker <http://beaker-project.org>`_ is open-source software for managing and automating labs of test computers.
 .. [#] `Alternate Harness <http://beaker-project.org/docs/alternative-harnesses>`_ API.
