@@ -259,7 +259,7 @@ static Task *parse_task(xmlNode *task_node, Recipe *recipe, GError **error) {
 
         xmlChar *abort_recipeset_on_fail = xmlGetNoNsProp(fetch, (xmlChar *)"abort_recipeset_on_fail");
         if (abort_recipeset_on_fail == NULL ||  g_strcmp0((char*)abort_recipeset_on_fail, "on") != 0) {
-            task->abort_recipeset_on_fail = FALSE;
+            task->abort_recipeset_on_fail = TRUE;
         } else {
             task->abort_recipeset_on_fail = TRUE;
         }
