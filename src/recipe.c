@@ -257,13 +257,13 @@ static Task *parse_task(xmlNode *task_node, Recipe *recipe, GError **error) {
         }
         xmlFree(ssl_verify);
 
-        xmlChar *abort_recipeset_on_fail = xmlGetNoNsProp(fetch, (xmlChar *)"abort_recipeset_on_fail");
-        if (abort_recipeset_on_fail == NULL ||  g_strcmp0((char*)abort_recipeset_on_fail, "on") != 0) {
-            task->abort_recipeset_on_fail = TRUE;
+        xmlChar *abort_recipe_on_fail = xmlGetNoNsProp(fetch, (xmlChar *)"abort_recipe_on_fail");
+        if (abort_recipe_on_fail == NULL ||  g_strcmp0((char*)abort_recipe_on_fail, "on") != 0) {
+            task->abort_recipe_on_fail = TRUE;
         } else {
-            task->abort_recipeset_on_fail = TRUE;
+            task->abort_recipe_on_fail = TRUE;
         }
-        xmlFree(abort_recipeset_on_fail);
+        xmlFree(abort_recipe_on_fail);
 
         task->path = g_build_filename(task->recipe->base_path,
                 task->fetch.url->host,

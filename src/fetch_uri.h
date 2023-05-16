@@ -24,7 +24,7 @@ void restraint_fetch_uri(SoupURI *url,
                      const gchar *base_path,
                      gboolean keepchanges,
                      gboolean ssl_verify,
-                     gboolean abort_recipeset_on_fail,
+                     gboolean abort_recipe_on_fail,
                      ArchiveEntryCallback entry_callback,
                      FetchFinishCallback finish_callback,
                      gpointer user_data);

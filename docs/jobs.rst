@@ -107,7 +107,7 @@ The first example shows fetching a task from git.
 
  OR
 
- <fetch ssl_verify="off" abort_recipeset_on_fail="on" url="https://fedorapeople.org/cgit/bpeck/public_git/tests.git/snapshot/tests-master.tar.gz#kernel/performance/fs_mark" />
+ <fetch ssl_verify="off" abort_recipe_on_fail="on" url="https://fedorapeople.org/cgit/bpeck/public_git/tests.git/snapshot/tests-master.tar.gz#kernel/performance/fs_mark" />
 
 The fetch node accepts git URI's that conform to the following:
 

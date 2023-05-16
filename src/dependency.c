@@ -498,7 +498,7 @@ restraint_fetch_repodeps(DependencyData *dependency_data)
                                 fetch_repodeps_finish_callback, rd_data);
         } else {
             restraint_fetch_uri(rd_data->url, rd_data->path,
-                                 dependency_data->keepchanges, dependency_data->ssl_verify, dependency_data->abort_recipeset_on_fail, repo_dep_data_archive_callback,
+                                 dependency_data->keepchanges, dependency_data->ssl_verify, dependency_data->abort_recipe_on_fail, repo_dep_data_archive_callback,
                                  fetch_repodeps_finish_callback, rd_data);
         }
     } else {
@@ -560,7 +560,7 @@ restraint_install_dependencies (Task *task,
     dependency_data->cancellable = cancellable;
     dependency_data->osmajor = task->recipe->osmajor;
     dependency_data->ssl_verify = task->ssl_verify;
-    dependency_data->abort_recipeset_on_fail = task->abort_recipeset_on_fail;
+    dependency_data->abort_recipe_on_fail = task->abort_recipe_on_fail;
     
     switch (task->fetch_method) {
         case TASK_FETCH_UNPACK:
