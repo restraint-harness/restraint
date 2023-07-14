@@ -14,6 +14,25 @@
 #
 # Authors: Bill Peck
 
+# see: https://restraint.readthedocs.io/en/latest/remove_rhts.html#legacy-rhts-task-environment-variables
+# if restraint runs in un-compatable mode, and we still use old ENV name
+if [[ -n "$RSTRNT_JOBID" && -z "$JOBID" ]]; then
+	export ARCH="$RSTRNT_OSARCH" \
+	DISTRO="$RSTRNT_OSDISTRO" \
+	FAMILY="$RSTRNT_OSMAJOR" \
+	JOBID="$RSTRNT_JOBID" \
+	REBOOTCOUNT="$RSTRNT_REBOOTCOUNT" \
+	RECIPESETID="$RSTRNT_RECIPESETID" \
+	RECIPEID="$RSTRNT_RECIPEID" \
+	RECIPETESTID="$RSTRNT_RECIPEID" \
+	SUBMITTER="$RSTRNT_OWNER" \
+	TASKID="$RSTRNT_TASKID" \
+	TESTID="$RSTRNT_TASKID" \
+	TESTNAME="$RSTRNT_TASKNAME" \
+	TESTPATH="$RSTRNT_TASKPATH" \
+	VARIANT="$RSTRNT_OSVARIANT"
+fi
+
 if [ -z "$OUTPUTFILE" ]; then
         export OUTPUTFILE=`mktemp /mnt/testarea/tmp.XXXXXX`
 fi
