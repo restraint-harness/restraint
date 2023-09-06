@@ -37,7 +37,6 @@ typedef enum {
     RECIPE_RUNNING,
     RECIPE_FAIL,
     RECIPE_COMPLETE,
-    RECIPE_ABORT,
 } RecipeSetupState;
 
 typedef struct {

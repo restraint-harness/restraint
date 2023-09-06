@@ -116,7 +116,11 @@ fetch_finish_callback (GError *error, guint32 match_cnt,
         } else {
             g_propagate_error (&task->error, error);
             task->state = TASK_COMPLETE;
-            task->fetch_succeeded = false;
+            if (task->abort_recipe_on_fail) {
+                task->fetch_succeeded = false; 
+                app_data->aborted = ABORTED_TASK;
+                g_cancellable_cancel(app_data->cancellable);
+            }
         }
     } else {
         task->state = TASK_METADATA_PARSE;
@@ -1127,19 +1131,9 @@ task_handler (gpointer user_data)
               // If neither started nor finished then fetch the task
               restraint_task_status (task, app_data, "Running", NULL, NULL);
               result = G_SOURCE_REMOVE;
-              if(app_data->state == RECIPE_ABORT){
-                  g_string_printf(message, "** Skipping task: %s [%s]\n", task->task_id, task->path);
-                  task->state = TASK_COMPLETE;
-                  app_data->aborted = ABORTED_TASK;
-                  g_set_error(&task->error, RESTRAINT_ERROR,
-                    RESTRAINT_TASK_RUNNER_RECIPE_ABORTED,
-                    "Recipe set for abort!");
-              } else {
-                  g_string_printf(message, "** Fetching task: %s [%s]\n", task->task_id, task->path);
-                  app_data->fetch_retries = 0;
-                  task->state = TASK_FETCH;
-
-              }
+              g_string_printf(message, "** Fetching task: %s [%s]\n", task->task_id, task->path);
+              app_data->fetch_retries = 0;
+              task->state = TASK_FETCH;
           }
       } else {
           task->state = TASK_COMPLETE;
@@ -1251,9 +1245,15 @@ task_handler (gpointer user_data)
       if (g_cancellable_is_cancelled(app_data->cancellable) &&
           app_data->aborted != ABORTED_NONE) {
         g_clear_error(&task->error);
-        g_set_error(&task->error, RESTRAINT_ERROR,
-                    RESTRAINT_TASK_RUNNER_ABORTED,
-                    "Aborted by rstrnt-abort");
+        if (task->fetch_succeeded) {
+            g_set_error(&task->error, RESTRAINT_ERROR,
+                RESTRAINT_TASK_RUNNER_ABORTED,
+                "Aborted by rstrnt-abort");
+        } else {
+            g_set_error(&task->error, RESTRAINT_ERROR,
+                RESTRAINT_TASK_RUNNER_ABORTED,
+                "Aborted due to fetch failure");
+        }
       }
 
       if (task->error) {
@@ -1294,10 +1294,6 @@ task_handler (gpointer user_data)
       break;
     }
     case TASK_NEXT:
-      if (!task->fetch_succeeded && task->abort_recipe_on_fail) {
-        app_data->state = RECIPE_ABORT;
-        app_data->aborted = ABORTED_TASK; 
-      }
       // Get the next task and run it.
       result = restraint_next_task (app_data, TASK_IDLE);
       break;
