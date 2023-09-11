@@ -1242,19 +1242,18 @@ task_handler (gpointer user_data)
     case TASK_COMPLETE:
       // Set task finished
       if (g_cancellable_is_cancelled(app_data->cancellable) &&
-        app_data->aborted != ABORTED_NONE) {
-          g_clear_error(&task->error);
-          if (app_data->aborted_due_fetch_failure) {
-              g_set_error(&task->error, RESTRAINT_ERROR,
-                  RESTRAINT_TASK_RUNNER_ABORTED,
-                  "Aborted due to fetch failure");
-          } else {
-              g_set_error(&task->error, RESTRAINT_ERROR,
-                  RESTRAINT_TASK_RUNNER_ABORTED,
-                  "Aborted by rstrnt-abort");
-          }
+          app_data->aborted != ABORTED_NONE) {
+        g_clear_error(&task->error);
+        if (app_data->aborted_due_fetch_failure) {
+            g_set_error(&task->error, RESTRAINT_ERROR,
+                RESTRAINT_TASK_RUNNER_ABORTED,
+                "Aborted due to fetch failure");
+        } else {
+            g_set_error(&task->error, RESTRAINT_ERROR,
+                RESTRAINT_TASK_RUNNER_ABORTED,
+                "Aborted by rstrnt-abort");
+        }
       }
-       
       if (task->error) {
           g_string_printf(message, "** ERROR: %s\n** Completed Task : %s\n",
                          task->error->message, task->task_id);
