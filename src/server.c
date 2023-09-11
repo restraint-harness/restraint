@@ -673,6 +673,7 @@ int main(int argc, char *argv[]) {
   app_data->port = 0;
   app_data->uploader_source_id = 0;
   app_data->uploader_interval = LOG_UPLOAD_INTERVAL;
+  app_data->aborted_due_fetch_failure = FALSE;
 
   rstrnt_uploader_override (app_data);
 

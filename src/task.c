@@ -117,7 +117,7 @@ fetch_finish_callback (GError *error, guint32 match_cnt,
             g_propagate_error (&task->error, error);
             task->state = TASK_COMPLETE;
             if (task->abort_recipe_on_fail) {
-                task->fetch_succeeded = false; 
+                app_data->aborted_due_fetch_failure = TRUE;
                 app_data->aborted = ABORTED_RECIPE;
                 g_cancellable_cancel(app_data->cancellable);
             }
@@ -792,7 +792,6 @@ Task *restraint_task_new(void) {
     task->remaining_time = -1;
     task->offsets = g_hash_table_new_full(g_str_hash, g_str_equal, g_free,
                                           g_free);
-    task->fetch_succeeded = true;
     return task;
 }
 
@@ -1242,18 +1241,18 @@ task_handler (gpointer user_data)
       break;
     case TASK_COMPLETE:
       // Set task finished
-            if (g_cancellable_is_cancelled(app_data->cancellable) &&
-          app_data->aborted != ABORTED_NONE) {
-                    g_clear_error(&task->error);
-        if (task->fetch_succeeded) {
-            g_set_error(&task->error, RESTRAINT_ERROR,
-                RESTRAINT_TASK_RUNNER_ABORTED,
-                "Aborted by rstrnt-abort");
-                    } else {
-            g_set_error(&task->error, RESTRAINT_ERROR,
-                RESTRAINT_TASK_RUNNER_ABORTED,
-                "Aborted due to fetch failure");
-                    }
+      if (g_cancellable_is_cancelled(app_data->cancellable) &&
+        app_data->aborted != ABORTED_NONE) {
+          g_clear_error(&task->error);
+          if (app_data->aborted_due_fetch_failure) {
+              g_set_error(&task->error, RESTRAINT_ERROR,
+                  RESTRAINT_TASK_RUNNER_ABORTED,
+                  "Aborted due to fetch failure");
+          } else {
+              g_set_error(&task->error, RESTRAINT_ERROR,
+                  RESTRAINT_TASK_RUNNER_ABORTED,
+                  "Aborted by rstrnt-abort");
+          }
       }
        
       if (task->error) {

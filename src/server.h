@@ -60,6 +60,7 @@ typedef struct RstrntServerAppData {
   guint last_signal;
   guint uploader_source_id; /* Event source ID for log uploader */
   guint uploader_interval; /* In seconds. 0 disables the log manager */
+  gboolean aborted_due_fetch_failure;
 } AppData;
 
 #endif
