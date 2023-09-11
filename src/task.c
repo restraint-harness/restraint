@@ -1254,6 +1254,7 @@ task_handler (gpointer user_data)
                 "Aborted by rstrnt-abort");
         }
       }
+      
       if (task->error) {
           g_string_printf(message, "** ERROR: %s\n** Completed Task : %s\n",
                          task->error->message, task->task_id);
