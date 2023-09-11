@@ -1,6 +1,18 @@
 Release Notes
 =============
 
+Restraint 0.4.4
+---------------
+
+Bug Fixes
+~~~~~~~~~
+
+* | Fix: Stabilize selinux behavior in RHEL-9
+  | Added a static selinux policy for RHEL-9.  The policy is manually
+    built from a RHEL-9.0.0 host so it will work on all RHEL-9 versions.
+    If built on a later version of RHEL-9, it will not be backward
+    compatible with older versions and fail to install.
+
 Restraint 0.4.3
 ---------------
 
