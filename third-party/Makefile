@@ -169,7 +169,7 @@ $(GLIB).tar.xz:
 
 TAR_BALLS += $(ZLIB).tar.gz
 $(ZLIB).tar.gz:
-	curl -f -L -O http://zlib.net/$@
+	curl -f -L -O https://zlib.net/fossils/$@
 
 TAR_BALLS += $(BZIP2).tar.gz
 $(BZIP2).tar.gz:
