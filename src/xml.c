@@ -51,7 +51,7 @@ restraint_xml_read_callback(GObject *source, GAsyncResult *result, gpointer user
         xmlParserErrors xmlresult = xmlParseChunk(ctxt->parser_ctxt, ctxt->buf, size,
                 size > 0 ? 0 : 1);
         if (xmlresult != XML_ERR_OK) {
-            xmlError *xmlerr = xmlCtxtGetLastError(ctxt->parser_ctxt);
+            const xmlError *xmlerr = xmlCtxtGetLastError(ctxt->parser_ctxt);
             g_set_error_literal(&ctxt->error, RESTRAINT_XML_PARSE_ERROR,
                     RESTRAINT_XML_PARSE_ERROR_BAD_SYNTAX,
                     xmlerr != NULL ? xmlerr->message : "Unknown libxml error");
