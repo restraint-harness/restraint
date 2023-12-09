@@ -306,7 +306,7 @@ process_run (const gchar *command,
 
         // Print the command being executed.
         gchar *pcommand = g_strjoinv (" ", (gchar **) process_data->command);
-        g_print ("use_pty:%s %s\n", use_pty ? "TRUE" : "FALSE", pcommand);
+        printf ("use_pty:%s %s\n", use_pty ? "TRUE" : "FALSE", pcommand);
         g_free (pcommand);
 
         /* Spawn the command */
