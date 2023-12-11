@@ -14,6 +14,10 @@ install:
 check:
 	set -e; for i in $(SUBDIRS); do $(MAKE) -C $$i check; done
 
+.PHONY: check-daemon
+check-daemon:
+	set -e; $(MAKE) -C tests/daemon check-daemon-container
+
 .PHONY: valgrind
 valgrind:
 	set -e; $(MAKE) -C src valgrind

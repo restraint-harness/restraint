@@ -17,10 +17,11 @@ main()
 	local provision
 	local provision_script
 	local work_dir
+	local custom
 
 	provision=false
 
-	while getopts "i:e:p:w:" opt ; do
+	while getopts "i:e:p:w:c:" opt ; do
 		case ${opt} in
 			i)
 				image=${OPTARG}
@@ -35,6 +36,9 @@ main()
 				;;
 			w)
 				work_dir=$(realpath "${OPTARG}")
+				;;
+			c)
+				custom="-${OPTARG}"
 				;;
 			*)
 				:
@@ -51,12 +55,13 @@ main()
 		provision_script=${PROVISION_DIR}/${image}.sh
 	fi
 
-	container_name="${CONTAINER_NAME_BASE}-${image//:/-}"
+	container_name="${CONTAINER_NAME_BASE}${custom}-${image//:/-}"
 
 	if ! podman container exists "${container_name}" ; then
 		podman create --tty --interactive \
 			      --volume "${work_dir:-$PWD}":"${MOUNT_POINT}":rw,Z \
 			      --workdir "${MOUNT_POINT}" \
+			      --network n1 \
 			      --name "${container_name}" \
 			      "${image}"
 		provision=true
@@ -68,9 +73,15 @@ main()
 		cmd=$*
 	fi
 
-	podman start "${container_name}"
-	podman exec --tty --interactive "${container_name}" ${cmd:-/bin/bash}
-	podman stop "${container_name}" || :
+	# allow kill -9 to restart the container; simulates a machine reboot
+	status=137
+	while [ $status -eq 137 ]; do
+		podman start "${container_name}"
+		podman exec --tty --interactive "${container_name}" ${cmd:-/bin/bash}
+		status=$?
+		echo "podman stopped with $?"
+		podman stop "${container_name}" || :
+	done
 }
 
 main "$@"
