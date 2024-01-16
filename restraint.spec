@@ -109,10 +109,10 @@ BuildRequires:  tar
 %{?with_static:BuildRequires: perl(FindBin), perl(lib)}
 # libselinux Requires.private
 %{?with_static:BuildRequires: libsepol-static}
-%if 0%{?rhel} >= 8 || 0%{?fedora}
-%{?with_static:BuildRequires: pcre2-static}
-%else
+%if 0%{?rhel} < 8 || 0%{?centos}
 %{?with_static:BuildRequires: pcre-static}
+%else
+%{?with_static:BuildRequires: pcre2-static}
 %endif
 
 %description
