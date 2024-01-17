@@ -101,3 +101,42 @@ jobs:
         run: |
           tito build --rpm --test
 
+  static-build-centos-stream:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        version: ["8", "9"]
+    container:
+      image: quay.io/centos/centos:stream${{ matrix.version }}
+      options: --security-opt seccomp=unconfined
+
+    steps:
+      - name: Enable EPEL
+        run: |
+          yum install -y epel-release
+      - name: Install Git client
+        run: |
+          dnf install -y git
+      - uses: actions/checkout@v3
+      - name: Install deps
+        run: |
+          yum install -y dnf 'dnf-command(builddep)' tito
+      - name: Enable PowerTools
+        run: |
+          yum config-manager --set-enabled powertools
+        if: contains(matrix.version, '8')
+      - name: Enable CRB
+        run: |
+          yum config-manager --set-enabled crb
+        if: contains(matrix.version, '9')
+      - name: Install restraint deps for static build
+        run: |
+          dnf builddep -y --spec restraint.spec
+      - name: Mark git directories safe
+        run: |
+          git config --global --add safe.directory '*'
+      - name: Tito Build
+        run: |
+          tito build --rpm --test
+
