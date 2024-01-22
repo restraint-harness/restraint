@@ -694,3 +694,15 @@
    fun:_dlerror_run
    ...
 }
+
+{
+   libproxy/duktape/realloc
+   Memcheck:ReallocZero
+   fun:realloc
+   ...
+   fun:duk_compile_raw
+   fun:duk_eval_raw
+   ...
+   fun:px_manager_new_with_options
+   fun:px_proxy_factory_new
+}
