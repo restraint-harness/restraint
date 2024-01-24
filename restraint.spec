@@ -33,7 +33,7 @@ Source109:      sqlite-autoconf-3310100.tar.gz
 Source110:      intltool-0.51.0.tar.gz
 Source111:      libsoup-2.52.2.tar.xz
 Source112:      json-c-0.13.1.tar.gz
-Source114:      openssl-1.1.1k.tar.gz
+Source114:      openssl-1.1.1w.tar.gz
 Source115:      autoconf-2.69.tar.gz
 Source116:      m4-1.4.19.tar.xz
 %endif
