@@ -64,7 +64,7 @@ versions are listed):
  - intltool-0.51.0
  - selinux-2.7
  - curl-7.68.0
- - json-c-0.13.1
+ - json-c-0.16
  - openssl-1.1.1w
 
 

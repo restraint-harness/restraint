@@ -36,7 +36,7 @@ Source108:      xz-5.2.4.tar.gz
 Source109:      sqlite-autoconf-3310100.tar.gz
 Source110:      intltool-0.51.0.tar.gz
 Source111:      libsoup-2.52.2.tar.xz
-Source112:      json-c-0.13.1.tar.gz
+Source112:      json-c-0.16.tar.gz
 Source114:      openssl-1.1.1w.tar.gz
 Source115:      autoconf-2.69.tar.gz
 Source116:      m4-1.4.19.tar.xz
@@ -111,6 +111,8 @@ BuildRequires:  tar
 %{?with_static:BuildRequires: meson}
 # OpenSSL
 %{?with_static:BuildRequires: perl(FindBin), perl(lib)}
+# json-c
+%{?with_static:BuildRequires: cmake}
 # libselinux Requires.private
 %{?with_static:BuildRequires: libsepol-static}
 %if 0%{?rhel} < 8 || 0%{?centos}

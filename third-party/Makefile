@@ -11,7 +11,7 @@ LIBSOUP = libsoup-2.52.2
 OPENSSL = openssl-1.1.1w
 SQLITE = sqlite-autoconf-3310100
 INTLTOOL = intltool-0.51.0
-LIBJSONC = json-c-0.13.1
+LIBJSONC = json-c-0.16
 AUTOCONF = autoconf-2.69
 M4 = m4-1.4.19
 
@@ -64,9 +64,10 @@ tree/bin/autoheader: tree/bin/m4 $(AUTOCONF) $(AUTOCONF)/.patches-done
 	$(MAKE) -C $(AUTOCONF) install
 
 tree/lib/pkgconfig/libjson-c.pc: tree/bin/autoheader $(LIBJSONC)
-	( cd $(LIBJSONC) && ./configure --prefix=$(CURDIR)/tree --enable-shared=no )
-	( PATH=$(CURDIR)/tree/bin:$(PATH) $(MAKE) -C $(LIBJSONC) )
-	$(MAKE) -C $(LIBJSONC) install
+	( mkdir -p $(LIBJSONC)/build && cd $(LIBJSONC)/build && cmake ../ -DCMAKE_INSTALL_PREFIX=$(CURDIR)/tree -DBUILD_SHARED_LIBS=OFF \
+		-DBUILD_TESTING=OFF -DCMAKE_BUILD_TYPE=release -DCMAKE_INSTALL_LIBDIR=lib )
+	( PATH=$(CURDIR)/tree/bin:$(PATH) $(MAKE) -C $(LIBJSONC)/build )
+	$(MAKE) -C $(LIBJSONC)/build install
 
 tree/lib/pkgconfig/openssl.pc: $(OPENSSL)
     ifeq ("$(arch)", "ppc64")
