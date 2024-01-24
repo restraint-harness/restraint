@@ -9,6 +9,10 @@
 %global with_selinux_policy 0
 %endif
 
+%if 0%{?with_static:1} && 0%{?fedora} >= 40
+%global build_type_safety_c 2
+%endif
+
 Name:		restraint
 Version:	0.4.4
 Release:	1%{?dist}
