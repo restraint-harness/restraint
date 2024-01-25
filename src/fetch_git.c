@@ -396,6 +396,8 @@ git_archive_read_callback (gpointer user_data)
         }
 
         fetch_data->match_cnt++;
+    } else {
+        fetch_data->match_cnt++;
     }
 
     return TRUE;
