@@ -1,0 +1,48 @@
+<?xml version='1.0' encoding='utf-8'?>
+<job>
+  <recipeSet>
+    <!-- host type: bare_metal -->
+    <recipe ks_meta="redhat_ca_cert harness='restraint-rhts beakerlib' selinux=--permissive" kernel_options="" kernel_options_post="rd.emergency=reboot kunit.enable=1 efi=runtime">
+      <task name="/test/misc/machineinfo">
+        <fetch url="https://gitlab.com/redhat/centos-stream/tests/kernel/kernel-tests/-/archive/production/kernel-tests-production.zip#test/misc/machineinfo"/>
+        <params>
+          <param name="CKI_ID" value="3"/>
+          <param name="CKI_IS_TEST" value="True"/>
+          <param name="CKI_NAME" value="machineinfo"/>
+          <param name="CKI_UNIVERSAL_ID" value="machineinfo"/>
+          <param name="CKI_WAIVED" value="True"/>
+        </params>
+      </task>
+      <task name="/test/misc/machineinfo">
+        <fetch url="https://gitlab.com/redhat/centos-stream/tests/kernel/kernel-tests/-/archive/production/kernel-tests-production.zip#test/misc/machineinfo"/>
+        <params>
+          <param name="CKI_ID" value="3"/>
+          <param name="CKI_IS_TEST" value="True"/>
+          <param name="CKI_NAME" value="machineinfo"/>
+          <param name="CKI_UNIVERSAL_ID" value="machineinfo"/>
+          <param name="CKI_WAIVED" value="True"/>
+        </params>
+      </task>
+      <task name="/test/misc/machineinfo">
+        <fetch url="https://gitlab.com/redhat/centos-stream/tests/kernel/kernel-tests/-/archive/production/kernel-tests-production.zip#test/misc/machineinfo"/>
+        <params>
+          <param name="CKI_ID" value="3"/>
+          <param name="CKI_IS_TEST" value="True"/>
+          <param name="CKI_NAME" value="machineinfo"/>
+          <param name="CKI_UNIVERSAL_ID" value="machineinfo"/>
+          <param name="CKI_WAIVED" value="True"/>
+        </params>
+      </task>
+      <task name="/test/misc/machineinfo">
+        <fetch url="https://gitlab.com/redhat/centos-stream/tests/kernel/kernel-tests/-/archive/production/kernel-tests-production.zip#test/misc/machineinfo"/>
+        <params>
+          <param name="CKI_ID" value="3"/>
+          <param name="CKI_IS_TEST" value="True"/>
+          <param name="CKI_NAME" value="machineinfo"/>
+          <param name="CKI_UNIVERSAL_ID" value="machineinfo"/>
+          <param name="CKI_WAIVED" value="True"/>
+        </params>
+      </task>
+    </recipe>
+  </recipeSet>
+</job>
