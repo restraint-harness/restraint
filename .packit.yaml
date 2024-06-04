@@ -21,21 +21,13 @@ jobs:
     targets:
       - centos-stream-8-aarch64
       - centos-stream-8-x86_64
-      - fedora-38-aarch64
-      - fedora-38-armhfp
-      - fedora-38-s390x
-      - fedora-38-x86_64
-      - fedora-39-aarch64
-      - fedora-39-armhfp
-      - fedora-39-s390x
-      - fedora-39-x86_64
-      - fedora-rawhide-aarch64
-      - fedora-rawhide-armhfp
-      - fedora-rawhide-i386
-      - fedora-rawhide-x86_64
-      - epel-8-aarch64
-      - epel-8-x86_64
-      - epel-7-x86_64
+      - centos-stream-9-aarch64
+      - centos-stream-9-x86_64
+      - fedora-all-aarch64
+      - fedora-all-s390x
+      - fedora-all-x86_64
+      - epel-all-aarch64
+      - epel-all-x86_64
 
 notifications:
   pull_request:
