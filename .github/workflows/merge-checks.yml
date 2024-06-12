@@ -10,10 +10,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        container: ["fedora:38", "fedora:39"]
+        image:
+          - quay.io/fedora/fedora:38
+          - quay.io/fedora/fedora:39
+          - quay.io/fedora/fedora:40
     runs-on: ubuntu-latest
     container:
-      image: registry.fedoraproject.org/${{ matrix.container }}
+      image: ${{ matrix.image }}
 
     steps:
     - uses: actions/checkout@v1
@@ -37,11 +40,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        container: ["fedora:38", "fedora:39"]
+        image:
+          - quay.io/fedora/fedora:38
+          - quay.io/fedora/fedora:39
+          - quay.io/fedora/fedora:40
     runs-on: ubuntu-latest
     container:
-      image: registry.fedoraproject.org/${{ matrix.container }}
-
+      image: ${{ matrix.image }}
     steps:
     - uses: actions/checkout@v1
     - name: Install deps
@@ -59,4 +64,3 @@ jobs:
       with:
         name: valgrind.out
         path: /home/runner/work/valgrind.out
-
