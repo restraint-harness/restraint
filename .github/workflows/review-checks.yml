@@ -7,20 +7,32 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version: ["38", "39", "rawhide"]
+        image:
+          - quay.io/fedora/fedora:38
+          - quay.io/fedora/fedora:39
+          - quay.io/fedora/fedora:40
+          - quay.io/fedora/fedora:rawhide
     runs-on: ubuntu-latest
     container:
-      image: registry.fedoraproject.org/fedora:${{ matrix.version }}
-      options: --security-opt seccomp=unconfined
+      image: ${{ matrix.image }}
 
     steps:
     - uses: actions/checkout@v1
+    - name: Set DNF command
+      run: |
+        if [[ "${{ matrix.image }}" == *"rawhide"* ]]; then
+          echo "DNF_COMMAND=dnf5" >> $GITHUB_ENV
+          echo "BUILDDEP_SPEC_ARG=" >> $GITHUB_ENV 
+        else
+          echo "DNF_COMMAND=dnf" >> $GITHUB_ENV
+          echo "BUILDDEP_SPEC_ARG=--spec" >> $GITHUB_ENV 
+        fi
     - name: Install deps
       run: |
-        dnf install -y 'dnf-command(builddep)' git-daemon python3-flask python3-requests python3-pytest python3-six procps-ng
+        ${{ env.DNF_COMMAND }} install -y '${{ env.DNF_COMMAND }}-command(builddep)' git-daemon python3-flask python3-requests python3-pytest python3-six procps-ng
     - name: Install restraint deps
       run: |
-        dnf builddep --spec specfiles/restraint-upstream.spec -y
+        ${{ env.DNF_COMMAND }} builddep ${{ env.BUILDDEP_SPEC_ARG }} specfiles/restraint-upstream.spec -y
     - name: Run tests
       run: |
         set -o pipefail
@@ -35,20 +47,32 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version: ["38", "39", "rawhide"]
+        image:
+        - quay.io/fedora/fedora:38
+        - quay.io/fedora/fedora:39
+        - quay.io/fedora/fedora:40
+        - quay.io/fedora/fedora:rawhide
     runs-on: ubuntu-latest
     container:
-      image: registry.fedoraproject.org/fedora:${{ matrix.version }}
-      options: --security-opt seccomp=unconfined
+      image: ${{ matrix.image }}
 
     steps:
     - uses: actions/checkout@v1
+    - name: Set DNF command
+      run: |
+        if [[ "${{ matrix.image }}" == *"rawhide"* ]]; then
+          echo "DNF_COMMAND=dnf5" >> $GITHUB_ENV
+          echo "BUILDDEP_SPEC_ARG=" >> $GITHUB_ENV 
+        else
+          echo "DNF_COMMAND=dnf" >> $GITHUB_ENV
+          echo "BUILDDEP_SPEC_ARG=--spec" >> $GITHUB_ENV 
+        fi
     - name: Install deps
       run: |
-        dnf install -y 'dnf-command(builddep)' valgrind git-daemon procps-ng
+        ${{ env.DNF_COMMAND }} install -y '${{ env.DNF_COMMAND }}-command(builddep)' valgrind git-daemon procps-ng python3-six
     - name: Install restraint deps
       run: |
-        dnf builddep --spec specfiles/restraint-upstream.spec -y
+        ${{ env.DNF_COMMAND }} builddep ${{ env.BUILDDEP_SPEC_ARG }} specfiles/restraint-upstream.spec -y
     - name: Run valgrind
       run: |
         set -o pipefail
@@ -64,36 +88,45 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        container: ["fedora:38", "fedora:39", "fedora:rawhide", "centos:7"]
+        image:
+          - quay.io/fedora/fedora:38
+          - quay.io/fedora/fedora:39
+          - quay.io/fedora/fedora:40
+          - quay.io/fedora/fedora:rawhide
+          - quay.io/centos/centos:centos7
     container:
-      image: ${{ matrix.container }}
-      options: --security-opt seccomp=unconfined
+      image: ${{ matrix.image }}
 
     steps:
+      - name: Set DNF command
+        run: |
+          if [[ "${{ matrix.image }}" == *"rawhide"* ]]; then
+            echo "DNF_COMMAND=dnf5" >> $GITHUB_ENV
+            echo "BUILDDEP_SPEC_ARG=" >> $GITHUB_ENV
+          else
+            echo "DNF_COMMAND=dnf" >> $GITHUB_ENV
+            echo "BUILDDEP_SPEC_ARG=--spec" >> $GITHUB_ENV
+          fi
       - name: Enable EPEL
         run: |
           yum install -y epel-release
-        if: contains(matrix.container, 'centos')
+        if: contains(matrix.image, 'centos')
       - name: Install Git client (Fedora)
         run: |
-          dnf install -y git
-        if: contains(matrix.container, 'fedora')
+          ${{ env.DNF_COMMAND }} install -y git
+        if: contains(matrix.image, 'fedora')
       - name: Install Git client (CentOS)
         run: |
           yum install -y https://repo.ius.io/ius-release-el7.rpm
           yum install -y git236-core
-        if: contains(matrix.container, 'centos:7')
+        if: contains(matrix.image, 'centos7')
       - uses: actions/checkout@v3
       - name: Install deps
         run: |
-          yum install -y dnf 'dnf-command(builddep)' tito
-      - name: Enable PowerTools
-        run: |
-          yum config-manager --set-enabled powertools
-        if: contains(matrix.container, 'centos:8')
+          yum install -y ${{ env.DNF_COMMAND }} '${{ env.DNF_COMMAND }}-command(builddep)' tito
       - name: Install restraint deps for static build
         run: |
-          dnf builddep -y --spec restraint.spec
+          ${{ env.DNF_COMMAND }} builddep -y ${{ env.BUILDDEP_SPEC_ARG }} restraint.spec
       - name: Mark git directories safe
         run: |
           git config --global --add safe.directory '*'
@@ -121,7 +154,7 @@ jobs:
       - uses: actions/checkout@v3
       - name: Install deps
         run: |
-          yum install -y dnf 'dnf-command(builddep)' tito
+          yum install -y ${{ env.DNF_COMMAND }} 'dnf-command(builddep)' tito
       - name: Enable PowerTools
         run: |
           yum config-manager --set-enabled powertools
@@ -139,4 +172,3 @@ jobs:
       - name: Tito Build
         run: |
           tito build --rpm --test
-
