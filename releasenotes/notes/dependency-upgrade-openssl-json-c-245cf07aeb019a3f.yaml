@@ -1,0 +1,6 @@
+other:
+  - |
+    Dependency Updates
+    The following dependencies have been updated:
+    - openssl: 1.1.1k -> 1.1.1w
+    - json-c: 0.13.1 -> 0.16
