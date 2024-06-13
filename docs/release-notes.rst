@@ -1,6 +1,25 @@
 Release Notes
 =============
 
+Restraint 0.4.5
+---------------
+
+Bug Fixes
+~~~~~~~~~
+
+* | Improve task fetch for git repositories
+  | To improve reliability when fetching tasks from git repositories, the number of retries has been changed from 3 to 30.
+    To further increase the chance of success, the fetch interval has been changed from 10 seconds to 20 seconds.
+
+Other Notable Changes
+~~~~~~~~~~~~~~~~~~~~~
+
+* | Dependency Updates
+  | The following dependencies have been updated:
+
+    * openssl: 1.1.1k -> 1.1.1w
+    * json-c: 0.13.1 -> 0.16
+
 Restraint 0.4.4
 ---------------
 
