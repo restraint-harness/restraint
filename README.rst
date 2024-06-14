@@ -20,3 +20,11 @@ Full Documentation is `here <http://restraint.readthedocs.org/en/latest/>`_.
 .. [#] `Beaker <http://beaker-project.org>`_ is open-source software for managing and automating labs of test computers.
 .. [#] `Alternate Harness <http://beaker-project.org/docs/alternative-harnesses>`_ API.
 
+Matrix Community Chat
+---------------------
+
+`Matrix <https://matrix.org/>`_ community chat channel located at any of the below locations:
+
+* `<https://chat.fedoraproject.org/#/room/#beaker:fedora.im>`_  Fedora Project's web client
+* `<https://app.element.io/#/room/#beaker:fedora.im>`_  Element web client
+* `<https://matrix.to/#/#beaker:fedora.im>`_
