@@ -45,6 +45,11 @@ Source116:      m4-1.4.19.tar.xz
 BuildRoot:	%(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 BuildRequires:	gcc
 BuildRequires:	gcc-c++
+# https://bugzilla.redhat.com/show_bug.cgi?id=2307038
+%if 0%{?fedora} == 40
+BuildRequires: pkgconf < 2.1.1
+BuildRequires: pkgconf-pkg-config < 2.1.1
+%endif
 BuildRequires:	pkgconfig
 BuildRequires:	gettext
 BuildRequires:	perl-XML-Parser
