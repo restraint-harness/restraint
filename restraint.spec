@@ -9,8 +9,10 @@
 %global with_selinux_policy 0
 %endif
 
-%if 0%{?with_static:1} && 0%{?fedora} >= 40
+%if 0%{?with_static:1}
+%if 0%{?fedora} >= 40 || 0%{?rhel} >= 10
 %global build_type_safety_c 2
+%endif
 %endif
 
 Name:		restraint
@@ -115,7 +117,7 @@ BuildRequires:  tar
 %{?with_static:BuildRequires: cmake}
 # libselinux Requires.private
 %{?with_static:BuildRequires: libsepol-static}
-%if 0%{?rhel} < 8 || 0%{?centos}
+%if 0%{?rhel} < 8 || 0%{?centos} < 10
 %{?with_static:BuildRequires: pcre-static}
 %else
 %{?with_static:BuildRequires: pcre2-static}
