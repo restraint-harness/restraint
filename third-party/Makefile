@@ -248,6 +248,7 @@ $(INTLTOOL)/.patches-done: $(INTLTOOL)
 $(LIBSOUP)/.patches-done: $(LIBSOUP)
 	patch -d$(LIBSOUP) -p1 <libsoup-no-pkgconfig-version-check.patch
 	patch -d$(LIBSOUP) -p1 <libsoup-perl580.patch
+	patch -d$(LIBSOUP) -p1 <libsoup-gcc15-incompatible-pointers.patch
 	sed -i -e "/^#!/c\#!$(PYTHON)" $(LIBSOUP)/libsoup/tld-parser.py
 	touch $@
 

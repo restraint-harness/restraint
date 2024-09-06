@@ -138,10 +138,6 @@ jobs:
       - name: Install deps
         run: |
           yum install -y ${{ env.DNF_COMMAND }} 'dnf-command(builddep)' tito
-      - name: Enable PowerTools
-        run: |
-          yum config-manager --set-enabled powertools
-        if: contains(matrix.version, '8')
       - name: Enable CRB
         run: |
           yum config-manager --set-enabled crb
