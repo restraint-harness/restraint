@@ -8,16 +8,15 @@ jobs:
       fail-fast: false
       matrix:
         image:
-          - quay.io/fedora/fedora:38
-          - quay.io/fedora/fedora:39
           - quay.io/fedora/fedora:40
+          - quay.io/fedora/fedora:41
           - quay.io/fedora/fedora:rawhide
     runs-on: ubuntu-latest
     container:
       image: ${{ matrix.image }}
 
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v3
     - name: Set DNF command
       run: |
         if [[ "${{ matrix.image }}" == *"rawhide"* ]]; then
@@ -38,7 +37,7 @@ jobs:
         set -o pipefail
         make check | tee unittests.out
         mv unittests.out /__w/unittests.out
-    - uses: actions/upload-artifact@v1
+    - uses: actions/upload-artifact@v3
       with:
         name: unittests.out
         path: /home/runner/work/unittests.out
@@ -48,16 +47,15 @@ jobs:
       fail-fast: false
       matrix:
         image:
-        - quay.io/fedora/fedora:38
-        - quay.io/fedora/fedora:39
         - quay.io/fedora/fedora:40
+        - quay.io/fedora/fedora:41
         - quay.io/fedora/fedora:rawhide
     runs-on: ubuntu-latest
     container:
       image: ${{ matrix.image }}
 
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v3
     - name: Set DNF command
       run: |
         if [[ "${{ matrix.image }}" == *"rawhide"* ]]; then
@@ -78,7 +76,7 @@ jobs:
         set -o pipefail
         make valgrind 2>&1 | tee valgrind.out
         mv valgrind.out /__w/valgrind.out
-    - uses: actions/upload-artifact@v1
+    - uses: actions/upload-artifact@v3
       with:
         name: valgrind.out
         path: /home/runner/work/valgrind.out
@@ -89,11 +87,8 @@ jobs:
       fail-fast: false
       matrix:
         image:
-          - quay.io/fedora/fedora:38
-          - quay.io/fedora/fedora:39
           - quay.io/fedora/fedora:40
           - quay.io/fedora/fedora:rawhide
-          - quay.io/centos/centos:centos7
     container:
       image: ${{ matrix.image }}
 
@@ -107,19 +102,9 @@ jobs:
             echo "DNF_COMMAND=dnf" >> $GITHUB_ENV
             echo "BUILDDEP_SPEC_ARG=--spec" >> $GITHUB_ENV
           fi
-      - name: Enable EPEL
-        run: |
-          yum install -y epel-release
-        if: contains(matrix.image, 'centos')
       - name: Install Git client (Fedora)
         run: |
           ${{ env.DNF_COMMAND }} install -y git
-        if: contains(matrix.image, 'fedora')
-      - name: Install Git client (CentOS)
-        run: |
-          yum install -y https://repo.ius.io/ius-release-el7.rpm
-          yum install -y git236-core
-        if: contains(matrix.image, 'centos7')
       - uses: actions/checkout@v3
       - name: Install deps
         run: |
@@ -139,7 +124,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version: ["8", "9"]
+        version: ["9", "10-development"]
     container:
       image: quay.io/centos/centos:stream${{ matrix.version }}
       options: --security-opt seccomp=unconfined
@@ -155,10 +140,6 @@ jobs:
       - name: Install deps
         run: |
           yum install -y ${{ env.DNF_COMMAND }} 'dnf-command(builddep)' tito
-      - name: Enable PowerTools
-        run: |
-          yum config-manager --set-enabled powertools
-        if: contains(matrix.version, '8')
       - name: Enable CRB
         run: |
           yum config-manager --set-enabled crb
