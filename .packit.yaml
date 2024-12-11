@@ -4,7 +4,7 @@
 specfile_path: specfiles/restraint-upstream.spec
 
 # add or remove files that should be synced
-synced_files:
+files_to_sync:
   - src: restraint-upstream.spec
     dest: restraint.spec
 
