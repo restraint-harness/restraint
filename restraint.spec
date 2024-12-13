@@ -22,6 +22,7 @@ Group:		Applications/Internet
 License:	GPLv3+ and MIT
 URL:		https://github.com/beaker-project/%{name}
 Source0:	https://github.com/beaker-project/restraint/archive/%{name}-%{version}.tar.gz
+Source1:	%{name}.conf
 
 %if 0%{?with_static:1}
 # Sources for bundled, statically linked libraries
@@ -249,6 +250,12 @@ fi
 popd
 %endif
 
+%if %{with_systemd}
+mkdir -p $RPM_BUILD_ROOT/%{_tmpfilesdir}
+install -m 0644 %{SOURCE1} $RPM_BUILD_ROOT/%{_tmpfilesdir}/%{name}.conf
+%endif
+
+
 %post
 if [ "$1" -le "1" ] ; then # First install
 %if %{with_systemd}
@@ -381,8 +388,12 @@ fi
 %{_bindir}/rhts_recipe_sync_block
 %{_bindir}/rhts-abort
 %{_datadir}/rhts/lib/rhts-make.include
+%if %{with_systemd}
+%config %{_tmpfilesdir}/%{name}.conf
+%else
 /mnt/scratchspace
 %attr(1777,root,root)/mnt/testarea
+%endif
 %if 0%{?rhel}%{?fedora} > 4
 %{_datadir}/selinux/packages/%{name}/rhts.pp
 %endif
