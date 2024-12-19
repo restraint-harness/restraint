@@ -24,7 +24,7 @@
 #define CMD_ENV_DIR "/var/lib/restraint"
 #define CMD_ENV_FILE_FORMAT "%s/rstrnt-commands-env-%u.sh"
 
-#define INSTALL_CONFIG_FILE "/var/lib/restraint/install_config"
+#define INSTALL_CONFIG_FILE "/etc/restraint/install_config"
 #define INSTALL_DIR_VAR "INSTALL_DIR"
 #define INSTALL_DIR_DEFAULT "/var/lib/restraint/tests"
 
