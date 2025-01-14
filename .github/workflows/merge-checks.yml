@@ -10,16 +10,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        image:
-          - quay.io/fedora/fedora:38
-          - quay.io/fedora/fedora:39
-          - quay.io/fedora/fedora:40
+        image: [quay.io/fedora/fedora]
+        version: ["38", "39", "40"]
     runs-on: ubuntu-latest
     container:
-      image: ${{ matrix.image }}
+      image: ${{ matrix.image }}:${{ matrix.version }}
 
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v3
     - name: Install deps
       run: |
         dnf install -y 'dnf-command(builddep)' git-daemon python3-flask python3-requests python3-pytest python3-six procps-ng
@@ -31,24 +29,22 @@ jobs:
         set -o pipefail
         make check | tee unittests.out
         mv unittests.out /__w/unittests.out
-    - uses: actions/upload-artifact@v1
+    - uses: actions/upload-artifact@v4
       with:
-        name: unittests.out
+        name: unittests-${{ matrix.version }}.out
         path: /home/runner/work/unittests.out
 
   valgrind:
     strategy:
       fail-fast: false
       matrix:
-        image:
-          - quay.io/fedora/fedora:38
-          - quay.io/fedora/fedora:39
-          - quay.io/fedora/fedora:40
+        image: [quay.io/fedora/fedora]
+        version: ["38", "39", "40"]
     runs-on: ubuntu-latest
     container:
-      image: ${{ matrix.image }}
+      image: ${{ matrix.image }}:${{ matrix.version }}
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v3
     - name: Install deps
       run: |
         dnf install -y 'dnf-command(builddep)' valgrind git-daemon procps-ng
@@ -60,7 +56,7 @@ jobs:
         set -o pipefail
         make valgrind 2>&1 | tee valgrind.out
         mv valgrind.out /__w/valgrind.out
-    - uses: actions/upload-artifact@v1
+    - uses: actions/upload-artifact@v4
       with:
-        name: valgrind.out
+        name: valgrind-${{ matrix.version }}.out
         path: /home/runner/work/valgrind.out
