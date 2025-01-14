@@ -7,20 +7,17 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        image:
-          - quay.io/fedora/fedora:38
-          - quay.io/fedora/fedora:39
-          - quay.io/fedora/fedora:40
-          - quay.io/fedora/fedora:rawhide
+        image: [quay.io/fedora/fedora]
+        version: ["38", "39", "40", "rawhide"]
     runs-on: ubuntu-latest
     container:
-      image: ${{ matrix.image }}
+      image: ${{ matrix.image }}:${{ matrix.version }}
 
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v3
     - name: Set DNF command
       run: |
-        if [[ "${{ matrix.image }}" == *"rawhide"* ]]; then
+        if [[ "${{ matrix.version}}" == "rawhide" ]]; then
           echo "DNF_COMMAND=dnf5" >> $GITHUB_ENV
           echo "BUILDDEP_SPEC_ARG=" >> $GITHUB_ENV 
         else
@@ -38,29 +35,26 @@ jobs:
         set -o pipefail
         make check | tee unittests.out
         mv unittests.out /__w/unittests.out
-    - uses: actions/upload-artifact@v1
+    - uses: actions/upload-artifact@v4
       with:
-        name: unittests.out
+        name: unittests-${{ matrix.version }}.out
         path: /home/runner/work/unittests.out
 
   valgrind:
     strategy:
       fail-fast: false
       matrix:
-        image:
-        - quay.io/fedora/fedora:38
-        - quay.io/fedora/fedora:39
-        - quay.io/fedora/fedora:40
-        - quay.io/fedora/fedora:rawhide
+        image: [quay.io/fedora/fedora]
+        version: ["38", "39", "40", "rawhide"]
     runs-on: ubuntu-latest
     container:
-      image: ${{ matrix.image }}
+      image: ${{ matrix.image }}:${{ matrix.version }}
 
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v3
     - name: Set DNF command
       run: |
-        if [[ "${{ matrix.image }}" == *"rawhide"* ]]; then
+        if [[ "${{ matrix.version }}" == "rawhide" ]]; then
           echo "DNF_COMMAND=dnf5" >> $GITHUB_ENV
           echo "BUILDDEP_SPEC_ARG=" >> $GITHUB_ENV 
         else
@@ -78,9 +72,9 @@ jobs:
         set -o pipefail
         make valgrind 2>&1 | tee valgrind.out
         mv valgrind.out /__w/valgrind.out
-    - uses: actions/upload-artifact@v1
+    - uses: actions/upload-artifact@v4
       with:
-        name: valgrind.out
+        name: valgrind-${{ matrix.version }}.out
         path: /home/runner/work/valgrind.out
 
   static-build:
@@ -99,7 +93,7 @@ jobs:
     steps:
       - name: Set DNF command
         run: |
-          if [[ "${{ matrix.image }}" == *"rawhide"* ]]; then
+          if [[ "${{ matrix.version}}" == "rawhide" ]]; then
             echo "DNF_COMMAND=dnf5" >> $GITHUB_ENV
             echo "BUILDDEP_SPEC_ARG=" >> $GITHUB_ENV
           else
