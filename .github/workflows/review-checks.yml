@@ -93,7 +93,6 @@ jobs:
           - quay.io/fedora/fedora:39
           - quay.io/fedora/fedora:40
           - quay.io/fedora/fedora:rawhide
-          - quay.io/centos/centos:centos7
     container:
       image: ${{ matrix.image }}
 
@@ -107,19 +106,10 @@ jobs:
             echo "DNF_COMMAND=dnf" >> $GITHUB_ENV
             echo "BUILDDEP_SPEC_ARG=--spec" >> $GITHUB_ENV
           fi
-      - name: Enable EPEL
-        run: |
-          yum install -y epel-release
-        if: contains(matrix.image, 'centos')
       - name: Install Git client (Fedora)
         run: |
           ${{ env.DNF_COMMAND }} install -y git
         if: contains(matrix.image, 'fedora')
-      - name: Install Git client (CentOS)
-        run: |
-          yum install -y https://repo.ius.io/ius-release-el7.rpm
-          yum install -y git236-core
-        if: contains(matrix.image, 'centos7')
       - uses: actions/checkout@v3
       - name: Install deps
         run: |
@@ -139,7 +129,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version: ["8", "9"]
+        version: ["9"]
     container:
       image: quay.io/centos/centos:stream${{ matrix.version }}
       options: --security-opt seccomp=unconfined
