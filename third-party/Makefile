@@ -259,6 +259,8 @@ $(AUTOCONF)/.patches-done: $(AUTOCONF)
 	touch $@
 
 $(M4)/.patches-done: $(M4)
+	patch -d$(M4) -p1 < m4-1.4.19-fortify-source.patch
+	patch -d$(M4) -p1 < m4-1.4.19-nodiscard-gcc15.patch
 	touch $@
 
 .PHONY: clean
