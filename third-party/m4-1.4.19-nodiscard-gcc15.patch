@@ -1,0 +1,427 @@
+commit 786bb6fb17d698eb175942606db8fb129e231474
+Author: Paul Eggert <eggert@cs.ucla.edu>
+Date:   Fri Jul 30 12:56:24 2021 -0700
+
+    gnulib-common: update for C2x 2020-12-11 draft
+    
+    Use blessed-by-draft-standard way to test for [[__deprecated__]]
+    etc.; this is supported by GCC 11 and the fallback code should
+    work fine with GCC 10 and earlier, clang, etc.
+    * NEWS, doc/attribute.texi:
+    Mention that DEPRECATED etc. must now come first.
+    * lib/fflush.c, lib/unistr.in.h:
+    Do not include unused-parameter.h.  All uses of _GL_UNUSED_PARAMETER
+    (after parameters) replaced by _GL_ATTRIBUTE_MAYBE_UNUSED (before
+    parameters).  Although perhaps we need a shorter name for
+    _GL_ATTRIBUTE_MAYBE_UNUSED, that should probably be in
+    gnulib-common.m4, due to the ubiquity of this issue.
+    And perhaps the snippet/unused-parameter module should be marked
+    obsolete since it's no longer compatible with its old use.
+    * m4/gnulib-common.m4 (gl_COMMON_BODY): Define the macro
+    _GL_HAS_C_ATTRIBUTE, and use it instead of __STDC_VERSION__ in
+    deciding whether to use C2x attributes like [[__deprecated__]].
+    (_GL_ATTRIBUTE_MAYBE_UNUSED): Fall back on _GL_ATTRIBUTE_UNUSED.
+    (_GL_ATTRIBUTE_UNUSED): New macro, for labels where C2x
+    [[maybe_unused]] do not work.
+    (_GL_UNUSED, _GL_UNUSED_LABEL): Use it.
+    * modules/fflush, modules/unistr/base (Depends-on):
+    Remove snippet/unused-parameter.
+    * modules/fflush (selinux/selinux.h, selinux/context.h)
+    (selinux/label.h): Do not use $(UNUSED_PARAMETER).
+    Remove useless chmod a-x.
+
+diff --git a/lib/gl_anylinked_list2.h b/lib/gl_anylinked_list2.h
+index 176403a7f4..8ed54cab7e 100644
+--- a/lib/gl_anylinked_list2.h
++++ b/lib/gl_anylinked_list2.h
+@@ -170,14 +170,14 @@ gl_linked_size (gl_list_t list)
+ }
+ 
+ static const void * _GL_ATTRIBUTE_PURE
+-gl_linked_node_value (gl_list_t list _GL_ATTRIBUTE_MAYBE_UNUSED,
++gl_linked_node_value (_GL_ATTRIBUTE_MAYBE_UNUSED gl_list_t list,
+                       gl_list_node_t node)
+ {
+   return node->value;
+ }
+ 
+ static int
+-gl_linked_node_nx_set_value (gl_list_t list _GL_ATTRIBUTE_MAYBE_UNUSED,
++gl_linked_node_nx_set_value (_GL_ATTRIBUTE_MAYBE_UNUSED gl_list_t list,
+                              gl_list_node_t node,
+                              const void *elt)
+ {
+@@ -1041,7 +1041,7 @@ gl_linked_iterator_next (gl_list_iterator_t *iterator,
+ }
+ 
+ static void
+-gl_linked_iterator_free (gl_list_iterator_t *iterator _GL_ATTRIBUTE_MAYBE_UNUSED)
++gl_linked_iterator_free (_GL_ATTRIBUTE_MAYBE_UNUSED gl_list_iterator_t *iterator)
+ {
+ }
+ 
+diff --git a/lib/gl_anytree_oset.h b/lib/gl_anytree_oset.h
+index 9f5161ac63..5123205219 100644
+--- a/lib/gl_anytree_oset.h
++++ b/lib/gl_anytree_oset.h
+@@ -438,6 +438,6 @@ gl_tree_iterator_next (gl_oset_iterator_t *iterator, const void **eltp)
+ }
+ 
+ static void
+-gl_tree_iterator_free (gl_oset_iterator_t *iterator _GL_ATTRIBUTE_MAYBE_UNUSED)
++gl_tree_iterator_free (_GL_ATTRIBUTE_MAYBE_UNUSED gl_oset_iterator_t *iterator)
+ {
+ }
+diff --git a/lib/gl_list.h b/lib/gl_list.h
+index d600580efe..e2da4f1b8d 100644
+--- a/lib/gl_list.h
++++ b/lib/gl_list.h
+@@ -197,9 +197,9 @@ extern const void * gl_list_node_value (gl_list_t list, gl_list_node_t node);
+ extern void gl_list_node_set_value (gl_list_t list, gl_list_node_t node,
+                                     const void *elt);
+ /* Likewise.  Returns 0 upon success, -1 upon out-of-memory.  */
++_GL_ATTRIBUTE_NODISCARD
+ extern int gl_list_node_nx_set_value (gl_list_t list, gl_list_node_t node,
+-                                      const void *elt)
+-  _GL_ATTRIBUTE_NODISCARD;
++                                      const void *elt);
+ 
+ /* Returns the node immediately after the given node in the list, or NULL
+    if the given node is the last (rightmost) one in the list.  */
+@@ -245,9 +245,9 @@ extern const void * gl_list_get_last (gl_list_t list);
+ extern gl_list_node_t gl_list_set_at (gl_list_t list, size_t position,
+                                       const void *elt);
+ /* Likewise.  Returns NULL upon out-of-memory.  */
++_GL_ATTRIBUTE_NODISCARD
+ extern gl_list_node_t gl_list_nx_set_at (gl_list_t list, size_t position,
+-                                         const void *elt)
+-  _GL_ATTRIBUTE_NODISCARD;
++                                         const void *elt);
+ 
+ /* Replaces the element at the first position in the list.
+    Returns its node.
+@@ -255,8 +255,8 @@ extern gl_list_node_t gl_list_nx_set_at (gl_list_t list, size_t position,
+ /* declared in gl_xlist.h */
+ extern gl_list_node_t gl_list_set_first (gl_list_t list, const void *elt);
+ /* Likewise.  Returns NULL upon out-of-memory.  */
+-extern gl_list_node_t gl_list_nx_set_first (gl_list_t list, const void *elt)
+-  _GL_ATTRIBUTE_NODISCARD;
++_GL_ATTRIBUTE_NODISCARD
++extern gl_list_node_t gl_list_nx_set_first (gl_list_t list, const void *elt);
+ 
+ /* Replaces the element at the last position in the list.
+    Returns its node.
+@@ -264,8 +264,8 @@ extern gl_list_node_t gl_list_nx_set_first (gl_list_t list, const void *elt)
+ /* declared in gl_xlist.h */
+ extern gl_list_node_t gl_list_set_last (gl_list_t list, const void *elt);
+ /* Likewise.  Returns NULL upon out-of-memory.  */
+-extern gl_list_node_t gl_list_nx_set_last (gl_list_t list, const void *elt)
+-  _GL_ATTRIBUTE_NODISCARD;
++_GL_ATTRIBUTE_NODISCARD
++extern gl_list_node_t gl_list_nx_set_last (gl_list_t list, const void *elt);
+ 
+ /* Searches whether an element is already in the list.
+    Returns its node if found, or NULL if not present in the list.  */
+@@ -307,16 +307,16 @@ extern size_t gl_list_indexof_from_to (gl_list_t list,
+ /* declared in gl_xlist.h */
+ extern gl_list_node_t gl_list_add_first (gl_list_t list, const void *elt);
+ /* Likewise.  Returns NULL upon out-of-memory.  */
+-extern gl_list_node_t gl_list_nx_add_first (gl_list_t list, const void *elt)
+-  _GL_ATTRIBUTE_NODISCARD;
++_GL_ATTRIBUTE_NODISCARD
++extern gl_list_node_t gl_list_nx_add_first (gl_list_t list, const void *elt);
+ 
+ /* Adds an element as the last element of the list.
+    Returns its node.  */
+ /* declared in gl_xlist.h */
+ extern gl_list_node_t gl_list_add_last (gl_list_t list, const void *elt);
+ /* Likewise.  Returns NULL upon out-of-memory.  */
+-extern gl_list_node_t gl_list_nx_add_last (gl_list_t list, const void *elt)
+-  _GL_ATTRIBUTE_NODISCARD;
++_GL_ATTRIBUTE_NODISCARD
++extern gl_list_node_t gl_list_nx_add_last (gl_list_t list, const void *elt);
+ 
+ /* Adds an element before a given element node of the list.
+    Returns its node.  */
+@@ -324,10 +324,10 @@ extern gl_list_node_t gl_list_nx_add_last (gl_list_t list, const void *elt)
+ extern gl_list_node_t gl_list_add_before (gl_list_t list, gl_list_node_t node,
+                                           const void *elt);
+ /* Likewise.  Returns NULL upon out-of-memory.  */
++_GL_ATTRIBUTE_NODISCARD
+ extern gl_list_node_t gl_list_nx_add_before (gl_list_t list,
+                                              gl_list_node_t node,
+-                                             const void *elt)
+-  _GL_ATTRIBUTE_NODISCARD;
++                                             const void *elt);
+ 
+ /* Adds an element after a given element node of the list.
+    Returns its node.  */
+@@ -335,9 +335,9 @@ extern gl_list_node_t gl_list_nx_add_before (gl_list_t list,
+ extern gl_list_node_t gl_list_add_after (gl_list_t list, gl_list_node_t node,
+                                          const void *elt);
+ /* Likewise.  Returns NULL upon out-of-memory.  */
++_GL_ATTRIBUTE_NODISCARD
+ extern gl_list_node_t gl_list_nx_add_after (gl_list_t list, gl_list_node_t node,
+-                                            const void *elt)
+-  _GL_ATTRIBUTE_NODISCARD;
++                                            const void *elt);
+ 
+ /* Adds an element at a given position in the list.
+    POSITION must be >= 0 and <= gl_list_size (list).  */
+@@ -345,9 +345,9 @@ extern gl_list_node_t gl_list_nx_add_after (gl_list_t list, gl_list_node_t node,
+ extern gl_list_node_t gl_list_add_at (gl_list_t list, size_t position,
+                                       const void *elt);
+ /* Likewise.  Returns NULL upon out-of-memory.  */
++_GL_ATTRIBUTE_NODISCARD
+ extern gl_list_node_t gl_list_nx_add_at (gl_list_t list, size_t position,
+-                                         const void *elt)
+-  _GL_ATTRIBUTE_NODISCARD;
++                                         const void *elt);
+ 
+ /* Removes an element from the list.
+    Returns true.  */
+@@ -488,10 +488,10 @@ extern gl_list_node_t gl_sortedlist_add (gl_list_t list,
+                                          gl_listelement_compar_fn compar,
+                                          const void *elt);
+ /* Likewise.  Returns NULL upon out-of-memory.  */
++_GL_ATTRIBUTE_NODISCARD
+ extern gl_list_node_t gl_sortedlist_nx_add (gl_list_t list,
+                                             gl_listelement_compar_fn compar,
+-                                            const void *elt)
+-  _GL_ATTRIBUTE_NODISCARD;
++                                            const void *elt);
+ 
+ /* Searches and removes an element from the list.
+    The list is assumed to be sorted with COMPAR.
+@@ -630,7 +630,7 @@ gl_list_node_value (gl_list_t list, gl_list_node_t node)
+          ->node_value (list, node);
+ }
+ 
+-GL_LIST_INLINE _GL_ATTRIBUTE_NODISCARD int
++_GL_ATTRIBUTE_NODISCARD GL_LIST_INLINE int
+ gl_list_node_nx_set_value (gl_list_t list, gl_list_node_t node,
+                            const void *elt)
+ {
+@@ -685,20 +685,20 @@ gl_list_get_last (gl_list_t list)
+   return gl_list_get_at (list, gl_list_size (list) - 1);
+ }
+ 
+-GL_LIST_INLINE _GL_ATTRIBUTE_NODISCARD gl_list_node_t
++_GL_ATTRIBUTE_NODISCARD GL_LIST_INLINE gl_list_node_t
+ gl_list_nx_set_at (gl_list_t list, size_t position, const void *elt)
+ {
+   return ((const struct gl_list_impl_base *) list)->vtable
+          ->nx_set_at (list, position, elt);
+ }
+ 
+-GL_LIST_INLINE _GL_ATTRIBUTE_NODISCARD gl_list_node_t
++_GL_ATTRIBUTE_NODISCARD GL_LIST_INLINE gl_list_node_t
+ gl_list_nx_set_first (gl_list_t list, const void *elt)
+ {
+   return gl_list_nx_set_at (list, 0, elt);
+ }
+ 
+-GL_LIST_INLINE _GL_ATTRIBUTE_NODISCARD gl_list_node_t
++_GL_ATTRIBUTE_NODISCARD GL_LIST_INLINE gl_list_node_t
+ gl_list_nx_set_last (gl_list_t list, const void *elt)
+ {
+   return gl_list_nx_set_at (list, gl_list_size (list) - 1, elt);
+@@ -752,35 +752,35 @@ gl_list_indexof_from_to (gl_list_t list, size_t start_index, size_t end_index,
+          ->indexof_from_to (list, start_index, end_index, elt);
+ }
+ 
+-GL_LIST_INLINE _GL_ATTRIBUTE_NODISCARD gl_list_node_t
++_GL_ATTRIBUTE_NODISCARD GL_LIST_INLINE gl_list_node_t
+ gl_list_nx_add_first (gl_list_t list, const void *elt)
+ {
+   return ((const struct gl_list_impl_base *) list)->vtable
+          ->nx_add_first (list, elt);
+ }
+ 
+-GL_LIST_INLINE _GL_ATTRIBUTE_NODISCARD gl_list_node_t
++_GL_ATTRIBUTE_NODISCARD GL_LIST_INLINE gl_list_node_t
+ gl_list_nx_add_last (gl_list_t list, const void *elt)
+ {
+   return ((const struct gl_list_impl_base *) list)->vtable
+          ->nx_add_last (list, elt);
+ }
+ 
+-GL_LIST_INLINE _GL_ATTRIBUTE_NODISCARD gl_list_node_t
++_GL_ATTRIBUTE_NODISCARD GL_LIST_INLINE gl_list_node_t
+ gl_list_nx_add_before (gl_list_t list, gl_list_node_t node, const void *elt)
+ {
+   return ((const struct gl_list_impl_base *) list)->vtable
+          ->nx_add_before (list, node, elt);
+ }
+ 
+-GL_LIST_INLINE _GL_ATTRIBUTE_NODISCARD gl_list_node_t
++_GL_ATTRIBUTE_NODISCARD GL_LIST_INLINE gl_list_node_t
+ gl_list_nx_add_after (gl_list_t list, gl_list_node_t node, const void *elt)
+ {
+   return ((const struct gl_list_impl_base *) list)->vtable
+          ->nx_add_after (list, node, elt);
+ }
+ 
+-GL_LIST_INLINE _GL_ATTRIBUTE_NODISCARD gl_list_node_t
++_GL_ATTRIBUTE_NODISCARD GL_LIST_INLINE gl_list_node_t
+ gl_list_nx_add_at (gl_list_t list, size_t position, const void *elt)
+ {
+   return ((const struct gl_list_impl_base *) list)->vtable
+@@ -891,7 +891,7 @@ gl_sortedlist_indexof_from_to (gl_list_t list, gl_listelement_compar_fn compar,
+                                        elt);
+ }
+ 
+-GL_LIST_INLINE _GL_ATTRIBUTE_NODISCARD gl_list_node_t
++_GL_ATTRIBUTE_NODISCARD GL_LIST_INLINE gl_list_node_t
+ gl_sortedlist_nx_add (gl_list_t list, gl_listelement_compar_fn compar, const void *elt)
+ {
+   return ((const struct gl_list_impl_base *) list)->vtable
+diff --git a/lib/gl_oset.h b/lib/gl_oset.h
+index b9ce896d19..ac90f0445d 100644
+--- a/lib/gl_oset.h
++++ b/lib/gl_oset.h
+@@ -134,9 +134,10 @@ extern bool gl_oset_search_atleast (gl_oset_t set,
+    Returns true if it was not already in the set and added, false otherwise.  */
+ /* declared in gl_xoset.h */
+ extern bool gl_oset_add (gl_oset_t set, const void *elt);
++
+ /* Likewise.  Returns -1 upon out-of-memory.  */
+-extern int gl_oset_nx_add (gl_oset_t set, const void *elt)
+-  _GL_ATTRIBUTE_NODISCARD;
++_GL_ATTRIBUTE_NODISCARD
++extern int gl_oset_nx_add (gl_oset_t set, const void *elt);
+ 
+ /* Removes an element from an ordered set.
+    Returns true if it was found and removed.  */
+@@ -272,7 +273,7 @@ gl_oset_search_atleast (gl_oset_t set,
+          ->search_atleast (set, threshold_fn, threshold, eltp);
+ }
+ 
+-GL_OSET_INLINE _GL_ATTRIBUTE_NODISCARD int
++_GL_ATTRIBUTE_NODISCARD GL_OSET_INLINE int
+ gl_oset_nx_add (gl_oset_t set, const void *elt)
+ {
+   return ((const struct gl_oset_impl_base *) set)->vtable->nx_add (set, elt);
+diff --git a/lib/hash.h b/lib/hash.h
+index a52736d3b6..230d5cd380 100644
+--- a/lib/hash.h
++++ b/lib/hash.h
+@@ -172,21 +172,21 @@ typedef void (*Hash_data_freer) (void *entry);
+    all of your 'data' data.  This is typically the case when your data is
+    simply an auxiliary struct that you have malloc'd to aggregate several
+    values.  */
++_GL_ATTRIBUTE_NODISCARD
+ extern Hash_table *hash_initialize (size_t candidate,
+                                     const Hash_tuning *tuning,
+                                     Hash_hasher hasher,
+                                     Hash_comparator comparator,
+-                                    Hash_data_freer data_freer)
+-       _GL_ATTRIBUTE_NODISCARD;
++                                    Hash_data_freer data_freer);
+ 
+ /* Same as hash_initialize, but invokes xalloc_die on memory exhaustion.  */
+ /* This function is defined by module 'xhash'.  */
++_GL_ATTRIBUTE_NODISCARD
+ extern Hash_table *hash_xinitialize (size_t candidate,
+                                      const Hash_tuning *tuning,
+                                      Hash_hasher hasher,
+                                      Hash_comparator comparator,
+-                                     Hash_data_freer data_freer)
+-       _GL_ATTRIBUTE_NODISCARD;
++                                     Hash_data_freer data_freer);
+ 
+ /* Make all buckets empty, placing any chained entries on the free list.
+    Apply the user-specified function data_freer (if any) to the datas of any
+@@ -210,16 +210,16 @@ extern void hash_free (Hash_table *table);
+    those already in the table, before any other growth of the hash table size
+    occurs.  If TUNING->IS_N_BUCKETS is true, then CANDIDATE specifies the
+    exact number of buckets desired.  Return true iff the rehash succeeded.  */
+-extern bool hash_rehash (Hash_table *table, size_t candidate)
+-       _GL_ATTRIBUTE_NODISCARD;
++_GL_ATTRIBUTE_NODISCARD
++extern bool hash_rehash (Hash_table *table, size_t candidate);
+ 
+ /* If ENTRY matches an entry already in the hash table, return the pointer
+    to the entry from the table.  Otherwise, insert ENTRY and return ENTRY.
+    Return NULL if the storage required for insertion cannot be allocated.
+    This implementation does not support duplicate entries or insertion of
+    NULL.  */
+-extern void *hash_insert (Hash_table *table, const void *entry)
+-       _GL_ATTRIBUTE_NODISCARD;
++_GL_ATTRIBUTE_NODISCARD
++extern void *hash_insert (Hash_table *table, const void *entry);
+ 
+ /* Same as hash_insert, but invokes xalloc_die on memory exhaustion.  */
+ /* This function is defined by module 'xhash'.  */
+@@ -251,8 +251,8 @@ extern void *hash_remove (Hash_table *table, const void *entry);
+ 
+ /* Same as hash_remove.  This interface is deprecated.
+    FIXME: Remove in 2022.  */
+-extern void *hash_delete (Hash_table *table, const void *entry)
+-       _GL_ATTRIBUTE_DEPRECATED;
++_GL_ATTRIBUTE_DEPRECATED
++extern void *hash_delete (Hash_table *table, const void *entry);
+ 
+ # ifdef __cplusplus
+ }
+diff --git a/lib/unistr.in.h b/lib/unistr.in.h
+index 2441a72b81..ed657773c4 100644
+--- a/lib/unistr.in.h
++++ b/lib/unistr.in.h
+@@ -19,9 +19,6 @@
+ 
+ #include "unitypes.h"
+ 
+-/* Get common macros for C.  */
+-#include "unused-parameter.h"
+-
+ /* Get bool.  */
+ #include <stdbool.h>
+ 
+@@ -193,7 +190,7 @@ extern int
+ # else
+ static inline int
+ u32_mbtouc_unsafe (ucs4_t *puc,
+-                   const uint32_t *s, size_t n _GL_UNUSED_PARAMETER)
++                   const uint32_t *s, _GL_ATTRIBUTE_MAYBE_UNUSED size_t n)
+ {
+   uint32_t c = *s;
+ 
+@@ -259,7 +256,8 @@ extern int
+        u32_mbtouc (ucs4_t *puc, const uint32_t *s, size_t n);
+ # else
+ static inline int
+-u32_mbtouc (ucs4_t *puc, const uint32_t *s, size_t n _GL_UNUSED_PARAMETER)
++u32_mbtouc (ucs4_t *puc, const uint32_t *s,
++            _GL_ATTRIBUTE_MAYBE_UNUSED size_t n)
+ {
+   uint32_t c = *s;
+ 
+diff --git a/lib/unused-parameter.h b/lib/unused-parameter.h
+index 34f05d9efb..047a0d895b 100644
+--- a/lib/unused-parameter.h
++++ b/lib/unused-parameter.h
+@@ -14,18 +14,15 @@
+    You should have received a copy of the GNU Lesser General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.  */
+ 
+-/* _GL_UNUSED_PARAMETER is a marker that can be appended to function parameter
++/* _GL_UNUSED_PARAMETER is a marker that can be prepended to function parameter
+    declarations for parameters that are not used.  This helps to reduce
+    warnings, such as from GCC -Wunused-parameter.  The syntax is as follows:
+-       type param _GL_UNUSED_PARAMETER
++       _GL_UNUSED_PARAMETER type param
+    or more generally
+-       param_decl _GL_UNUSED_PARAMETER
++       _GL_UNUSED_PARAMETER param_decl
+    For example:
+-       int param _GL_UNUSED_PARAMETER
+-       int *(*param)(void) _GL_UNUSED_PARAMETER
+-   Other possible, but obscure and discouraged syntaxes:
+-       int _GL_UNUSED_PARAMETER *(*param)(void)
+-       _GL_UNUSED_PARAMETER int *(*param)(void)
++       _GL_UNUSED_PARAMETER int param
++       _GL_UNUSED_PARAMETER int *(*param) (void)
+  */
+ #ifndef _GL_UNUSED_PARAMETER
+ # define _GL_UNUSED_PARAMETER _GL_ATTRIBUTE_MAYBE_UNUSED
