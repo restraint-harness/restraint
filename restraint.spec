@@ -249,6 +249,12 @@ fi
 popd
 %endif
 
+%if %{with_systemd}
+mkdir -p $RPM_BUILD_ROOT/%{_tmpfilesdir}
+install -m 0644 %{name}.conf $RPM_BUILD_ROOT/%{_tmpfilesdir}/%{name}.conf
+%endif
+
+
 %post
 if [ "$1" -le "1" ] ; then # First install
 %if %{with_systemd}
@@ -343,7 +349,12 @@ fi
 %{_datadir}/selinux/packages/%{name}/restraint.pp
 %endif
 
+%if %{with_systemd}
+# Don't package, systemd will create this on first instance
+%exclude /var/lib/%{name}
+%else
 %dir /var/lib/%{name}
+%endif
 
 %files client
 %attr(0755, root, root)%{_bindir}/%{name}
@@ -362,7 +373,8 @@ fi
 %attr(0755, root, root)%{_bindir}/rhts-lint
 %attr(0755, root, root)%{_bindir}/rhts-report-result
 %attr(0755, root, root)%{_bindir}/rhts-flush
-%config(noreplace)/var/lib/%{name}/install_config
+%dir %{_sysconfdir}/%{name}
+%config(noreplace) %{_sysconfdir}/%{name}/install_config
 
 # Symlinks do not have attributes
 %{_bindir}/rhts-sync-set
@@ -381,8 +393,12 @@ fi
 %{_bindir}/rhts_recipe_sync_block
 %{_bindir}/rhts-abort
 %{_datadir}/rhts/lib/rhts-make.include
+%if %{with_systemd}
+%config %{_tmpfilesdir}/%{name}.conf
+%else
 /mnt/scratchspace
 %attr(1777,root,root)/mnt/testarea
+%endif
 %if 0%{?rhel}%{?fedora} > 4
 %{_datadir}/selinux/packages/%{name}/rhts.pp
 %endif
