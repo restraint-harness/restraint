@@ -14,7 +14,7 @@
 %endif
 
 Name:		restraint
-Version:	0.4.5
+Version:	0.4.6
 Release:	1%{?dist}
 Summary:	Simple test harness which can be used with beaker
 
@@ -407,6 +407,19 @@ fi
 %{__rm} -rf %{buildroot}
 
 %changelog
+* Thu Jan 30 2025 Don Zickus <dzickus@redhat.com> 0.4.6-1
+- Support ostree bootc containers (dzickus@redhat.com)
+- Support ostree mount points for /mnt/scratchspace and testarea
+  (dzickus@redhat.com)
+- ci: use latest available fedora (mart.styk@gmail.com)
+- Fix configuration for Packit 1.0.0 (125959684+packit-public-repos-
+  bot@users.noreply.github.com)
+- Disable setting of FORTIFY_SOURCE if already set for m4 (dzickus@redhat.com)
+- Update github actions to checkout@v3 and upload-artifact@v4
+  (dzickus@redhat.com)
+- Disable Centos7 and centos-stream 8 because they are EOL (dzickus@redhat.com)
+- chore: add info on the Matrix community chat channel (john@sodarock.com)
+
 * Thu Jun 13 2024 Martin Styk <mart.styk@gmail.com> 0.4.5-1
 - Upstream release 0.4.5
   https://restraint.readthedocs.io/en/latest/release-notes.html#restraint-0-4-5
