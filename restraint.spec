@@ -16,7 +16,7 @@
 %endif
 
 Name:		restraint
-Version:	0.4.6
+Version:	0.4.7
 Release:	1%{?dist}
 Summary:	Simple test harness which can be used with beaker
 
@@ -409,6 +409,10 @@ fi
 %{__rm} -rf %{buildroot}
 
 %changelog
+* Mon Feb 03 2025 Don Zickus <dzickus@redhat.com> 0.4.7-1
+- Update dist-git release branches (dzickus@redhat.com)
+- Add support for rhel-10 and centos-stream-10 (dzickus@redhat.com)
+
 * Thu Jan 30 2025 Don Zickus <dzickus@redhat.com> 0.4.6-1
 - Support ostree bootc containers (dzickus@redhat.com)
 - Support ostree mount points for /mnt/scratchspace and testarea
