@@ -631,7 +631,7 @@ rstrnt_uploader_override (AppData *app_data)
 
     key_file = g_key_file_new ();
 
-    file = g_build_filename (VAR_LIB_PATH, "log_manager.conf", NULL);
+    file = g_build_filename (ETC_PATH, "log_manager.conf", NULL);
 
     if (!g_key_file_load_from_file (key_file, file, G_KEY_FILE_NONE, &err)) {
         g_debug ("%s(): %s: %s", __func__, file, err->message);
@@ -693,7 +693,7 @@ int main(int argc, char *argv[]) {
   }
 
   if (!app_data->stdin) {
-      app_data->config_file = g_build_filename (VAR_LIB_PATH, config, NULL);
+      app_data->config_file = g_build_filename (ETC_PATH, config, NULL);
       app_data->recipe_url = restraint_config_get_string (app_data->config_file,
                                                           "restraint",
                                                           "recipe_url", &error);
