@@ -20,7 +20,7 @@
 
 #include <libxml/tree.h>
 
-#define VAR_LIB_PATH "/var/lib/restraint"
+#define ETC_PATH "/etc/restraint"
 #define PLUGIN_SCRIPT "/usr/share/restraint/plugins/run_plugins"
 #define TASK_PLUGIN_SCRIPT "/usr/share/restraint/plugins/run_task_plugins"
 #define PLUGIN_DIR "/usr/share/restraint/plugins"

@@ -437,7 +437,7 @@ recipe_parse (xmlDoc *doc, SoupURI *recipe_uri, GError **error, gchar **cfg_file
         gchar *tmp_str;
 
         tmp_str = get_attribute (job, "checkpoint_file");
-        *cfg_file = g_build_filename (VAR_LIB_PATH, tmp_str, NULL);
+        *cfg_file = g_build_filename (ETC_PATH, tmp_str, NULL);
         g_free (tmp_str);
 
         // Hack to make soup_uri_new happy.
