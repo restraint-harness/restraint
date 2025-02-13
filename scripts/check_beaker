@@ -2,7 +2,7 @@
 
 # If we haven't already started running a recipe then check if beaker-harness
 # is defined and if so fetch that recipe.
-if [ ! -e "/var/lib/restraint/config.conf" ]; then
+if [ ! -e "/etc/restraint/config.conf" ]; then
     # Read beaker vars from env
     if [ -e "/etc/profile.d/beaker-harness-env.sh" ]; then
         . /etc/profile.d/beaker-harness-env.sh
@@ -21,7 +21,7 @@ if [ ! -e "/var/lib/restraint/config.conf" ]; then
     done
 
 if [ -n "$BEAKER_LAB_CONTROLLER_URL" -a -n "$BEAKER_RECIPE_ID" ]; then
-    cat <<EOF >/var/lib/restraint/config.conf
+    cat <<EOF >/etc/restraint/config.conf
 [restraint]
 recipe_url=$BEAKER_LAB_CONTROLLER_URL/recipes/$BEAKER_RECIPE_ID/
 EOF
