@@ -16,7 +16,7 @@
 %endif
 
 Name:		restraint
-Version:	0.4.7
+Version:	0.4.8
 Release:	1%{?dist}
 Summary:	Simple test harness which can be used with beaker
 
@@ -409,6 +409,11 @@ fi
 %{__rm} -rf %{buildroot}
 
 %changelog
+* Thu Feb 13 2025 Don Zickus <dzickus@redhat.com> 0.4.8-1
+- Update restraint source to use ETC_PATH instead of VAR_LIB_PATH
+  (bpeck@redhat.com)
+- Update config location for check_beaker (bpeck@redhat.com)
+
 * Mon Feb 03 2025 Don Zickus <dzickus@redhat.com> 0.4.7-1
 - Update dist-git release branches (dzickus@redhat.com)
 - Add support for rhel-10 and centos-stream-10 (dzickus@redhat.com)
