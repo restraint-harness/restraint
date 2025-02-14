@@ -357,6 +357,7 @@ fi
 %else
 %dir /var/lib/%{name}
 %endif
+%dir %{_sysconfdir}/%{name}
 
 %files client
 %attr(0755, root, root)%{_bindir}/%{name}
@@ -375,7 +376,6 @@ fi
 %attr(0755, root, root)%{_bindir}/rhts-lint
 %attr(0755, root, root)%{_bindir}/rhts-report-result
 %attr(0755, root, root)%{_bindir}/rhts-flush
-%dir %{_sysconfdir}/%{name}
 %config(noreplace) %{_sysconfdir}/%{name}/install_config
 
 # Symlinks do not have attributes
