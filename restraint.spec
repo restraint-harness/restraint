@@ -16,7 +16,7 @@
 %endif
 
 Name:		restraint
-Version:	0.4.9
+Version:	0.4.10
 Release:	1%{?dist}
 Summary:	Simple test harness which can be used with beaker
 
@@ -409,6 +409,11 @@ fi
 %{__rm} -rf %{buildroot}
 
 %changelog
+* Wed Feb 19 2025 Don Zickus <dzickus@redhat.com> 0.4.10-1
+- Fix systemd control of /var/lib/restraint to legacy service
+  (dzickus@redhat.com)
+- scripts/rstrnt-package: quote the params to _pkg_cmd (yi.zhang@redhat.com)
+
 * Mon Feb 17 2025 Don Zickus <dzickus@redhat.com> 0.4.9-1
 - Package /etc/restraint correctly (dzickus@redhat.com)
 
