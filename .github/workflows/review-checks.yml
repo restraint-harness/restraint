@@ -101,7 +101,7 @@ jobs:
           fi
       - name: Install Git client (Fedora)
         run: |
-          ${{ env.DNF_COMMAND }} install -y git sudo
+          ${{ env.DNF_COMMAND }} --refresh install -y git sudo hostname
         if: contains(matrix.image, 'fedora')
       - uses: actions/checkout@v3
       - name: Install deps
@@ -116,6 +116,8 @@ jobs:
       - name: Tito Build
         run: |
           tito build --rpm --test -i
+          systemctl status restraintd
+          ls -l /var/lib/restraint
 
   static-build-centos-stream:
     runs-on: ubuntu-latest
@@ -133,7 +135,7 @@ jobs:
           yum install -y epel-release
       - name: Install Git client
         run: |
-          dnf install -y git sudo
+          dnf --refresh install -y git sudo hostname
       - uses: actions/checkout@v3
       - name: Install deps
         run: |
@@ -151,3 +153,5 @@ jobs:
       - name: Tito Build
         run: |
           tito build --rpm --test -i
+          systemctl status restraintd
+          ls -l /var/lib/restraint
