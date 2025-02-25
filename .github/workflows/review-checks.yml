@@ -115,7 +115,7 @@ jobs:
           git config --global --add safe.directory '*'
       - name: Tito Build
         run: |
-          tito build --rpm --test
+          tito build --rpm --test -i
 
   static-build-centos-stream:
     runs-on: ubuntu-latest
@@ -150,4 +150,4 @@ jobs:
           git config --global --add safe.directory '*'
       - name: Tito Build
         run: |
-          tito build --rpm --test
+          tito build --rpm --test -i
