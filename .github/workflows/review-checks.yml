@@ -101,7 +101,7 @@ jobs:
           fi
       - name: Install Git client (Fedora)
         run: |
-          ${{ env.DNF_COMMAND }} install -y git
+          ${{ env.DNF_COMMAND }} install -y git sudo
         if: contains(matrix.image, 'fedora')
       - uses: actions/checkout@v3
       - name: Install deps
@@ -133,7 +133,7 @@ jobs:
           yum install -y epel-release
       - name: Install Git client
         run: |
-          dnf install -y git
+          dnf install -y git sudo
       - uses: actions/checkout@v3
       - name: Install deps
         run: |
