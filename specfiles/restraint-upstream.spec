@@ -73,7 +73,7 @@ fi
 if [ "$1" -le "1" ] ; then # First install
 %systemd_post restraintd
 # Enable restraintd by default
-/bin/systemctl enable restraintd.service >/dev/null 2>&1 || :
+/bin/systemctl start restraintd.service >/dev/null 2>&1 || :
 semodule -i %{_datadir}/selinux/packages/%{name}/restraint.pp || :
 fi
 
