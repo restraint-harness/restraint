@@ -17,25 +17,24 @@ downstream_package_name: restraint
 jobs:
 - job: copr_build
   trigger: pull_request
-  metadata:
-    targets:
-      - centos-stream-8-aarch64
-      - centos-stream-8-x86_64
-      - centos-stream-9-aarch64
-      - centos-stream-9-x86_64
-      - fedora-all-aarch64
-      - fedora-all-s390x
-      - fedora-all-x86_64
-      - epel-all-aarch64
-      - epel-all-x86_64
+  targets:
+    - centos-stream-8-aarch64
+    - centos-stream-8-x86_64
+    - centos-stream-9-aarch64
+    - centos-stream-9-x86_64
+    - fedora-all-aarch64
+    - fedora-all-s390x
+    - fedora-all-x86_64
+    - epel-all-aarch64
+    - epel-all-x86_64
 
 - job: tests
   trigger: pull_request
   targets:
   - centos-stream-9-x86_64
-  env:
-  - BEAKER_LAB_CONTROLLER_URL=foo.redhat.com
-  - BEAKER_RECIPE_ID=12345
+  env: 
+    BEAKER_LAB_CONTROLLER_URL:foo.redhat.com
+    BEAKER_RECIPE_ID:12345
 
 notifications:
   pull_request:
