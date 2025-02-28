@@ -33,6 +33,9 @@ jobs:
   trigger: pull_request
   targets:
   - centos-stream-9-x86_64
+  env:
+  - BEAKER_LAB_CONTROLLER_URL=foo.redhat.com
+  - BEAKER_RECIPE_ID=12345
 
 notifications:
   pull_request:
