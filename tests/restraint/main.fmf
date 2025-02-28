@@ -1,0 +1,18 @@
+/plan:
+    discover:
+        how: fmf
+    execute:
+        how: tmt
+
+/test:
+    summary: Start the restraint daemon
+    test: |
+        systemctl start restraintd
+        systemctl status restraintd
+    require:
+      - restraint
+      - hostname
+      - sudo
+    environment:
+        BEAKER_LAB_CONTROLLER_URL: foo.redhat.com
+        BEAKER_RECIPE_ID: 12345
