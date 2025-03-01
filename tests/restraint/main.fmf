@@ -9,6 +9,8 @@
     test: |
         systemctl start restraintd
         systemctl status restraintd
+        rpm -q restraint
+        sh -x /usr/bin/check_beaker
     require:
       - restraint
       - hostname
