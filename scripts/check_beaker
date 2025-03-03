@@ -25,5 +25,9 @@ if [ -n "$BEAKER_LAB_CONTROLLER_URL" -a -n "$BEAKER_RECIPE_ID" ]; then
 [restraint]
 recipe_url=$BEAKER_LAB_CONTROLLER_URL/recipes/$BEAKER_RECIPE_ID/
 EOF
+else
+    # in case we are not running in a Beaker env, test to make sure we can
+    # still write to the directory.
+    touch /var/lib/restraint/config.conf
 fi
 fi
