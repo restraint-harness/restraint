@@ -32,6 +32,10 @@ jobs:
   trigger: pull_request
   targets:
   - centos-stream-9-x86_64
+  tf_extra_params:
+    test: |
+        systemctl start restraintd
+        systemctl status restraintd
 
 notifications:
   pull_request:
