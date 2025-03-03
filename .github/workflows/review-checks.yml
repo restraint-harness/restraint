@@ -115,9 +115,7 @@ jobs:
           git config --global --add safe.directory '*'
       - name: Tito Build
         run: |
-          tito build --rpm --test -i
-          systemctl status restraintd
-          ls -l /var/lib/restraint
+          tito build --rpm --test
 
   static-build-centos-stream:
     runs-on: ubuntu-latest
@@ -152,6 +150,4 @@ jobs:
           git config --global --add safe.directory '*'
       - name: Tito Build
         run: |
-          tito build --rpm --test -i
-          systemctl status restraintd
-          ls -l /var/lib/restraint
+          tito build --rpm --test
