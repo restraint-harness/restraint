@@ -21,7 +21,11 @@ BuildRequires:		selinux-policy-devel
 BuildRequires:		systemd-units
 BuildRequires:		zlib-devel
 BuildRequires:		glib2-devel
-BuildRequires:		libsoup-devel
+%if 0%{?rhel} >= 10
+BuildRequires: libsoup3-devel
+%else
+BuildRequires: libsoup-devel
+%endif
 BuildRequires:		libarchive-devel
 BuildRequires:		libxml2-devel
 BuildRequires:		json-c-devel
