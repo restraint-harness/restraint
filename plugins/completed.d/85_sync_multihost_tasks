@@ -4,6 +4,12 @@
 # on multihost machines.
 #
 export TASKORDER=$(expr $TASKORDER + 1)
+if rpm -q firewalld &>/dev/null  && systemctl is-active --quiet firewalld; then
+    if ! firewall-cmd --zone=$(firewall-cmd --permanent --get-default-zone 2>/dev/null || echo "public") --query-port=6776/tcp &>/dev/null; then
+        firewall-cmd --permanent --zone=$(firewall-cmd --permanent --get-default-zone 2>/dev/null || echo "public") --add-port=6776/tcp --quiet
+        firewall-cmd --reload --quiet
+    fi
+fi
 if [ -z "$SERVERS" ] || [ -z "$CLIENTS" ]; then
     echo "Skipping Multihost sync .. SERVERS/CLIENTS roles not set"
 else
