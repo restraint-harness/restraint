@@ -13,9 +13,15 @@ PACKAGES += gobject-2.0
 PACKAGES += json-c
 PACKAGES += libarchive
 PACKAGES += libcurl
-PACKAGES += libsoup-2.4
+# PACKAGES += libsoup-2.4
 PACKAGES += libxml-2.0
-
+### detect whether libsoup‑3.0 is available; otherwise fall back to libsoup‑2.4
+SOUP_PKG := $(shell if pkg-config --exists libsoup-3.0; then echo libsoup-3.0; \
+                               elif pkg-config --exists libsoup-2.4; then echo libsoup-2.4; \
+                               fi)
+ifeq ($(SOUP_PKG),)
+$(error "Neither libsoup-3.0 nor libsoup-2.4 found via pkg-config")
+endif
 SRC_DIR = $(abspath ../src)
 
 CFLAGS ?= -Og -g
