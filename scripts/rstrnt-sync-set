@@ -72,4 +72,4 @@ echo "$command -- State set = ${XTRA}_${state}"
 
 rstrnt-sync set ${XTRA}_${state}
 # Record the event in case any tests reboot the system
-echo "${XTRA}_${state}" >> /var/lib/restraint/rstrnt_events
+echo "${XTRA}_${state}" >> /etc/restraint/rstrnt_events
