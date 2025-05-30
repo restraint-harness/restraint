@@ -567,7 +567,7 @@ server listens for events received on `TCP port 6776`.  All subsequent `set`
 and `block` operations are forwarded to the `rstrnt-sync` server by way of
 this socket.
 
-This script also writes the states to the file named `/var/lib/restraint/rstrnt_events`.
+This script also writes the states to the file named `/etc/restraint/rstrnt_events`.
 This file is used when the system reboots enabling the states to be restored.
 
 .. _restraint_client:

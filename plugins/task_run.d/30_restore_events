@@ -7,8 +7,8 @@ rstrnt_info "*** Running Plugin: $0"
 # Don't run from PLUGINS
 if [ -z "$RSTRNT_NOPLUGINS" ]; then
     # If we rebooted we need to re-post all the previous events
-    if [ -e "/var/lib/restraint/rstrnt_events" ]; then
-        for event in $(cat /var/lib/restraint/rstrnt_events); do
+    if [ -e "/etc/restraint/rstrnt_events" ]; then
+        for event in $(cat /etc/restraint/rstrnt_events); do
             rstrnt_info "event $event "$(rstrnt-sync set $event)
         done
     fi
