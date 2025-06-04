@@ -89,12 +89,12 @@ myopen(FetchData *fetch_data, GError **error)
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, cwrite_callback);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, fetch_data->istream);
     curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, fetch_data->curl_error_buf);
-    curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);
+    curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
 
     g_free(uri);
 
     if (fetch_data->ssl_verify == FALSE) {
-        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0);
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
     }
 
     res = curl_multi_add_handle(curlm, curl);
