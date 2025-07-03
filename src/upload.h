@@ -18,11 +18,12 @@
 #ifndef _RESTRAINT_UPLOAD_H
 #define _RESTRAINT_UPLOAD_H
 
+#include <glib.h>
+
 gboolean
-upload_file (SoupSession *session,
-             gchar *filepath,
-             gchar *filename,
-             SoupURI *results_uri,
-             GError **error);
+upload_file_curl (gchar *filepath,
+                  gchar *filename,
+                  const gchar *upload_url,
+                  GError **error);
 
 #endif
