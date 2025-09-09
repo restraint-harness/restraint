@@ -1,6 +1,16 @@
 Release Notes
 =============
 
+Restraint 0.4.12
+---------------
+
+Bug Fixes
+~~~~~~~~~
+
+* | Fix: More changes to use /etc/restraint for config storage
+  | Update to use Fedora 42 and 43.  This required using Fedora's new ca
+certificate path.
+
 Restraint 0.4.5
 ---------------
 
