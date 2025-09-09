@@ -16,7 +16,7 @@
 %endif
 
 Name:		restraint
-Version:	0.4.11
+Version:	0.4.12
 Release:	1%{?dist}
 Summary:	Simple test harness which can be used with beaker
 
@@ -412,6 +412,14 @@ fi
 %{__rm} -rf %{buildroot}
 
 %changelog
+* Tue Sep 09 2025 Don Zickus <dzickus@redhat.com> 0.4.12-1
+- Release Notes for Restraint version 0.4.12 (dzickus@redhat.com)
+- Handle Fedora's new certificate file (dzickus@redhat.com)
+- Update to latest Fedora versions (dzickus@redhat.com)
+- fetch_url: fix curl_easy_setopt long argument warning (mmatsuya@redhat.com)
+- restraint-rhts-set should use /etc/restraint to record anything
+  (mmatsuya@redhat.com)
+
 * Fri May 02 2025 Don Zickus <dzickus@redhat.com> 0.4.11-1
 - fix mutihost sync issue (houminxi@google.com)
 
