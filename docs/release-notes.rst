@@ -1,6 +1,15 @@
 Release Notes
 =============
 
+Restraint 0.4.13
+---------------
+
+Bug Fixes
+~~~~~~~~~
+
+* | Messed up the tagging and release of 0.4.12.  A bad commit slipped in
+and was reverted.
+
 Restraint 0.4.12
 ---------------
 
