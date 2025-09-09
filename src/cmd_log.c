@@ -17,7 +17,7 @@
 
 #include <glib.h>
 #include <gio/gio.h>
-#include <curl/curl.h>
+#include <libsoup/soup.h>
 #include "cmd_log.h"
 #include "cmd_utils.h"
 #include "errors.h"
@@ -97,25 +97,44 @@ parse_cleanup:
 gboolean
 upload_log (LogAppData *app_data, GError **error)
 {
+    SoupSession *session;
+    SoupURI *result_uri = NULL;
     gchar *basename = NULL;
     gboolean ret = TRUE;
-    gchar *upload_url = NULL;
+
+    result_uri = soup_uri_new (app_data->s.server);
+    if (!result_uri) {
+        g_set_error (error, RESTRAINT_ERROR,
+                     RESTRAINT_PARSE_ERROR_BAD_SYNTAX,
+                     "Malformed server url: %s", app_data->s.server);
+        ret = FALSE;
+        goto upload_cleanup;
+    }
+    session = soup_session_new_with_options("timeout", 3600, NULL);
 
     basename = g_filename_display_basename (app_data->filename);
-    upload_url = g_strdup_printf ("%s/logs/%s", app_data->s.server, basename);
-    
+    gchar *location = g_strdup_printf ("%s/logs/%s", app_data->s.server, basename);
+    soup_uri_free(result_uri);
+    result_uri = soup_uri_new (location);
+    g_free (location);
     if (g_file_test (app_data->filename, G_FILE_TEST_EXISTS))
     {
         g_print ("Uploading %s ", basename);
-        if (upload_file_curl (app_data->filename, basename, upload_url, error)) {
+        if (upload_file (session, app_data->filename, basename, result_uri, error)) {
             g_print ("done\n");
         } else {
             ret = FALSE;
             g_print ("failed\n");
         }
     }
-    
     g_free(basename);
-    g_free(upload_url);
+    soup_session_abort(session);
+    g_object_unref(session);
+
+upload_cleanup:
+    if (result_uri != NULL) {
+        soup_uri_free (result_uri);
+    }
     return ret;
+
 }

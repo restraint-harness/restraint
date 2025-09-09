@@ -18,96 +18,122 @@
 #include <glib.h>
 #include <gio/gio.h>
 #include <libsoup/soup.h>
-#include <curl/curl.h>
-#include <sys/stat.h>
-#include <stdio.h>
-#include "errors.h"
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
 
-gboolean
-upload_file_curl (gchar *filepath,
-                  gchar *filename,
-                  const gchar *upload_url,
-                  GError **error)
+#define READ_BUFFER_SIZE 131072
+static gchar input_buf[READ_BUFFER_SIZE];
+static gssize offset = 0;
+
+static gint
+upload_chunk (SoupSession *session,
+              GInputStream *in,
+              guint64 filesize,
+              guint64 bytes_left,
+              SoupURI *result_log_uri,
+              GError **error)
 {
-    CURL *curl;
-    CURLcode res;
-    FILE *file;
-    struct stat file_info;
-    long response_code;
-    gboolean result = TRUE;
-    
-    /* Get file size */
-    if (stat(filepath, &file_info) != 0) {
-        g_set_error (error, RESTRAINT_ERROR,
-                     RESTRAINT_PARSE_ERROR_BAD_SYNTAX,
-                     "Error getting file info: %s", filepath);
+    SoupMessage *server_msg;
+    gchar *range;
+    gssize bytes_read;
+    gint ret;
+    GError *tmp_error = NULL;
+    bytes_read = g_input_stream_read (
+        in, input_buf, (bytes_left < READ_BUFFER_SIZE) ? bytes_left : READ_BUFFER_SIZE,
+        NULL, &tmp_error);
+    if (tmp_error) {
+        g_propagate_error (error, tmp_error);
+        return -1;
+    }
+    if (bytes_read > 0) {
+        server_msg = soup_message_new_from_uri ("PUT", result_log_uri);
+        range = g_strdup_printf ("bytes %" G_GSSIZE_FORMAT "-%" G_GSSIZE_FORMAT "/%" G_GUINT64_FORMAT,
+                                 offset,
+                                 offset + bytes_read - 1,
+                                 filesize);
+        offset += bytes_read;
+        soup_message_headers_append (server_msg->request_headers, "Content-Range", range);
+        g_free (range);
+        soup_message_set_request (server_msg, "text/plain", SOUP_MEMORY_COPY, input_buf, bytes_read);
+        ret = soup_session_send_message (session, server_msg);
+        if (SOUP_STATUS_IS_SUCCESSFUL (ret)) {
+            return bytes_read;
+        } else {
+            g_set_error_literal (error, SOUP_HTTP_ERROR, server_msg->status_code,
+                                     server_msg->reason_phrase);
+            g_object_unref (server_msg);
+            return -1;
+        }
+    }
+    return 0;
+}
+
+gboolean
+upload_file (SoupSession *session,
+             gchar *filepath,
+             gchar *filename,
+             SoupURI *results_uri,
+             GError **error)
+{
+    GFile *f = g_file_new_for_path (filepath);
+    GFileInputStream *fis = NULL;
+    GFileInfo *fileinfo = NULL;
+    guint64 filesize, uploaded;
+    GError *tmp_error = NULL;
+    SoupURI *result_log_uri;
+    gint ret;
+    char *uri_estring_filename = NULL;
+
+    fileinfo = g_file_query_info (f, "standard::*", G_FILE_QUERY_INFO_NONE,
+                                  NULL, &tmp_error);
+    if (tmp_error != NULL) {
+        g_propagate_prefixed_error (error, tmp_error,
+            "Error querying: %s ", filepath);
+        g_object_unref (f);
         return FALSE;
     }
-    
-    /* Open file for reading */
-    file = fopen(filepath, "rb");
-    if (!file) {
-        g_set_error (error, RESTRAINT_ERROR,
-                     RESTRAINT_PARSE_ERROR_BAD_SYNTAX,
-                     "Error opening file: %s", filepath);
+
+    filesize = g_file_info_get_attribute_uint64 (
+                   fileinfo, G_FILE_ATTRIBUTE_STANDARD_SIZE);
+    g_object_unref(fileinfo);
+
+    /* get input stream */
+    fis = g_file_read (f, NULL, &tmp_error);
+
+    if (tmp_error != NULL) {
+        g_propagate_prefixed_error (error, tmp_error,
+            "Error opening: %s ", filepath);
+        g_object_unref (f);
         return FALSE;
     }
-    
-    /* Initialize curl */
-    curl = curl_easy_init();
-    if (!curl) {
-        g_set_error (error, RESTRAINT_ERROR,
-                     RESTRAINT_PARSE_ERROR_BAD_SYNTAX,
-                     "Failed to initialize curl");
-        fclose(file);
+
+    uri_estring_filename = g_uri_escape_string(filename, NULL, FALSE);
+    result_log_uri = soup_uri_new_with_base (results_uri,
+                                             uri_estring_filename);
+    uploaded = 0;
+    while (uploaded < filesize) {
+        ret = upload_chunk (
+            session, G_INPUT_STREAM (fis), filesize, (filesize - uploaded),
+            result_log_uri, &tmp_error);
+        if (ret < 0) {
+            break;
+        } else {
+            uploaded += ret;
+            // replace with callback
+            g_print (".");
+        }
+    }
+
+    g_free(uri_estring_filename);
+    soup_uri_free (result_log_uri);
+    g_object_unref(fis);
+    g_object_unref (f);
+
+    if (tmp_error) {
+        g_propagate_prefixed_error (error, tmp_error,
+            "Error uploading: %s ", filepath);
         return FALSE;
     }
-    
-    /* Set curl options */
-    curl_easy_setopt(curl, CURLOPT_URL, upload_url);
-    curl_easy_setopt(curl, CURLOPT_UPLOAD, 1L);
-    curl_easy_setopt(curl, CURLOPT_READDATA, file);
-    curl_easy_setopt(curl, CURLOPT_INFILESIZE_LARGE, (curl_off_t)file_info.st_size);
-    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 3600L);
-    curl_easy_setopt(curl, CURLOPT_USERAGENT, "restraint-client");
-    curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-    curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 10L);
-    
-    /* Set content type header */
-    struct curl_slist *headers = NULL;
-    headers = curl_slist_append(headers, "Content-Type: text/plain");
-    if (headers) {
-        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
-    }
-    
-    /* Perform the upload */
-    res = curl_easy_perform(curl);
-    
-    if (res != CURLE_OK) {
-        g_set_error (error, RESTRAINT_ERROR,
-                     RESTRAINT_PARSE_ERROR_BAD_SYNTAX,
-                     "Failed to upload file: %s", curl_easy_strerror(res));
-        result = FALSE;
-        goto cleanup;
-    }
-    
-    /* Check HTTP response code */
-    curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
-    if (response_code < 200 || response_code >= 300) {
-        g_set_error (error, RESTRAINT_ERROR,
-                     RESTRAINT_PARSE_ERROR_BAD_SYNTAX,
-                     "Upload failed with HTTP status: %ld", response_code);
-        result = FALSE;
-    }
-    
-cleanup:
-    if (headers) {
-        curl_slist_free_all(headers);
-    }
-    curl_easy_cleanup(curl);
-    fclose(file);
-    
-    return result;
+
+    return uploaded == filesize;
 }

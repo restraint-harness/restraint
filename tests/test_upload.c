@@ -17,12 +17,12 @@
 
 #include <glib.h>
 #include <glib/gstdio.h>
-#include <curl/curl.h>
+#include <libsoup/soup.h>
 
 #include "upload.h"
-#include "errors.h"
 
 gchar *tmp_test_dir = NULL;
+SoupSession *soup_session = NULL;
 
 static void
 mk_dummy_log (const gchar *path,
@@ -54,7 +54,7 @@ test_upload_file_dummy_log (void)
     gsize                log_size;
     g_autofree gchar    *log_path = NULL;
     g_autoptr (GError)   err = NULL;
-    const gchar         *upload_url = "http://localhost:8000/";
+    g_autoptr (SoupURI)  uri = NULL;
 
     log_path = g_build_filename (tmp_test_dir, "dummy.log", NULL);
 
@@ -62,7 +62,9 @@ test_upload_file_dummy_log (void)
 
     mk_dummy_log (log_path, log_size);
 
-    success = upload_file_curl (log_path, "dummy.log", upload_url, &err);
+    uri = soup_uri_new ("http://localhost:8000/");
+
+    success = upload_file (soup_session, log_path, "dummy.log", uri, &err);
 
     g_assert_no_error (err);
     g_assert_true (success);
@@ -79,15 +81,17 @@ test_upload_file_bad_host (void)
     gboolean             success;
     g_autofree gchar    *log_path = NULL;
     g_autoptr (GError)   err = NULL;
-    const gchar         *upload_url = "https://thehostthatdoesntexist:8123/";
+    g_autoptr (SoupURI)  uri = NULL;
 
     log_path = g_build_filename (tmp_test_dir, "dummy.log", NULL);
 
     mk_dummy_log (log_path, 1);
 
-    success = upload_file_curl (log_path, "dummy.log", upload_url, &err);
+    uri = soup_uri_new ("https://thehostthatdoesntexist:8123/");
 
-    g_assert_error (err, RESTRAINT_ERROR, RESTRAINT_PARSE_ERROR_BAD_SYNTAX);
+    success = upload_file (soup_session, log_path, "dummy.log", uri, &err);
+
+    g_assert_error (err, SOUP_HTTP_ERROR, SOUP_STATUS_CANT_RESOLVE);
     g_assert_false (success);
 
     g_remove (log_path);
@@ -101,11 +105,13 @@ test_upload_file_no_file (void)
 {
     gboolean            success;
     g_autoptr (GError)  err = NULL;
-    const gchar        *upload_url = "http://localhost:8000/";
+    g_autoptr (SoupURI) uri = NULL;
 
-    success = upload_file_curl ("the/file/that/doesnt/exist", "neexistuje", upload_url, &err);
+    uri = soup_uri_new ("http://localhost:8000/");
 
-    g_assert_error (err, RESTRAINT_ERROR, RESTRAINT_PARSE_ERROR_BAD_SYNTAX);
+    success = upload_file (soup_session, "the/file/that/doesnt/exist", "neexistuje", uri, &err);
+
+    g_assert_error (err, G_IO_ERROR, G_IO_ERROR_NOT_FOUND);
     g_assert_false (success);
 }
 
@@ -116,9 +122,7 @@ main (int    argc,
     int retval;
 
     tmp_test_dir = g_dir_make_tmp ("test_upload_XXXXXX", NULL);
-
-    /* Initialize curl globally */
-    curl_global_init(CURL_GLOBAL_DEFAULT);
+    soup_session = soup_session_new ();
 
     g_test_init (&argc, &argv, NULL);
 
@@ -128,9 +132,7 @@ main (int    argc,
 
     retval = g_test_run ();
 
-    /* Cleanup curl */
-    curl_global_cleanup();
-    
+    g_object_unref (soup_session);
     g_remove (tmp_test_dir);
     g_free (tmp_test_dir);
 
