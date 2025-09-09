@@ -11,7 +11,7 @@ jobs:
       fail-fast: false
       matrix:
         image: [quay.io/fedora/fedora]
-        version: ["40", "41"]
+        version: ["42", "43"]
     runs-on: ubuntu-latest
     container:
       image: ${{ matrix.image }}:${{ matrix.version }}
@@ -39,7 +39,7 @@ jobs:
       fail-fast: false
       matrix:
         image: [quay.io/fedora/fedora]
-        version: ["40", "41"]
+        version: ["42", "43"]
     runs-on: ubuntu-latest
     container:
       image: ${{ matrix.image }}:${{ matrix.version }}
