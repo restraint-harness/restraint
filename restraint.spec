@@ -16,7 +16,7 @@
 %endif
 
 Name:		restraint
-Version:	0.4.12
+Version:	0.4.13
 Release:	1%{?dist}
 Summary:	Simple test harness which can be used with beaker
 
@@ -412,6 +412,16 @@ fi
 %{__rm} -rf %{buildroot}
 
 %changelog
+* Tue Sep 09 2025 Don Zickus <dzickus@redhat.com> 0.4.13-1
+- Release Notes for Restraint version 0.4.13 (dzickus@redhat.com)
+- Revert "Convert src/cmd_ files from libsoup to libcurl" (dzickus@redhat.com)
+- Automatic commit of package [restraint] release [0.4.12-1].
+  (dzickus@redhat.com)
+- Release Notes for Restraint version 0.4.12 (dzickus@redhat.com)
+- Convert src/cmd_ files from libsoup to libcurl (dzickus@redhat.com)
+- Handle Fedora's new certificate file (dzickus@redhat.com)
+- Update to latest Fedora versions (dzickus@redhat.com)
+
 * Tue Sep 09 2025 Don Zickus <dzickus@redhat.com> 0.4.12-1
 - Release Notes for Restraint version 0.4.12 (dzickus@redhat.com)
 - Handle Fedora's new certificate file (dzickus@redhat.com)

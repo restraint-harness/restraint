@@ -1,5 +1,5 @@
 Name:		restraint
-Version:	0.4.12
+Version:	0.4.13
 Release:	1%{?dist}
 Summary:	Simple test harness which can be used with beaker
 
