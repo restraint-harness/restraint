@@ -177,6 +177,9 @@ export CFLAGS="$RPM_OPT_FLAGS -march=i486"
 
 %if 0%{?with_static:1}
 pushd third-party
+%if ( 0%{?fedora} && 0%{?fedora} < 41 ) || ( 0%{?rhel} && 0%{?rhel} < 11 )
+rm use_fedora_new_ca_bundle_path.txt
+%endif
 %if ( 0%{?fedora} && 0%{?fedora} < 35 ) || ( 0%{?rhel} && 0%{?rhel} < 9 )
 rm glib_new_close_range_arg.patch
 %endif

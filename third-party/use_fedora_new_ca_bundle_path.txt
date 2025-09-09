@@ -1,0 +1,7 @@
+Fedora wanted to increase the performance of the openssl directory-hash by
+dropping the old cert.pem file.  This means removing ca-certificates.crt
+file.  The new file is /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem.
+
+Point the curl configure file to the new location.
+
+See https://fedoraproject.org/wiki/Changes/droppingOfCertPemFile.
