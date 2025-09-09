@@ -17,7 +17,7 @@
 
 #include <glib.h>
 #include <gio/gio.h>
-#include <curl/curl.h>
+#include <libsoup/soup.h>
 
 #include "cmd_utils.h"
 #include "cmd_abort.h"
@@ -86,68 +86,39 @@ gboolean
 upload_abort (AbortAppData *app_data, GError **error)
 {
     gboolean result = TRUE;
-    CURL *curl;
-    CURLcode res;
-    long response_code;
-    char *form_data = NULL;
-    struct curl_slist *headers = NULL;
+    guint ret = 0;
+    SoupSession *session;
 
-    /* Initialize curl */
-    curl = curl_easy_init();
-    if (!curl) {
+    SoupURI *server_uri = NULL;
+
+    server_uri = soup_uri_new(app_data->s.server);
+    if (!server_uri) {
         g_set_error (error, RESTRAINT_ERROR,
                      RESTRAINT_PARSE_ERROR_BAD_SYNTAX,
-                     "Failed to initialize curl");
+                     "Malformed server url: %s", app_data->s.server);
         result = FALSE;
         goto upload_cleanup;
     }
-
-    /* Prepare form data */
-    form_data = g_strdup("status=Aborted");
-
-    /* Set curl options */
-    curl_easy_setopt(curl, CURLOPT_URL, app_data->s.server);
-    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, form_data);
-    curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, strlen(form_data));
-    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 3600L);
-    curl_easy_setopt(curl, CURLOPT_USERAGENT, "restraint-client");
-    curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-    curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 10L);
-    
-    /* Set content type header */
-    headers = curl_slist_append(headers, "Content-Type: application/x-www-form-urlencoded");
-    if (!headers) {
-	goto upload_cleanup;
-    }
-    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
-
-    /* Perform the request */
-    res = curl_easy_perform(curl);
-    
-    if (res != CURLE_OK) {
-        g_set_error (error, RESTRAINT_ERROR,
-                     RESTRAINT_PARSE_ERROR_BAD_SYNTAX,
-                     "Failed to abort job: %s", curl_easy_strerror(res));
-        result = FALSE;
-        goto upload_cleanup;
-    }
-
-    /* Check HTTP response code */
-    curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
-    if (response_code < 200 || response_code >= 300) {
-        g_warning ("Failed to abort job, HTTP status: %ld\n", response_code);
+    session = soup_session_new_with_options("timeout", 3600, NULL);
+    SoupMessage *msg = soup_message_new_from_uri("POST", server_uri);
+    char *form = soup_form_encode("status", "Aborted", NULL);
+    soup_message_set_request (msg, "application/x-www-form-urlencoded",
+                              SOUP_MEMORY_TAKE, form, strlen (form));
+    ret = soup_session_send_message(session, msg);
+    if (!SOUP_STATUS_IS_SUCCESSFUL(ret)) {
+        g_warning ("Failed to abort job, status: %d Message: %s\n", ret,
+                   msg->reason_phrase);
         result = FALSE;
     }
+
+    g_object_unref(msg);
+    soup_session_abort(session);
+    g_object_unref(session);
 
 upload_cleanup:
-    if (headers) {
-        curl_slist_free_all(headers);
-    }
-    if (form_data) {
-        g_free(form_data);
-    }
-    if (curl) {
-        curl_easy_cleanup(curl);
+
+    if (server_uri != NULL) {
+        soup_uri_free (server_uri);
     }
 
     return (result);

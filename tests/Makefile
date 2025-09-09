@@ -303,7 +303,6 @@ test_task.o: $(SRC_DIR)/task.c
 #
 UPLOAD_OBJS =
 UPLOAD_OBJS += upload.o
-UPLOAD_OBJS += errors.o
 
 RESTRAINT_OBJS += $(UPLOAD_OBJS)
 

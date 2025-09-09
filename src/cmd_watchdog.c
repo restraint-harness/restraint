@@ -19,7 +19,7 @@
 #include <gio/gio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <curl/curl.h>
+#include <libsoup/soup.h>
 #include <unistd.h>
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
@@ -103,79 +103,53 @@ parse_cleanup:
 gboolean
 upload_watchdog (WatchdogAppData *app_data, GError **error)
 {
-    CURL *curl;
-    CURLcode res;
-    long response_code;
-    char *form_data = NULL;
-    char *form_seconds = NULL;
+    SoupSession *session;
+    SoupURI *watchdog_uri = NULL;
+    gchar *form_data;
+    gchar *form_seconds;
+    GHashTable *data_table = g_hash_table_new (NULL, NULL);
+    gint ret = 0;
     gboolean result = TRUE;
-    struct curl_slist *headers = NULL;
 
-    /* Initialize curl */
-    curl = curl_easy_init();
-    if (!curl) {
+    watchdog_uri = soup_uri_new (app_data->s.server);
+
+    if (!watchdog_uri) {
         g_set_error (error, RESTRAINT_ERROR,
                      RESTRAINT_PARSE_ERROR_BAD_SYNTAX,
-                     "Failed to initialize curl");
+                     "Malformed server url: %s", app_data->s.server);
         result = FALSE;
         goto cleanup;
     }
-
-    /* Prepare form data */
+    session = soup_session_new_with_options("timeout", 3600, NULL);
+    SoupMessage *server_msg = soup_message_new_from_uri ("POST", watchdog_uri);
     form_seconds = g_strdup_printf ("%" G_GUINT64_FORMAT, app_data->seconds);
-    form_data = g_strdup_printf("seconds=%s", form_seconds);
+    g_hash_table_insert (data_table, "seconds", form_seconds);
+    form_data = soup_form_encode_hash (data_table);
+    g_free (form_seconds);
+    soup_message_set_request (server_msg, "application/x-www-form-urlencoded",
+                              SOUP_MEMORY_TAKE, form_data, strlen (form_data));
 
-    /* Set curl options */
-    curl_easy_setopt(curl, CURLOPT_URL, app_data->s.server);
-    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, form_data);
-    curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, strlen(form_data));
-    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 3600L);
-    curl_easy_setopt(curl, CURLOPT_USERAGENT, "restraint-client");
-    curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-    curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 10L);
-    
-    /* Set content type header */
-    headers = curl_slist_append(headers, "Content-Type: application/x-www-form-urlencoded");
-    if (!headers) {
-	goto cleanup;
-    }
-    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
-
-    /* Perform the request */
-    res = curl_easy_perform(curl);
-    
-    if (res != CURLE_OK) {
-        g_set_error (error, RESTRAINT_ERROR,
-                     RESTRAINT_PARSE_ERROR_BAD_SYNTAX,
-                     "Failed to adjust watchdog: %s", curl_easy_strerror(res));
-        result = FALSE;
-        goto cleanup;
-    }
-
-    /* Check HTTP response code */
-    curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
-    if (response_code >= 200 && response_code < 300) {
+    ret = soup_session_send_message (session, server_msg);
+    if (SOUP_STATUS_IS_SUCCESSFUL (ret)) {
         if (app_data->seconds < HEARTBEAT) {
             g_warning ("Expect up to a 1 minute delay for watchdog thread to notice change.\n");
         }
     } else {
         result = FALSE;
-        g_warning ("Failed to adjust watchdog, HTTP status: %ld\n", response_code);
+        g_warning ("Failed to adjust watchdog, status: %d Message: %s\n", ret,
+                   server_msg->reason_phrase);
     }
+    g_object_unref(server_msg);
+
+    soup_session_abort(session);
+    g_object_unref(session);
 
 cleanup:
-    if (headers) {
-        curl_slist_free_all(headers);
-    }
-    if (form_data) {
-        g_free(form_data);
-    }
-    if (form_seconds) {
-        g_free(form_seconds);
-    }
-    if (curl) {
-        curl_easy_cleanup(curl);
-    }
+    g_hash_table_destroy(data_table);
 
+    if (watchdog_uri != NULL) {
+        soup_uri_free (watchdog_uri);
+    }
     return result;
+
 }

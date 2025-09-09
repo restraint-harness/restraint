@@ -19,7 +19,7 @@
 #include <gio/gio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <curl/curl.h>
+#include <libsoup/soup.h>
 #include "upload.h"
 #include "utils.h"
 #include "errors.h"
@@ -257,73 +257,28 @@ gboolean parse_arguments(AppData *app_data, int argc, char *argv[])
     }
 }
 
-/* Structure to hold response data */
-struct ResponseData {
-    char *data;
-    size_t size;
-};
-
-/* Callback function to capture response data */
-static size_t WriteCallback(void *contents, size_t size, size_t nmemb, struct ResponseData *response) {
-    size_t realsize = size * nmemb;
-    response->data = realloc(response->data, response->size + realsize + 1);
-    if (response->data == NULL) {
-        /* Out of memory */
-        return 0;
-    }
-    memcpy(&(response->data[response->size]), contents, realsize);
-    response->size += realsize;
-    response->data[response->size] = 0;
-    return realsize;
-}
-
-/* Helper function to URL encode form data */
-static gchar* encode_form_data(GHashTable *data_table) {
-    GString *form_data = g_string_new("");
-    GHashTableIter iter;
-    gpointer key, value;
-    gboolean first = TRUE;
-    
-    g_hash_table_iter_init(&iter, data_table);
-    while (g_hash_table_iter_next(&iter, &key, &value)) {
-        if (!first) {
-            g_string_append(form_data, "&");
-        }
-        first = FALSE;
-        
-        gchar *encoded_key = g_uri_escape_string((gchar*)key, NULL, FALSE);
-        gchar *encoded_value = g_uri_escape_string((gchar*)value, NULL, FALSE);
-        g_string_append_printf(form_data, "%s=%s", encoded_key, encoded_value);
-        g_free(encoded_key);
-        g_free(encoded_value);
-    }
-    
-    return g_string_free(form_data, FALSE);
-}
-
 gboolean upload_results(AppData *app_data) {
     GError *error = NULL;
-    CURL *curl;
-    CURLcode res;
-    long response_code;
-    struct ResponseData response = {0};
-    
-    gchar *form_data = NULL;
-    GHashTable *data_table = g_hash_table_new (NULL, NULL);
-    gboolean result = TRUE;
-    struct curl_slist *headers = NULL;
+    SoupURI *result_uri = NULL;
 
-    /* Initialize curl */
-    curl = curl_easy_init();
-    if (!curl) {
+    guint ret = 0;
+
+    SoupSession *session;
+    SoupMessage *server_msg;
+    SoupRequest *request;
+
+    gchar *form_data;
+    GHashTable *data_table = g_hash_table_new (NULL, NULL);
+
+    result_uri = soup_uri_new (app_data->s.server);
+    if (result_uri == NULL) {
         g_set_error (&error, RESTRAINT_ERROR,
                      RESTRAINT_PARSE_ERROR_BAD_SYNTAX,
-                     "Failed to initialize curl");
-        result = FALSE;
+                     "Malformed server url: %s", app_data->s.server);
         goto cleanup;
     }
+    session = soup_session_new_with_options("timeout", 3600, NULL);
 
-    /* Prepare form data */
     g_hash_table_insert (data_table, "path", app_data->test_name);
     g_hash_table_insert (data_table, "result", app_data->test_result);
 
@@ -346,91 +301,44 @@ gboolean upload_results(AppData *app_data) {
     if (app_data->result_msg)
       g_hash_table_insert (data_table, "message", app_data->result_msg);
 
-    /* Encode form data */
-    form_data = encode_form_data(data_table);
-    
-    /* Set curl options */
-    curl_easy_setopt(curl, CURLOPT_URL, app_data->s.server);
-    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, form_data);
-    curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, strlen(form_data));
-    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 3600L);
-    curl_easy_setopt(curl, CURLOPT_USERAGENT, "restraint-client");
-    curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-    curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 10L);
-    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
-    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
-    
-    /* Set content type header */
-    headers = curl_slist_append(headers, "Content-Type: application/x-www-form-urlencoded");
-    if (!headers) {
-	goto cleanup; 
-    }
-    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
-
+    request = (SoupRequest *)soup_session_request_http_uri (session, "POST", result_uri, &error);
+    server_msg = soup_request_http_get_message (SOUP_REQUEST_HTTP (request));
+    g_object_unref(request);
+    form_data = soup_form_encode_hash (data_table);
+    soup_message_set_request (server_msg, "application/x-www-form-urlencoded",
+                              SOUP_MEMORY_TAKE, form_data, strlen (form_data));
     g_print ("** %s %s Score:%s\n", app_data->test_name, app_data->test_result,
         app_data->score != NULL ? app_data->score : "N/A");
 
-    /* Perform the request */
-    res = curl_easy_perform(curl);
-    
-    if (res != CURLE_OK) {
-        g_set_error (&error, RESTRAINT_ERROR,
-                     RESTRAINT_PARSE_ERROR_BAD_SYNTAX,
-                     "Failed to submit result: %s", curl_easy_strerror(res));
-        result = FALSE;
-        goto cleanup;
-    }
-
-    /* Check HTTP response code */
-    curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
-    if (response_code >= 200 && response_code < 300) {
-        /* Parse Location header from response for file upload */
-        char *location_header = NULL;
-        curl_easy_getinfo(curl, CURLINFO_REDIRECT_URL, &location_header);
-        
-        if (location_header == NULL && response.data) {
-            /* Try to extract location from response headers if available */
-            char *location_start = strstr(response.data, "Location: ");
-            if (location_start) {
-                location_start += 10; /* Skip "Location: " */
-                char *location_end = strstr(location_start, "\r\n");
-                if (location_end) {
-                    location_header = g_strndup(location_start, location_end - location_start);
-                }
-            }
-        }
-        
-        if (location_header && app_data->outputfile != NULL &&
+    ret = soup_session_send_message (session, server_msg);
+    if (SOUP_STATUS_IS_SUCCESSFUL (ret)) {
+        gchar *location = g_strdup_printf ("%s/logs/",
+                                           soup_message_headers_get_one (server_msg->response_headers, "Location"));
+        soup_uri_free (result_uri);
+        result_uri = soup_uri_new (location);
+        g_free (location);
+        if (app_data->outputfile != NULL &&
             g_file_test (app_data->outputfile, G_FILE_TEST_EXISTS))
         {
-            gchar *upload_url = g_strdup_printf ("%s/logs/", location_header);
             g_print ("Uploading %s ", app_data->filename);
-            if (upload_file_curl (app_data->outputfile, app_data->filename, upload_url, &error)) {
+            if (upload_file (session, app_data->outputfile, app_data->filename, result_uri, &error)) {
                 g_print ("done\n");
             } else {
                 g_print ("failed\n");
             }
-            g_free(upload_url);
         }
     } else {
-        g_warning ("Failed to submit result, HTTP status: %ld\n", response_code);
-        result = FALSE;
+       g_warning ("Failed to submit result, status: %d Message: %s\n", ret, server_msg->reason_phrase);
     }
+    g_object_unref(server_msg);
+    soup_session_abort(session);
+    g_object_unref(session);
 
 cleanup:
-    if (headers) {
-        curl_slist_free_all(headers);
-    }
-    if (form_data) {
-        g_free(form_data);
-    }
-    if (response.data) {
-        free(response.data);
-    }
-    if (curl) {
-        curl_easy_cleanup(curl);
-    }
     g_hash_table_destroy(data_table);
+    if (result_uri != NULL) {
+        soup_uri_free (result_uri);
+    }
 
     if (error) {
         g_printerr("%s [%s, %d]\n", error->message,
@@ -438,6 +346,6 @@ cleanup:
         g_clear_error(&error);
         return FALSE;
     } else {
-        return result;
+        return TRUE;
     }
 }
