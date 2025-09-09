@@ -133,11 +133,14 @@ tree/lib/pkgconfig/libsoup-2.4.pc: $(LIBSOUP) $(LIBSOUP)/.patches-done tree/lib/
 	( PATH=$(CURDIR)/tree/bin:$(PATH) $(MAKE) -C $(LIBSOUP) )
 	$(MAKE) -C $(LIBSOUP) install
 
+CURL_CONFIG_CA_BUNDLE=$(shell test -e "use_fedora_new_ca_bundle_path.txt" && \
+		 echo "--with-ca-bundle=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem")
+
 tree/lib/pkgconfig/libcurl.pc: $(CURL) tree/lib/pkgconfig/zlib.pc tree/lib/pkgconfig/openssl.pc
 	( cd $(CURL) && PKG_CONFIG_PATH=../tree/lib/pkgconfig ./configure --prefix=$(CURDIR)/tree \
 	    --with-zlib=$(CURDIR)/tree --with-ssl --enable-ipv6 --disable-manual \
 	    --enable-static --disable-shared --disable-ldap --disable-ldaps --without-libidn --without-libssh2 \
-	    --without-brotli --without-libpsl)
+	    --without-brotli --without-libpsl $(CURL_CONFIG_CA_BUNDLE))
 	$(MAKE) -C $(CURL)
 	$(MAKE) -C $(CURL) install
 
