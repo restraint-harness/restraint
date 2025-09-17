@@ -1,0 +1,23 @@
+#!/bin/bash
+
+# A dummy "implementation" of rpm for tests.
+
+if [[ "$*" == --nodigest\ -ivh\ * ]] ; then
+    shift 2
+    output=$(ls $*)
+    if [[ "$output" == *fail* ]] ; then
+        echo "dummy rpm: fail" >&2
+        # Something is wrong with GIO - without the sleep we sometimes don't get 
+        # the last line of data.
+        sleep .11
+        exit 1
+    fi
+    echo "dummy rpm: installing $*"
+    # Something is wrong with GIO - without the sleep we sometimes don't get 
+    # the last line of data.
+    sleep .11
+    exit 0
+fi
+
+echo "dummy rpm: unrecognised arguments" >&2
+exit 1

@@ -37,6 +37,7 @@ operation=$1
 shift
 package=$*
 
+tmpdir=$(mktemp -d)
 # First use variables provided via xml.
 # Second try os specific variables in /usr/share/restraint/pkg_commands.$ID
 # Finally use these defaults if none of the above is defined.
@@ -44,6 +45,9 @@ pkg_cmd=${RSTRNT_PKG_CMD:-yum}
 pkg_args=${RSTRNT_PKG_ARGS:--y}
 pkg_install=${RSTRNT_PKG_INSTALL:-install}
 pkg_remove=${RSTRNT_PKG_REMOVE:-remove}
+pkg_download=${RSTRNT_PKG_DOWNLOAD:-download}
+pkg_download_dest=${RSTRNT_PKG_DOWNLOAD_DEST:---destdir=}
+pkg_manual_install=${RSTRNT_PKG_MANUAL_INSTALL:-rpm --nodigest -ivh}
 retry=${RSTRNT_PKG_RETRIES:-5}
 delay=${RSTRNT_PKG_DELAY:-1}
 
@@ -57,6 +61,13 @@ _pkg_cmd() {
             success=0
             break
         fi
+	# Download and install package with rpm --nodigest
+	$pkg_cmd ${pkg_download} ${pkg_download_dest}${tmpdir} ${package}
+	${pkg_manual_install} ${tmpdir}/*
+	if [ $? -eq 0 ]; then
+	   success=0
+	   break
+	fi
         sleep $delay
         let try+=1
     done
@@ -85,4 +96,5 @@ else
    >&2 echo "Unrecognized operation $operation"
    RC=2
 fi
+rm -rf $tmpdir
 exit $RC

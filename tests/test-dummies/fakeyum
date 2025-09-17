@@ -18,5 +18,15 @@ if [[ "$*" == -y\ install\ * ]] ; then
     exit 0
 fi
 
+if [[ "$*" == download\ --destdir=* ]] ; then
+    shift 1
+    tmpdir=$(echo $1 | sed -e 's/--destdir=//')
+    shift 1
+    for package in $*; do
+	touch $tmpdir/$package
+    done
+    exit 0
+fi
+
 echo "dummy yum: unrecognised arguments" >&2
 exit 1
