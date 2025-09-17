@@ -93,7 +93,7 @@ static void test_soft_dependencies_success (void)
     gchar *expected = "use_pty:FALSE rstrnt-package install PackageC\n"
                       "dummy yum: installing PackageC\n"
                       "use_pty:FALSE rstrnt-package install Packagefail\n"
-                      "dummy yum: fail\n"
+                      "dummy yum: fail\ndummy rpm: fail\n"
                       "use_pty:FALSE rstrnt-package install PackageA\n"
                       "dummy yum: installing PackageA\n";
 
@@ -199,7 +199,7 @@ static void test_dependencies_fail (void)
     dependencies = g_slist_prepend (dependencies, "Packagefail");
     dependencies = g_slist_prepend (dependencies, "PackageC");
     gchar *expected = "use_pty:FALSE rstrnt-package install PackageC Packagefail PackageA\n"
-                      "dummy yum: fail\n";
+                      "dummy yum: fail\ndummy rpm: fail\n";
 
     run_data = g_slice_new0 (RunData);
     run_data->loop = g_main_loop_new (NULL, TRUE);
@@ -251,11 +251,11 @@ static void test_dependencies_ignore_fail (void)
     dependencies = g_slist_prepend (dependencies, "Packagefail");
     dependencies = g_slist_prepend (dependencies, "PackageC");
     gchar *expected = "use_pty:FALSE rstrnt-package install PackageC Packagefail PackageA\n"
-                      "dummy yum: fail\n"
+                      "dummy yum: fail\ndummy rpm: fail\n"
                       "use_pty:FALSE rstrnt-package install PackageC\n"
                       "dummy yum: installing PackageC\n"
                       "use_pty:FALSE rstrnt-package install Packagefail\n"
-                      "dummy yum: fail\n"
+                      "dummy yum: fail\ndummy rpm: fail\n"
                       "use_pty:FALSE rstrnt-package install PackageA\n"
                       "dummy yum: installing PackageA\n";
 
@@ -846,6 +846,7 @@ static void test_http_rec_repodeps_fail (void)
 
 int main(int argc, char *argv[]) {
     putenv("RSTRNT_PKG_CMD=fakeyum");
+    putenv("RSTRNT_PKG_MANUAL_INSTALL=fakerpm --nodigest -ivh");
     g_test_init(&argc, &argv, NULL);
     g_test_add_func("/dependencies/success", test_dependencies_success);
     g_test_add_func("/dependencies/failure", test_dependencies_fail);
