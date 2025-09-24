@@ -91,10 +91,13 @@ static void test_soft_dependencies_success (void)
     softdependencies = g_slist_prepend (softdependencies, "Packagefail");
     softdependencies = g_slist_prepend (softdependencies, "PackageC");
     gchar *expected = "use_pty:FALSE rstrnt-package install PackageC\n"
+                      "[run] fakeyum -y install PackageC\n"
                       "dummy yum: installing PackageC\n"
                       "use_pty:FALSE rstrnt-package install Packagefail\n"
+                      "[run] fakeyum -y install Packagefail\n"
                       "dummy yum: fail\n"
                       "use_pty:FALSE rstrnt-package install PackageA\n"
+                      "[run] fakeyum -y install PackageA\n"
                       "dummy yum: installing PackageA\n";
 
     run_data = g_slice_new0 (RunData);
@@ -147,6 +150,7 @@ static void test_dependencies_success (void)
     dependencies = g_slist_prepend (dependencies, "PackageB");
     dependencies = g_slist_prepend (dependencies, "PackageC");
     gchar *expected = "use_pty:FALSE rstrnt-package install PackageC PackageB PackageA\n"
+                      "[run] fakeyum -y install PackageC PackageB PackageA\n"
                       "dummy yum: installing PackageC PackageB PackageA\n";
 
     run_data = g_slice_new0 (RunData);
@@ -199,6 +203,7 @@ static void test_dependencies_fail (void)
     dependencies = g_slist_prepend (dependencies, "Packagefail");
     dependencies = g_slist_prepend (dependencies, "PackageC");
     gchar *expected = "use_pty:FALSE rstrnt-package install PackageC Packagefail PackageA\n"
+                      "[run] fakeyum -y install PackageC Packagefail PackageA\n"
                       "dummy yum: fail\n";
 
     run_data = g_slice_new0 (RunData);
@@ -251,12 +256,16 @@ static void test_dependencies_ignore_fail (void)
     dependencies = g_slist_prepend (dependencies, "Packagefail");
     dependencies = g_slist_prepend (dependencies, "PackageC");
     gchar *expected = "use_pty:FALSE rstrnt-package install PackageC Packagefail PackageA\n"
+                      "[run] fakeyum -y install PackageC Packagefail PackageA\n"
                       "dummy yum: fail\n"
                       "use_pty:FALSE rstrnt-package install PackageC\n"
+                      "[run] fakeyum -y install PackageC\n"
                       "dummy yum: installing PackageC\n"
                       "use_pty:FALSE rstrnt-package install Packagefail\n"
+                      "[run] fakeyum -y install Packagefail\n"
                       "dummy yum: fail\n"
                       "use_pty:FALSE rstrnt-package install PackageA\n"
+                      "[run] fakeyum -y install PackageA\n"
                       "dummy yum: installing PackageA\n";
 
     run_data = g_slice_new0 (RunData);

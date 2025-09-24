@@ -2,8 +2,20 @@
 
 # A dummy "implementation" of yum for tests.
 
-if [[ "$*" == -y\ install\ * ]] ; then
-    shift 2
+# strip out options we don't care about
+args=()
+for a in "$@"; do
+    case "$a" in
+        -*|--*) ;;   # ignore options
+        *) args+=("$a") ;;
+    esac
+done
+
+# rebuild positional args
+set -- "${args[@]}"
+
+if [[ "$1" == install ]]; then
+    shift
     if [[ "$*" == *fail* ]] ; then
         echo "dummy yum: fail" >&2
         # Something is wrong with GIO - without the sleep we sometimes don't get 
