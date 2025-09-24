@@ -52,6 +52,7 @@ _pkg_cmd() {
     success=1
     try=0
     while [ $try -lt $retry ]; do
+        echo "[run] $pkg_cmd $pkg_args $opr $package"
         $pkg_cmd $pkg_args $opr $package
         if [ $? -eq 0 ]; then
             success=0
