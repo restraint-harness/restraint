@@ -2,8 +2,21 @@
 
 # A dummy "implementation" of yum for tests.
 
-if [[ "$*" == -y\ install\ * ]] ; then
-    shift 2
+# Collect options and positional parameters separately
+opts=() # Store options such as -x or --xx
+args=() # Store the actual subcommand/package name
+for a in "$@"; do
+    case "$a" in
+        -*) opts+=("$a") ;;   # add options
+        *) args+=("$a") ;;
+    esac
+done
+
+# rebuild positional args
+set -- "${args[@]}"
+
+if [[ "$1" == install ]]; then
+    shift
     if [[ "$*" == *fail* ]] ; then
         echo "dummy yum: fail" >&2
         # Something is wrong with GIO - without the sleep we sometimes don't get 
@@ -15,6 +28,19 @@ if [[ "$*" == -y\ install\ * ]] ; then
     # Something is wrong with GIO - without the sleep we sometimes don't get 
     # the last line of data.
     sleep .11
+    exit 0
+fi
+
+if [[ "$1" == "download" ]]; then
+    for opt in "${OPTS[@]}"; do
+        if [[ "$opt" =~ ^--destdir=(.*) ]]; then
+            tmpdir="${BASH_REMATCH[1]}"
+            shift
+            for pkg in "$@"; do
+                touch "$tmpdir/$pkg"
+            done
+        fi
+    done
     exit 0
 fi
 
