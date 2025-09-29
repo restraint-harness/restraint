@@ -12,6 +12,12 @@ upstream_package_name: restraint
 # downstream (Fedora) RPM package name
 downstream_package_name: restraint
 
+actions:
+  get-current-version:
+    # Override git tag and match what Tito uses
+    # The cut is for "restraint-0.4.11-<git stuff>" -> 0.4.11
+    - bash -c "git describe|cut -d'-' -f2"
+
 # Valid metadata targets can be check by command
 # copr list-chroots
 jobs:
