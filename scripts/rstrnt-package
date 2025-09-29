@@ -74,12 +74,39 @@ _pkg_cmd() {
     return $success
 }
 
+_ostree_cmd() {
+    opr=$1
+    success=0
+    try=0
+    for package in "${packages[@]}"; do
+        if ! rpm -q --whatprovides "${package}"; then
+            while [ $try -lt $retry ]; do
+                echo "[run] $pkg_cmd $pkg_args $opr $package"
+                $pkg_cmd $pkg_args $opr $package
+                if [ $? -eq 0 ]; then
+                    success=0
+                    break 1
+                fi
+                sleep $delay
+                let try+=1
+            done
+        fi
+    done
+
+    return $success
+}
+
 if [ "$operation" = "install" ]; then
-    _pkg_cmd "$pkg_install"
-    RC=$?
-    if [[ $RC == 0 && $pkg_cmd == "yum" ]]; then
-       rpm -q --whatprovides $package
-       RC=$?
+    if [ "$pkg_cmd" = "rpm-ostree" ]; then
+        read -r -a packages <<<"${package}"
+        _ostree_cmd "$pkg_install"
+    else
+        _pkg_cmd "$pkg_install"
+        RC=$?
+        if [[ $RC == 0 && $pkg_cmd == "yum" ]]; then
+           rpm -q --whatprovides $package
+           RC=$?
+        fi
     fi
 elif [ "$operation" = "remove" ]; then
     _pkg_cmd "$pkg_remove"
