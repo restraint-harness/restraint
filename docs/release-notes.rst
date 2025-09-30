@@ -1,6 +1,15 @@
 Release Notes
 =============
 
+Restraint 0.4.14
+---------------
+
+Bug Fixes
+~~~~~~~~~
+
+* | Handle new rpm v6 metadata format when using old rpm built taskrpms.
+  | Fix package install scripts when using rpm-ostree and existing rpms.
+
 Restraint 0.4.13
 ---------------
 
