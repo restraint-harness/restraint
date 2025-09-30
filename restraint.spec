@@ -16,7 +16,7 @@
 %endif
 
 Name:		restraint
-Version:	0.4.13
+Version:	0.4.14
 Release:	1%{?dist}
 Summary:	Simple test harness which can be used with beaker
 
@@ -412,6 +412,15 @@ fi
 %{__rm} -rf %{buildroot}
 
 %changelog
+* Tue Sep 30 2025 Don Zickus <dzickus@redhat.com> 0.4.14-1
+- Release Notes for Restraint version 0.4.14 (dzickus@redhat.com)
+- scripts/rstrnt-package & plugins/pkg_commands.d/centos & defora & rhel When
+  using rpm-ostree, it is necessary to check whether each package is installed
+  individually and only install the packages that do not exist.
+  (mhou@redhat.com)
+- Update to handle older packages (bpeck@redhat.com)
+- Fix PackIt's tarball name to match tito's tarball name (dzickus@redhat.com)
+
 * Tue Sep 09 2025 Don Zickus <dzickus@redhat.com> 0.4.13-1
 - Release Notes for Restraint version 0.4.13 (dzickus@redhat.com)
 - Revert "Convert src/cmd_ files from libsoup to libcurl" (dzickus@redhat.com)
