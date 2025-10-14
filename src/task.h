@@ -87,6 +87,8 @@ typedef struct RstrntTask {
     /* Whether to keep task changes */
     gboolean keepchanges;
     gboolean ssl_verify;
+    /* Whether a fetch failure aborts whole recipe */
+    gboolean fetch_abort_recipe;
     /* List of Params */
     GList *params;
     /* List of Roles */
