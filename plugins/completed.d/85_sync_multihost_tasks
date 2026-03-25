@@ -3,7 +3,7 @@
 # Synchronize tasks between SERVER/Client jobs
 # on multihost machines.
 #
-export TASKORDER=$(expr $TASKORDER + 1)
+export RSTRNT_TASKORDER=$(expr $RSTRNT_TASKORDER + 1)
 if rpm -q firewalld &>/dev/null  && systemctl is-active --quiet firewalld; then
     if ! firewall-cmd --zone=$(firewall-cmd --permanent --get-default-zone 2>/dev/null || echo "public") --query-port=6776/tcp &>/dev/null; then
         firewall-cmd --permanent --zone=$(firewall-cmd --permanent --get-default-zone 2>/dev/null || echo "public") --add-port=6776/tcp --quiet
