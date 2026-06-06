@@ -1,0 +1,42 @@
+name: riscv64
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-riscv64:
+    name: build (riscv64 via QEMU)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up QEMU (riscv64 binfmt)
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: riscv64
+
+      - name: Build restraint in a riscv64 container
+        run: |
+          docker run --rm --platform linux/riscv64 \
+            -v "$PWD":/src -w /src \
+            riscv64/debian:trixie bash -c '
+              set -eux
+              export DEBIAN_FRONTEND=noninteractive
+              apt-get update -qq
+              apt-get install -y --no-install-recommends \
+                build-essential pkg-config make git ca-certificates file \
+                libjson-c-dev libarchive-dev libsoup2.4-dev libxml2-dev \
+                libcurl4-openssl-dev libssl-dev libglib2.0-dev
+              uname -m
+              gcc --version | head -1
+              make
+              echo "=== built binaries ==="
+              file src/restraintd src/restraint
+              file src/restraintd | grep -q "UCB RISC-V"
+              file src/restraint  | grep -q "UCB RISC-V"
+              echo "riscv64 build OK"
+            '
