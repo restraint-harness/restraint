@@ -36,7 +36,7 @@ jobs:
               make
               echo "=== built binaries ==="
               file src/restraintd src/restraint
-              file src/restraintd | grep -q "UCB RISC-V"
-              file src/restraint  | grep -q "UCB RISC-V"
+              file src/restraintd | grep -q "RISC-V"
+              file src/restraint  | grep -q "RISC-V"
               echo "riscv64 build OK"
             '
