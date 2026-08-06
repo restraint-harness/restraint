@@ -8,7 +8,7 @@ jobs:
       fail-fast: false
       matrix:
         image: [quay.io/fedora/fedora]
-        version: ["42", "43", "rawhide"]
+        version: ["42", "43", "44", "45", "rawhide"]
     runs-on: ubuntu-latest
     container:
       image: ${{ matrix.image }}:${{ matrix.version }}
@@ -45,7 +45,7 @@ jobs:
       fail-fast: false
       matrix:
         image: [quay.io/fedora/fedora]
-        version: ["42", "43", "rawhide"]
+        version: ["42", "43", "44", "45", "rawhide"]
     runs-on: ubuntu-latest
     container:
       image: ${{ matrix.image }}:${{ matrix.version }}
@@ -85,6 +85,8 @@ jobs:
         image:
           - quay.io/fedora/fedora:42
           - quay.io/fedora/fedora:43
+          - quay.io/fedora/fedora:44
+          - quay.io/fedora/fedora:45
           - quay.io/fedora/fedora:rawhide
     container:
       image: ${{ matrix.image }}
