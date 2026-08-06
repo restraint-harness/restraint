@@ -117,7 +117,7 @@ BuildRequires:  tar
 %{?with_static:BuildRequires: cmake}
 # libselinux Requires.private
 %{?with_static:BuildRequires: libsepol-static}
-%if 0%{?rhel} < 8 || 0%{?centos} < 10
+%if 0%{?rhel} < 8 || 0%{?centos} < 10 || 0%{?fedora} < 45
 %{?with_static:BuildRequires: pcre-static}
 %else
 %{?with_static:BuildRequires: pcre2-static}
