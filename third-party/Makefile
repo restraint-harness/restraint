@@ -65,7 +65,7 @@ tree/bin/autoheader: tree/bin/m4 $(AUTOCONF) $(AUTOCONF)/.patches-done
 
 tree/lib/pkgconfig/libjson-c.pc: tree/bin/autoheader $(LIBJSONC)
 	( mkdir -p $(LIBJSONC)/build && cd $(LIBJSONC)/build && cmake ../ -DCMAKE_INSTALL_PREFIX=$(CURDIR)/tree -DBUILD_SHARED_LIBS=OFF \
-		-DBUILD_TESTING=OFF -DCMAKE_BUILD_TYPE=release -DCMAKE_INSTALL_LIBDIR=lib )
+		-DBUILD_TESTING=OFF -DCMAKE_BUILD_TYPE=release -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_POLICY_VERSION_MINIMUM=3.5 )
 	( PATH=$(CURDIR)/tree/bin:$(PATH) $(MAKE) -C $(LIBJSONC)/build )
 	$(MAKE) -C $(LIBJSONC)/build install
 
