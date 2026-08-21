@@ -122,6 +122,9 @@ BuildRequires:  tar
 %else
 %{?with_static:BuildRequires: pcre2-static}
 %endif
+%if 0%{?fedora} >= 45
+%{?with_static:BuildRequires: python3-setuptools}
+%endif
 
 %description
 restraint harness which can run standalone or with beaker.  when provided a recipe xml it will execute
