@@ -92,7 +92,7 @@ jobs:
     steps:
       - name: Set DNF command
         run: |
-          if [[ "${{ matrix.version}}" == "rawhide" ]]; then
+          if [[ "${{ matrix.image }}" == *"rawhide"* ]]; then
             echo "DNF_COMMAND=dnf5" >> $GITHUB_ENV
             echo "BUILDDEP_SPEC_ARG=" >> $GITHUB_ENV
           else
@@ -106,7 +106,7 @@ jobs:
       - uses: actions/checkout@v3
       - name: Install deps
         run: |
-          yum install -y ${{ env.DNF_COMMAND }} '${{ env.DNF_COMMAND }}-command(builddep)' tito
+          yum install -y --disablerepo=fedora-cisco-openh264 ${{ env.DNF_COMMAND }} '${{ env.DNF_COMMAND }}-command(builddep)' tito
       - name: Install restraint deps for static build
         run: |
           ${{ env.DNF_COMMAND }} builddep -y ${{ env.BUILDDEP_SPEC_ARG }} restraint.spec
