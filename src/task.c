@@ -115,6 +115,10 @@ fetch_finish_callback (GError *error, guint32 match_cnt,
             return;
         } else {
             g_propagate_error (&task->error, error);
+            if (task->fetch_abort_recipe) {
+                g_cancellable_cancel(app_data->cancellable);
+                app_data->aborted = ABORTED_RECIPE;
+            }
             task->state = TASK_COMPLETE;
         }
     } else {

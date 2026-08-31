@@ -257,6 +257,14 @@ static Task *parse_task(xmlNode *task_node, Recipe *recipe, GError **error) {
         }
         xmlFree(ssl_verify);
 
+        xmlChar *fetch_abort_recipe = xmlGetNoNsProp(fetch, (xmlChar *)"recipe_abort_on_fail");
+        if (fetch_abort_recipe == NULL || g_strcmp0((char*)fetch_abort_recipe, "true") != 0) {
+            task->fetch_abort_recipe = FALSE;
+        } else {
+            task->fetch_abort_recipe = TRUE;
+        }
+        xmlFree(fetch_abort_recipe);
+
         task->path = g_build_filename(task->recipe->base_path,
                 task->fetch.url->host,
                 task->fetch.url->path,

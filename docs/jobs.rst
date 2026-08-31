@@ -109,6 +109,10 @@ The first example shows fetching a task from git.
 
  <fetch ssl_verify="off" url="https://fedorapeople.org/cgit/bpeck/public_git/tests.git/snapshot/tests-master.tar.gz#kernel/performance/fs_mark" />
 
+ OR
+
+ <fetch recipe_abort_on_fail="true" url="https://fedorapeople.org/cgit/bpeck/public_git/tests.git/snapshot/tests-master.tar.gz#kernel/performance/fs_mark" />
+
 The fetch node accepts git URI's that conform to the following:
 
 * Prefixed with git:// OR use tarballs with http:// and cgit can serve them
@@ -123,6 +127,8 @@ The fetch node accepts git URI's that conform to the following:
   there is not a preceding slash here.
 * If you need to disable SSL certificate checking you can set ssl_verify
   parameter to "off".
+* If you need to abort the whole recipe on a fetch failure you can set
+  recipe_abort_on_fail parameter to "true".
 
 Restraint uses git's archive protocol to retrieve the contents so make sure
 your git server has enabled this. You can enable this on most servers by
