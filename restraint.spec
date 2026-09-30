@@ -16,7 +16,7 @@
 %endif
 
 Name:		restraint
-Version:	0.4.14
+Version:	0.4.15
 Release:	1%{?dist}
 Summary:	Simple test harness which can be used with beaker
 
@@ -415,6 +415,25 @@ fi
 %{__rm} -rf %{buildroot}
 
 %changelog
+* Wed Sep 30 2026 Don Zickus <dzickus@redhat.com> 0.4.15-1
+- Release Notes for Restraint version 0.4.15 (john@sodarock.com)
+- packit: skip EPEL 10 builds (john@sodarock.com)
+- Use RSTRNT_TASKORDER for multihost sync (jstodola@redhat.com)
+- ci: broaden riscv64 ELF arch check to match any file(1) output
+  (gounthar@gmail.com)
+- ci: add riscv64 build check via QEMU (gounthar@gmail.com)
+- Fix static-build CI job DNF command and openh264 GPG failure
+  (dzickus@redhat.com)
+- Add valgrind suppression for glibc 2.42 _dl_close_worker inlined malloc
+  (dzickus@redhat.com)
+- Updated supported Fedora versions (dzickus@redhat.com)
+- Force use of older cmake (dzickus@redhat.com)
+- Add shim support for dropped distutils from python3 libraries
+  (dzickus@redhat.com)
+- Update logic around pcre2-static (dzickus@redhat.com)
+- Update restraint.spec to build pcre2-static for F45 or greater.
+  (spinegar@redhat.com)
+
 * Tue Sep 30 2025 Don Zickus <dzickus@redhat.com> 0.4.14-1
 - Release Notes for Restraint version 0.4.14 (dzickus@redhat.com)
 - scripts/rstrnt-package & plugins/pkg_commands.d/centos & defora & rhel When
