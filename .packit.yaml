@@ -32,8 +32,13 @@ jobs:
       - fedora-all-aarch64
       - fedora-all-s390x
       - fedora-all-x86_64
-      - epel-all-aarch64
-      - epel-all-x86_64
+      # EPEL 10 is omitted: this spec builds against system libraries and
+      # EL10 only ships libsoup3, which restraint is not ported to yet.
+      # EL10 release RPMs are built statically from restraint.spec instead.
+      - epel-8-aarch64
+      - epel-8-x86_64
+      - epel-9-aarch64
+      - epel-9-x86_64
 
 notifications:
   pull_request:
