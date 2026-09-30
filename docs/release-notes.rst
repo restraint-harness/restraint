@@ -1,6 +1,25 @@
 Release Notes
 =============
 
+Restraint 0.4.15
+---------------
+
+Bug Fixes
+~~~~~~~~~
+
+* | Use RSTRNT_TASKORDER instead of TASKORDER for multihost sync in
+    rstrnt-sync-set, rstrnt-sync-block and the completed.d sync plugin.
+
+Other Notable Changes
+~~~~~~~~~~~~~~~~~~~~~
+
+* | Build and packaging updates
+  | Supported Fedora versions are now 43, 44 and 45.
+  | Static builds use pcre2-static on Fedora 45 and later.
+  | Add a shim for distutils being dropped from Python 3 libraries.
+  | Build json-c with an older CMake policy minimum so newer CMake works.
+  | CI: add a riscv64 build check and fix the static-build job.
+
 Restraint 0.4.14
 ---------------
 
