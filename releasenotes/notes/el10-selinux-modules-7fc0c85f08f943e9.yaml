@@ -1,0 +1,17 @@
+fixes:
+  - |
+    Load the SELinux policy modules on RHEL 10.0 and RHEL 9.0
+
+    The `restraint` and `rhts` modules in the RHEL 10 packages were built
+    with a newer SELinux toolchain than RHEL 10.0 has. RHEL 10.0 rejected
+    them with `policydb module version 24 does not match my version range
+    4-22`, so tasks ran without the policy and hit AVC denials, such as
+    `unconfined_service_t` being denied the transition to `unconfined_t`.
+    The `rhts` module in the RHEL 9 packages had the same problem on
+    RHEL 9.0.
+
+    The packages now include prebuilt `restraint.el10.pp`, `rhts.el10.pp`
+    and `rhts.el9.pp` modules, built on RHEL 10.0 and RHEL 9.0, which also
+    load on later minor releases. A new CI check,
+    `selinux/check-prebuilt-modules.py`, fails when a prebuilt module uses
+    a format that the .0 release of its RHEL version cannot load.
