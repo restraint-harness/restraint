@@ -3,6 +3,14 @@ name: Review-checks
 on: [pull_request]
 
 jobs:
+  selinux-modules:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Check prebuilt SELinux module formats
+      run: |
+        python3 selinux/check-prebuilt-modules.py
+
   unit-tests:
     strategy:
       fail-fast: false
