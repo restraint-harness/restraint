@@ -16,7 +16,7 @@
 %endif
 
 Name:		restraint
-Version:	0.4.15
+Version:	0.4.16
 Release:	1%{?dist}
 Summary:	Simple test harness which can be used with beaker
 
@@ -415,6 +415,11 @@ fi
 %{__rm} -rf %{buildroot}
 
 %changelog
+* Tue Nov 17 2026 Don Zickus <dzickus@redhat.com> 0.4.16-1
+- Check prebuilt SELinux module formats in CI (andrewlbernal@gmail.com)
+- Add rhts SELinux module built on RHEL 9.0 (andrewlbernal@gmail.com)
+- Add SELinux modules built on RHEL 10.0 (andrewlbernal@gmail.com)
+
 * Wed Sep 30 2026 Don Zickus <dzickus@redhat.com> 0.4.15-1
 - Release Notes for Restraint version 0.4.15 (john@sodarock.com)
 - packit: skip EPEL 10 builds (john@sodarock.com)
